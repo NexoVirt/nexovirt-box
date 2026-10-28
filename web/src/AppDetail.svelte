@@ -6,6 +6,8 @@
   import JobLog from '$lib/JobLog.svelte';
   import Secret from '$lib/Secret.svelte';
   import Credentials from '$lib/Credentials.svelte';
+  import Lightbox from '$lib/Lightbox.svelte';
+  import RichText from '$lib/RichText.svelte';
   import Loader from '@lucide/svelte/icons/loader-circle';
   import CircleAlert from '@lucide/svelte/icons/circle-alert';
   import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
@@ -29,6 +31,11 @@
   let confirm = $state({});
   let fieldError = $state({});
   let socketOK = $state(false);
+  let badShots = $state({}); // screenshots that failed to load are left out
+  let viewing = $state(-1); // lightbox index into shots
+  let shotEls = [];
+  let shots = $derived((app?.screenshots || []).map((_, i) => i).filter((i) => !badShots[i])
+    .map((i) => ({ i, src: `/api/catalog/${app.id}/screenshot/${i}`, alt: `Screenshot ${i + 1} of ${app.name}` })));
 
   let archOK = $derived(!summary.architectures?.length || summary.architectures.includes(arch));
   let visible = $derived((app?.questions || []).filter((q) => q.type !== 'password'));
@@ -62,6 +69,7 @@
         confirm = {};
         fieldError = {};
         socketOK = false;
+        badShots = {};
       }
     });
   });
@@ -198,12 +206,18 @@
       <div class="notice neutral"><TriangleAlert size={18} /><span>This app gets access to Docker on this server. That means full control over the server. Only install it if you trust it.</span></div>
     {/if}
     {#if app.tagline}<p class="tagline">{app.tagline}</p>{/if}
-    {#if app.screenshots?.length}
+    {#if shots.length}
       <div class="shots">
-        {#each app.screenshots as _, i (i)}
-          <img src="/api/catalog/{app.id}/screenshot/{i}" alt="Screenshot {i + 1} of {app.name}" loading="lazy" onerror={(e) => e.currentTarget.remove()} />
+        {#each shots as s, k (s.i)}
+          <button type="button" class="shot" bind:this={shotEls[k]} onclick={() => (viewing = k)} aria-label="Open {s.alt}">
+            <img src={s.src} alt={s.alt} loading="lazy" onerror={() => (badShots = { ...badShots, [s.i]: true })} />
+          </button>
         {/each}
       </div>
+      <Lightbox images={shots} bind:index={viewing} thumb={(k) => shotEls[k]?.querySelector('img')} label="Screenshots of {app.name}" />
+    {/if}
+    {#if app.notes}
+      <section class="getting-started"><h3 class="t-section">Getting started</h3><RichText text={app.notes} /></section>
     {/if}
     {#if app.description && plainText(app.description) !== app.tagline}<p class="desc">{plainText(app.description)}</p>{/if}
     <div class="group meta">
@@ -276,7 +290,11 @@
   .tagline { font-size: 0.9375rem; font-weight: 500; }
   .desc { color: var(--text-2); white-space: pre-line; max-height: 14rem; overflow: auto; }
   .shots { display: flex; gap: 0.75rem; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 0.25rem; }
-  .shots img { height: 11rem; border-radius: 0.875rem; scroll-snap-align: start; box-shadow: 0 0 0 1px var(--hairline); }
+  .shot { flex-shrink: 0; padding: 0; border: 0; background: none; border-radius: 0.875rem; cursor: zoom-in; scroll-snap-align: start; transition: transform 100ms ease-out; }
+  .shot:active { transform: scale(0.97); }
+  .shot:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .shots img { display: block; height: 11rem; border-radius: 0.875rem; box-shadow: 0 0 0 1px var(--hairline); }
+  .getting-started { display: grid; gap: 0.375rem; padding: 0.75rem 0.875rem; border-radius: var(--r-control); background: var(--fill); }
   .meta { box-shadow: none; background: var(--surface-2); }
   :global(.dark) .meta { background: var(--fill); }
   .link { color: var(--accent); }

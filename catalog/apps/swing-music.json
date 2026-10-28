@@ -33,5 +33,6 @@
    "required": true
   }
  ],
- "compose": "services:\n  swingmusic:\n    image: ghcr.io/swingmx/swingmusic:v2.1.4\n    container_name: swingmusic\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n      - type: bind\n        source: ${SHARED_DIR}/Media/Music\n        target: /music\n    ports:\n      - \"${APP_PORT}:1970\"\n    restart: unless-stopped\n"
+ "compose": "services:\n  swingmusic:\n    image: ghcr.io/swingmx/swingmusic:v2.1.4\n    container_name: swingmusic\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n      - type: bind\n        source: ${SHARED_DIR}/Media/Music\n        target: /music\n    ports:\n      - \"${APP_PORT}:1970\"\n    restart: unless-stopped\n",
+ "notes": "When you first start Swing Music, it will ask you to pick music directory: Where do you want to look for music?\nselect \"Specific directories\" Option, and select \"/music\" and rescan.\n\nDefault Account\n| Name | Password |\n| -------- | -------- |\n| `admin` | `admin` |"
 }

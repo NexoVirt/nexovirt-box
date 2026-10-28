@@ -39,7 +39,14 @@ func main() {
 	out := flag.String("out", "catalog", "output directory")
 	keyPath := flag.String("key", os.ExpandEnv("$HOME/.config/nexovirt/box-catalog.key"), "base64 Ed25519 seed (release key, kept outside the repository)")
 	allowPriv := flag.Bool("allow-privileged", false, "also import apps that need privileged mode or the host network")
+	enrich := flag.Bool("enrich", false, "keep the apps in -out and only refresh first_login and notes (from -casaos/-bigbear), then re-sign")
 	flag.Parse()
+	if *enrich {
+		if err := enrichCatalog(*out, *keyPath, *casaos, *bigbear); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
 
 	st := stats{map[string]int{}, map[string]int{}, map[string]int{}, map[string]int{}}
 	var apps []*catalog.App
@@ -112,6 +119,9 @@ func main() {
 		a.ID = id
 	}
 	sort.Slice(apps, func(i, j int) bool { return apps[i].ID < apps[j].ID })
+	for _, a := range apps {
+		applyFirstLogin(a)
+	}
 
 	sort.Strings(merges)
 	fmt.Printf("Merged %d near-duplicates:\n", len(merges))
@@ -281,6 +291,7 @@ func importCasa(dir string, allowPriv bool) (*catalog.App, error) {
 			Scheme        string            `yaml:"scheme"`
 			Website       string            `yaml:"website"`
 			ProjectURL    string            `yaml:"project_url"`
+			Tips          yaml.Node         `yaml:"tips"` // decoded leniently: shapes vary
 		} `yaml:"x-casaos"`
 		Services map[string]struct {
 			Image string `yaml:"image"`
@@ -314,6 +325,12 @@ func importCasa(dir string, allowPriv bool) (*catalog.App, error) {
 		}
 	}
 	a.MainPort, _ = strconv.Atoi(strings.TrimSpace(doc.X.PortMap))
+	var tips struct {
+		BeforeInstall map[string]string `yaml:"before_install"`
+	}
+	if doc.X.Tips.Kind == yaml.MappingNode && doc.X.Tips.Decode(&tips) == nil {
+		a.Notes = cleanTip(english(tips.BeforeInstall))
+	}
 	if err := processCompose(a, compose, "casaos", a.MainPort, allowPriv); err != nil {
 		return nil, err
 	}
@@ -390,7 +407,12 @@ func processCompose(a *catalog.App, src []byte, flavor string, mainPort int, all
 			n.Value = appIDRe.ReplaceAllString(v, "$${APP_ID}")
 		})
 	}
-	secretsToVariables(a, services)
+	// A store tip that names a default password Box replaced with a generated one would be wrong.
+	for _, lit := range secretsToVariables(a, services) {
+		if regexp.MustCompile(`(^|[^A-Za-z0-9])` + regexp.QuoteMeta(lit) + `([^A-Za-z0-9]|$)`).MatchString(a.Notes) {
+			a.Notes = ""
+		}
+	}
 
 	var buf bytes.Buffer
 	enc := yaml.NewEncoder(&buf)
@@ -489,7 +511,8 @@ func rewritePorts(ports *yaml.Node, mainPort int) {
 // secretsToVariables replaces literal default passwords (POSTGRES_PASSWORD: tipi) with generated
 // secrets. All places that used the same literal get the same variable, so linked services still
 // match. A literal that also appears somewhere it cannot be safely replaced is left alone.
-func secretsToVariables(a *catalog.App, services *yaml.Node) {
+// It returns the literals it replaced.
+func secretsToVariables(a *catalog.App, services *yaml.Node) []string {
 	cands := map[string]string{} // literal -> variable
 	var envSpots []struct {
 		key string
@@ -539,7 +562,7 @@ func secretsToVariables(a *catalog.App, services *yaml.Node) {
 		}
 	}
 	if len(cands) == 0 {
-		return
+		return nil
 	}
 	// Mark literals that show up anywhere we would not replace them.
 	handled := map[*yaml.Node]bool{}
@@ -562,6 +585,7 @@ func secretsToVariables(a *catalog.App, services *yaml.Node) {
 		})
 	}
 	added := map[string]bool{}
+	var replaced []string
 	for lit, varName := range cands {
 		if unsafe[lit] {
 			continue
@@ -580,11 +604,13 @@ func secretsToVariables(a *catalog.App, services *yaml.Node) {
 			s.val.Style = 0
 			if !added[varName] {
 				added[varName] = true
+				replaced = append(replaced, lit)
 				a.Questions = append(a.Questions, catalog.Question{Key: varName, Label: humanize(strings.TrimPrefix(varName, "SECRET_")),
 					Type: "password", Generate: true, Min: 24, Hint: "Generated automatically. Enter your own to replace it."})
 			}
 		}
 	}
+	return replaced
 }
 
 // ---- yaml helpers ----

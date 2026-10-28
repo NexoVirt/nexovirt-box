@@ -30,5 +30,8 @@
    "required": true
   }
  ],
- "compose": "services:\n  uptime-kuma:\n    image: louislam/uptime-kuma:2\n    container_name: uptime-kuma\n    volumes:\n      - /var/run/docker.sock:/var/run/docker.sock\n      - ${APP_DATA_DIR}/data:/app/data\n    ports:\n      - ${APP_PORT}:3001\n    restart: unless-stopped\n"
+ "compose": "services:\n  uptime-kuma:\n    image: louislam/uptime-kuma:2\n    container_name: uptime-kuma\n    volumes:\n      - /var/run/docker.sock:/var/run/docker.sock\n      - ${APP_DATA_DIR}/data:/app/data\n    ports:\n      - ${APP_PORT}:3001\n    restart: unless-stopped\n",
+ "first_login": {
+  "note": "Uptime Kuma asks you to create the admin account the first time you open it."
+ }
 }

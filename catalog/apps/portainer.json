@@ -30,5 +30,8 @@
    "required": true
   }
  ],
- "compose": "services:\n  portainer:\n    image: portainer/portainer-ce:2.45.3\n    container_name: portainer\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:9443\n    volumes:\n      - /var/run/docker.sock:/var/run/docker.sock\n      - ${APP_DATA_DIR}/data:/data\n"
+ "compose": "services:\n  portainer:\n    image: portainer/portainer-ce:2.45.3\n    container_name: portainer\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:9443\n    volumes:\n      - /var/run/docker.sock:/var/run/docker.sock\n      - ${APP_DATA_DIR}/data:/data\n",
+ "first_login": {
+  "note": "Open Portainer within 5 minutes after the install and create the admin user. After that Portainer locks the setup for security; restart the app in My Apps to get another 5 minutes."
+ }
 }

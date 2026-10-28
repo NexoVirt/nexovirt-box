@@ -32,5 +32,6 @@
    "required": true
   }
  ],
- "compose": "services:\n  pocketbase:\n    image: argonptg/pocketbase:0.26.6\n    deploy:\n      resources:\n        limits:\n          memory: 1024M\n    network_mode: bridge\n    ports:\n      - target: 8090\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    restart: always\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/pb_data\n        target: /pb_data\n    container_name: pocketbase\n"
+ "compose": "services:\n  pocketbase:\n    image: argonptg/pocketbase:0.26.6\n    deploy:\n      resources:\n        limits:\n          memory: 1024M\n    network_mode: bridge\n    ports:\n      - target: 8090\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    restart: always\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/pb_data\n        target: /pb_data\n    container_name: pocketbase\n",
+ "notes": "Default Account\n| Email | Password |\n| ----- | -------- |\n| `casaos@admin.local` | `adminpocketbase` |"
 }

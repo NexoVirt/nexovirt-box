@@ -27,5 +27,6 @@
    "required": true
   }
  ],
- "compose": "services:\n  app:\n    image: linuxserver/calibre:9.17.0@sha256:b198fc03a6abc6be7e251a9958e50e74634b00e447c7b25e92c191c8077ba378\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n      CUSTOM_USER: $CUSTOM_USER\n      PASSWORD: $PASSWORD\n      CLI_ARGS: ''\n    ports:\n      - target: 8080\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 8181\n        published: 8181\n        protocol: tcp\n      - target: 8081\n        published: 8081\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+ "compose": "services:\n  app:\n    image: linuxserver/calibre:9.17.0@sha256:b198fc03a6abc6be7e251a9958e50e74634b00e447c7b25e92c191c8077ba378\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n      CUSTOM_USER: $CUSTOM_USER\n      PASSWORD: $PASSWORD\n      CLI_ARGS: ''\n    ports:\n      - target: 8080\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 8181\n        published: 8181\n        protocol: tcp\n      - target: 8081\n        published: 8081\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n",
+ "notes": "The default username is admin and the password is a UUID. Change the password after installation."
 }

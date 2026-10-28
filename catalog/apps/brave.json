@@ -27,5 +27,6 @@
    "required": true
   }
  ],
- "compose": "services:\n  brave:\n    container_name: big-bear-brave # Name of the Docker container\n    image: kasmweb/brave:1.15.0-rolling@sha256:679eefbde9b44b6de2a73a5b266790393cea11e5756a8ab884798944cfef6ea7 # Docker image for the Brave browser\n    ports:\n      - \"${APP_PORT}:6901\" # Expose port 6901 for VNC access\n    environment:\n      - VNC_PW=casaos # Set the VNC password to 'casaos'\n      - LAUNCH_URL=https://community.bigbeartechworld.com/ # Set the default URL to Big Bear Tech World\n    shm_size: 512m # Allocate 512 MB of shared memory\n    volumes:\n      - ${APP_DATA_DIR}/Downloads:/home/kasm-user/Downloads # Mount the host directory to the container's Downloads directory\n"
+ "compose": "services:\n  brave:\n    container_name: big-bear-brave # Name of the Docker container\n    image: kasmweb/brave:1.15.0-rolling@sha256:679eefbde9b44b6de2a73a5b266790393cea11e5756a8ab884798944cfef6ea7 # Docker image for the Brave browser\n    ports:\n      - \"${APP_PORT}:6901\" # Expose port 6901 for VNC access\n    environment:\n      - VNC_PW=casaos # Set the VNC password to 'casaos'\n      - LAUNCH_URL=https://community.bigbeartechworld.com/ # Set the default URL to Big Bear Tech World\n    shm_size: 512m # Allocate 512 MB of shared memory\n    volumes:\n      - ${APP_DATA_DIR}/Downloads:/home/kasm-user/Downloads # Mount the host directory to the container's Downloads directory\n",
+ "notes": "Username: kasm_user\nPassword: casaos"
 }

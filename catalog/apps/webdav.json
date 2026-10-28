@@ -29,5 +29,6 @@
    "required": true
   }
  ],
- "compose": "services:\n  webdav:\n    cpu_shares: 90\n    command: []\n    container_name: webdav\n    deploy:\n      resources:\n        limits:\n          memory: 15806M\n    environment:\n      - GID=1000\n      - PASSWORD=casaos\n      - TZ=Europe/Madrid\n      - UDI=1000\n      - USERNAME=casaos\n    image: ugeek/webdav:amd64\n    labels:\n      icon: https://icon.casaos.io/main/all/webdav.png\n    ports:\n      - target: 80\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: /media/ZimaOS-HD/Media\n        target: /media\n    network_mode: bridge\n    privileged: false\n"
+ "compose": "services:\n  webdav:\n    cpu_shares: 90\n    command: []\n    container_name: webdav\n    deploy:\n      resources:\n        limits:\n          memory: 15806M\n    environment:\n      - GID=1000\n      - PASSWORD=casaos\n      - TZ=Europe/Madrid\n      - UDI=1000\n      - USERNAME=casaos\n    image: ugeek/webdav:amd64\n    labels:\n      icon: https://icon.casaos.io/main/all/webdav.png\n    ports:\n      - target: 80\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: /media/ZimaOS-HD/Media\n        target: /media\n    network_mode: bridge\n    privileged: false\n",
+ "notes": "Default Account\n\n| Username | Password |\n|----------|----------|\n| `casaos`    | `casaos` |"
 }

@@ -896,29 +896,39 @@ func (h *helperServer) appCredentials(req helperRequest, logf func(string)) (any
 		return nil, uerr("The settings of this app could not be read.")
 	}
 	env := parseEnv(b)
-	type cred struct {
-		Label  string `json:"label"`
-		Value  string `json:"value"`
-		Secret bool   `json:"secret"`
-		Locked bool   `json:"locked,omitempty"`
+	type result struct {
+		Items []appCred `json:"items"`
+		Note  string    `json:"note,omitempty"`  // how to sign in the first time
+		Notes string    `json:"notes,omitempty"` // getting started
 	}
-	out := []cred{}
+	res := result{Items: []appCred{}}
 	cat, _, err := loadCatalog(h.webState)
 	if err != nil {
-		return out, nil
+		return res, nil
 	}
 	app, err := cat.App(req.ID)
 	if err != nil {
-		return out, nil
+		return res, nil
 	}
 	for _, q := range presentQuestions(app.Questions) {
 		v := env[q.Key]
 		if v == "" || (q.Type != "password" && q.Type != "text" && q.Type != "email") {
 			continue
 		}
-		out = append(out, cred{Label: q.Label, Value: v, Secret: q.Type == "password", Locked: q.Locked})
+		res.Items = append(res.Items, appCred{Label: q.Label, Value: v, Secret: q.Type == "password", Locked: q.Locked})
 	}
-	return out, nil
+	dir := h.appDir(req.ID)
+	res.Items = firstLoginCreds(app, env, res.Items, func() []string {
+		if needDocker() != nil {
+			return nil
+		}
+		return readFirstLogLines(dir, req.ID, firstLogLines)
+	})
+	if app.FirstLogin != nil {
+		res.Note = app.FirstLogin.Note
+	}
+	res.Notes = app.Notes
+	return res, nil
 }
 
 // migrateShared moves media that apps wrote to the old ROOT_FOLDER_HOST (the state dir) into

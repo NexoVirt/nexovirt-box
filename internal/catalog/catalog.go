@@ -50,14 +50,41 @@ type Summary struct {
 
 type App struct {
 	Summary
-	Description string     `json:"description"`
-	Screenshots []string   `json:"screenshots,omitempty"`
-	Website     string     `json:"website,omitempty"`
-	Source      string     `json:"source,omitempty"`
-	MainPort    int        `json:"main_port"`
-	Scheme      string     `json:"scheme,omitempty"`
-	Questions   []Question `json:"questions"`
-	Compose     string     `json:"compose"`
+	Description string      `json:"description"`
+	Screenshots []string    `json:"screenshots,omitempty"`
+	Website     string      `json:"website,omitempty"`
+	Source      string      `json:"source,omitempty"`
+	MainPort    int         `json:"main_port"`
+	Scheme      string      `json:"scheme,omitempty"`
+	Questions   []Question  `json:"questions"`
+	Compose     string      `json:"compose"`
+	FirstLogin  *FirstLogin `json:"first_login,omitempty"`
+	Notes       string      `json:"notes,omitempty"` // "Getting started" text, plain text
+}
+
+// FirstLogin says how to sign in to an app the first time, when the app makes its own admin
+// account. PasswordFromLog is a regular expression with one capture group, matched against
+// the first log lines of the app; PasswordFromEnv names a variable of the app's .env.
+type FirstLogin struct {
+	Username        string `json:"username,omitempty"`
+	PasswordFromLog string `json:"password_from_log_regex,omitempty"`
+	PasswordFromEnv string `json:"password_from_env,omitempty"`
+	Note            string `json:"note,omitempty"`
+}
+
+// LogRegexp compiles PasswordFromLog; it must have exactly one capture group.
+func (f *FirstLogin) LogRegexp() (*regexp.Regexp, error) {
+	if f == nil || f.PasswordFromLog == "" {
+		return nil, nil
+	}
+	re, err := regexp.Compile(f.PasswordFromLog)
+	if err != nil {
+		return nil, err
+	}
+	if re.NumSubexp() != 1 {
+		return nil, fmt.Errorf("first_login: the log pattern needs exactly one group")
+	}
+	return re, nil
 }
 
 type IndexEntry struct {

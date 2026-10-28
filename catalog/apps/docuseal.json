@@ -27,5 +27,6 @@
    "required": true
   }
  ],
- "compose": "services:\n  docuseal:\n    image: docuseal/docuseal:3.3.3@sha256:28d0ca583860e2c73e5b068756023a93a325799a22da1f788355d566865dd051\n    container_name: docuseal\n    restart: unless-stopped\n    ports:\n      - \"${APP_PORT}:3000\"\n    volumes:\n      - ${APP_DATA_DIR}/data:/data\n"
+ "compose": "services:\n  docuseal:\n    image: docuseal/docuseal:3.3.3@sha256:28d0ca583860e2c73e5b068756023a93a325799a22da1f788355d566865dd051\n    container_name: docuseal\n    restart: unless-stopped\n    ports:\n      - \"${APP_PORT}:3000\"\n    volumes:\n      - ${APP_DATA_DIR}/data:/data\n",
+ "notes": "Open http://localhost:20031 and finish the first-run setup. Data stays in the SQLite database on the docuseal_data volume. Host port 3000 is already used by other apps, so this listing publishes 20031."
 }
