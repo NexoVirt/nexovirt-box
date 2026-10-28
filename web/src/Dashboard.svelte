@@ -2,40 +2,40 @@
   import { onMount } from 'svelte';
   import { api } from '$lib/api.js';
   import { bytes, rate, pct, duration, level } from '$lib/format.js';
+  import Ring from '$lib/Ring.svelte';
   import Sparkline from '$lib/Sparkline.svelte';
-  import * as Card from '$lib/components/ui/card/index.js';
-  import * as Table from '$lib/components/ui/table/index.js';
-  import { Badge } from '$lib/components/ui/badge/index.js';
-  import { Progress } from '$lib/components/ui/progress/index.js';
-  import { Skeleton } from '$lib/components/ui/skeleton/index.js';
-  import Cpu from '@lucide/svelte/icons/cpu';
-  import MemoryStick from '@lucide/svelte/icons/memory-stick';
-  import Activity from '@lucide/svelte/icons/activity';
-  import Clock from '@lucide/svelte/icons/clock';
+  import Segmented from '$lib/Segmented.svelte';
   import ArrowDown from '@lucide/svelte/icons/arrow-down';
   import ArrowUp from '@lucide/svelte/icons/arrow-up';
-  import Network from '@lucide/svelte/icons/network';
   import HardDrive from '@lucide/svelte/icons/hard-drive';
-  import Info from '@lucide/svelte/icons/info';
+  import Network from '@lucide/svelte/icons/ethernet-port';
   import Loader from '@lucide/svelte/icons/loader-circle';
 
   let { system, onSessionLost } = $props();
 
-  const HISTORY = 60; // 2 minutes at one sample every 2 s
+  const KEEP = 150; // 5 minutes at one sample every 2 s
+  const ranges = [
+    { value: 30, label: '1 min' },
+    { value: 150, label: '5 min' },
+  ];
 
   let snap = $state(null);
   let live = $state('connecting'); // connecting | live | reconnecting
+  let seq = $state(0);
+  let range = $state(30);
   let cpuHistory = $state([]);
-  let memHistory = $state([]);
   let netHistory = $state({}); // interface -> combined rx+tx rates
 
   let memPct = $derived(snap ? pct(snap.memory.used, snap.memory.total) : 0);
   let swapPct = $derived(snap ? pct(snap.memory.swap_used, snap.memory.swap_total) : 0);
+  let root = $derived(snap ? snap.disks.find((d) => d.mountpoint === '/') || snap.disks[0] : null);
+  let rootPct = $derived(root ? pct(root.used, root.total) : 0);
   let loadPct = $derived(snap && system ? Math.round((snap.load[0] / system.cores) * 100) : 0);
+  let cpuShown = $derived(cpuHistory.slice(-range));
 
   function push(arr = [], v) {
     const next = [...arr, v];
-    return next.length > HISTORY ? next.slice(next.length - HISTORY) : next;
+    return next.length > KEEP ? next.slice(next.length - KEEP) : next;
   }
 
   onMount(() => {
@@ -45,8 +45,8 @@
       try { s = JSON.parse(e.data); } catch { return; } // ignore a broken frame
       snap = s;
       live = 'live';
+      seq++;
       cpuHistory = push(cpuHistory, s.cpu.total);
-      memHistory = push(memHistory, pct(s.memory.used, s.memory.total));
       const next = {};
       for (const n of s.network) next[n.name] = push(netHistory[n.name], n.rx_rate + n.tx_rate);
       netHistory = next;
@@ -63,169 +63,217 @@
   });
 </script>
 
-{#snippet statCard(Icon, label, value)}
-  <div class="flex items-center justify-between">
-    <span class="text-sm font-medium text-muted-foreground">{label}</span>
-    <Icon class="size-4 text-muted-foreground" />
-  </div>
-  <div class="mt-2 text-3xl font-semibold tracking-tight tabular-nums">{value}</div>
-{/snippet}
-
-<div class="mx-auto grid max-w-7xl gap-6">
-  <div class="flex flex-wrap items-end justify-between gap-3">
+<div class="page">
+  <header class="page-head">
     <div>
-      <h1 class="text-2xl font-semibold tracking-tight">Dashboard</h1>
-      <p class="text-sm text-muted-foreground">Live view of this server, updated every 2 seconds.</p>
+      <h1 class="t-large">Dashboard</h1>
+      <p class="t-sub">
+        {#if system}{[system.hostname, system.os, snap ? `up ${duration(snap.uptime)}` : ''].filter(Boolean).join('  ·  ')}
+        {:else}<span class="skeleton inline"></span>{/if}
+      </p>
     </div>
     {#if live === 'live'}
-      <Badge variant="outline" class="gap-1.5"><span class="size-2 animate-pulse rounded-full bg-ok"></span>Live</Badge>
+      <span class="pill"><span class="dot ok pulse"></span>Live</span>
     {:else}
-      <Badge variant="outline" class="gap-1.5 text-muted-foreground">
-        <Loader class="size-3 animate-spin" />{live === 'reconnecting' ? 'Reconnecting' : 'Connecting'}
-      </Badge>
+      <span class="pill"><Loader size={13} class="spinner" />{live === 'reconnecting' ? 'Reconnecting' : 'Connecting'}</span>
     {/if}
-  </div>
+  </header>
 
   {#if !snap}
-    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <section class="tile rings" aria-busy="true">
       {#each Array(4) as _}
-        <Card.Root class="gap-3 p-6"><Skeleton class="h-4 w-20" /><Skeleton class="h-8 w-28" /><Skeleton class="h-9 w-full" /></Card.Root>
+        <div class="ring-skel"><span class="skeleton circle"></span><span class="skeleton line"></span></div>
       {/each}
-    </div>
-    <div class="grid gap-4 lg:grid-cols-2">
-      <Card.Root class="gap-3 p-6"><Skeleton class="h-5 w-24" /><Skeleton class="h-24 w-full" /></Card.Root>
-      <Card.Root class="gap-3 p-6"><Skeleton class="h-5 w-24" /><Skeleton class="h-24 w-full" /></Card.Root>
+    </section>
+    <div class="split">
+      <div class="tile"><span class="skeleton block"></span></div>
+      <div class="tile"><span class="skeleton block"></span></div>
     </div>
   {:else}
-    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <Card.Root class="gap-0 p-6">
-        {@render statCard(Cpu, 'CPU', `${snap.cpu.total.toFixed(1)} %`)}
-        <Sparkline values={cpuHistory} class="mt-3 text-primary" />
-        <div class="mt-3 flex h-8 items-end gap-1" title="Load per CPU thread">
+    <section class="tile rings" aria-label="Usage">
+      <Ring value={snap.cpu.total} label="CPU" caption="{snap.cpu.cores.length} threads" />
+      <Ring value={memPct} label="Memory" caption="{bytes(snap.memory.used)} of {bytes(snap.memory.total)}" />
+      {#if snap.memory.swap_total > 0}
+        <Ring value={swapPct} label="Swap" caption="{bytes(snap.memory.swap_used)} of {bytes(snap.memory.swap_total)}" />
+      {:else}
+        <Ring value={0} label="Swap" caption="Not configured" />
+      {/if}
+      {#if root}
+        <Ring value={rootPct} label="Disk" caption="{bytes(root.used)} of {bytes(root.total)}" />
+      {:else}
+        <Ring value={0} label="Disk" caption="No drive found" />
+      {/if}
+    </section>
+
+    <div class="split">
+      <section class="tile cpu">
+        <div class="tile-head">
+          <div>
+            <h2 class="t-head">Processor</h2>
+            <p class="t-caption truncate">{system?.cpu_model || `${snap.cpu.cores.length} threads`}</p>
+          </div>
+          <Segmented options={ranges} bind:value={range} label="Time range" />
+        </div>
+        <div class="big num">{snap.cpu.total.toFixed(1)}<small>%</small></div>
+        <div class="chart">
+          <span class="guide" style:top="0%"><span>100 %</span></span>
+          <span class="guide" style:top="50%"><span>50 %</span></span>
+          <Sparkline values={cpuShown} {seq} capacity={range} height={120} />
+        </div>
+        <p class="t-caption threads-label">Per thread</p>
+        <div class="threads" title="Load per CPU thread">
           {#each snap.cpu.cores as c, i (i)}
-            <div class="flex h-full flex-1 items-end rounded-sm bg-muted">
-              <div class="w-full rounded-sm transition-all duration-500 {level(c)}" style:height="{Math.max(8, c)}%"></div>
-            </div>
+            <div class="thread"><span style:transform="scaleY({Math.max(0.04, c / 100)})" style:background={c >= 75 ? level(c) : 'var(--accent)'}></span></div>
           {/each}
         </div>
-        <p class="mt-2 truncate text-xs text-muted-foreground">{snap.cpu.cores.length} threads{system?.cpu_model ? `, ${system.cpu_model}` : ''}</p>
-      </Card.Root>
-
-      <Card.Root class="gap-0 p-6">
-        {@render statCard(MemoryStick, 'Memory', `${memPct} %`)}
-        <Sparkline values={memHistory} class="mt-3 text-primary" />
-        <Progress value={memPct} class="mt-3 h-1.5" indicatorClass={level(memPct)} />
-        <p class="mt-2 text-xs text-muted-foreground tabular-nums">{bytes(snap.memory.used)} of {bytes(snap.memory.total)}</p>
-        <p class="text-xs text-muted-foreground tabular-nums">
-          {snap.memory.swap_total > 0 ? `Swap ${bytes(snap.memory.swap_used)} of ${bytes(snap.memory.swap_total)} (${swapPct} %)` : 'No swap'}
-        </p>
-      </Card.Root>
-
-      <Card.Root class="gap-0 p-6">
-        {@render statCard(Activity, 'Load average', snap.load[0].toFixed(2))}
-        <Progress value={Math.min(100, loadPct)} class="mt-4 h-1.5" indicatorClass={level(loadPct)} />
-        <p class="mt-2 text-xs text-muted-foreground tabular-nums">1, 5, 15 min: {snap.load.map((l) => l.toFixed(2)).join(', ')}</p>
-        <p class="text-xs text-muted-foreground">{loadPct} % of {system?.cores ?? '-'} threads</p>
-      </Card.Root>
-
-      <Card.Root class="gap-0 p-6">
-        {@render statCard(Clock, 'Uptime', duration(snap.uptime))}
-        <p class="mt-4 truncate text-xs text-muted-foreground">{system?.os ?? ''}</p>
-        <p class="truncate text-xs text-muted-foreground">Kernel {system?.kernel ?? '-'}</p>
-      </Card.Root>
-    </div>
-
-    <div class="grid gap-4 lg:grid-cols-2">
-      <Card.Root>
-        <Card.Header>
-          <Card.Title class="flex items-center gap-2"><Network class="size-4 text-muted-foreground" />Network</Card.Title>
-          <Card.Description>Current throughput per interface.</Card.Description>
-        </Card.Header>
-        <Card.Content class="grid gap-4">
-          {#each snap.network as n (n.name)}
-            <div class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1">
-              <span class="truncate text-sm font-medium">{n.name}</span>
-              <span class="flex gap-4 text-sm tabular-nums">
-                <span class="flex items-center gap-1"><ArrowDown class="size-3.5 text-muted-foreground" />{rate(n.rx_rate)}</span>
-                <span class="flex items-center gap-1"><ArrowUp class="size-3.5 text-muted-foreground" />{rate(n.tx_rate)}</span>
-              </span>
-              <div class="col-span-2"><Sparkline values={netHistory[n.name] ?? []} max={0} class="text-primary" /></div>
+        <div class="load">
+          {#each snap.load as l, i (i)}
+            <div class="load-cell">
+              <span class="load-num num">{l.toFixed(2)}</span>
+              <span class="t-caption">Load {['1 min', '5 min', '15 min'][i]}</span>
             </div>
-          {:else}
-            <p class="text-sm text-muted-foreground">No network interfaces found.</p>
           {/each}
-        </Card.Content>
-      </Card.Root>
+          <div class="load-cell busy">
+            <span class="load-num num">{loadPct}<small>%</small></span>
+            <span class="t-caption">of {system?.cores ?? '-'} threads busy</span>
+          </div>
+        </div>
+      </section>
 
-      <Card.Root>
-        <Card.Header>
-          <Card.Title class="flex items-center gap-2"><Info class="size-4 text-muted-foreground" />System</Card.Title>
-          <Card.Description>Hardware and operating system.</Card.Description>
-        </Card.Header>
-        <Card.Content>
+      <section class="side">
+        <h2 class="t-section label">System</h2>
+        <div class="group">
           {#if !system}
-            <div class="grid gap-3">{#each Array(5) as _}<Skeleton class="h-4 w-full" />{/each}</div>
+            {#each Array(6) as _}<div class="row"><span class="skeleton line"></span></div>{/each}
           {:else}
-            <dl class="grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-3 text-sm">
-              {#each [
-                ['Hostname', system.hostname],
-                ['Operating system', system.os],
-                ['Kernel', system.kernel],
-                ['Architecture', system.arch],
-                ['Processor', system.cpu_model || '-'],
-                ['Cores', `${system.physical_cores || '-'} cores, ${system.cores} threads`],
-                ['Virtualization', system.virtualization || 'None detected'],
-              ] as [k, v] (k)}
-                <dt class="text-muted-foreground">{k}</dt>
-                <dd class="truncate font-medium" title={v}>{v}</dd>
-              {/each}
-            </dl>
+            {#each [
+              ['Hostname', system.hostname],
+              ['Operating system', system.os],
+              ['Kernel', system.kernel],
+              ['Architecture', system.arch],
+              ['Cores', `${system.physical_cores || '-'} cores, ${system.cores} threads`],
+              ['Virtualization', system.virtualization || 'None detected'],
+              ['Uptime', duration(snap.uptime)],
+            ] as [k, v] (k)}
+              <div class="row"><span class="row-label">{k}</span><span class="row-value truncate" title={v}>{v}</span></div>
+            {/each}
           {/if}
-        </Card.Content>
-      </Card.Root>
+        </div>
+      </section>
     </div>
 
-    <Card.Root>
-      <Card.Header>
-        <Card.Title class="flex items-center gap-2"><HardDrive class="size-4 text-muted-foreground" />Drives</Card.Title>
-        <Card.Description>Mounted filesystems on real devices.</Card.Description>
-      </Card.Header>
-      <Card.Content>
-        {#if snap.disks.length === 0}
-          <p class="text-sm text-muted-foreground">No mounted drives found.</p>
+    <section>
+      <h2 class="t-section label">Network</h2>
+      <div class="group">
+        {#each snap.network as n (n.name)}
+          <div class="row net">
+            <span class="row-icon"><Network size={16} /></span>
+            <div class="net-name">
+              <span class="t-head truncate">{n.name}</span>
+              <span class="rates num">
+                <span><ArrowDown size={13} />{rate(n.rx_rate)}</span>
+                <span><ArrowUp size={13} />{rate(n.tx_rate)}</span>
+              </span>
+            </div>
+            <div class="net-chart"><Sparkline values={(netHistory[n.name] ?? []).slice(-60)} {seq} capacity={60} max={0} height={36} /></div>
+          </div>
         {:else}
-          <Table.Root>
-            <Table.Header>
-              <Table.Row>
-                <Table.Head>Mount point</Table.Head>
-                <Table.Head class="hidden md:table-cell">Device</Table.Head>
-                <Table.Head class="hidden sm:table-cell">Filesystem</Table.Head>
-                <Table.Head class="text-right">Size</Table.Head>
-                <Table.Head class="hidden text-right md:table-cell">Free</Table.Head>
-                <Table.Head class="w-1/4 min-w-32">Usage</Table.Head>
-              </Table.Row>
-            </Table.Header>
-            <Table.Body>
-              {#each snap.disks as d (d.mountpoint)}
-                {@const p = pct(d.used, d.total)}
-                <Table.Row>
-                  <Table.Cell class="font-medium">{d.mountpoint}</Table.Cell>
-                  <Table.Cell class="hidden text-muted-foreground md:table-cell">{d.device}</Table.Cell>
-                  <Table.Cell class="hidden sm:table-cell"><Badge variant="secondary" class="font-mono">{d.fstype}</Badge></Table.Cell>
-                  <Table.Cell class="text-right tabular-nums">{bytes(d.total)}</Table.Cell>
-                  <Table.Cell class="hidden text-right tabular-nums md:table-cell">{bytes(d.free)}</Table.Cell>
-                  <Table.Cell>
-                    <div class="flex items-center gap-3">
-                      <Progress value={p} class="h-1.5 flex-1" indicatorClass={level(p)} />
-                      <span class="w-12 text-right text-xs text-muted-foreground tabular-nums">{p} %</span>
-                    </div>
-                  </Table.Cell>
-                </Table.Row>
-              {/each}
-            </Table.Body>
-          </Table.Root>
-        {/if}
-      </Card.Content>
-    </Card.Root>
+          <div class="row t-sub">No network interfaces found.</div>
+        {/each}
+      </div>
+    </section>
+
+    <section>
+      <h2 class="t-section label">Storage</h2>
+      <div class="group">
+        {#each snap.disks as d (d.mountpoint)}
+          {@const p = pct(d.used, d.total)}
+          <div class="row disk">
+            <span class="row-icon"><HardDrive size={16} /></span>
+            <div class="disk-main">
+              <div class="disk-top">
+                <span class="disk-name">
+                  <span class="t-head truncate">{d.mountpoint}</span>
+                  <span class="t-caption truncate">{d.device} · {d.fstype}</span>
+                </span>
+                <span class="disk-size num">
+                  <span>{bytes(d.used)} <span class="t-sub">of {bytes(d.total)}</span></span>
+                  <span class="t-caption">{bytes(d.free)} free</span>
+                </span>
+              </div>
+              <div class="bar"><span style:transform="scaleX({p / 100})" style:background={p >= 75 ? level(p) : 'var(--accent)'}></span></div>
+            </div>
+          </div>
+        {:else}
+          <div class="row t-sub">No mounted drives found.</div>
+        {/each}
+      </div>
+    </section>
   {/if}
 </div>
+
+<style>
+  .page { max-width: 72rem; margin: 0 auto; display: grid; gap: 1.5rem; }
+  .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; padding-top: 0.5rem; }
+  h1, h2, p { margin: 0; }
+  .page-head p { margin-top: 0.375rem; }
+  .sep { color: var(--text-3); margin: 0 0.125rem; }
+  .skeleton.inline { display: inline-block; width: 14rem; height: 0.9rem; vertical-align: middle; }
+
+  .rings { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; padding: 1.75rem 1.25rem 1.5rem; }
+  .ring-skel { display: grid; justify-items: center; gap: 0.875rem; }
+  .skeleton.circle { width: 112px; height: 112px; border-radius: 50%; }
+  .skeleton.line { display: block; width: 60%; height: 0.8rem; }
+  .skeleton.block { display: block; height: 11rem; }
+
+  .split { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; }
+  .label { padding: 0 1.125rem 0.5rem; }
+
+  .tile-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+  .tile-head > div { min-width: 0; }
+  .big { font-size: 2.5rem; font-weight: 700; letter-spacing: -0.035em; line-height: 1; margin: 1rem 0 0.75rem; }
+  .big small { font-size: 1rem; font-weight: 600; color: var(--text-2); margin-left: 2px; letter-spacing: 0; }
+  .threads { display: flex; gap: 3px; height: 1.25rem; margin-top: 0.375rem; }
+  .threads-label { margin-top: 1rem; }
+  .thread { flex: 1; display: flex; align-items: flex-end; border-radius: 4px; background: var(--fill); overflow: hidden; }
+  .thread span {
+    display: block; width: 100%; height: 100%; border-radius: 4px; transform-origin: bottom;
+    transition: transform var(--spring-t) var(--spring), background-color 300ms ease;
+  }
+
+  .chart { position: relative; padding-top: 0.25rem; border-bottom: 1px solid var(--hairline); }
+  .guide { position: absolute; left: 0; right: 0; border-top: 1px dashed var(--hairline); }
+  .guide span { position: absolute; right: 0; top: 2px; font-size: 0.6875rem; color: var(--text-3); }
+  .load { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--hairline); }
+  .load-cell { display: grid; gap: 0.125rem; min-width: 0; }
+  .load-num { font-size: 1.25rem; font-weight: 650; letter-spacing: -0.02em; line-height: 1.15; }
+  .load-num small { font-size: 0.75rem; color: var(--text-2); font-weight: 600; margin-left: 1px; }
+  .side { display: flex; flex-direction: column; }
+  .side .group { flex: 1; }
+  .side .row { flex: 1; }
+  .net-name { display: grid; gap: 0.125rem; width: 14rem; min-width: 0; }
+  .net-chart { flex: 1; min-width: 0; }
+
+  .row-icon {
+    display: grid; place-items: center; width: 1.875rem; height: 1.875rem; border-radius: 0.5rem; flex-shrink: 0;
+    background: var(--accent-fill); color: var(--accent); align-self: flex-start; margin-top: 0.125rem;
+  }
+  .disk-main { flex: 1; min-width: 0; display: grid; gap: 0.5rem; }
+  .disk-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; }
+  .rates { display: flex; gap: 0.875rem; color: var(--text-2); font-size: 0.8125rem; white-space: nowrap; }
+  .net .row-icon { align-self: center; margin-top: 0; }
+  .rates span { display: inline-flex; align-items: center; gap: 0.2rem; }
+  .disk-name { display: grid; min-width: 0; }
+  .disk-size { display: grid; justify-items: end; text-align: right; white-space: nowrap; font-weight: 500; }
+
+  @media (max-width: 1023px) {
+    .split { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 639px) {
+    .rings { grid-template-columns: repeat(2, 1fr); row-gap: 1.75rem; }
+    .load { grid-template-columns: repeat(2, 1fr); }
+    .net { flex-wrap: wrap; }
+    .net-name { width: auto; flex: 1; }
+    .net-chart { flex-basis: 100%; }
+  }
+</style>

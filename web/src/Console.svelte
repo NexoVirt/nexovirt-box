@@ -5,9 +5,6 @@
   import '@xterm/xterm/css/xterm.css';
   import { api } from '$lib/api.js';
   import { theme } from '$lib/theme.svelte.js';
-  import { Button } from '$lib/components/ui/button/index.js';
-  import { Badge } from '$lib/components/ui/badge/index.js';
-  import * as Alert from '$lib/components/ui/alert/index.js';
   import RefreshCw from '@lucide/svelte/icons/refresh-cw';
   import Unplug from '@lucide/svelte/icons/unplug';
   import Loader from '@lucide/svelte/icons/loader-circle';
@@ -33,7 +30,7 @@
   function measure() {
     if (!host) return;
     const top = host.getBoundingClientRect().top + window.scrollY;
-    height = Math.max(320, window.innerHeight - top - 64);
+    height = Math.max(320, window.innerHeight - top - 48);
   }
 
   function sendResize() {
@@ -99,32 +96,38 @@
   });
 </script>
 
-<div class="mx-auto grid max-w-7xl gap-4">
-  <div class="flex flex-wrap items-end justify-between gap-3">
+<div class="page">
+  <header class="page-head">
     <div>
-      <h1 class="text-2xl font-semibold tracking-tight">Console</h1>
-      <p class="text-sm text-muted-foreground">Root shell on this server.</p>
+      <h1 class="t-large">Console</h1>
+      <p class="t-sub">Root shell on this server.</p>
     </div>
-    <div class="flex items-center gap-2">
+    <div class="actions">
       {#if status === 'connected'}
-        <Badge variant="outline" class="gap-1.5"><span class="size-2 rounded-full bg-ok"></span>Connected</Badge>
+        <span class="pill"><span class="dot ok"></span>Connected</span>
       {:else if status === 'connecting'}
-        <Badge variant="outline" class="gap-1.5 text-muted-foreground"><Loader class="size-3 animate-spin" />Connecting</Badge>
+        <span class="pill"><Loader size={13} class="spinner" />Connecting</span>
       {:else}
-        <Badge variant="outline" class="gap-1.5"><Unplug class="size-3 text-error" />Disconnected</Badge>
-        <Button size="sm" onclick={connect}><RefreshCw />Reconnect</Button>
+        <span class="pill"><span class="dot error"></span>Disconnected</span>
+        <button class="btn btn-tinted btn-sm" onclick={connect}><RefreshCw size={15} />Reconnect</button>
       {/if}
     </div>
-  </div>
+  </header>
 
   {#if status === 'closed'}
-    <Alert.Root>
-      <Unplug />
-      <Alert.Description>{closedReason}</Alert.Description>
-    </Alert.Root>
+    <div class="notice neutral"><Unplug size={18} /><span>{closedReason}</span></div>
   {/if}
 
-  <div class="overflow-hidden rounded-xl border bg-card p-3 shadow-xs">
+  <div class="term tile">
     <div bind:this={host} style:height="{height}px"></div>
   </div>
 </div>
+
+<style>
+  .page { max-width: 72rem; margin: 0 auto; display: grid; gap: 1.25rem; }
+  .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; padding-top: 0.5rem; }
+  h1, p { margin: 0; }
+  .page-head p { margin-top: 0.375rem; }
+  .actions { display: flex; align-items: center; gap: 0.5rem; }
+  .term { padding: 0.875rem 0.5rem 0.5rem 1rem; background: var(--term-bg); overflow: hidden; }
+</style>

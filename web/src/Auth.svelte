@@ -1,11 +1,6 @@
 <script>
   import { api } from '$lib/api.js';
   import Logo from '$lib/Logo.svelte';
-  import { Button } from '$lib/components/ui/button/index.js';
-  import * as Card from '$lib/components/ui/card/index.js';
-  import { Input } from '$lib/components/ui/input/index.js';
-  import { Label } from '$lib/components/ui/label/index.js';
-  import * as Alert from '$lib/components/ui/alert/index.js';
   import CircleAlert from '@lucide/svelte/icons/circle-alert';
   import Loader from '@lucide/svelte/icons/loader-circle';
 
@@ -18,12 +13,13 @@
   let password2 = $state('');
   let busy = $state(false);
   let error = $state('');
+  let shake = $state(0);
 
   async function submit(e) {
     e.preventDefault();
     error = '';
     if (mode === 'setup' && password !== password2) {
-      error = 'The two passwords do not match.';
+      fail('The two passwords do not match.');
       return;
     }
     busy = true;
@@ -32,68 +28,104 @@
       : await api('/api/login', { method: 'POST', body: { username, password } });
     busy = false;
     if (!res.ok) {
-      error = res.error;
+      fail(res.error);
       return;
     }
     password = password2 = '';
     onDone();
   }
+
+  function fail(msg) {
+    error = msg;
+    shake++;
+  }
 </script>
 
-<div class="flex min-h-svh items-center justify-center p-4">
-  <div class="w-full max-w-sm">
-    <div class="mb-8 flex items-center justify-center gap-2.5 text-foreground">
-      <Logo size={36} />
-      <span class="text-xl font-semibold tracking-tight">NexoVirt Box</span>
+<div class="auth">
+  <div class="panel">
+    <div class="head">
+      <Logo size={56} />
+      <h1 class="t-large">{mode === 'setup' ? 'Set up your Box' : 'Sign in'}</h1>
+      <p class="t-sub">
+        {mode === 'setup'
+          ? 'Create the admin account for this server.'
+          : 'Welcome back to NexoVirt Box.'}
+      </p>
     </div>
-    <Card.Root>
-      <Card.Header>
-        <Card.Title class="text-lg">{mode === 'setup' ? 'Set up this Box' : 'Sign in'}</Card.Title>
-        <Card.Description>
-          {mode === 'setup'
-            ? 'Create the admin account. You need the setup code that was shown after the install.'
-            : 'Welcome back. Sign in to manage this server.'}
-        </Card.Description>
-      </Card.Header>
-      <Card.Content>
-        {#if error}
-          <Alert.Root variant="destructive" class="mb-5">
-            <CircleAlert />
-            <Alert.Description>{error}</Alert.Description>
-          </Alert.Root>
+
+    <form onsubmit={submit} autocomplete="on">
+      {#if error}
+        {#key shake}
+          <div class="notice shake" role="alert"><CircleAlert size={18} /><span>{error}</span></div>
+        {/key}
+      {/if}
+
+      {#if mode === 'setup'}
+        <div class="group fields">
+          <label class="row">
+            <span class="row-label">Setup code</span>
+            <input class="mono" bind:value={token} required autocomplete="off" spellcheck="false" placeholder="from the install" />
+          </label>
+        </div>
+        <p class="hint t-caption">Missed it? Run <code class="mono">cat /var/lib/nexovirt-box/setup-token</code> on the server.</p>
+      {/if}
+
+      <div class="group fields">
+        <label class="row">
+          <span class="row-label">Username</span>
+          <input bind:value={username} required autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="admin" />
+        </label>
+        <label class="row">
+          <span class="row-label">Password</span>
+          <input type="password" bind:value={password} required minlength={mode === 'setup' ? 10 : undefined}
+            autocomplete={mode === 'setup' ? 'new-password' : 'current-password'} placeholder={mode === 'setup' ? '10 characters or more' : 'Required'} />
+        </label>
+        {#if mode === 'setup'}
+          <label class="row">
+            <span class="row-label">Repeat</span>
+            <input type="password" bind:value={password2} required minlength={10} autocomplete="new-password" placeholder="Same password again" />
+          </label>
         {/if}
-        <form onsubmit={submit} autocomplete="on" class="grid gap-5">
-          {#if mode === 'setup'}
-            <div class="grid gap-2">
-              <Label for="token">Setup code</Label>
-              <Input id="token" class="font-mono" bind:value={token} required autocomplete="off" spellcheck="false" />
-              <p class="text-xs text-muted-foreground">
-                Missed it? Run <code class="rounded bg-muted px-1 py-0.5 font-mono">cat /var/lib/nexovirt-box/setup-token</code> on the server.
-              </p>
-            </div>
-          {/if}
-          <div class="grid gap-2">
-            <Label for="username">Username</Label>
-            <Input id="username" bind:value={username} required autocomplete="username" autocapitalize="none" spellcheck="false" />
-          </div>
-          <div class="grid gap-2">
-            <Label for="password">Password</Label>
-            <Input id="password" type="password" bind:value={password} required
-              minlength={mode === 'setup' ? 10 : undefined} autocomplete={mode === 'setup' ? 'new-password' : 'current-password'} />
-            {#if mode === 'setup'}<p class="text-xs text-muted-foreground">At least 10 characters.</p>{/if}
-          </div>
-          {#if mode === 'setup'}
-            <div class="grid gap-2">
-              <Label for="password2">Repeat password</Label>
-              <Input id="password2" type="password" bind:value={password2} required minlength={10} autocomplete="new-password" />
-            </div>
-          {/if}
-          <Button type="submit" class="w-full" disabled={busy}>
-            {#if busy}<Loader class="animate-spin" />{/if}
-            {mode === 'setup' ? 'Create account' : 'Sign in'}
-          </Button>
-        </form>
-      </Card.Content>
-    </Card.Root>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block" disabled={busy}>
+        {#if busy}<Loader size={17} class="spinner" />{/if}
+        {busy ? (mode === 'setup' ? 'Creating account' : 'Signing in') : mode === 'setup' ? 'Create account' : 'Sign in'}
+      </button>
+    </form>
   </div>
+  <p class="foot t-caption">NexoVirt Box, open source under AGPL-3.0</p>
 </div>
+
+<style>
+  .auth {
+    min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 2rem 1rem;
+  }
+  .panel { width: min(24rem, 100%); display: grid; gap: 2rem; }
+  .head { display: grid; justify-items: center; text-align: center; gap: 0.5rem; }
+  .head :global(svg) { margin-bottom: 0.75rem; }
+  h1 { margin: 0; }
+  p { margin: 0; }
+  form { display: grid; gap: 1rem; }
+  .fields .row { cursor: text; }
+  .fields .row-label { width: 6.25rem; flex-shrink: 0; color: var(--text); font-weight: 500; }
+  input {
+    flex: 1; min-width: 0; height: 1.75rem; border: 0; padding: 0; background: none; outline: none;
+  }
+  input::placeholder { color: var(--text-3); }
+  .row:focus-within { background: var(--accent-fill); }
+  .row:focus-within .row-label { color: var(--accent); }
+  .hint { margin: -0.5rem 1.125rem 0; }
+  .hint code { font-size: 0.75rem; }
+  .btn { margin-top: 0.5rem; min-height: 3rem; font-size: 0.9375rem; }
+  .foot { margin-top: 2.5rem; color: var(--text-3); }
+  .shake { animation: shake 420ms var(--spring-bounce); }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-6px); }
+    40% { transform: translateX(5px); }
+    60% { transform: translateX(-3px); }
+    80% { transform: translateX(2px); }
+  }
+</style>
