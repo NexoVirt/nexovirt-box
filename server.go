@@ -12,7 +12,9 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -29,6 +31,7 @@ type App struct {
 	consoles  *consoleRegistry
 	catalog   *catalogStore
 	jobs      *jobs
+	proofs    sync.Map // session hash -> console proof issued by the helper
 }
 
 type route struct {
@@ -354,11 +357,14 @@ func (a *App) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.store.audit(c.Username, a.clientIP(r), "login.ok", "")
-	if err := a.startSession(w, id); err != nil {
+	t, err := a.store.newSession(id)
+	if err != nil {
 		log.Printf("login session: %v", err)
 		writeError(w, http.StatusInternalServerError, "You could not be signed in. Check the service log.")
 		return
 	}
+	a.setCookie(w, t, int(sessionTTL.Seconds()))
+	a.refreshProof(r, t, c.Password, "") // a fresh sign-in opens the console for a few minutes
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
 }
 
@@ -368,38 +374,74 @@ func (a *App) logout(w http.ResponseWriter, r *http.Request) {
 			a.audit(r, "logout", "")
 		}
 		a.consoles.closeAll(hashToken(t)) // an open console ends with the session
+		a.proofs.Delete(hashToken(t))
 		a.store.deleteSession(t)
 	}
 	a.setCookie(w, "", -1)
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
 }
 
-// reauthWindow is how long a password proof opens the console without asking again.
-const reauthWindow = 5 * time.Minute
-
 func (a *App) reauth(w http.ResponseWriter, r *http.Request) {
 	if !a.limiter.allow("reauth:" + a.clientIP(r)) {
 		writeError(w, http.StatusTooManyRequests, "Too many attempts. Wait a minute and try again.")
 		return
 	}
-	c, err := readCredentials(r)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+	var c struct {
+		Password string `json:"password"`
+		Code     string `json:"code"`
+	}
+	r.Body = http.MaxBytesReader(nil, r.Body, 4096)
+	if json.NewDecoder(r.Body).Decode(&c) != nil {
+		writeError(w, http.StatusBadRequest, "The request could not be read.")
 		return
 	}
-	id, _ := a.currentUser(r)
-	if _, ok := a.store.checkLogin(a.store.username(id), c.Password); !ok {
+	if err := a.refreshProof(r, sessionToken(r), c.Password, c.Code); err != nil {
 		a.audit(r, "reauth.failed", "")
-		writeError(w, http.StatusUnauthorized, "The password is wrong.")
+		var ue userError
+		if errors.As(err, &ue) {
+			writeError(w, http.StatusUnauthorized, ue.msg)
+			return
+		}
+		writeError(w, http.StatusBadGateway, "The password could not be checked. Check the helper service.")
 		return
 	}
-	a.store.markReauth(sessionToken(r))
 	a.audit(r, "reauth.ok", "")
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
 }
 
+// refreshProof asks the helper to check the password (and 2FA code) and keeps the proof it
+// returns for this session. On failure the session has no proof.
+func (a *App) refreshProof(r *http.Request, token, password, code string) error {
+	sess := hashToken(token)
+	a.proofs.Delete(sess)
+	raw, err := a.helper.call(r.Context(), helperRequest{Action: "console_proof", Session: sess, Password: password, Code: code}, nil)
+	if err != nil {
+		return err
+	}
+	var out struct{ Proof string }
+	if json.Unmarshal(raw, &out) != nil || out.Proof == "" {
+		return errors.New("empty proof")
+	}
+	a.proofs.Store(sess, out.Proof)
+	return nil
+}
+
+// consoleProof returns the session's proof while it is valid.
+func (a *App) consoleProof(token string) string {
+	v, ok := a.proofs.Load(hashToken(token))
+	if !ok {
+		return ""
+	}
+	p := v.(string)
+	exp, _, _ := strings.Cut(p, ".")
+	if n, err := strconv.ParseInt(exp, 10, 64); err != nil || time.Now().Unix() >= n {
+		return ""
+	}
+	return p
+}
+
 func (a *App) consoleReady(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]bool{"fresh": a.store.sessionFresh(sessionToken(r), reauthWindow)})
+	writeJSON(w, http.StatusOK, map[string]bool{"fresh": a.consoleProof(sessionToken(r)) != ""})
 }
 
 func (a *App) activity(w http.ResponseWriter, r *http.Request) {

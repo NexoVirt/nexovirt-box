@@ -101,7 +101,7 @@ func runHelper(args []string) {
 	if err := os.MkdirAll(filepath.Dir(*socket), 0o755); err != nil {
 		log.Fatalf("helper: socket directory: %v", err)
 	}
-	h := &helperServer{allowUID: uid, appsDir: *apps, webState: *webState}
+	h := &helperServer{allowUID: uid, appsDir: *apps, webState: *webState, proofs: newProofKeeper()}
 	ln, err := h.listen(*socket, gid)
 	if err != nil {
 		log.Fatalf("helper: %v", err)

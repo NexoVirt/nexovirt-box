@@ -52,9 +52,15 @@ func openStore(path string) (*Store, error) {
 			action TEXT NOT NULL,
 			detail TEXT NOT NULL
 		);`)
-	if err == nil {
-		// Added after 0.1: when the session last proved the password (sign-in or re-entry).
-		if _, e := db.Exec(`ALTER TABLE sessions ADD COLUMN reauth_at INTEGER NOT NULL DEFAULT 0`); e != nil && !strings.Contains(e.Error(), "duplicate column") {
+	// Columns added after 0.1 (ALTER is a no-op when the column exists).
+	for _, alter := range []string{
+		`ALTER TABLE sessions ADD COLUMN reauth_at INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE users ADD COLUMN totp_secret TEXT`,
+	} {
+		if err != nil {
+			break
+		}
+		if _, e := db.Exec(alter); e != nil && !strings.Contains(e.Error(), "duplicate column") {
 			err = e
 		}
 	}
@@ -144,21 +150,6 @@ func (s *Store) sessionUser(token string) (int64, bool) {
 
 func (s *Store) deleteSession(token string) {
 	s.db.Exec(`DELETE FROM sessions WHERE token_hash = ?`, hashToken(token))
-}
-
-func (s *Store) markReauth(token string) {
-	s.db.Exec(`UPDATE sessions SET reauth_at = ? WHERE token_hash = ?`, time.Now().Unix(), hashToken(token))
-}
-
-// sessionFresh reports whether the session proved the password within the window.
-func (s *Store) sessionFresh(token string, within time.Duration) bool {
-	if token == "" {
-		return false
-	}
-	var at int64
-	err := s.db.QueryRow(`SELECT reauth_at FROM sessions WHERE token_hash = ? AND expires_at > ?`,
-		hashToken(token), time.Now().Unix()).Scan(&at)
-	return err == nil && time.Since(time.Unix(at, 0)) < within
 }
 
 // attempt records one try for key and reports whether it is within max per window.

@@ -40,6 +40,10 @@ type helperRequest struct {
 	Ports      map[string]int    `json:"ports,omitempty"`
 	DeleteData bool              `json:"delete_data,omitempty"`
 	Tail       int               `json:"tail,omitempty"`
+	Password   string            `json:"password,omitempty"`
+	Code       string            `json:"code,omitempty"`
+	Session    string            `json:"session,omitempty"` // sha256 of the session cookie
+	Proof      string            `json:"proof,omitempty"`
 }
 
 type helperMsg struct {
@@ -60,7 +64,8 @@ func uerr(format string, a ...any) error { return userError{fmt.Sprintf(format, 
 type helperServer struct {
 	allowUID int    // uid of the web user (root is always allowed)
 	appsDir  string // root-owned app directories
-	webState string // web state dir (holds a synced catalog, verified again here)
+	webState string // web state dir (database, synced catalog; read only here)
+	proofs   *proofKeeper
 	mu       sync.Mutex
 	appLocks map[string]*sync.Mutex
 }
@@ -147,6 +152,7 @@ type helperAction func(req helperRequest, logf func(string)) (any, error)
 // actions is the complete allowlist (plus "console", handled separately).
 func (h *helperServer) actions() map[string]helperAction {
 	return map[string]helperAction{
+		"console_proof":  h.consoleProof,
 		"docker_info":    h.dockerInfo,
 		"docker_install": h.dockerInstall,
 		"apps_status":    h.appsStatus,
@@ -166,6 +172,10 @@ func writeMsg(c net.Conn, m helperMsg) error {
 // console starts a root login shell in a pty and hands the pty master to the web process.
 // The shell ends when the web process closes the connection (or the shell exits).
 func (h *helperServer) console(c *net.UnixConn, req helperRequest) {
+	if !h.consoleAllowed(req) {
+		writeMsg(c, helperMsg{Type: "result", Error: errProof.msg})
+		return
+	}
 	shell, home, name := loginShell()
 	cmd := exec.Command(shell, "-l")
 	cmd.Dir = home
@@ -265,12 +275,12 @@ func writeReq(c net.Conn, req helperRequest) error {
 
 // console asks for a root shell and returns the pty master plus the connection that keeps the
 // shell alive (close both to end it).
-func (hc *helperClient) console(cols, rows uint16) (*os.File, *net.UnixConn, error) {
+func (hc *helperClient) console(session, proof string, cols, rows uint16) (*os.File, *net.UnixConn, error) {
 	c, err := hc.dial()
 	if err != nil {
 		return nil, nil, err
 	}
-	if err := writeReq(c, helperRequest{Action: "console", Cols: cols, Rows: rows}); err != nil {
+	if err := writeReq(c, helperRequest{Action: "console", Session: session, Proof: proof, Cols: cols, Rows: rows}); err != nil {
 		c.Close()
 		return nil, nil, errHelperDown
 	}

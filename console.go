@@ -22,11 +22,17 @@ import (
 // from the last few minutes, and it closes when the session signs out.
 func (a *App) console(w http.ResponseWriter, r *http.Request) {
 	token := sessionToken(r)
-	if !a.store.sessionFresh(token, reauthWindow) {
-		writeJSON(w, http.StatusForbidden, map[string]any{"error": "Enter your password to open the console.", "reauth": true})
+	proof := a.consoleProof(token)
+	if proof == "" {
+		writeJSON(w, http.StatusForbidden, map[string]any{"error": errProof.msg, "reauth": true})
 		return
 	}
-	tty, hconn, herr := a.helper.console(uint16(atoiOr(r.URL.Query().Get("cols"), 80)), uint16(atoiOr(r.URL.Query().Get("rows"), 24)))
+	tty, hconn, herr := a.helper.console(hashToken(token), proof, uint16(atoiOr(r.URL.Query().Get("cols"), 80)), uint16(atoiOr(r.URL.Query().Get("rows"), 24)))
+	if herr != nil && herr.Error() == errProof.msg {
+		a.proofs.Delete(hashToken(token)) // the helper restarted or the proof is stale
+		writeJSON(w, http.StatusForbidden, map[string]any{"error": errProof.msg, "reauth": true})
+		return
+	}
 
 	// Accept checks the Origin header against the Host by default, so other sites cannot
 	// open a console with the visitor's cookie.

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"net"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -120,7 +122,7 @@ func TestConsoleNeedsRecentPassword(t *testing.T) {
 		t.Fatal("a fresh sign-in should count as a recent password")
 	}
 	// Age the proof past the window.
-	app.store.db.Exec(`UPDATE sessions SET reauth_at = ?`, time.Now().Add(-6*time.Minute).Unix())
+	app.proofs.Store(hashToken(sess), strconv.FormatInt(time.Now().Add(-time.Minute).Unix(), 10)+".00")
 	json.Unmarshal(get(h, "/api/console/ready", sess).Body.Bytes(), &ready)
 	if ready["fresh"] {
 		t.Fatal("an old proof must not open the console")
@@ -165,13 +167,13 @@ func TestLogoutClosesConsoles(t *testing.T) {
 }
 
 // startTestHelper runs the root helper on a temp socket, allowing the current user.
-func startTestHelper(t *testing.T) string {
+func startTestHelper(t *testing.T, webState string) string {
 	t.Helper()
 	sock := filepath.Join(t.TempDir(), "h.sock")
 	if len(sock) > 100 {
 		sock = filepath.Join(os.TempDir(), "nxh-"+randomToken()[:8]+".sock")
 	}
-	hs := &helperServer{allowUID: os.Getuid(), appsDir: t.TempDir()}
+	hs := &helperServer{allowUID: os.Getuid(), appsDir: t.TempDir(), webState: webState, proofs: newProofKeeper()}
 	ln, err := hs.listen(sock, -1)
 	if err != nil {
 		t.Fatal(err)
@@ -182,7 +184,7 @@ func startTestHelper(t *testing.T) string {
 }
 
 func TestHelperRefusesUnknownAction(t *testing.T) {
-	sock := startTestHelper(t)
+	sock := startTestHelper(t, t.TempDir())
 	c, err := net.Dial("unix", sock)
 	if err != nil {
 		t.Fatal(err)
@@ -203,9 +205,9 @@ func TestHelperRefusesOtherUsers(t *testing.T) {
 }
 
 func TestHelperConsolePassesTerminal(t *testing.T) {
-	sock := startTestHelper(t)
-	hc := &helperClient{socket: sock}
-	tty, conn, err := hc.console(80, 24)
+	app, h, token := newTestApp(t)
+	sess := setupAndLogin(t, h, token)
+	tty, conn, err := app.helper.console(hashToken(sess), app.consoleProof(sess), 80, 24)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -222,5 +224,58 @@ func TestHelperConsolePassesTerminal(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), "NXOK_42") {
 		t.Fatalf("no shell output: %q", out.String())
+	}
+}
+
+// The helper itself refuses a console without a valid proof bound to a live session, so a
+// compromised web process cannot open one on its own.
+func TestHelperEnforcesConsoleProof(t *testing.T) {
+	app, h, token := newTestApp(t)
+	sess := setupAndLogin(t, h, token)
+	proof := app.consoleProof(sess)
+	if proof == "" {
+		t.Fatal("sign-in did not get a console proof from the helper")
+	}
+	sh := hashToken(sess)
+	exp, _, _ := strings.Cut(proof, ".")
+	for name, tc := range map[string][2]string{
+		"no proof":       {sh, ""},
+		"forged mac":     {sh, exp + ".deadbeef"},
+		"other session":  {hashToken("someone-else"), proof},
+		"extended clock": {sh, strconv.FormatInt(time.Now().Add(time.Hour).Unix(), 10) + proof[len(exp):]},
+	} {
+		if tty, c, err := app.helper.console(tc[0], tc[1], 80, 24); err == nil {
+			tty.Close()
+			c.Close()
+			t.Fatalf("%s: console opened", name)
+		}
+	}
+	// A valid proof stops working once the session is gone.
+	post(h, "/api/logout", "", sess)
+	if tty, c, err := app.helper.console(sh, proof, 80, 24); err == nil {
+		tty.Close()
+		c.Close()
+		t.Fatal("console opened for a signed-out session")
+	}
+}
+
+func TestHelperProofNeedsRightPassword(t *testing.T) {
+	app, h, token := newTestApp(t)
+	sess := setupAndLogin(t, h, token)
+	_, err := app.helper.call(context.Background(), helperRequest{Action: "console_proof", Session: hashToken(sess), Password: "wrong-password"}, nil)
+	if err == nil || !strings.Contains(err.Error(), "wrong") {
+		t.Fatalf("wrong password accepted: %v", err)
+	}
+}
+
+func TestTOTP(t *testing.T) {
+	// RFC 6238 test vector (SHA-1, secret "12345678901234567890").
+	secret := b32.EncodeToString([]byte("12345678901234567890"))
+	if got := totpCode(secret, 59/30); got != "287082" {
+		t.Fatalf("totp vector: %s", got)
+	}
+	now := time.Unix(59, 0)
+	if !totpValid(secret, "287082", now) || totpValid(secret, "287083", now) || totpValid(secret, "", now) {
+		t.Fatal("totp check wrong")
 	}
 }
