@@ -29,5 +29,8 @@
    "required": true
   }
  ],
- "compose": "services:\n  jellyfin:\n    image: lscr.io/linuxserver/jellyfin:version-12.2ubu2604\n    container_name: jellyfin\n    volumes:\n      - ${APP_DATA_DIR}/data/config:/config\n      - ${ROOT_FOLDER_HOST}/media/data:/media/data\n    environment:\n      - PUID=1000\n      - PGID=1000\n      - TZ=${TZ}\n      - JELLYFIN_PublishedServerUrl=${APP_PROTOCOL:-http}://${APP_DOMAIN}/\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:8096\n"
+ "compose": "services:\n  jellyfin:\n    image: lscr.io/linuxserver/jellyfin:version-12.2ubu2604\n    container_name: jellyfin\n    volumes:\n      - ${APP_DATA_DIR}/data/config:/config\n      - ${ROOT_FOLDER_HOST}/media/data:/media/data\n    environment:\n      - PUID=1000\n      - PGID=1000\n      - TZ=${TZ}\n      - JELLYFIN_PublishedServerUrl=${APP_PROTOCOL:-http}://${APP_DOMAIN}/\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:8096\n",
+ "first_login": {
+  "note": "The first time you open Jellyfin a setup wizard asks you to create the admin account and add media libraries. Your media goes into the shared folder media/data on this server, which Jellyfin sees as /media/data."
+ }
 }

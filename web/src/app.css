@@ -237,5 +237,5 @@ select.input option { background: var(--surface); color: var(--text); }
 .page-head.compact { padding-top: 0; }
 .group-head { padding: 1rem 1.125rem 0.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .group-head h2 { margin: 0; }
-.ico { display: grid; place-items: center; width: 1.75rem; height: 1.75rem; border-radius: 0.5rem; background: var(--fill); color: var(--text-2); flex-shrink: 0; }
+.ico { display: grid; place-items: center; width: 1.75rem; height: 1.75rem; color: var(--text-2); flex-shrink: 0; }
 .row .grow { flex: 1; min-width: 0; display: grid; gap: 0.125rem; }

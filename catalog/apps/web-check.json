@@ -27,5 +27,6 @@
    "required": true
   }
  ],
- "compose": "services:\n  web-check:\n    image: lissy93/web-check:2.3.8@sha256:1cd3f9599dd54e6c08b545bd22435887251e75ba9408a888d9e736eb10360b17\n    container_name: web-check\n    restart: unless-stopped\n    ports:\n      - \"${APP_PORT}:3000\"\n    environment:\n      API_BLOCKED_HOSTS: \"localhost,local,metadata.google.internal,169.254.169.254,::1,0.0.0.0/8,10.0.0.0/8,100.64.0.0/10,127.0.0.0/8,169.254.0.0/16,172.16.0.0/12,192.168.0.0/16\"\n      API_ENABLE_RATE_LIMIT: \"true\"\n"
+ "compose": "services:\n  web-check:\n    image: lissy93/web-check:2.3.8@sha256:1cd3f9599dd54e6c08b545bd22435887251e75ba9408a888d9e736eb10360b17\n    container_name: web-check\n    restart: unless-stopped\n    ports:\n      - \"${APP_PORT}:3000\"\n    environment:\n      API_BLOCKED_HOSTS: \"localhost,local,metadata.google.internal,169.254.169.254,::1,0.0.0.0/8,10.0.0.0/8,100.64.0.0/10,127.0.0.0/8,169.254.0.0/16,172.16.0.0/12,192.168.0.0/16\"\n      API_ENABLE_RATE_LIMIT: \"true\"\n",
+ "notes": "Open the UI on host port 20003. The container listens on 3000. API_BLOCKED_HOSTS rejects private, loopback, and link-local targets, including the headers check. The image still follows redirects, so do not expose this port to untrusted clients. Optional API keys from the project .env.sample are not set."
 }

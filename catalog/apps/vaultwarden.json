@@ -37,5 +37,8 @@
    "max": 150
   }
  ],
- "compose": "services:\n  vaultwarden:\n    image: vaultwarden/server:1.37.4\n    container_name: vaultwarden\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:80\n    environment:\n      - WEBSOCKET_ENABLED=true\n      - ADMIN_TOKEN=${VAULTWARDEN_ADMIN_PASSWORD}\n    volumes:\n      - ${APP_DATA_DIR}/data:/data\n"
+ "compose": "services:\n  vaultwarden:\n    image: vaultwarden/server:1.37.4\n    container_name: vaultwarden\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:80\n    environment:\n      - WEBSOCKET_ENABLED=true\n      - ADMIN_TOKEN=${VAULTWARDEN_ADMIN_PASSWORD}\n    volumes:\n      - ${APP_DATA_DIR}/data:/data\n",
+ "first_login": {
+  "note": "Create your own account on the start page with Create account. The admin page is at /admin; sign in there with the admin token, which is the Vaultwarden admin password shown here."
+ }
 }

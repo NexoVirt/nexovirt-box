@@ -41,5 +41,9 @@
    "generate": true
   }
  ],
- "compose": "services:\n  openlist:\n    image: openlistteam/openlist:v4.2.2\n    container_name: openlist\n    deploy:\n      resources:\n        reservations:\n          memory: 256M\n    network_mode: bridge\n    restart: unless-stopped\n    user: \"999:1000\"\n    ports:\n      - target: 5244\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/data\n        target: /opt/openlist/data\n    environment:\n      UMASK: \"022\"\n      OPENLIST_ADMIN_PASSWORD: ${SECRET_OPENLIST_ADMIN_PASSWORD}\n"
+ "compose": "services:\n  openlist:\n    image: openlistteam/openlist:v4.2.2\n    container_name: openlist\n    deploy:\n      resources:\n        reservations:\n          memory: 256M\n    network_mode: bridge\n    restart: unless-stopped\n    user: \"999:1000\"\n    ports:\n      - target: 5244\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/data\n        target: /opt/openlist/data\n    environment:\n      UMASK: \"022\"\n      OPENLIST_ADMIN_PASSWORD: ${SECRET_OPENLIST_ADMIN_PASSWORD}\n",
+ "first_login": {
+  "username": "admin",
+  "password_from_env": "SECRET_OPENLIST_ADMIN_PASSWORD"
+ }
 }

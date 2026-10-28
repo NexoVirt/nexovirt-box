@@ -33,5 +33,6 @@
    "required": true
   }
  ],
- "compose": "services:\n  hugo:\n    image: ghcr.io/gohugoio/hugo:v0.161.1\n    container_name: hugo\n    deploy:\n      resources:\n        reservations:\n          memory: 256M\n    restart: unless-stopped\n    user: \"0:0\"\n    ports:\n      - target: 1313\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/project\n        target: /project\n      - type: bind\n        source: ${APP_DATA_DIR}/cache\n        target: /cache\n    command: [\"server\", \"--bind=0.0.0.0\"]\n"
+ "compose": "services:\n  hugo:\n    image: ghcr.io/gohugoio/hugo:v0.161.1\n    container_name: hugo\n    deploy:\n      resources:\n        reservations:\n          memory: 256M\n    restart: unless-stopped\n    user: \"0:0\"\n    ports:\n      - target: 1313\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/project\n        target: /project\n      - type: bind\n        source: ${APP_DATA_DIR}/cache\n        target: /cache\n    command: [\"server\", \"--bind=0.0.0.0\"]\n",
+ "notes": "We recommend reviewing the [Quick Start](https://gohugo.io/getting-started/quick-start/) documentation to learn how to use Hugo."
 }

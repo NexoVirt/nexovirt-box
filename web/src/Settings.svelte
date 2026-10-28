@@ -700,8 +700,8 @@
   .tab:hover { background: var(--fill); }
   .tab:active { transform: scale(0.98); }
   .tab.on { background: var(--accent); color: var(--on-accent); }
-  .tab-ico { display: grid; place-items: center; width: 1.75rem; height: 1.75rem; border-radius: 0.5rem; background: var(--fill); color: var(--text-2); }
-  .tab.on .tab-ico { background: rgba(255, 255, 255, 0.22); color: inherit; }
+  .tab-ico { display: grid; place-items: center; width: 1.75rem; height: 1.75rem; color: var(--text-2); }
+  .tab.on .tab-ico { color: inherit; }
   .pane { display: grid; gap: 0.75rem; min-width: 0; animation: fade 220ms ease; }
   @keyframes fade { from { opacity: 0; transform: translateY(4px); } }
   .pane-title { margin: 0 0 0.25rem; }

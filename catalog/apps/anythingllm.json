@@ -30,5 +30,6 @@
    "required": true
   }
  ],
- "compose": "services:\n  anythingllm:\n    image: mintplexlabs/anythingllm\n    container_name: anythingllm\n    ports:\n      - target: 3001\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    cap_add:\n      - SYS_ADMIN\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/storage\n        target: /app/server/storage\n    environment:\n      - STORAGE_DIR=/app/server/storage\n    restart: always\n    extra_hosts:\n      - \"host.docker.internal:host-gateway\"\n"
+ "compose": "services:\n  anythingllm:\n    image: mintplexlabs/anythingllm\n    container_name: anythingllm\n    ports:\n      - target: 3001\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    cap_add:\n      - SYS_ADMIN\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/storage\n        target: /app/server/storage\n    environment:\n      - STORAGE_DIR=/app/server/storage\n    restart: always\n    extra_hosts:\n      - \"host.docker.internal:host-gateway\"\n",
+ "notes": "**Usage Tips**\nAnythingLLM supports but does not directly provide various LLMs backends, you need to configure the backends you need yourself.\nPlease refer to the [official documentation](https://docs.anythingllm.com) for more information."
 }

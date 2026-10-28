@@ -19,5 +19,6 @@
  "main_port": 0,
  "scheme": "http",
  "questions": [],
- "compose": "services:\n  playit-agent:\n    restart: unless-stopped\n    image: ghcr.io/mafen/playit-docker:latest\n    network_mode: bridge\n    container_name: playit-agent\n"
+ "compose": "services:\n  playit-agent:\n    restart: unless-stopped\n    image: ghcr.io/mafen/playit-docker:latest\n    network_mode: bridge\n    container_name: playit-agent\n",
+ "notes": "This is the agent for use with playit.gg's reverse proxy. After having installed the container/app, you have to go to the settings of the container/app and go to the logs. The logs will tell you to click a link to activate the agent. Copy the link (you will have to do it manually with your cursor) and paste it in your web browser in a new tab. This will open a page asking you to login or register. If you have an account already then you can login. If not, register an account. Once you're logged in, it will ask to allow the agent. Allow the agent and remember the agent name. Then head over to https://playit.gg/account/agents. From there you need to select the correct agent, according to the agent name you just were to remember. From there you can add tunnels. Choose the options for the tunnel as you need, and a port in case of doing it manually with TCP, UDP and TCP+UDP. After that use the provided domain and port to connect to the tunnel and use that to get access to your tunneled service!"
 }

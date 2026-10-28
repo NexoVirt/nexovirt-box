@@ -59,7 +59,11 @@
     opacity: 0; transform: scale(0.9); filter: blur(6px);
     transition: transform var(--spring-t) var(--spring), opacity 200ms ease, filter 240ms ease;
     overscroll-behavior: contain;
+    /* Never scroll sideways: long words and URLs wrap, wide blocks (logs, code) scroll inside. */
+    overflow-x: hidden; overflow-wrap: anywhere;
   }
+  .panel :global(:where(img, video, svg)) { max-width: 100%; }
+  .panel :global(:where(pre)) { max-width: 100%; overflow-x: auto; overflow-wrap: normal; }
   .panel.wide { width: min(46rem, 100%); }
   .wrap.open .panel { opacity: 1; transform: none; filter: none; }
   @starting-style { .wrap.open .panel { opacity: 0; transform: scale(0.9); filter: blur(6px); } .scrim.open { opacity: 0; } }

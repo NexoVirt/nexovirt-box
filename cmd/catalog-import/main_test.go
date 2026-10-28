@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"strings"
 	"testing"
 
@@ -75,5 +76,56 @@ func TestMainImageIgnoresRegistryTagAndHelpers(t *testing.T) {
 	}
 	if mainImage("services:\n  a:\n    image: adguard/adguardhome:latest\n") != mainImage("services:\n  b:\n    image: docker.io/adguard/adguardhome\n") {
 		t.Fatal("same image did not match")
+	}
+}
+
+func TestCasaTipBecomesNotes(t *testing.T) {
+	dir := t.TempDir() + "/Alist"
+	os.MkdirAll(dir, 0o755)
+	os.WriteFile(dir+"/docker-compose.yml", []byte(`
+services:
+  alist:
+    image: xhofe/alist:v3.40.0
+    ports: ["5244:5244"]
+x-casaos:
+  main: alist
+  port_map: "5244"
+  title: {en_us: Alist}
+  tips:
+    before_install:
+      en_us: After installation, please check the initial password in the container log (Settings - TopRight - Terminal and Logs - Logs).
+      zh_CN: x
+`), 0o644)
+	a, err := importCasa(dir, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if a.Notes != "After installation, please check the initial password in the container log (My Apps, Logs)." {
+		t.Fatalf("notes %q", a.Notes)
+	}
+	a.ID = "alist"
+	applyFirstLogin(a)
+	if a.FirstLogin == nil || a.FirstLogin.Username != "admin" {
+		t.Fatalf("first login %+v", a.FirstLogin)
+	}
+	if _, err := a.FirstLogin.LogRegexp(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestOddTipsShapeDoesNotDropApp(t *testing.T) {
+	dir := t.TempDir() + "/X"
+	os.MkdirAll(dir, 0o755)
+	os.WriteFile(dir+"/docker-compose.yml", []byte("services:\n  x:\n    image: x/x:1\nx-casaos:\n  main: x\n  title: {en_us: X}\n  tips: just a string\n"), 0o644)
+	if a, err := importCasa(dir, false); err != nil || a == nil || a.Notes != "" {
+		t.Fatalf("%v %+v", err, a)
+	}
+}
+
+func TestTipWithReplacedPasswordIsDropped(t *testing.T) {
+	a := &catalog.App{Summary: catalog.Summary{Name: "DB"}, Notes: "Default user: `casaos` Default password: `casaos`"}
+	processCompose(a, []byte("services:\n  db:\n    image: mariadb\n    environment:\n      MYSQL_PASSWORD: casaos\n"), "casaos", 0, false)
+	if a.Notes != "" {
+		t.Fatalf("notes kept: %q", a.Notes)
 	}
 }

@@ -32,5 +32,6 @@
    "required": true
   }
  ],
- "compose": "services:\n  copyparty:\n    image: icewhaletech/copyparty:1.20.13\n    container_name: copyparty\n    ports:\n      - target: 3923\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    network_mode: bridge\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/w\n        target: /w\n      - type: bind\n        source: ${APP_DATA_DIR}/confg\n        target: /cfg\n    deploy:\n      resources:\n        reservations:\n          memory: 512m\n    stdin_open: true\n    tty: true\n    restart: unless-stopped\n"
+ "compose": "services:\n  copyparty:\n    image: icewhaletech/copyparty:1.20.13\n    container_name: copyparty\n    ports:\n      - target: 3923\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    network_mode: bridge\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/w\n        target: /w\n      - type: bind\n        source: ${APP_DATA_DIR}/confg\n        target: /cfg\n    deploy:\n      resources:\n        reservations:\n          memory: 512m\n    stdin_open: true\n    tty: true\n    restart: unless-stopped\n",
+ "notes": "## Default Account\n\n- Username: casaos\n- Password: casaos\n\n## Modify Username and Password\n\nTo modify the default username and password, you can configure it by mapping the `/cfg/` path and adding a `copyparty.conf` configuration file in that directory.\n\nFor specific configuration, please refer to: [example](https://github.com/9001/copyparty/blob/hovudstraum/docs/example.conf)"
 }

@@ -21,6 +21,8 @@ Each app is one JSON file (`catalog/apps/<id>.json`):
 | `compose` | the compose file, stored verbatim on install as `compose.yaml` |
 | `docker_socket` | true when the app mounts the Docker socket (shown as a warning: that is root access) |
 | `attribution` | store name, URL and license of the catalog the app came from |
+| `first_login` | how to sign in the first time when the app makes its own admin: `username`, `password_from_log_regex` (one capture group, matched against the first 1000 log lines), `password_from_env` (a variable of the app's `.env`), `note` |
+| `notes` | "Getting started" text (plain text, links are made clickable); imported from CasaOS/BigBear `tips.before_install` |
 
 Question types: `text`, `password`, `number`, `email`, `domain`, `boolean`, `select` (`options`), plus `port`.
 Fields: `key` (env variable), `label`, `hint`, `placeholder`, `default`, `required`, `min`, `max`,
@@ -34,6 +36,16 @@ Variables Box always provides: `APP_ID`, `APP_DATA_DIR` (`/var/lib/nexovirt-box/
 Passwords: every `password` question is generated (strong random) unless the admin sets one (with confirm);
 keys containing `SUDO` (a sudo password inside the container) are always generated. My Apps shows them under
 Login details (`GET /api/apps/{id}/credentials`, audited).
+
+First login: Login details (`GET /api/apps/{id}/credentials`, audited) returns `{items, note, notes}`. Without
+`first_login` the helper scans the first 1000 log lines for common patterns (initial/default/generated password,
+admin password, default credentials) and offers up to three values marked "From the logs". Curated `first_login`
+entries live in `cmd/catalog-import/firstlogin.go` (`knownFirstLogin`); `go run ./cmd/catalog-import -enrich -casaos
+<dir> -bigbear <dir>` refreshes `first_login` and `notes` in the existing catalog and re-signs it without a full
+re-import. A store tip that names a default password the importer replaced with a generated one is dropped.
+
+Logs: `GET /api/apps/{id}/logs?tail=&since=&service=` returns `{services, lines: [{s, t, m}]}` (per service, Docker
+timestamps, merged by time, tail up to 10000). The Logs page `/apps/<id>/logs` polls with `since`.
 
 Host folders: before install, retry, start and update the helper renders `docker compose config` and refuses binds
 (and local bind volumes) of Box's state outside the app's own folders, `/etc/nexovirt-box`, `/run/nexovirt-box`,
