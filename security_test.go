@@ -279,3 +279,19 @@ func TestTOTP(t *testing.T) {
 		t.Fatal("totp check wrong")
 	}
 }
+
+func TestOnlyFailedSignInsCount(t *testing.T) {
+	_, h, token := newTestApp(t)
+	setupAndLogin(t, h, token)
+	for i := 0; i < 8; i++ {
+		if rec := post(h, "/api/login", `{"username":"admin","password":"long-enough-pw"}`, ""); rec.Code != http.StatusOK {
+			t.Fatalf("sign-in %d: got %d", i, rec.Code)
+		}
+	}
+	for i := 0; i < 5; i++ {
+		post(h, "/api/login", `{"username":"admin","password":"wrong-password"}`, "")
+	}
+	if rec := post(h, "/api/login", `{"username":"admin","password":"long-enough-pw"}`, ""); rec.Code != http.StatusTooManyRequests {
+		t.Fatalf("after 5 failures: got %d", rec.Code)
+	}
+}

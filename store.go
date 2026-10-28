@@ -153,6 +153,18 @@ func (s *Store) deleteSession(token string) {
 	s.db.Exec(`DELETE FROM sessions WHERE token_hash = ?`, hashToken(token))
 }
 
+// attempts counts the tries for key within the window.
+func (s *Store) attempts(key string, window time.Duration) (int, error) {
+	var n int
+	err := s.db.QueryRow(`SELECT COUNT(*) FROM attempts WHERE key = ? AND at > ?`, key, time.Now().Add(-window).Unix()).Scan(&n)
+	return n, err
+}
+
+func (s *Store) recordAttempt(key string) error {
+	_, err := s.db.Exec(`INSERT INTO attempts (key, at) VALUES (?, ?)`, key, time.Now().Unix())
+	return err
+}
+
 // attempt records one try for key and reports whether it is within max per window.
 func (s *Store) attempt(key string, max int, window time.Duration) (bool, error) {
 	now := time.Now()

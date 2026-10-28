@@ -343,7 +343,8 @@ func (a *App) setup(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) login(w http.ResponseWriter, r *http.Request) {
-	if !a.limiter.allow("login:" + a.clientIP(r)) {
+	limitKey := "login:" + a.clientIP(r)
+	if a.limiter.blocked(limitKey) {
 		writeError(w, http.StatusTooManyRequests, "Too many sign-in attempts. Wait a minute and try again.")
 		return
 	}
@@ -354,6 +355,7 @@ func (a *App) login(w http.ResponseWriter, r *http.Request) {
 	}
 	id, ok := a.store.checkLogin(c.Username, c.Password)
 	if !ok {
+		a.limiter.fail(limitKey)
 		a.store.audit(c.Username, a.clientIP(r), "login.failed", "")
 		writeError(w, http.StatusUnauthorized, "The username or password is wrong.")
 		return
@@ -513,4 +515,21 @@ func (l *limiter) allow(key string) bool {
 		return false
 	}
 	return ok
+}
+
+// blocked reports whether key already used up its tries (fails closed on a database error).
+// Together with fail it counts only failed tries, so signing in often never locks anyone out.
+func (l *limiter) blocked(key string) bool {
+	n, err := l.store.attempts(key, l.window)
+	if err != nil {
+		log.Printf("rate limit: %v", err)
+		return true
+	}
+	return n >= l.max
+}
+
+func (l *limiter) fail(key string) {
+	if err := l.store.recordAttempt(key); err != nil {
+		log.Printf("rate limit: %v", err)
+	}
 }
