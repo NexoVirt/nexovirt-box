@@ -943,33 +943,6 @@ func (h *helperServer) migrateShared() {
 	}
 }
 
-func (h *helperServer) appLogs(req helperRequest, logf func(string)) (any, error) {
-	if err := validID(req.ID); err != nil {
-		return nil, err
-	}
-	if err := needDocker(); err != nil {
-		return nil, err
-	}
-	if _, err := h.readMeta(req.ID); err != nil {
-		return nil, err
-	}
-	tail := req.Tail
-	if tail <= 0 || tail > 2000 {
-		tail = 300
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-	cmd := compose(h.appDir(req.ID), req.ID, "logs", "--no-color", "--timestamps", "--tail", strconv.Itoa(tail))
-	out, err := exec.CommandContext(ctx, cmd.Path, cmd.Args[1:]...).CombinedOutput()
-	if err != nil && len(out) == 0 {
-		return nil, uerr("The logs could not be read.")
-	}
-	if len(out) > 512*1024 {
-		out = out[len(out)-512*1024:]
-	}
-	return map[string]string{"logs": string(out)}, nil
-}
-
 // systemDirs never hold app data (and nothing below them).
 var systemDirs = []string{"/etc", "/usr", "/bin", "/sbin", "/lib", "/lib32", "/lib64", "/boot", "/proc", "/sys",
 	"/dev", "/run", "/root", "/var/lib/docker", "/var/lib/nexovirt-box/web", "/var/log", "/tmp"}

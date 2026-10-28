@@ -23,6 +23,7 @@
   import Square from '@lucide/svelte/icons/square';
   import RotateCw from '@lucide/svelte/icons/rotate-cw';
   import Boxes from '@lucide/svelte/icons/boxes';
+  import ScrollText from '@lucide/svelte/icons/scroll-text';
   import LayoutGrid from '@lucide/svelte/icons/layout-grid';
   import FolderOpen from '@lucide/svelte/icons/folder-open';
   import Shield from '@lucide/svelte/icons/shield';
@@ -93,6 +94,8 @@
   }
 
   function launch(app) {
+    const work = busy[app.id] || bg[app.id];
+    if (work === 'install' || work === 'retry') return onNavigate(`/apps?app=${app.id}`); // live progress
     const url = openURL(app);
     if (!url) return onNavigate('/apps/installed');
     if (app.state !== 'running') toast(`${app.name} is not running. Start it first.`, 'info');
@@ -113,6 +116,7 @@
         { key: 'stop', label: 'Stop', icon: Square, disabled: !up || !!(busy[app.id] || bg[app.id]) },
         { key: 'restart', label: 'Restart', icon: RotateCw, disabled: !up || !!(busy[app.id] || bg[app.id]) },
         'sep',
+        { key: 'logs', label: 'Logs', icon: ScrollText },
         { key: 'manage', label: 'Open in My Apps', icon: Boxes },
       ],
     };
@@ -129,6 +133,7 @@
     if (!app) return;
     if (key === 'open') return launch(app);
     if (key === 'manage') return onNavigate('/apps/installed');
+    if (key === 'logs') return onNavigate(`/apps/${app.id}/logs`);
     busy = { ...busy, [app.id]: key };
     const job = await runJob(`/api/apps/${app.id}/action`, { op: key });
     const { [app.id]: _, ...rest } = busy;
@@ -386,8 +391,8 @@
   .results button { display: flex; align-items: center; gap: 0.75rem; width: 100%; min-height: 3rem; padding: 0.375rem 0.625rem; border: 0; border-radius: 0.75rem; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
   .results button.on { background: var(--accent); color: var(--on-accent); }
   .results button.on .t-caption { color: inherit; opacity: 0.85; }
-  .r-ico { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 7px; background: var(--fill); color: var(--text-2); flex-shrink: 0; }
-  .results button.on .r-ico { background: rgba(255, 255, 255, 0.2); color: inherit; }
+  .r-ico { display: grid; place-items: center; width: 28px; height: 28px; color: var(--text-2); flex-shrink: 0; }
+  .results button.on .r-ico { color: inherit; }
   .r-text { flex: 1; min-width: 0; display: grid; }
   .r-kind { flex-shrink: 0; }
   .r-empty { padding: 0.75rem 0.875rem; }
@@ -406,12 +411,11 @@
   .app:hover { background: var(--fill); }
   .app:active { transform: scale(0.94); }
   .icon-wrap { position: relative; display: grid; place-items: center; }
-  .icon-wrap :global(.icon) { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 6px 16px rgba(0, 0, 0, 0.08), 0 0 0 1px var(--hairline); }
   .busy { position: absolute; inset: 0; display: grid; place-items: center; border-radius: 15px; background: color-mix(in srgb, var(--surface) 70%, transparent); }
   .dot.state { position: absolute; right: -3px; bottom: -3px; width: 0.875rem; height: 0.875rem; box-shadow: 0 0 0 2.5px var(--surface); }
   .app-name { font-size: 0.8125rem; font-weight: 500; line-height: 1.2; text-align: center; max-width: 100%; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-  .add-tile { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 15px; background: var(--fill); color: var(--text-2); transition: background-color 150ms ease; }
-  .add:hover .add-tile { background: var(--accent-fill); color: var(--accent); }
+  .add-tile { display: grid; place-items: center; width: 64px; height: 64px; color: var(--text-2); transition: background-color 150ms ease; }
+  .add:hover .add-tile { color: var(--accent); }
   .empty-hint { margin: 0; }
 
   .left { display: grid; gap: 1.25rem; min-width: 0; }
@@ -419,9 +423,10 @@
   .shortcut { display: flex; align-items: center; gap: 0.75rem; min-height: 3.5rem; padding: 0.5rem 0.75rem; border: 0; border-radius: 0.875rem; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; transition: background-color 150ms ease, transform 120ms ease-out; }
   .shortcut:hover { background: var(--fill); }
   .shortcut:active { transform: scale(0.98); }
-  .s-ico { display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border-radius: 0.75rem; background: var(--accent-fill); color: var(--accent); flex-shrink: 0; }
+  .s-ico { display: grid; place-items: center; width: 2.5rem; height: 2.5rem; color: var(--accent); flex-shrink: 0; }
   .s-text { display: grid; min-width: 0; }
-  .widgets { display: grid; gap: 1rem; }
+  .widgets { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+  .widgets > * { min-width: 0; }
   .widget { display: grid; gap: 0.75rem; padding: 1rem 1.125rem; border: 0; color: inherit; font: inherit; text-align: left; }
   button.widget { cursor: pointer; transition: transform 120ms ease-out; }
   button.widget:active { transform: scale(0.98); }

@@ -1008,9 +1008,9 @@
   .cell { display: grid; justify-items: center; align-content: start; gap: 0.25rem; padding: 0.625rem 0.375rem; border-radius: 0.75rem; text-align: center; cursor: default; user-select: none; }
   .cell:hover { background: var(--fill); }
   .cell.sel .t-caption { color: inherit; opacity: 0.85; }
-  .thumb { display: grid; place-items: center; width: 4.5rem; height: 4.5rem; border-radius: 0.75rem; color: var(--text-2); overflow: hidden; }
+  .thumb { display: grid; place-items: center; width: 4.5rem; height: 4.5rem; color: var(--text-2); overflow: hidden; }
   .thumb.folder { color: var(--accent); }
-  .thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 0.5rem; box-shadow: 0 0 0 1px var(--hairline); }
+  .thumb img { width: 100%; height: 100%; object-fit: contain; }
   .cell.sel .thumb { color: inherit; }
   .cell-name { font-size: 0.8125rem; font-weight: 500; line-height: 1.25; max-width: 100%; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-word; }
 
@@ -1027,7 +1027,7 @@
   .drive { display: flex; align-items: center; gap: 0.875rem; padding: 0.875rem 1rem; border: 0; border-radius: 1rem; background: var(--fill); color: inherit; font: inherit; text-align: left; cursor: pointer; transition: transform 100ms ease-out, background-color 150ms ease; }
   .drive:hover { background: var(--fill-2); }
   .drive:active { transform: scale(0.98); }
-  .drive-ico { display: grid; place-items: center; width: 3rem; height: 3rem; border-radius: 0.875rem; background: var(--surface); color: var(--accent); flex-shrink: 0; }
+  .drive-ico { display: grid; place-items: center; width: 3rem; height: 3rem; color: var(--accent); flex-shrink: 0; }
   .drive-text { flex: 1; min-width: 0; display: grid; gap: 0.375rem; }
 
   /* Status bar */
@@ -1057,7 +1057,7 @@
   .info-head { display: flex; align-items: center; gap: 0.875rem; }
   .info-head > div { min-width: 0; }
   .info-head h2, .info-head p { margin: 0; }
-  .thumb.sm { width: 3.25rem; height: 3.25rem; background: var(--fill); }
+  .thumb.sm { width: 3.25rem; height: 3.25rem; }
   .inset { box-shadow: none; background: var(--fill); }
   .preview { max-width: 100%; max-height: 65svh; justify-self: center; border-radius: var(--r-control); }
   .text { margin: 0; max-height: 60svh; overflow: auto; padding: 0.875rem 1rem; border-radius: var(--r-control); background: var(--term-bg); font-size: 0.75rem; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }

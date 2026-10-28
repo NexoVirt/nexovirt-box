@@ -585,5 +585,6 @@ func (a *App) appCredentials(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) appLogs(w http.ResponseWriter, r *http.Request) {
 	tail, _ := strconv.Atoi(r.URL.Query().Get("tail"))
-	a.helperJSON(w, r, helperRequest{Action: "app_logs", ID: r.PathValue("id"), Tail: tail})
+	q := r.URL.Query()
+	a.helperJSON(w, r, helperRequest{Action: "app_logs", ID: r.PathValue("id"), Tail: tail, Since: q.Get("since"), Service: q.Get("service")})
 }

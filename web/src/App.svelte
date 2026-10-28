@@ -34,6 +34,9 @@
   import SettingsIcon from '@lucide/svelte/icons/settings';
   import FolderOpen from '@lucide/svelte/icons/folder-open';
   import Shield from '@lucide/svelte/icons/shield';
+  import { router } from '$lib/nav.js';
+  import AppLogs from './AppLogs.svelte';
+  import { resumeInstalls } from '$lib/installs.svelte.js';
 
   const pages = [
     { path: '/', title: 'Home', icon: House },
@@ -72,7 +75,7 @@
       return;
     }
     state = res.data;
-    if (state.logged_in) loadSystem();
+    if (state.logged_in) { loadSystem(); resumeInstalls(); }
   }
 
   async function loadSystem() {
@@ -116,16 +119,19 @@
   }
 
   onMount(() => {
+    router.go = navigate;
     loadState();
     const onPop = () => (path = location.pathname);
     addEventListener('popstate', onPop);
     return () => removeEventListener('popstate', onPop);
   });
 
-  let page = $derived(pages.find((p) => p.path === path) || pages[0]);
+  // /apps/<id>/logs: the logs page of one app (shown under My Apps in the sidebar).
+  let logsApp = $derived(path.match(/^\/apps\/([a-z0-9][a-z0-9-]{0,62})\/logs$/)?.[1] || '');
+  let page = $derived(pages.find((p) => p.path === (logsApp ? '/apps/installed' : path)) || pages[0]);
   // These pages fill the window and scroll inside their own card.
   const FILL = new Set(['/files', '/activity']);
-  let fill = $derived(FILL.has(page.path));
+  let fill = $derived(FILL.has(page.path) || !!logsApp);
   let initials = $derived(state?.username ? state.username.slice(0, 2).toUpperCase() : '');
 </script>
 
@@ -214,7 +220,9 @@
       </header>
 
       <main>
-        {#if page.path === '/console'}
+        {#if logsApp}
+          {#key logsApp}<AppLogs id={logsApp} onSessionLost={sessionLost} onNavigate={navigate} />{/key}
+        {:else if page.path === '/console'}
           <Console onSessionLost={sessionLost} />
         {:else if page.path === '/files'}
           {#key pageKey}<Files onSessionLost={sessionLost} />{/key}

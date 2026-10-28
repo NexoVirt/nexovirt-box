@@ -101,7 +101,8 @@
   }
   .handle { display: grid; place-items: center; height: 1.75rem; cursor: grab; }
   .handle span { width: 2.25rem; height: 0.3125rem; border-radius: 999px; background: var(--fill-2); }
-  .body { padding: 0 0.75rem 0.875rem; }
+  .body { padding: 0 0.75rem 0.875rem; overflow-x: hidden; overflow-wrap: anywhere; min-width: 0; }
+  .body :global(:where(pre)) { max-width: 100%; overflow-x: auto; overflow-wrap: normal; }
   @starting-style { .sheet.open { transform: translateY(105%) !important; } .scrim.open { opacity: 0; } }
   @media (prefers-reduced-motion: reduce) {
     .sheet { transition: opacity 200ms ease !important; }

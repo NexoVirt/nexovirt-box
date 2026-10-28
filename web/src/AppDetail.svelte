@@ -1,7 +1,9 @@
 <script>
   // App details, the install form (typed questions) and the live install progress, in one dialog.
   import { api } from '$lib/api.js';
-  import { runJob, plainText, appURL, versionLabel, generatePassword } from '$lib/jobs.js';
+  import { untrack } from 'svelte';
+  import { installs, startInstall } from '$lib/installs.svelte.js';
+  import { plainText, appURL, versionLabel, generatePassword } from '$lib/jobs.js';
   import AppIcon from '$lib/AppIcon.svelte';
   import JobLog from '$lib/JobLog.svelte';
   import Secret from '$lib/Secret.svelte';
@@ -23,9 +25,10 @@
   let view = $state('info'); // info | form | progress | done | failed
   let answers = $state({});
   let dataDir = $state('');
-  let lines = $state([]);
   let error = $state('');
-  let result = $state(null);
+  let job = $derived(installs[summary.id]); // the install job, kept when this sheet closes
+  let lines = $derived(job?.lines || []);
+  let result = $derived(job?.result || null);
   let busy = $state(false);
   let own = $state({}); // password key -> the admin sets it instead of a generated one
   let confirm = $state({});
@@ -70,7 +73,21 @@
         fieldError = {};
         socketOK = false;
         badShots = {};
+        const j = untrack(() => installs[id]);
+        view = !j ? 'info' : j.status === 'running' ? 'progress' : j.status === 'done' ? 'done' : 'failed';
+        if (view === 'failed') error = j.error || 'The install did not finish.';
       }
+    });
+  });
+
+  // The install ends while the sheet shows its progress.
+  $effect(() => {
+    const st = job?.status;
+    untrack(() => {
+      if (view !== 'progress' || !st || st === 'running') return;
+      if (job.http === 401) return onSessionLost();
+      if (st === 'done') { view = 'done'; onInstalled(); }
+      else { error = job.error || 'The install did not finish.'; view = 'failed'; }
     });
   });
 
@@ -99,19 +116,15 @@
     e.preventDefault();
     if (!checkPasswords()) return;
     busy = true;
-    view = 'progress';
-    lines = [];
-    const job = await runJob(`/api/apps/${app.id}/install`, { answers, data_dir: dataDir.trim(), allow_docker_socket: socketOK }, (j) => (lines = j.lines));
+    const res = await startInstall(app.id, app.name, { answers, data_dir: dataDir.trim(), allow_docker_socket: socketOK });
     busy = false;
-    if (job.http === 401) return onSessionLost();
-    if (job.status === 'done') {
-      result = job.result;
-      view = 'done';
-      onInstalled();
-    } else {
-      error = job.error;
+    if (res.status === 401) return onSessionLost();
+    if (!res.ok) {
+      error = res.error;
       view = 'failed';
+      return;
     }
+    view = 'progress';
   }
 
   function inputType(q) {
@@ -190,7 +203,7 @@
         <button class="btn btn-primary btn-sm" form="install-form" disabled={busy}>Install</button>
       </div>
     {/if}
-    <button class="icon-btn" data-close onclick={onClose} disabled={busy} aria-label="Close"><X size={20} /></button>
+    <button class="icon-btn" data-close onclick={onClose} aria-label="Close"><X size={20} /></button>
   </header>
 
   {#if loadError}
@@ -252,6 +265,7 @@
     </form>
   {:else if view === 'progress'}
     <p class="t-sub busy"><Loader size={16} class="spinner" />Installing {app.name}. The first download can take a few minutes.</p>
+    <p class="t-caption">You can close this. The install goes on in the background and My Apps shows its progress.</p>
     <JobLog {lines} />
   {:else if view === 'done'}
     <div class="done">
@@ -273,7 +287,7 @@
 </div>
 
 <style>
-  .detail { display: grid; gap: 1rem; padding: 1.25rem 1.5rem 1.5rem; }
+  .detail { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; padding: 1.25rem 1.5rem 1.5rem; }
   .head { display: flex; align-items: center; gap: 0.875rem; }
   .back { margin-left: -0.75rem; }
   .title { flex: 1; min-width: 0; }
@@ -288,17 +302,17 @@
   }
   .actions { display: flex; align-items: center; gap: 0.875rem; flex-wrap: wrap; }
   .tagline { font-size: 0.9375rem; font-weight: 500; }
-  .desc { color: var(--text-2); white-space: pre-line; max-height: 14rem; overflow: auto; }
+  .desc { color: var(--text-2); white-space: pre-line; max-height: 14rem; overflow-y: auto; overflow-x: hidden; overflow-wrap: anywhere; }
   .shots { display: flex; gap: 0.75rem; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 0.25rem; }
   .shot { flex-shrink: 0; padding: 0; border: 0; background: none; border-radius: 0.875rem; cursor: zoom-in; scroll-snap-align: start; transition: transform 100ms ease-out; }
   .shot:active { transform: scale(0.97); }
   .shot:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  .shots img { display: block; height: 11rem; border-radius: 0.875rem; box-shadow: 0 0 0 1px var(--hairline); }
+  .shots img { display: block; height: 11rem; max-width: none; border-radius: 0.875rem; }
   .getting-started { display: grid; gap: 0.375rem; padding: 0.75rem 0.875rem; border-radius: var(--r-control); background: var(--fill); }
   .meta { box-shadow: none; background: var(--surface-2); }
   :global(.dark) .meta { background: var(--fill); }
   .link { color: var(--accent); }
-  .form { display: grid; gap: 1rem; }
+  .form { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }
   .req { color: var(--text-3); }
   .row-field { display: flex; align-items: center; justify-content: space-between; gap: 1rem; cursor: pointer; }
   .field-text { display: grid; gap: 0.125rem; }
@@ -317,6 +331,6 @@
   .socket { padding: 0.75rem 0.875rem; border-radius: var(--r-control); background: var(--fill); }
   .done-creds { width: 100%; text-align: left; margin-top: 0.5rem; }
   .done { display: grid; justify-items: center; gap: 0.5rem; text-align: center; padding: 0.5rem 0 0.25rem; }
-  .ok-ico { display: grid; place-items: center; width: 3.5rem; height: 3.5rem; border-radius: 50%; background: var(--accent-fill); color: var(--accent); margin-bottom: 0.25rem; }
+  .ok-ico { display: grid; place-items: center; width: 3.5rem; height: 3.5rem; color: var(--accent); margin-bottom: 0.25rem; }
   .buttons { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; margin-top: 0.75rem; }
 </style>

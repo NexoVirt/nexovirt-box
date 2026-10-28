@@ -106,3 +106,15 @@ func TestLogScanFile(t *testing.T) {
 	t.Logf("catalog pattern: %q", scanLog(lines, re))
 	t.Logf("generic scan:    %q", genericLogSecrets(lines))
 }
+
+func TestParseAndMergeLogs(t *testing.T) {
+	a := parseLogOutput([]byte("2026-10-28T17:54:39.5Z \x1b[36mINFO\x1b[0m start\n2026-10-28T17:54:41Z ready\n\nwarning without time\n"), "app")
+	b := parseLogOutput([]byte("2026-10-28T17:54:40.25Z db up\n"), "db")
+	if len(a) != 3 || a[0].Msg != "INFO start" || a[2].Time != "" {
+		t.Fatalf("parsed %+v", a)
+	}
+	m := mergeLogs([][]logLine{a, b}, 3)
+	if len(m) != 3 || m[0].Service != "db" || m[1].Msg != "ready" || m[2].Msg != "warning without time" {
+		t.Fatalf("merged %+v", m)
+	}
+}

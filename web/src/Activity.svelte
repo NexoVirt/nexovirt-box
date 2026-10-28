@@ -249,8 +249,8 @@
   .sort { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
   .sort:hover { color: var(--text); }
   .what { display: flex; align-items: center; gap: 0.625rem; min-width: 0; font-weight: 500; }
-  .ico { display: grid; place-items: center; width: 1.625rem; height: 1.625rem; border-radius: 0.5rem; flex-shrink: 0; background: var(--accent-fill); color: var(--accent); }
-  .ico.error { background: var(--error-fill); color: var(--error); }
+  .ico { display: grid; place-items: center; width: 1.625rem; height: 1.625rem; flex-shrink: 0; color: var(--accent); }
+  .ico.error { color: var(--error); }
   .truncate { display: block; }
   .what .truncate { display: inline; }
   .ago { display: none; }

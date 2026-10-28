@@ -189,9 +189,7 @@
   .unlock h2, .unlock p { margin: 0; }
   .unlock .notice { width: 100%; text-align: left; }
   .lock {
-    display: grid; place-items: center; width: 3.5rem; height: 3.5rem; border-radius: 1.1rem;
-    background: var(--accent-fill); color: var(--accent); margin-bottom: 0.25rem;
-  }
+    display: grid; place-items: center; width: 3.5rem; height: 3.5rem; color: var(--accent); margin-bottom: 0.25rem; }
   .unlock input {
     width: 100%; height: 2.75rem; padding: 0 0.875rem; border: 0; border-radius: var(--r-control);
     background: var(--fill); font-size: 0.9375rem; margin-top: 0.5rem;

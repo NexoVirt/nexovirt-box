@@ -40,6 +40,8 @@ type helperRequest struct {
 	Ports      map[string]int    `json:"ports,omitempty"`
 	DeleteData bool              `json:"delete_data,omitempty"`
 	Tail       int               `json:"tail,omitempty"`
+	Since      string            `json:"since,omitempty"`   // logs: RFC 3339 time, only newer lines
+	Service    string            `json:"service,omitempty"` // logs: one compose service, empty = all
 	Password   string            `json:"password,omitempty"`
 	Code       string            `json:"code,omitempty"`
 	Session    string            `json:"session,omitempty"` // sha256 of the session cookie

@@ -337,11 +337,11 @@
   .pending .grow { flex: 1; min-width: 0; display: grid; gap: 0.25rem; }
   .countdown { margin-top: 0.25rem; }
   .countdown > span { transition: transform 1s linear; }
-  .ico.warn { background: color-mix(in srgb, var(--warn) 16%, transparent); color: var(--warn); }
+  .ico.warn { color: var(--warn); }
 
   .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.75rem; }
   .stat { display: flex; align-items: center; gap: 0.75rem; padding: 1rem 1.125rem; }
-  .stat-ico { display: grid; place-items: center; width: 2.25rem; height: 2.25rem; border-radius: 0.75rem; background: var(--accent-fill); color: var(--accent); flex-shrink: 0; }
+  .stat-ico { display: grid; place-items: center; width: 2.25rem; height: 2.25rem; color: var(--accent); flex-shrink: 0; }
   .stat-text { display: grid; gap: 0.125rem; min-width: 0; }
   .stat-text .t-head { display: flex; align-items: center; gap: 0.4rem; }
 
@@ -352,7 +352,7 @@
   .pop-item { display: flex; align-items: center; gap: 0.625rem; width: 100%; min-height: 2.75rem; padding: 0.25rem 0.625rem; border: 0; border-radius: 0.625rem; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
   .pop-item:hover { background: var(--fill); }
   .pop-item .grow { flex: 1; min-width: 0; display: grid; }
-  .pop-ico { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; background: var(--fill); color: var(--text-2); }
+  .pop-ico { display: grid; place-items: center; width: 22px; height: 22px; color: var(--text-2); }
 
   .table-scroll { overflow-x: auto; padding: 0.25rem 0.5rem 0.5rem; }
   table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.8125rem; }

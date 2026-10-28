@@ -7,6 +7,7 @@
   import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
   import { toast } from '$lib/toast.svelte.js';
   import AppIcon from '$lib/AppIcon.svelte';
+  import { installs } from '$lib/installs.svelte.js';
   import Dialog from '$lib/Dialog.svelte';
   import Popover from '$lib/Popover.svelte';
   import JobLog from '$lib/JobLog.svelte';
@@ -43,13 +44,6 @@
   let bg = $state({}); // id -> action running in the background (after a reload, another tab)
   let credsFor = $state(null), credsOpen = $state(false);
   let menu = $state(null); // id of the open menu
-  // Logs dialog
-  let logsFor = $state(null);
-  let logsOpen = $state(false);
-  let logs = $state('');
-  let logsLoading = $state(false);
-  let logBox = $state();
-  let follow = true;
   // Uninstall dialog
   let removeFor = $state(null);
   let removeOpen = $state(false);
@@ -65,6 +59,7 @@
 
   const followJobs = jobFollower((job, id) => {
     const name = apps?.find((x) => x.id === id)?.name || 'The app';
+    if ((job.kind === 'install' || job.kind === 'retry') && installs[id]) return load(); // its own toast
     if (job.status === 'done') toast(`${name} ${DONE[job.kind] || 'is ready'}.`, 'success');
     else if (job.http !== 401) toast(job.error, 'error', 8000);
     load();
@@ -170,36 +165,9 @@
     load();
   }
 
-  async function fetchLogs() {
-    if (!logsFor) return;
-    const res = await api(`/api/apps/${logsFor.id}/logs?tail=400`);
-    logsLoading = false;
-    if (res.ok) {
-      logs = res.data.logs || 'No output yet.';
-      if (follow) requestAnimationFrame(() => logBox && (logBox.scrollTop = logBox.scrollHeight));
-    } else logs = res.error;
-  }
-
   function showLogs(e, app) {
     menu = null;
-    origin = { x: e.clientX, y: e.clientY };
-    logsFor = app;
-    logs = '';
-    logsLoading = true;
-    follow = true;
-    logsOpen = true;
-    fetchLogs();
-  }
-
-  // Live tail while the logs dialog is open.
-  $effect(() => {
-    if (!logsOpen) return;
-    const t = setInterval(fetchLogs, 3000);
-    return () => clearInterval(t);
-  });
-
-  function onLogScroll() {
-    follow = logBox.scrollHeight - logBox.scrollTop - logBox.clientHeight < 24;
+    onNavigate(`/apps/${app.id}/logs`);
   }
 
   function askRemove(e, app) {
@@ -289,6 +257,9 @@
               {:else}<span class="dot {tone}"></span>{stateText(app)}{/if}
             </span>
           </div>
+          {#if working === 'install' || working === 'retry'}
+            <button class="btn btn-tinted btn-sm" onclick={() => onNavigate(`/apps?app=${app.id}`)}><ScrollText size={15} /><span class="open-text">Show progress</span></button>
+          {/if}
           {#if app.state === 'interrupted' && !working}
             <button class="btn btn-primary btn-sm" onclick={() => retry(app)}><RotateCcw size={15} /><span class="open-text">Retry install</span></button>
           {/if}
@@ -323,21 +294,6 @@
 </div>
 
 <svelte:window onpointerdown={(e) => { if (menu && !e.target.closest('.more')) menu = null; }} />
-
-<Dialog bind:open={logsOpen} label="Logs" {origin} wide>
-  <div class="dlg">
-    <div class="dlg-head">
-      <h2 class="t-title">Logs of {logsFor?.name}</h2>
-      <span class="pill"><span class="dot ok pulse"></span>Live</span>
-    </div>
-    {#if logsLoading}
-      <p class="t-sub busy"><Loader size={16} class="spinner" />Loading</p>
-    {:else}
-      <pre class="logs mono" bind:this={logBox} onscroll={onLogScroll}>{logs}</pre>
-    {/if}
-    <div class="buttons"><button class="btn btn-gray" data-close onclick={() => (logsOpen = false)}>Close</button></div>
-  </div>
-</Dialog>
 
 <Dialog bind:open={credsOpen} label="Login details" {origin}>
   <div class="dlg">
@@ -407,14 +363,9 @@
   .pop-item.danger { color: var(--error); }
   .empty { display: grid; justify-items: center; gap: 0.5rem; text-align: center; padding: 2.5rem 1.25rem; }
   .empty .btn { margin-top: 0.75rem; }
-  .empty-ico { display: grid; place-items: center; width: 3.5rem; height: 3.5rem; border-radius: 1.1rem; background: var(--accent-fill); color: var(--accent); margin-bottom: 0.25rem; }
+  .empty-ico { display: grid; place-items: center; width: 3.5rem; height: 3.5rem; color: var(--accent); margin-bottom: 0.25rem; }
   .dlg { display: grid; gap: 0.875rem; padding: 1.5rem; }
   .dlg-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-  .logs {
-    margin: 0; height: min(28rem, 55svh); overflow: auto; padding: 0.875rem 1rem; border-radius: var(--r-control);
-    background: var(--term-bg); box-shadow: inset 0 0 0 1px var(--hairline); font-size: 0.75rem; line-height: 1.5;
-    white-space: pre-wrap; word-break: break-word;
-  }
   .busy { display: flex; align-items: center; gap: 0.5rem; }
   .down { align-items: flex-start; margin-bottom: 0.75rem; }
   .down-text { display: grid; gap: 0.5rem; min-width: 0; flex: 1; }

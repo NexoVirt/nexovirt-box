@@ -6,6 +6,7 @@
   import Dialog from '$lib/Dialog.svelte';
   import AppDetail from './AppDetail.svelte';
   import DockerSetup from './DockerSetup.svelte';
+  import { sheet, backgrounded, installs } from '$lib/installs.svelte.js';
   import Search from '@lucide/svelte/icons/search';
   import RefreshCw from '@lucide/svelte/icons/refresh-cw';
   import CircleAlert from '@lucide/svelte/icons/circle-alert';
@@ -25,6 +26,20 @@
   let open = $state(false);
   let origin = $state(null);
   let sentinel = $state();
+
+  // Closing the sheet of a running install only hides it; the install goes on.
+  let lastOpen = '';
+  $effect(() => {
+    const id = open && selected ? selected.id : '';
+    sheet.id = id;
+    if (!id && lastOpen) backgrounded(lastOpen, selected?.name);
+    lastOpen = id;
+    return () => { if (sheet.id === id) sheet.id = ''; };
+  });
+  // An install that finished while its sheet was closed shows as installed.
+  $effect(() => {
+    for (const [id, it] of Object.entries(installs)) if (it.status === 'done' && !installed.has(id)) installed = new Set([...installed, id]);
+  });
 
   let categories = $derived.by(() => {
     if (!catalog) return [];
