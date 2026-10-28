@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -172,5 +173,19 @@ func TestSnapshotShape(t *testing.T) {
 	}
 	if _, ok := m["disks"].([]any); !ok {
 		t.Fatalf("disks must be a list: %s", b)
+	}
+}
+
+func TestHistoryKeepsLastSamples(t *testing.T) {
+	s := newSampler(time.Second)
+	for i := 0; i < historySize+5; i++ {
+		s.push([]byte(`{"n":` + strconv.Itoa(i) + `}`))
+	}
+	var got []map[string]int
+	if err := json.Unmarshal(s.historyJSON(), &got); err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != historySize || got[0]["n"] != 5 || got[len(got)-1]["n"] != historySize+4 {
+		t.Fatalf("history: len %d first %v last %v", len(got), got[0], got[len(got)-1])
 	}
 }

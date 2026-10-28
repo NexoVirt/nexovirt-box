@@ -54,12 +54,16 @@ type Disk struct {
 	Free       uint64 `json:"free"`
 }
 
+// historySize keeps 10 minutes at one sample every 2 s, sent first so charts are full on load.
+const historySize = 300
+
 // sampler reads the system once per interval and shares the result with every viewer, so
 // CPU and network rates are computed from one consistent series.
 type sampler struct {
 	interval time.Duration
 	mu       sync.RWMutex
 	latest   []byte
+	history  [][]byte // last historySize samples, oldest first
 	lastNet  map[string]net.IOCountersStat
 	lastAt   time.Time
 }
@@ -74,9 +78,7 @@ func (s *sampler) run() {
 		snap := s.sample()
 		b, err := json.Marshal(snap)
 		if err == nil {
-			s.mu.Lock()
-			s.latest = b
-			s.mu.Unlock()
+			s.push(b)
 		}
 		time.Sleep(s.interval)
 	}
@@ -86,6 +88,30 @@ func (s *sampler) get() []byte {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.latest
+}
+
+func (s *sampler) push(b []byte) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.latest = b
+	s.history = append(s.history, b)
+	if len(s.history) > historySize {
+		s.history = s.history[len(s.history)-historySize:]
+	}
+}
+
+// historyJSON returns the kept samples as one JSON array (oldest first).
+func (s *sampler) historyJSON() []byte {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	out := []byte{'['}
+	for i, b := range s.history {
+		if i > 0 {
+			out = append(out, ',')
+		}
+		out = append(out, b...)
+	}
+	return append(out, ']')
 }
 
 func (s *sampler) sample() Snapshot {
@@ -246,6 +272,9 @@ func (a *App) statsStream(w http.ResponseWriter, r *http.Request) {
 		}
 		flusher.Flush()
 		return true
+	}
+	if _, err := fmt.Fprintf(w, "event: history\ndata: %s\n\n", a.sampler.historyJSON()); err != nil {
+		return
 	}
 	send()
 	t := time.NewTicker(a.sampler.interval)

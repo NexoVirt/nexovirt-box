@@ -13,10 +13,11 @@
 
   let { system, onSessionLost } = $props();
 
-  const KEEP = 150; // 5 minutes at one sample every 2 s
+  const KEEP = 300; // 10 minutes at one sample every 2 s (the server sends the same window first)
   const ranges = [
     { value: 30, label: '1 min' },
     { value: 150, label: '5 min' },
+    { value: 300, label: '10 min' },
   ];
 
   let snap = $state(null);
@@ -40,9 +41,24 @@
 
   onMount(() => {
     const es = new EventSource('/api/stats/stream');
+    // First event: the last 10 minutes, so the charts are full right away (also after a reconnect).
+    es.addEventListener('history', (e) => {
+      let list;
+      try { list = JSON.parse(e.data); } catch { return; }
+      if (!Array.isArray(list) || !list.length) return;
+      cpuHistory = list.map((s) => s.cpu.total).slice(-KEEP);
+      const next = {};
+      for (const s of list) for (const n of s.network) (next[n.name] ??= []).push(n.rx_rate + n.tx_rate);
+      for (const k in next) next[k] = next[k].slice(-KEEP);
+      netHistory = next;
+      snap = list[list.length - 1];
+      live = 'live';
+      seq++;
+    });
     es.onmessage = (e) => {
       let s;
       try { s = JSON.parse(e.data); } catch { return; } // ignore a broken frame
+      if (snap && s.time === snap.time) return; // already in the history
       snap = s;
       live = 'live';
       seq++;
