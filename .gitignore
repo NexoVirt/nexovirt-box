@@ -4,3 +4,4 @@
 !/web/dist/.gitkeep
 *.db
 .DS_Store
+.catalog-check-cache.json*
