@@ -14,6 +14,13 @@
   import Trash from '@lucide/svelte/icons/trash-2';
   import Copy from '@lucide/svelte/icons/copy';
   import Plus from '@lucide/svelte/icons/plus';
+  import Globe from '@lucide/svelte/icons/globe';
+  import Sparkles from '@lucide/svelte/icons/sparkles';
+  import Brush from '@lucide/svelte/icons/brush';
+  import FolderOpen from '@lucide/svelte/icons/folder-open';
+  import { runJob } from '$lib/jobs.js';
+  import { bytes } from '$lib/format.js';
+  import JobLog from '$lib/JobLog.svelte';
 
   let { onSessionLost } = $props();
 
@@ -33,6 +40,14 @@
   let keyName = $state('');
 
   let catalogURL = $state(''), savingURL = $state(false), syncing = $state(false);
+  // Reverse proxy
+  let proxy = $state(null), httpPort = $state(80), httpsPort = $state(443), acmeEmail = $state(''), proxyBusy = $state(false), proxyLines = $state([]);
+  // Updates
+  let updates = $state(null), releaseURL = $state(''), updBusy = $state(false), updLines = $state([]), checking = $state(false);
+  // Cleanup
+  let unused = $state(null), pruning = $state(false);
+  // File explorer folders
+  let roots = $state(''), rootsBusy = $state(false);
 
   async function load() {
     const [a, b] = await Promise.all([api('/api/2fa'), api('/api/settings')]);
@@ -44,6 +59,93 @@
     tfa = a.data;
     settings = b.data;
     catalogURL = settings.catalog_url || '';
+    releaseURL = settings.release_url || '';
+    loadExtras();
+  }
+
+  async function loadExtras() {
+    const [p, u, i, f] = await Promise.all([api('/api/proxy'), api('/api/updates'), api('/api/images/unused'), api('/api/files')]);
+    if (p.ok) {
+      proxy = p.data;
+      if (proxy.config) {
+        httpPort = proxy.config.http_port;
+        httpsPort = proxy.config.https_port;
+        acmeEmail = proxy.config.email || '';
+      } else {
+        httpPort = proxy.port80_free ? 80 : 8080;
+        httpsPort = proxy.port443_free ? 443 : 8444;
+      }
+    }
+    if (u.ok) updates = u.data;
+    if (i.ok) unused = i.data;
+    if (f.ok) roots = f.data.roots.join('\n');
+  }
+
+  async function setupProxy(e) {
+    e.preventDefault();
+    proxyBusy = true;
+    proxyLines = [];
+    const job = await runJob('/api/proxy', { http_port: Number(httpPort), https_port: Number(httpsPort), email: acmeEmail.trim() }, (j) => (proxyLines = j.lines));
+    proxyBusy = false;
+    if (job.http === 401) return onSessionLost();
+    if (job.status === 'done') toast('The reverse proxy runs.', 'success');
+    else toast(job.error, 'error', 9000);
+    loadExtras();
+  }
+
+  async function removeProxy() {
+    proxyBusy = true;
+    const job = await runJob('/api/proxy/remove', {}, (j) => (proxyLines = j.lines));
+    proxyBusy = false;
+    if (job.status === 'done') toast('The reverse proxy is stopped. Apps stay reachable on their ports.');
+    else toast(job.error, 'error', 9000);
+    loadExtras();
+  }
+
+  async function saveReleaseURL(e) {
+    e.preventDefault();
+    const res = await api('/api/settings', { method: 'POST', body: { release_url: releaseURL } });
+    if (!res.ok) return toast(res.error, 'error');
+    toast('Saved.', 'success');
+    checkNow();
+  }
+
+  async function checkNow() {
+    checking = true;
+    const res = await api('/api/updates/check', { method: 'POST' });
+    checking = false;
+    if (res.ok) updates = res.data;
+    else toast(res.error, 'error');
+  }
+
+  async function applyUpdate() {
+    updBusy = true;
+    updLines = [];
+    const job = await runJob('/api/updates/box/apply', {}, (j) => (updLines = j.lines));
+    updBusy = false;
+    if (job.status === 'done') {
+      toast(`NexoVirt Box ${job.result.version} is installed. The page reloads.`, 'success');
+      setTimeout(() => location.reload(), 4000);
+    } else toast(job.error, 'error', 10000);
+  }
+
+  async function prune() {
+    pruning = true;
+    const job = await runJob('/api/images/prune', {});
+    pruning = false;
+    if (job.status === 'done') toast(`Freed ${bytes(job.result.bytes)}.`, 'success');
+    else toast(job.error, 'error', 8000);
+    loadExtras();
+  }
+
+  async function saveRoots(e) {
+    e.preventDefault();
+    rootsBusy = true;
+    const res = await api('/api/files/roots', { method: 'POST', body: { roots } });
+    rootsBusy = false;
+    if (!res.ok) return toast(res.error, 'error', 8000);
+    roots = res.data.roots.join('\n');
+    toast('Saved.', 'success');
   }
 
   function askPassword(e, title, text, needsCode, action) {
@@ -174,7 +276,7 @@
   <header class="page-head">
     <div>
       <h1 class="t-large">Settings</h1>
-      <p class="t-sub">Sign-in security and where Box gets its apps.</p>
+      <p class="t-sub">Sign-in security, apps, HTTPS, updates and storage.</p>
     </div>
   </header>
 
@@ -251,6 +353,87 @@
         </div>
       </form>
     </section>
+
+    <section class="group">
+      <div class="group-head"><h2 class="t-head">Reverse proxy and HTTPS</h2>
+        {#if proxy?.enabled}<span class="pill"><span class="dot {proxy.running ? 'ok' : 'warn'}"></span>{proxy.running ? 'Running' : 'Stopped'}</span>{/if}
+      </div>
+      {#if !proxy}
+        <div class="row"><span class="skeleton line"></span></div>
+      {:else}
+        <form class="row proxy" onsubmit={setupProxy}>
+          <span class="ico"><Globe size={16} /></span>
+          <div class="grow">
+            <span>Serve apps under their own domain with HTTPS</span>
+            <span class="t-caption">Box runs Caddy for this. It never takes over a port another program uses.
+              {#if !proxy.port80_free || !proxy.port443_free}Ports {[!proxy.port80_free && 80, !proxy.port443_free && 443].filter(Boolean).join(' and ')} are used by another program here, so pick other ports. Let's Encrypt then needs port 80 or 443 forwarded to them.{/if}</span>
+            <div class="ports">
+              <label class="field"><span class="field-label">HTTP port</span><input class="input num" type="number" min="1" max="65535" bind:value={httpPort} required /></label>
+              <label class="field"><span class="field-label">HTTPS port</span><input class="input num" type="number" min="1" max="65535" bind:value={httpsPort} required /></label>
+              <label class="field email"><span class="field-label">Email for Let's Encrypt (optional)</span><input class="input" type="email" bind:value={acmeEmail} placeholder="you@example.com" /></label>
+            </div>
+            {#if proxyLines.length && proxyBusy}<JobLog lines={proxyLines} />{/if}
+            {#if proxy.routes?.length}<span class="t-caption">Domains: {proxy.routes.map((r) => `${r.domain} (${r.tls === 'letsencrypt' ? "Let's Encrypt" : 'local certificate'})`).join(', ')}</span>{/if}
+          </div>
+          <div class="catalog-btns">
+            {#if proxy.enabled}<button type="button" class="btn btn-gray btn-sm" onclick={removeProxy} disabled={proxyBusy}>Turn off</button>{/if}
+            <button class="btn btn-tinted btn-sm" disabled={proxyBusy}>{#if proxyBusy}<Loader size={15} class="spinner" />{/if}{proxy.enabled ? 'Apply' : 'Turn on'}</button>
+          </div>
+        </form>
+      {/if}
+    </section>
+
+    <section class="group">
+      <div class="group-head"><h2 class="t-head">Updates</h2></div>
+      <div class="row">
+        <span class="ico"><Sparkles size={16} /></span>
+        <div class="grow">
+          <span>NexoVirt Box {updates?.box.current ?? ''}</span>
+          <span class="t-caption">
+            {#if !updates?.box.configured}Set an update address below to get new versions.
+            {:else if updates.box.error}{updates.box.error}
+            {:else if updates.box.available}Version {updates.box.latest} is available.{#if updates.box.notes} {updates.box.notes}{/if}
+            {:else if updates.box.latest}This is the newest version.
+            {:else}Not checked yet.{/if}
+          </span>
+          {#if updBusy}<JobLog lines={updLines} />{/if}
+        </div>
+        <div class="catalog-btns">
+          <button class="btn btn-gray btn-sm" onclick={checkNow} disabled={checking}>{#if checking}<Loader size={15} class="spinner" />{/if}Check now</button>
+          {#if updates?.box.available}<button class="btn btn-primary btn-sm" onclick={applyUpdate} disabled={updBusy}>{#if updBusy}<Loader size={15} class="spinner" />Installing{:else}Install {updates.box.latest}{/if}</button>{/if}
+        </div>
+      </div>
+      <form class="row catalog" onsubmit={saveReleaseURL}>
+        <span class="ico"><Sparkles size={16} /></span>
+        <div class="grow">
+          <label class="field-label" for="release-url">Update address</label>
+          <input id="release-url" class="input" bind:value={releaseURL} placeholder="https://downloads.example.com/box" inputmode="url" spellcheck="false" />
+          <span class="t-caption">Box only installs releases signed by NexoVirt, and only when you click Install. If the new version does not start, the old one comes back.</span>
+        </div>
+        <div class="catalog-btns"><button class="btn btn-gray btn-sm">Save</button></div>
+      </form>
+    </section>
+
+    <section class="group">
+      <div class="group-head"><h2 class="t-head">Storage</h2></div>
+      <div class="row">
+        <span class="ico"><Brush size={16} /></span>
+        <div class="grow">
+          <span>Unused app images</span>
+          <span class="t-caption">{unused ? (unused.count ? `${unused.count} old images use ${bytes(unused.bytes)}. They are left over from updates.` : 'Nothing to clean up.') : 'Checking'}</span>
+        </div>
+        <button class="btn btn-gray btn-sm" onclick={prune} disabled={pruning || !unused?.count}>{#if pruning}<Loader size={15} class="spinner" />{/if}Clean up</button>
+      </div>
+      <form class="row catalog" onsubmit={saveRoots}>
+        <span class="ico"><FolderOpen size={16} /></span>
+        <div class="grow">
+          <label class="field-label" for="roots">Folders in Files</label>
+          <textarea id="roots" class="input mono roots" bind:value={roots} rows="4" spellcheck="false"></textarea>
+          <span class="t-caption">One folder per line. System folders such as /etc or /root are never shown. Empty means the defaults.</span>
+        </div>
+        <div class="catalog-btns"><button class="btn btn-gray btn-sm" disabled={rootsBusy}>{#if rootsBusy}<Loader size={15} class="spinner" />{/if}Save</button></div>
+      </form>
+    </section>
   {/if}
 </div>
 
@@ -303,6 +486,11 @@
   .catalog { align-items: flex-start; }
   .catalog .grow { gap: 0.375rem; }
   .catalog-btns { display: flex; gap: 0.5rem; align-self: center; }
+  .ports { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.5rem; }
+  .ports .field { width: 7.5rem; }
+  .ports .email { flex: 1; min-width: 12rem; }
+  .proxy { align-items: flex-start; }
+  .roots { resize: vertical; min-height: 5.5rem; }
   .qr { justify-self: center; border-radius: 0.75rem; background: #fff; padding: 0.5rem; }
   .secret { word-break: break-all; color: var(--text); }
   .codes { list-style: none; margin: 0; padding: 0.875rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.375rem 1rem; border-radius: var(--r-control); background: var(--fill); }

@@ -18,6 +18,7 @@
   let loadError = $state('');
   let view = $state('info'); // info | form | progress | done | failed
   let answers = $state({});
+  let dataDir = $state('');
   let lines = $state([]);
   let error = $state('');
   let result = $state(null);
@@ -55,7 +56,7 @@
     busy = true;
     view = 'progress';
     lines = [];
-    const job = await runJob(`/api/apps/${app.id}/install`, { answers }, (j) => (lines = j.lines));
+    const job = await runJob(`/api/apps/${app.id}/install`, { answers, data_dir: dataDir.trim() }, (j) => (lines = j.lines));
     busy = false;
     if (job.http === 401) return onSessionLost();
     if (job.status === 'done') {
@@ -152,6 +153,11 @@
           {#each generated as q (q.key)}{@render field(q)}{/each}
         </details>
       {/if}
+      <details class="advanced">
+        <summary>Data folder</summary>
+        <p class="t-caption">Where {app.name} keeps its files. Leave empty for Box's own folder (/var/lib/nexovirt-box/apps/{app.id}/data). A folder you choose must be new or empty.</p>
+        <input class="input" bind:value={dataDir} placeholder="/srv/{app.id}" aria-label="Data folder" spellcheck="false" autocapitalize="none" />
+      </details>
       <button class="btn btn-primary btn-block" disabled={busy}>Install {app.name}</button>
     </form>
   {:else if view === 'progress'}

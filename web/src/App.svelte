@@ -10,6 +10,8 @@
   import AppStore from './AppStore.svelte';
   import MyApps from './MyApps.svelte';
   import Settings from './Settings.svelte';
+  import Files from './Files.svelte';
+  import Firewall from './Firewall.svelte';
   import Logo from '$lib/Logo.svelte';
   import Sheet from '$lib/Sheet.svelte';
   import Popover from '$lib/Popover.svelte';
@@ -28,11 +30,15 @@
   import Sun from '@lucide/svelte/icons/sun';
   import Moon from '@lucide/svelte/icons/moon';
   import SettingsIcon from '@lucide/svelte/icons/settings';
+  import FolderOpen from '@lucide/svelte/icons/folder-open';
+  import Shield from '@lucide/svelte/icons/shield';
 
   const pages = [
     { path: '/', title: 'Dashboard', icon: Gauge },
     { path: '/apps', title: 'App Store', icon: LayoutGrid },
     { path: '/apps/installed', title: 'My Apps', icon: Boxes },
+    { path: '/files', title: 'Files', icon: FolderOpen },
+    { path: '/firewall', title: 'Firewall', icon: Shield },
     { path: '/console', title: 'Console', icon: SquareTerminal },
     { path: '/activity', title: 'Activity', icon: History },
     { path: '/settings', title: 'Settings', icon: SettingsIcon },
@@ -195,6 +201,10 @@
       <main>
         {#if page.path === '/console'}
           <Console onSessionLost={sessionLost} />
+        {:else if page.path === '/files'}
+          <Files onSessionLost={sessionLost} />
+        {:else if page.path === '/firewall'}
+          <Firewall onSessionLost={sessionLost} />
         {:else if page.path === '/settings'}
           <Settings onSessionLost={sessionLost} />
         {:else if page.path === '/activity'}
