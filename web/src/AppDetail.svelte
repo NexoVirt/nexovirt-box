@@ -112,6 +112,16 @@
       <h2 class="t-title truncate">{summary.name}</h2>
       <p class="t-caption truncate">{[summary.version && `Version ${versionLabel(summary.version)}`, summary.category].filter(Boolean).join('  ·  ')}</p>
     </div>
+    {#if app && view === 'info'}
+      <div class="head-actions wide-only">
+        {#if blocker}<span class="t-caption blocker">{blocker}</span>{/if}
+        <button class="btn btn-primary btn-sm" disabled={!!blocker} onclick={() => (view = 'form')}>Install</button>
+      </div>
+    {:else if app && view === 'form'}
+      <div class="head-actions wide-only">
+        <button class="btn btn-primary btn-sm" form="install-form" disabled={busy}>Install</button>
+      </div>
+    {/if}
     <button class="icon-btn" data-close onclick={onClose} disabled={busy} aria-label="Close"><X size={20} /></button>
   </header>
 
@@ -120,7 +130,7 @@
   {:else if !app}
     <div class="loading t-sub"><Loader size={16} class="spinner" />Loading</div>
   {:else if view === 'info'}
-    <div class="actions">
+    <div class="actions narrow-only">
       <button class="btn btn-primary" disabled={!!blocker} onclick={() => (view = 'form')}>Install</button>
       {#if blocker}<span class="t-caption">{blocker}</span>{/if}
     </div>
@@ -143,7 +153,7 @@
       <div class="row"><span class="row-label">App definition</span><a class="row-value link truncate" href={app.attribution.url} target="_blank" rel="noopener noreferrer">{app.attribution.store}, {app.attribution.license}</a></div>
     </div>
   {:else if view === 'form'}
-    <form class="form" onsubmit={install}>
+    <form class="form" id="install-form" onsubmit={install}>
       {#if !visible.length}<p class="t-sub">{app.name} needs no settings. Box stores its data in its own folder.</p>{/if}
       {#each visible as q (q.key)}{@render field(q)}{/each}
       {#if generated.length}
@@ -158,7 +168,7 @@
         <p class="t-caption">Where {app.name} keeps its files. Leave empty for Box's own folder (/var/lib/nexovirt-box/apps/{app.id}/data). A folder you choose must be new or empty.</p>
         <input class="input" bind:value={dataDir} placeholder="/srv/{app.id}" aria-label="Data folder" spellcheck="false" autocapitalize="none" />
       </details>
-      <button class="btn btn-primary btn-block" disabled={busy}>Install {app.name}</button>
+      <button class="btn btn-primary btn-block narrow-only" disabled={busy}>Install {app.name}</button>
     </form>
   {:else if view === 'progress'}
     <p class="t-sub busy"><Loader size={16} class="spinner" />Installing {app.name}. The first download can take a few minutes.</p>
@@ -188,6 +198,13 @@
   .title { flex: 1; min-width: 0; }
   h2, h3, p { margin: 0; }
   .loading, .busy { display: flex; align-items: center; gap: 0.5rem; }
+  .head-actions { display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0; }
+  .blocker { max-width: 12rem; text-align: right; }
+  .narrow-only { display: none !important; }
+  @media (max-width: 639px) {
+    .wide-only { display: none !important; }
+    .narrow-only { display: flex !important; }
+  }
   .actions { display: flex; align-items: center; gap: 0.875rem; flex-wrap: wrap; }
   .tagline { font-size: 0.9375rem; font-weight: 500; }
   .desc { color: var(--text-2); white-space: pre-line; max-height: 14rem; overflow: auto; }
