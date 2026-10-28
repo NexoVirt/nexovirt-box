@@ -28,16 +28,16 @@
    "required": true
   },
   {
-   "key": "SECRET_PASSWORD",
-   "label": "Password",
+   "key": "SECRET_SECRET_KEY",
+   "label": "Secret key",
    "type": "password",
    "hint": "Generated automatically. Enter your own to replace it.",
    "min": 24,
    "generate": true
   },
   {
-   "key": "SECRET_SECRET_KEY",
-   "label": "Secret key",
+   "key": "SECRET_PASSWORD",
+   "label": "Password",
    "type": "password",
    "hint": "Generated automatically. Enter your own to replace it.",
    "min": 24,

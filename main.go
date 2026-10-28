@@ -55,7 +55,10 @@ func main() {
 		catalog: newCatalogStore(*state, *catalogURL),
 		jobs:    newJobs(),
 	}
-	if err := app.ensureSetupToken(*state); err != nil {
+	if u := store.setting("catalog_url"); u != "" {
+		app.catalog.setURL(u) // set in the UI; wins over -catalog-url
+	}
+		if err := app.ensureSetupToken(*state); err != nil {
 		log.Fatalf("setup token: %v", err)
 	}
 	go app.sampler.run()

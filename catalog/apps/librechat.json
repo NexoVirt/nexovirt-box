@@ -32,30 +32,6 @@
    "required": true
   },
   {
-   "key": "SECRET_ASSISTANTS_API_KEY",
-   "label": "Assistants api key",
-   "type": "password",
-   "hint": "Generated automatically. Enter your own to replace it.",
-   "min": 24,
-   "generate": true
-  },
-  {
-   "key": "SECRET_REFRESH_TOKEN_EXPIRY",
-   "label": "Refresh token expiry",
-   "type": "password",
-   "hint": "Generated automatically. Enter your own to replace it.",
-   "min": 24,
-   "generate": true
-  },
-  {
-   "key": "SECRET_JWT_SECRET",
-   "label": "Jwt secret",
-   "type": "password",
-   "hint": "Generated automatically. Enter your own to replace it.",
-   "min": 24,
-   "generate": true
-  },
-  {
    "key": "SECRET_JWT_REFRESH_SECRET",
    "label": "Jwt refresh secret",
    "type": "password",
@@ -82,6 +58,30 @@
   {
    "key": "SECRET_POSTGRES_PASSWORD",
    "label": "Postgres password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
+   "key": "SECRET_ASSISTANTS_API_KEY",
+   "label": "Assistants api key",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
+   "key": "SECRET_REFRESH_TOKEN_EXPIRY",
+   "label": "Refresh token expiry",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
+   "key": "SECRET_JWT_SECRET",
+   "label": "Jwt secret",
    "type": "password",
    "hint": "Generated automatically. Enter your own to replace it.",
    "min": 24,

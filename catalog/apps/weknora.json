@@ -33,22 +33,6 @@
    "required": true
   },
   {
-   "key": "SECRET_MINIO_SECRET_ACCESS_KEY",
-   "label": "Minio secret access key",
-   "type": "password",
-   "hint": "Generated automatically. Enter your own to replace it.",
-   "min": 24,
-   "generate": true
-  },
-  {
-   "key": "SECRET_DB_PASSWORD",
-   "label": "Db password",
-   "type": "password",
-   "hint": "Generated automatically. Enter your own to replace it.",
-   "min": 24,
-   "generate": true
-  },
-  {
    "key": "SECRET_TENANT_AES_KEY",
    "label": "Tenant aes key",
    "type": "password",
@@ -59,6 +43,22 @@
   {
    "key": "SECRET_JWT_SECRET",
    "label": "Jwt secret",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
+   "key": "SECRET_MINIO_SECRET_ACCESS_KEY",
+   "label": "Minio secret access key",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
+   "key": "SECRET_DB_PASSWORD",
+   "label": "Db password",
    "type": "password",
    "hint": "Generated automatically. Enter your own to replace it.",
    "min": 24,

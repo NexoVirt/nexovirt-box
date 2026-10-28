@@ -32,14 +32,6 @@
    "required": true
   },
   {
-   "key": "SECRET_REFRESH_TOKEN_LIFETIME_MIN",
-   "label": "Refresh token lifetime min",
-   "type": "password",
-   "hint": "Generated automatically. Enter your own to replace it.",
-   "min": 24,
-   "generate": true
-  },
-  {
    "key": "SECRET_JWT_SECRET_KEY",
    "label": "Jwt secret key",
    "type": "password",
@@ -50,6 +42,14 @@
   {
    "key": "SECRET_ACCESS_TOKEN_LIFETIME_MIN",
    "label": "Access token lifetime min",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
+   "key": "SECRET_REFRESH_TOKEN_LIFETIME_MIN",
+   "label": "Refresh token lifetime min",
    "type": "password",
    "hint": "Generated automatically. Enter your own to replace it.",
    "min": 24,

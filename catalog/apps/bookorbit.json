@@ -27,6 +27,14 @@
    "required": true
   },
   {
+   "key": "SECRET_POSTGRES_PASSWORD",
+   "label": "Postgres password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
    "key": "SECRET_JWT_SECRET",
    "label": "Jwt secret",
    "type": "password",
@@ -37,14 +45,6 @@
   {
    "key": "SECRET_SETUP_BOOTSTRAP_TOKEN",
    "label": "Setup bootstrap token",
-   "type": "password",
-   "hint": "Generated automatically. Enter your own to replace it.",
-   "min": 24,
-   "generate": true
-  },
-  {
-   "key": "SECRET_POSTGRES_PASSWORD",
-   "label": "Postgres password",
    "type": "password",
    "hint": "Generated automatically. Enter your own to replace it.",
    "min": 24,

@@ -27,6 +27,22 @@
    "required": true
   },
   {
+   "key": "SECRET_S3_SECRET_KEY",
+   "label": "S3 secret key",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
+   "key": "SECRET_AUTH_CREDENTIAL_KEY",
+   "label": "Auth credential key",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
    "key": "SECRET_JWT_SECRET",
    "label": "Jwt secret",
    "type": "password",
@@ -53,22 +69,6 @@
   {
    "key": "SECRET_POSTGRES_PASSWORD",
    "label": "Postgres password",
-   "type": "password",
-   "hint": "Generated automatically. Enter your own to replace it.",
-   "min": 24,
-   "generate": true
-  },
-  {
-   "key": "SECRET_S3_SECRET_KEY",
-   "label": "S3 secret key",
-   "type": "password",
-   "hint": "Generated automatically. Enter your own to replace it.",
-   "min": 24,
-   "generate": true
-  },
-  {
-   "key": "SECRET_AUTH_CREDENTIAL_KEY",
-   "label": "Auth credential key",
    "type": "password",
    "hint": "Generated automatically. Enter your own to replace it.",
    "min": 24,

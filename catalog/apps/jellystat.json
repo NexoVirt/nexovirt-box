@@ -27,16 +27,16 @@
    "required": true
   },
   {
-   "key": "SECRET_JWT_SECRET",
-   "label": "Jwt secret",
+   "key": "SECRET_POSTGRES_PASSWORD",
+   "label": "Postgres password",
    "type": "password",
    "hint": "Generated automatically. Enter your own to replace it.",
    "min": 24,
    "generate": true
   },
   {
-   "key": "SECRET_POSTGRES_PASSWORD",
-   "label": "Postgres password",
+   "key": "SECRET_JWT_SECRET",
+   "label": "Jwt secret",
    "type": "password",
    "hint": "Generated automatically. Enter your own to replace it.",
    "min": 24,

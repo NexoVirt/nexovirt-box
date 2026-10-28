@@ -44,6 +44,7 @@ func openStore(path string) (*Store, error) {
 		);
 		CREATE TABLE IF NOT EXISTS attempts (key TEXT NOT NULL, at INTEGER NOT NULL);
 		CREATE INDEX IF NOT EXISTS attempts_key ON attempts (key, at);
+		CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 		CREATE TABLE IF NOT EXISTS audit (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			at INTEGER NOT NULL,
@@ -203,4 +204,15 @@ func (s *Store) recentAudit(limit int) ([]AuditEntry, error) {
 		out = append(out, e)
 	}
 	return out, rows.Err()
+}
+
+func (s *Store) setting(key string) string {
+	var v string
+	s.db.QueryRow(`SELECT value FROM settings WHERE key = ?`, key).Scan(&v)
+	return v
+}
+
+func (s *Store) setSetting(key, value string) error {
+	_, err := s.db.Exec(`INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, key, value)
+	return err
 }

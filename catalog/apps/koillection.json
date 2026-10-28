@@ -45,6 +45,14 @@
    "generate": true
   },
   {
+   "key": "SECRET_JWT_SECRET_KEY",
+   "label": "Jwt secret key",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
    "key": "SECRET_JWT_PUBLIC_KEY",
    "label": "Jwt public key",
    "type": "password",
@@ -55,14 +63,6 @@
   {
    "key": "SECRET_DB_PASSWORD",
    "label": "Db password",
-   "type": "password",
-   "hint": "Generated automatically. Enter your own to replace it.",
-   "min": 24,
-   "generate": true
-  },
-  {
-   "key": "SECRET_JWT_SECRET_KEY",
-   "label": "Jwt secret key",
    "type": "password",
    "hint": "Generated automatically. Enter your own to replace it.",
    "min": 24,

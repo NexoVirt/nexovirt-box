@@ -27,16 +27,16 @@
    "required": true
   },
   {
-   "key": "SECRET_ENTE_DB_PASSWORD",
-   "label": "Ente db password",
+   "key": "SECRET_ENTE_JWT_SECRET",
+   "label": "Ente jwt secret",
    "type": "password",
    "hint": "Generated automatically. Enter your own to replace it.",
    "min": 24,
    "generate": true
   },
   {
-   "key": "SECRET_ENTE_JWT_SECRET",
-   "label": "Ente jwt secret",
+   "key": "SECRET_ENTE_DB_PASSWORD",
+   "label": "Ente db password",
    "type": "password",
    "hint": "Generated automatically. Enter your own to replace it.",
    "min": 24,

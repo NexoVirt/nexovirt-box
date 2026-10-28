@@ -27,6 +27,14 @@
    "required": true
   },
   {
+   "key": "SECRET_API_REFRESH_TOKEN_TTL",
+   "label": "Api refresh token ttl",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
    "key": "SECRET_AUTH_CLIENT_SECRET",
    "label": "Auth client secret",
    "type": "password",
@@ -45,14 +53,6 @@
   {
    "key": "SECRET_API_ACCESS_TOKEN_TTL",
    "label": "Api access token ttl",
-   "type": "password",
-   "hint": "Generated automatically. Enter your own to replace it.",
-   "min": 24,
-   "generate": true
-  },
-  {
-   "key": "SECRET_API_REFRESH_TOKEN_TTL",
-   "label": "Api refresh token ttl",
    "type": "password",
    "hint": "Generated automatically. Enter your own to replace it.",
    "min": 24,

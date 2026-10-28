@@ -45,6 +45,18 @@ func newCatalogStore(state, url string) *catalogStore {
 	return c
 }
 
+func (c *catalogStore) getURL() string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.url
+}
+
+func (c *catalogStore) setURL(u string) {
+	c.mu.Lock()
+	c.url = strings.TrimRight(u, "/")
+	c.mu.Unlock()
+}
+
 func (c *catalogStore) reload() error {
 	cat, src, err := loadCatalog(c.state)
 	if err != nil {
@@ -70,7 +82,7 @@ func (a *App) catalogList(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"source": src, "generated_at": cat.Index.GeneratedAt, "apps": cat.Index.Apps,
-		"arch": goarch(), "sync_url": a.catalog.url != "",
+		"arch": goarch(), "sync_url": a.catalog.getURL() != "",
 	})
 }
 
@@ -87,7 +99,7 @@ func (a *App) catalogApp(w http.ResponseWriter, r *http.Request) {
 // catalogSync downloads a signed catalog from -catalog-url, verifies it and swaps it in.
 func (a *App) catalogSync(w http.ResponseWriter, r *http.Request) {
 	c := a.catalog
-	if c.url == "" {
+	if c.getURL() == "" {
 		cat, src := c.get()
 		writeJSON(w, http.StatusOK, map[string]any{"message": fmt.Sprintf("This Box uses its %s catalog with %d apps. No online catalog is set up yet.", src, len(cat.Index.Apps))})
 		return
@@ -108,7 +120,7 @@ func (a *App) catalogSync(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *catalogStore) fetch(ctx context.Context, name string, limit int64) ([]byte, error) {
-	req, _ := http.NewRequestWithContext(ctx, "GET", c.url+"/"+name, nil)
+	req, _ := http.NewRequestWithContext(ctx, "GET", c.getURL()+"/"+name, nil)
 	res, err := c.client.Do(req)
 	if err != nil {
 		return nil, err
@@ -121,7 +133,7 @@ func (c *catalogStore) fetch(ctx context.Context, name string, limit int64) ([]b
 }
 
 func (c *catalogStore) sync(ctx context.Context) (int, error) {
-	if !strings.HasPrefix(c.url, "https://") {
+	if !strings.HasPrefix(c.getURL(), "https://") {
 		return 0, userError{"The catalog URL must use https."}
 	}
 	tmp := filepath.Join(c.state, "catalog.tmp")
@@ -137,7 +149,7 @@ func (c *catalogStore) sync(ctx context.Context) (int, error) {
 		}
 		os.WriteFile(filepath.Join(tmp, f), b, 0o600)
 	}
-	cat, err := catalog.Load(os.DirFS(tmp), catalog.PublicKey)
+	cat, err := catalog.Load(os.DirFS(tmp), catalog.PublicKeys)
 	if err != nil {
 		return 0, userError{"The downloaded catalog is not signed by NexoVirt. It was not used."}
 	}

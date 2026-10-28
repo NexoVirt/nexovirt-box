@@ -27,14 +27,6 @@
    "required": true
   },
   {
-   "key": "SECRET_APP_KEY",
-   "label": "App key",
-   "type": "password",
-   "hint": "Generated automatically. Enter your own to replace it.",
-   "min": 24,
-   "generate": true
-  },
-  {
    "key": "SECRET_MAIL_PASSWORD",
    "label": "Mail password",
    "type": "password",
@@ -45,6 +37,14 @@
   {
    "key": "SECRET_MYSQL_ROOT_PASSWORD",
    "label": "Mysql root password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
+   "key": "SECRET_APP_KEY",
+   "label": "App key",
    "type": "password",
    "hint": "Generated automatically. Enter your own to replace it.",
    "min": 24,

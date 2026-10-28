@@ -67,6 +67,8 @@ func (a *App) routeTable() []route {
 		{"POST /api/apps/{id}/uninstall", false, a.appUninstall},
 		{"GET /api/apps/{id}/logs", false, a.appLogs},
 		{"GET /api/jobs/{id}", false, a.jobStatus},
+		{"GET /api/settings", false, a.settingsGet},
+		{"POST /api/settings", false, a.settingsSave},
 	}
 }
 
