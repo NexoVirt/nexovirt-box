@@ -2,6 +2,7 @@
   // Activity log as a data table in a card that fills the page. Pages load from the server as you
   // scroll (cursor paging), with filters for type and user, a search and a sortable time column.
   import { onMount } from 'svelte';
+  import DataTable from '$lib/DataTable.svelte';
   import { api } from '$lib/api.js';
   import { ago } from '$lib/format.js';
   import LogIn from '@lucide/svelte/icons/log-in';
@@ -14,12 +15,6 @@
   import FolderOpen from '@lucide/svelte/icons/folder-open';
   import Activity from '@lucide/svelte/icons/activity';
   import RefreshCw from '@lucide/svelte/icons/refresh-cw';
-  import Search from '@lucide/svelte/icons/search';
-  import ArrowUp from '@lucide/svelte/icons/arrow-up';
-  import ArrowDown from '@lucide/svelte/icons/arrow-down';
-  import Loader from '@lucide/svelte/icons/loader-circle';
-  import CircleAlert from '@lucide/svelte/icons/circle-alert';
-  import X from '@lucide/svelte/icons/x';
 
   let { onSessionLost } = $props();
 
@@ -91,17 +86,15 @@
     { value: 'system', label: 'Settings and updates' },
   ];
 
-  let items = $state([]);
+  let items = $state(null);
   let total = $state(0);
   let next = $state(0);
   let users = $state([]);
   let loading = $state(false);
-  let first = $state(true);
   let error = $state('');
   let type = $state(''), user = $state(''), query = $state('');
-  let asc = $state(false);
-  let scroller = $state(), sentinel = $state();
-  let seq = 0, searchTimer;
+  let sort = $state({ key: 'at', dir: 'desc' });
+  let seq = 0;
 
   function label(a) {
     if (LABELS[a]) return LABELS[a];
@@ -110,7 +103,7 @@
   }
 
   function params(cursor) {
-    const p = new URLSearchParams({ limit: String(PAGE), order: asc ? 'asc' : 'desc' });
+    const p = new URLSearchParams({ limit: String(PAGE), order: sort.dir === 'asc' ? 'asc' : 'desc' });
     if (cursor) p.set('cursor', String(cursor));
     if (type) p.set('type', type);
     if (user) p.set('user', user);
@@ -126,14 +119,12 @@
     const res = await api('/api/activity?' + params(0));
     if (my !== seq) return;
     loading = false;
-    first = false;
     if (res.status === 401) return onSessionLost();
-    if (!res.ok) { error = res.error; return; }
+    if (!res.ok) { error = res.error; items = items || []; return; }
     items = res.data.items;
     total = res.data.total;
     next = res.data.next;
     users = res.data.users;
-    scroller?.scrollTo({ top: 0 });
   }
 
   async function more() {
@@ -150,149 +141,63 @@
     next = res.data.next;
   }
 
-  function search() {
-    clearTimeout(searchTimer);
-    searchTimer = setTimeout(reset, 250);
-  }
-
   const timeFmt = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'medium' });
+  const COLUMNS = [
+    { key: 'action', label: 'Event', width: '30%', primary: true },
+    { key: 'detail', label: 'Details', width: '30%', hide: 'md' },
+    { key: 'username', label: 'User', width: '10%' },
+    { key: 'ip', label: 'Address', width: '12%', mono: true, hide: 'md' },
+    { key: 'at', label: 'Time', width: '18%', align: 'right', sortable: true, firstDir: 'desc' },
+  ];
+  let filtering = $derived(!!(query || type || user));
 
-  onMount(() => {
-    reset();
-    // Load the next page once the end of the list scrolls into view.
-    const io = new IntersectionObserver((e) => e[0].isIntersecting && more(), { root: scroller, rootMargin: '300px' });
-    io.observe(sentinel);
-    return () => io.disconnect();
-  });
+  onMount(reset);
 </script>
 
 <div class="page fill">
-  <header class="page-head compact"><h1 class="t-large">Activity</h1></header>
-  <div class="card tile">
-    <div class="head">
-      <div class="title">
-        <p class="t-sub">Sign-ins, console sessions, file and app changes on this Box.</p>
-      </div>
-      <div class="filters">
-        <label class="search">
-          <Search size={14} />
-          <input bind:value={query} oninput={search} placeholder="Search" aria-label="Search the activity" spellcheck="false" />
-          {#if query}<button class="clear" onclick={() => { query = ''; reset(); }} aria-label="Clear search"><X size={13} /></button>{/if}
-        </label>
-        <select class="input sm" bind:value={type} onchange={reset} aria-label="Type">
-          {#each TYPES as t (t.value)}<option value={t.value}>{t.label}</option>{/each}
-        </select>
-        <select class="input sm" bind:value={user} onchange={reset} aria-label="User">
-          <option value="">All users</option>
-          {#each users as u (u)}<option value={u}>{u}</option>{/each}
-        </select>
-        <button class="icon-btn sm" onclick={reset} aria-label="Refresh" title="Refresh"><RefreshCw size={16} class={loading ? 'spinner' : ''} /></button>
-      </div>
+  <header class="page-head compact">
+    <div>
+      <h1 class="t-large">Activity</h1>
+      <p class="t-sub">Sign-ins, console sessions, file and app changes on this Box.</p>
     </div>
-
-    <div class="scroller" bind:this={scroller}>
-      <table>
-        <thead>
-          <tr>
-            <th class="c-what">Event</th>
-            <th class="c-detail">Details</th>
-            <th class="c-user">User</th>
-            <th class="c-ip">Address</th>
-            <th class="c-time">
-              <button class="sort" onclick={() => { asc = !asc; reset(); }} aria-sort={asc ? 'ascending' : 'descending'}>
-                Time{#if asc}<ArrowUp size={12} />{:else}<ArrowDown size={12} />{/if}
-              </button>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {#each items as it (it.id)}
-            {@const [text, Icon, tone] = label(it.action)}
-            <tr>
-              <td class="c-what"><span class="what"><span class="ico" class:error={tone === 'error'}><Icon size={14} /></span><span class="truncate">{text}</span></span></td>
-              <td class="c-detail"><span class="truncate mono-ish" title={it.detail}>{it.detail}</span></td>
-              <td class="c-user">{it.username || "Unknown"}</td>
-              <td class="c-ip mono">{it.ip}</td>
-              <td class="c-time num" title={timeFmt.format(it.at * 1000)}><span class="ago">{ago(it.at)}</span><span class="abs">{timeFmt.format(it.at * 1000)}</span></td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
-      {#if first}
-        <div class="pad">{#each Array(10) as _}<div class="skeleton line"></div>{/each}</div>
-      {:else if error}
-        <div class="pad"><div class="notice"><CircleAlert size={18} /><span>{error}</span></div></div>
-      {:else if !items.length}
-        <div class="empty"><Activity size={30} /><p class="t-head">{query || type || user ? 'Nothing matches these filters' : 'Nothing happened yet'}</p></div>
+  </header>
+  <DataTable fill fixed server label="Activity" columns={COLUMNS} rows={items} key="id" searchable bind:search={query} placeholder="Search the activity"
+    onsearch={reset} bind:sort onsort={reset} onmore={more} hasMore={!!next} busy={loading} {total} {error} onretry={reset}
+    empty={{ icon: Activity, title: filtering ? 'Nothing matches these filters' : 'Nothing happened yet' }}>
+    {#snippet toolbar()}
+      <select class="input" bind:value={type} onchange={reset} aria-label="Type">
+        {#each TYPES as t (t.value)}<option value={t.value}>{t.label}</option>{/each}
+      </select>
+      <select class="input" bind:value={user} onchange={reset} aria-label="User">
+        <option value="">All users</option>
+        {#each users as u (u)}<option value={u}>{u}</option>{/each}
+      </select>
+      <button class="icon-btn" onclick={reset} aria-label="Refresh" title="Refresh"><RefreshCw size={16} class={loading ? 'spinner' : ''} /></button>
+    {/snippet}
+    {#snippet cell(it, c)}
+      {#if c.key === 'action'}
+        {@const [text, Icon, tone] = label(it.action)}
+        <span class="what"><span class="ico" class:accent={tone !== 'error'} class:error={tone === 'error'}><Icon /></span><span class="truncate">{text}</span></span>
+      {:else if c.key === 'detail'}
+        <span class="muted" title={it.detail}>{it.detail}</span>
+      {:else if c.key === 'username'}
+        {it.username || 'Unknown'}
+      {:else if c.key === 'ip'}
+        <span class="muted">{it.ip}</span>
+      {:else}
+        <span class="num muted" title={timeFmt.format(it.at * 1000)}><span class="ago">{ago(it.at)}</span><span class="abs">{timeFmt.format(it.at * 1000)}</span></span>
       {/if}
-      <div bind:this={sentinel} class="sentinel">
-        {#if loading && !first && items.length}<Loader size={16} class="spinner" />{/if}
-      </div>
-    </div>
-
-    <div class="foot t-caption num">
-      {#if !first && !error}Showing {items.length} of {total} {total === 1 ? 'entry' : 'entries'}{/if}
-    </div>
-  </div>
+    {/snippet}
+  </DataTable>
 </div>
 
 <style>
-  .card { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 0; overflow: hidden; }
-  .head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; padding: 1rem 1rem 0.875rem 1.25rem; border-bottom: 1px solid var(--hairline); }
-  .title h1, .title p { margin: 0; }
-  .filters { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-  .search { display: flex; align-items: center; gap: 0.375rem; height: 2.25rem; padding: 0 0.625rem; border-radius: 0.625rem; background: var(--fill); color: var(--text-3); width: 13rem; }
-  .search input { flex: 1; min-width: 0; border: 0; background: none; font-size: 0.8125rem; color: var(--text); }
-  .search input::placeholder { color: var(--text-3); }
-  .search input:focus-visible { outline: none; }
-  .search:focus-within { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent); }
-  .clear { display: grid; place-items: center; width: 1.25rem; height: 1.25rem; padding: 0; border: 0; border-radius: 50%; background: var(--fill-2); color: var(--text-2); cursor: pointer; }
-  .input.sm { height: 2.25rem; width: auto; min-width: 9rem; font-size: 0.8125rem; border-radius: 0.625rem; }
-  .icon-btn.sm { width: 2.25rem; height: 2.25rem; }
-
-  .scroller { flex: 1; min-height: 0; overflow: auto; }
-  table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.8125rem; table-layout: fixed; }
-  thead th {
-    position: sticky; top: 0; z-index: 1; height: 2.25rem; padding: 0 0.75rem; text-align: left; font-size: 0.75rem; font-weight: 600; color: var(--text-2);
-    background: color-mix(in srgb, var(--surface) 90%, transparent); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
-    border-bottom: 1px solid var(--hairline);
-  }
-  thead th:first-child { padding-left: 1.25rem; }
-  td { height: 2.75rem; padding: 0 0.75rem; border-bottom: 1px solid var(--hairline); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  td:first-child { padding-left: 1.25rem; }
-  tbody tr:hover td { background: var(--fill); }
-  .c-what { width: 30%; }
-  .c-detail { width: 30%; color: var(--text-2); }
-  .c-user { width: 10%; }
-  .c-ip { width: 12%; color: var(--text-2); }
-  .c-time { width: 18%; text-align: right; padding-right: 1.25rem !important; }
-  thead .c-time { text-align: right; }
-  .sort { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
-  .sort:hover { color: var(--text); }
-  .what { display: flex; align-items: center; gap: 0.625rem; min-width: 0; font-weight: 500; }
-  .ico { display: grid; place-items: center; width: 1.625rem; height: 1.625rem; flex-shrink: 0; color: var(--accent); }
-  .ico.error { color: var(--error); }
-  .truncate { display: block; }
-  .what .truncate { display: inline; }
+  .what { display: flex; align-items: center; gap: 0.625rem; min-width: 0; }
+  .what .truncate { min-width: 0; }
+  .muted { color: var(--text-2); }
   .ago { display: none; }
-  .c-time .abs { color: var(--text-2); }
-
-  .pad { padding: 1rem 1.25rem; display: grid; gap: 0.75rem; }
-  .skeleton.line { height: 1.25rem; }
-  .empty { display: grid; justify-items: center; gap: 0.375rem; padding: 3rem 1rem; color: var(--text-3); text-align: center; }
-  .empty p { margin: 0; color: var(--text-2); }
-  .sentinel { display: grid; place-items: center; min-height: 2.5rem; color: var(--text-3); }
-  .foot { display: flex; align-items: center; min-height: 2.25rem; padding: 0 1.25rem; border-top: 1px solid var(--hairline); }
-
   @media (max-width: 899px) {
-    .c-detail, .c-ip { display: none; }
-    .c-what { width: 52%; }
-    .c-user { width: 18%; }
-    .c-time { width: 30%; }
     .ago { display: inline; }
-    .c-time .abs { display: none; }
-    .search { width: 100%; flex: 1 1 100%; }
-    .filters { width: 100%; }
-    .input.sm { flex: 1; min-width: 0; }
+    .abs { display: none; }
   }
 </style>
