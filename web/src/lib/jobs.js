@@ -21,7 +21,7 @@ export async function runJob(path, body, onUpdate) {
 // What a running action is called in a status line.
 export const BUSY_LABEL = {
   install: 'Installing', retry: 'Installing', start: 'Starting', stop: 'Stopping', restart: 'Restarting',
-  update: 'Updating', uninstall: 'Removing',
+  update: 'Updating', uninstall: 'Removing', backup: 'Backing up', restore: 'Restoring', verify: 'Checking backup', edit: 'Redeploying',
 };
 
 // Picks up actions that run in the background after a reload (or in another tab). sync()

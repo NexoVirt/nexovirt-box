@@ -11,6 +11,11 @@
   import Popover from '$lib/Popover.svelte';
   import JobLog from '$lib/JobLog.svelte';
   import DockerSetup from './DockerSetup.svelte';
+  import OwnAppDialog from './OwnAppDialog.svelte';
+  import AppBackups from './AppBackups.svelte';
+  import Archive from '@lucide/svelte/icons/archive';
+  import FilePen from '@lucide/svelte/icons/file-pen';
+  import Plus from '@lucide/svelte/icons/plus';
   import ExternalLink from '@lucide/svelte/icons/external-link';
   import Ellipsis from '@lucide/svelte/icons/ellipsis';
   import Play from '@lucide/svelte/icons/play';
@@ -32,7 +37,7 @@
     stopped: ['Stopped', ''], exited: ['Stopped with an error', 'error'], not_created: ['Not started yet', ''],
     interrupted: ['Install interrupted', 'warn'], unknown: ['Unknown', ''],
   };
-  const DONE = { start: 'started', stop: 'stopped', restart: 'restarted', update: 'updated', install: 'installed', retry: 'installed', uninstall: 'removed' };
+  const DONE = { start: 'started', stop: 'stopped', restart: 'restarted', update: 'updated', install: 'installed', retry: 'installed', uninstall: 'removed', backup: 'backed up', restore: 'restored', verify: 'backup checked', edit: 'redeployed' };
   // Down although nobody stopped it.
   const DOWN = ['exited', 'partial', 'restarting', 'stopped', 'not_created'];
 
@@ -61,6 +66,8 @@
   let updates = $state({ apps: {} });
   let checking = $state(false);
   let proxy = $state(null);
+  let ownOpen = $state(false), ownId = $state('');
+  let backupsFor = $state(null), backupsOpen = $state(false);
   let domainFor = $state(null), domainOpen = $state(false), domain = $state(''), domainBusy = $state(false), domainError = $state('');
 
   const followJobs = jobFollower((job, id) => {
@@ -87,7 +94,22 @@
     return (STATES[app.state] || STATES.unknown)[0];
   }
 
+  function openOwn(e, app) {
+    menu = null;
+    origin = e ? { x: e.clientX, y: e.clientY } : null;
+    ownId = app?.id || '';
+    ownOpen = true;
+  }
+
+  function openBackups(e, app) {
+    menu = null;
+    origin = { x: e.clientX, y: e.clientY };
+    backupsFor = app;
+    backupsOpen = true;
+  }
+
   async function retry(app) {
+    if (app.custom) return act(app, 'start'); // own apps resume with their own files
     menu = null;
     busy = { ...busy, [app.id]: 'retry' };
     const job = await runJob(`/api/apps/${app.id}/install`, { retry: true });
@@ -241,6 +263,7 @@
       <button class="btn btn-gray btn-sm" onclick={checkUpdates} disabled={checking}>
         {#if checking}<Loader size={15} class="spinner" />Checking{:else}<RefreshCw size={15} />Check for updates{/if}
       </button>
+      <button class="btn btn-gray btn-sm" onclick={(e) => openOwn(e, null)}><Plus size={15} />Add your own app</button>
       <button class="btn btn-tinted btn-sm" onclick={() => onNavigate('/apps')}><LayoutGrid size={15} />App Store</button>
     </div>
   </header>
@@ -280,10 +303,10 @@
         {@const [, tone] = STATES[app.state] || STATES.unknown}
         {@const working = busyOf(app)}
         <div class="row app">
-          <AppIcon id={app.id} name={app.name} size={42} />
+          <AppIcon id={app.id} name={app.name} size={42} icon={app.icon} />
           <div class="main">
             <span class="t-head truncate">{app.name}</span>
-            <span class="t-caption truncate">{[app.version && `Version ${versionLabel(app.version)}`, app.domain || (app.main_port && `Port ${app.main_port}`)].filter(Boolean).join('  ·  ')}</span>
+            <span class="t-caption truncate">{[app.custom ? 'Own app' : app.version && `Version ${versionLabel(app.version)}`, app.domain || (app.main_port && `Port ${app.main_port}`)].filter(Boolean).join('  ·  ')}</span>
             <span class="state t-caption">
               {#if working}<Loader size={14} class="spinner" />{BUSY_LABEL[working] || 'Working'}
               {:else}<span class="dot {tone}"></span>{stateText(app)}{/if}
@@ -310,7 +333,9 @@
                 <button class="pop-item" role="menuitem" onclick={() => act(app, 'restart')}><RotateCw size={16} />Restart</button>
                 <button class="pop-item" role="menuitem" onclick={() => act(app, 'update')}><Download size={16} />Update</button>
               {/if}
-              <button class="pop-item" role="menuitem" onclick={(e) => showCreds(e, app)}><KeyRound size={16} />Login details</button>
+              {#if app.custom}<button class="pop-item" role="menuitem" onclick={(e) => openOwn(e, app)}><FilePen size={16} />Edit compose file</button>
+              {:else}<button class="pop-item" role="menuitem" onclick={(e) => showCreds(e, app)}><KeyRound size={16} />Login details</button>{/if}
+              <button class="pop-item" role="menuitem" onclick={(e) => openBackups(e, app)}><Archive size={16} />Backups</button>
               <button class="pop-item" role="menuitem" onclick={(e) => showLogs(e, app)}><ScrollText size={16} />Logs</button>
               <button class="pop-item" role="menuitem" onclick={(e) => editDomain(e, app)}><Globe size={16} />Domain and HTTPS</button>
               <button class="pop-item danger" role="menuitem" onclick={(e) => askRemove(e, app)}><Trash2 size={16} />Uninstall</button>
@@ -323,6 +348,9 @@
 </div>
 
 <svelte:window onpointerdown={(e) => { if (menu && !e.target.closest('.more')) menu = null; }} />
+
+<OwnAppDialog bind:open={ownOpen} editId={ownId} {origin} {onSessionLost} onDone={load} />
+<AppBackups bind:open={backupsOpen} app={backupsFor} apps={apps || []} {origin} {onSessionLost} {onNavigate} onDone={load} />
 
 <Dialog bind:open={logsOpen} label="Logs" {origin} wide>
   <div class="dlg">

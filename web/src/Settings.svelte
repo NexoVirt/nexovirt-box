@@ -35,12 +35,15 @@
   import Waypoints from '@lucide/svelte/icons/waypoints';
   import Scale from '@lucide/svelte/icons/scale';
   import FolderTree from '@lucide/svelte/icons/folder-tree';
+  import BellRing from '@lucide/svelte/icons/bell-ring';
+  import NotifySettings from './NotifySettings.svelte';
 
   const TABS = [
     { key: 'general', label: 'General', icon: SlidersHorizontal },
     { key: 'security', label: 'Security', icon: ShieldCheck },
     { key: 'apps', label: 'Apps and catalog', icon: Package },
     { key: 'network', label: 'Network', icon: Network },
+    { key: 'notifications', label: 'Notifications', icon: BellRing },
     { key: 'updates', label: 'Updates', icon: Sparkles },
     { key: 'about', label: 'About', icon: Info },
   ];
@@ -528,6 +531,10 @@
               <button class="btn btn-gray btn-sm" onclick={prune} disabled={pruning || !unused?.count}>{#if pruning}<Loader size={15} class="spinner" />{/if}Clean up</button>
             </div>
           </section>
+
+        {:else if tab === 'notifications'}
+          <h2 class="t-title pane-title">Notifications</h2>
+          <NotifySettings {onSessionLost} />
 
         {:else if tab === 'network'}
           <h2 class="t-title pane-title">Network</h2>
