@@ -1,0 +1,49 @@
+{
+ "id": "monica",
+ "name": "Monica",
+ "version": "4.1.2",
+ "category": "Data",
+ "tagline": "A Personal Relationship Management tool to help you document your social life.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/monica/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Personal Relationship Manager\n\n**Monica** is an open-source web application to organize and record your interactions with your loved ones. We call it a PRM, or Personal Relationship Management. Think of it as a [CRM](https://en.wikipedia.org/wiki/Customer_relationship_management) (a popular tool used by sales teams in the corporate world) for your friends or family. This is what it currently looks like:\n\n\u003cp align=\"center\"\u003e\n\n![Screenshot of the application](https://github.com/monicahq/monica/blob/main/docs/images/main-app.png?raw=true![img.png](img.png))\n\n\u003c/p\u003e\n\n### Purpose\n\nMonica allows people to keep track of everything that’s important about their friends and family. Like the activities with them. When you last called someone and what you talked about. It will help you remember the name and the age of their kids. It can also remind you to call someone you haven’t talked to in a while.\n\n### Features\n\n* Add and manage contacts\n* Define relationships between contacts\n* Reminders\n* Automatic reminders for birthdays\n* Stay in touch with a contact by sending reminders at a given interval\n* Management of debts\n* Ability to add notes to a contact\n* Ability to record how you met someone\n* Management of activities with a contact\n* Management of tasks\n* Management of gifts given and received and ideas for gifts\n* Management of addresses and all the different ways to contact someone\n* Management of contact field types\n* Management of a contact’s pets\n* Basic journal\n* Ability to record how your day went\n* Upload documents and photos\n* Export and import of data\n* Export contacts as vCards\n* Ability to define custom genders\n* Ability to define custom activity types\n* Ability to favorite contacts\n* Track conversations on social media or SMS\n* Multiple users\n* Tags to organize contacts\n* Ability to define what section should appear on the contact sheet\n* Multiple currencies\n* Multiple languages\n* An API that covers most of the data\n\n### Who is it for?\n\nThis project is **for people who have difficulty remembering details about other people’s lives** – especially those they care about. Yes, you can still use Facebook to achieve this, but you will only be able to see what people do and post, and not add your own notes about them.\n\nWe’ve also received lots of positive feedback from users who suffer from Asperger syndrome, Alzheimer’s disease, or simply introverts who use this application on a daily basis.\n\n### What Monica isn’t\n\n* Monica is not a social network and **it never will be**. It’s not meant to be social. It’s designed to be the opposite: it’s for your eyes only.\n* Monica is not a smart assistant. It won’t guess what you want to do. It’s actually pretty dumb: it will only send you emails for the things you asked to be reminded of.\n* Monica is not a tool that will scan your data and do nasty things with it. It’s your data, your server, do whatever you want with it. You’re in control of your data.",
+ "website": "https://monicahq.com/",
+ "source": "https://github.com/monicahq/monica",
+ "main_port": 3291,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3291",
+   "required": true
+  },
+  {
+   "key": "MONICA_DB_PASS",
+   "label": "Database password",
+   "type": "password",
+   "min": 30,
+   "max": 30,
+   "generate": true
+  },
+  {
+   "key": "MONICA_APP_KEY",
+   "label": "Application key",
+   "type": "password",
+   "min": 32,
+   "max": 32,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  monica:\n    image: monica:4.1.2\n    container_name: monica\n    depends_on:\n      - monica-db\n    ports:\n      - ${APP_PORT}:80\n    environment:\n      - APP_KEY=${MONICA_APP_KEY}\n      - DB_HOST=monica-db\n      - DB_USERNAME=usermonica\n      - DB_PASSWORD=${MONICA_DB_PASS}\n    volumes:\n      - ${APP_DATA_DIR}/data:/var/www/html/storage\n    restart: unless-stopped\n  monica-db:\n    image: mariadb:10.6.11\n    container_name: monica-db\n    environment:\n      - TZ=${TZ}\n      - MARIADB_RANDOM_ROOT_PASSWORD=true\n      - MARIADB_DATABASE=monica\n      - MARIADB_USER=usermonica\n      - MARIADB_PASSWORD=${MONICA_DB_PASS}\n    volumes:\n      - ${APP_DATA_DIR}/mysql:/var/lib/mysql\n    restart: unless-stopped\n"
+}

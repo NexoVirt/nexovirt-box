@@ -1,0 +1,53 @@
+{
+ "id": "blinko",
+ "name": "Blinko",
+ "version": "1.8.7",
+ "category": "Productivity",
+ "tagline": "Blinko is an AI-powered card note-taking project. Designed for individuals who want to quickly capture and organize their fleeting thoughts. Blinko allows users to seamlessly jot down ideas the moment they strike, ensuring that no spark of creativity is lost.",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Blinko/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "Blinko is an open-source personal knowledge management and information recording platform, focused on providing users with a lightweight, efficient, and scalable note-taking and knowledge organization experience. Through modular design and a modern technology stack, it enables users to quickly capture ideas, organize knowledge, and build their own information system.\n\nThe project emphasizes simplicity and customizability, supporting flexible combinations of various content types (text, tags, links, etc.), while its clear structured design helps users efficiently retrieve and connect information. Blinko also provides excellent extensibility, making it easy for developers to customize and enhance functionality according to their needs.\n\nIn practical use, Blinko balances usability and functionality, offering a smooth experience for daily note-taking, knowledge accumulation, or project document management - an ideal knowledge tool for long-term personal growth.\n\n**Main features:**\n\n- Lightweight note system for quick content recording and editing\n- Tags and structured organization to improve information retrieval efficiency\n- Support for multiple content types (text, links, etc.)\n- Extensible architecture for custom functionality and plugin development\n- Clean interface design focused on content rather than complex operations\n\n**Learn more:**\n\n- [Blinko GitHub](https://github.com/blinkospace/blinko)",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Blinko/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Blinko/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Blinko/screenshot-3.png"
+ ],
+ "website": "https://blinko.space/",
+ "main_port": 1111,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "1111",
+   "required": true
+  },
+  {
+   "key": "SECRET_NEXTAUTH_SECRET",
+   "label": "Nextauth secret",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
+   "key": "SECRET_POSTGRES_PASSWORD",
+   "label": "Postgres password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  blinko:\n    image: blinkospace/blinko:1.8.7\n    container_name: blinko\n    restart: unless-stopped\n    networks:\n      - blinko-net\n    depends_on:\n      blinko-postgres:\n        condition: service_healthy\n    ports:\n      - target: 1111\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    environment:\n      NODE_ENV: production\n      NEXTAUTH_URL: http://localhost:1111\n      NEXT_PUBLIC_BASE_URL: http://localhost:1111\n      NEXTAUTH_SECRET: ${SECRET_NEXTAUTH_SECRET}\n      DATABASE_URL: postgresql://postgres:${SECRET_POSTGRES_PASSWORD}@blinko-postgres:5432/postgres\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/blinko_data\n        target: /app/.blinko\n    logging:\n      options:\n        max-size: 10m\n        max-file: '3'\n    deploy:\n      resources:\n        reservations:\n          memory: 512m\n  blinko-postgres:\n    image: postgres:14\n    container_name: blinko-postgres\n    restart: unless-stopped\n    environment:\n      POSTGRES_DB: postgres\n      POSTGRES_USER: postgres\n      POSTGRES_PASSWORD: ${SECRET_POSTGRES_PASSWORD}\n      TZ: $TZ\n    networks:\n      - blinko-net\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/postgres_data\n        target: /var/lib/postgresql/data\n    deploy:\n      resources:\n        reservations:\n          memory: 256m\n    healthcheck:\n      test:\n        - CMD\n        - pg_isready\n        - -U\n        - postgres\n        - -d\n        - postgres\n      interval: 5s\n      timeout: 10s\n      retries: 5\nnetworks:\n  blinko-net:\n    driver: bridge\n"
+}

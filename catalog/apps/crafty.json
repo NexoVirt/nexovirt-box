@@ -1,0 +1,33 @@
+{
+ "id": "crafty",
+ "name": "Crafty",
+ "version": "4.11.0",
+ "category": "Gaming",
+ "tagline": "Python based Control Panel for your Minecraft Server",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/crafty/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Crafty Controller 4.2.2\n\nPython based Control Panel for your Minecraft Server\n\n## Credentials\n\nDefault credentials are located in `runtipi/app-data/migrated/crafty/config/default-creds.txt`\n\n## What is Crafty Controller?\n\nCrafty Controller is a Minecraft Server Control Panel / Launcher. The purpose\nof Crafty Controller is to launch a Minecraft Server in the background and present\na web interface for the server administrators to interact with their servers. Crafty\nis compatible with Docker, Linux, Windows 7, Windows 8 and Windows 10.\n\n## Documentation\n\nDocumentation available on [Crafty Docs](https://docs.craftycontrol.com)\n\n## Meta\n\nProject Homepage - \u003chttps://craftycontrol.com\u003e\n\nDiscord Server - \u003chttps://discord.gg/9VJPhCE\u003e\n\nGit Repository - \u003chttps://gitlab.com/crafty-controller/crafty-4\u003e\n\nDocker Hub - [arcadiatechnology/crafty-4](https://hub.docker.com/r/arcadiatechnology/crafty-4)",
+ "website": "https://craftycontrol.com/",
+ "source": "https://gitlab.com/crafty-controller/crafty-4",
+ "main_port": 8456,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8456",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  crafty:\n    container_name: crafty\n    image: registry.gitlab.com/crafty-controller/crafty-4:4.11.0\n    restart: unless-stopped\n    environment:\n      - TZ=${TZ}\n    ports:\n      - ${APP_PORT}:8443\n      - '8123:8123'\n      - 19132:19132/udp\n      - 25500-25600:25500-25600\n    volumes:\n      - ${APP_DATA_DIR}/data/backups:/crafty/backups\n      - ${APP_DATA_DIR}/data/logs:/crafty/logs\n      - ${APP_DATA_DIR}/data/servers:/crafty/servers\n      - ${APP_DATA_DIR}/data/config:/crafty/app/config\n      - ${APP_DATA_DIR}/data/import:/crafty/import\n"
+}

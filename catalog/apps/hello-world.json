@@ -1,0 +1,31 @@
+{
+ "id": "hello-world",
+ "name": "Hello World",
+ "version": "latest",
+ "category": "Utilities",
+ "tagline": "Hello World web server in under 2 MB",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/hello-world/metadata/logo.jpg",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Hello World\nTiny app that prints \"Hello World\" in the browser. Can be used to test the deployment of a new app.",
+ "source": "https://github.com/crccheck/docker-hello-world",
+ "main_port": 8000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  hello-world:\n    container_name: hello-world\n    image: crccheck/hello-world:latest\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:8000\n"
+}

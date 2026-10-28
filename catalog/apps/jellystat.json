@@ -1,0 +1,47 @@
+{
+ "id": "jellystat",
+ "name": "Jellystat",
+ "version": "e61c759ec706da378bc8374e797da1dfd298ab30f804cefd82d192c301a888c7",
+ "category": "Media",
+ "tagline": "Jellystat",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/jellystat.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Jellystat is a free and open source Statistics App for Jellyfin! (This project is still in development - expect some weirdness)",
+ "main_port": 3000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3000",
+   "required": true
+  },
+  {
+   "key": "SECRET_JWT_SECRET",
+   "label": "Jwt secret",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
+   "key": "SECRET_POSTGRES_PASSWORD",
+   "label": "Postgres password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-jellystat application\nservices:\n  # Service name: big-bear-jellystat\n  # The `big-bear-jellystat` service definition\n  big-bear-jellystat:\n    # Name of the container\n    container_name: big-bear-jellystat\n    # Image to be used for the container\n    image: cyfershepard/jellystat:1.1.12@sha256:e61c759ec706da378bc8374e797da1dfd298ab30f804cefd82d192c301a888c7\n    # Container restart policy\n    restart: unless-stopped\n    environment:\n      - POSTGRES_USER=postgres\n      - POSTGRES_PASSWORD=${SECRET_POSTGRES_PASSWORD}\n      - POSTGRES_IP=big-bear-jellystat-db\n      - POSTGRES_PORT=5432\n      - JWT_SECRET=${SECRET_JWT_SECRET}\n    # Volumes to be mounted to the container\n    volumes:\n      - ${APP_DATA_DIR}/backup-data:/app/backend/backup-data\n    # Ports mapping between host and container\n    ports:\n      # Mapping port 3000 of the host to port 3000 of the container\n      - \"${APP_PORT}:3000\"\n    networks:\n      - big-bear-jellystat-network\n  big-bear-jellystat-db:\n    container_name: big-bear-jellystat-db\n    image: postgres:15.2@sha256:78a275d4c891f7b3a33d3f1a78eda9f1d744954d9e20122bfdc97cdda25cddaf\n    environment:\n      POSTGRES_DB: \"jfstat\"\n      POSTGRES_USER: postgres\n      POSTGRES_PASSWORD: ${SECRET_POSTGRES_PASSWORD}\n    volumes:\n      - ${APP_DATA_DIR}/postgres-data:/var/lib/postgresql/data # Mounting the volume\n    networks:\n      - big-bear-jellystat-network\nnetworks:\n  big-bear-jellystat-network:\n    name: big-bear-jellystat-network\n    driver: bridge\n"
+}

@@ -1,0 +1,48 @@
+{
+ "id": "firefly-iii-data-importer",
+ "name": "Firefly III Data Importer",
+ "version": "version-2",
+ "category": "Finance",
+ "tagline": "The Firefly III Data Importer can import data into Firefly III",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/firefly-iii-data-importer/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Firefly III Data Importer\n\"Firefly III\" is a (self-hosted) manager for your personal finances. It can help you keep track of your expenses and income, so you can spend less and save more. The **data importer** is built to help you import transactions into Firefly III. It is separated from Firefly III for security and maintenance reasons.\n\nThe data importer does not connect to your bank directly. Instead, it uses [Nordigen](https://nordigen.com/en/coverage/) and [SaltEdge](https://www.saltedge.com/products/spectre/countries) to connect to over 6000 banks worldwide. These services are free for Firefly III users, but require registration. Keep in mind these services have their own privacy and data usage policies.\n\nThe data importer can import CSV files you've downloaded from your bank.\n\nYou can run the data importer once, for a bulk import. You can also run it regularly to keep up with new transactions.\n\nEager to get started? Go to [the documentation](https://docs.firefly-iii.org/data-importer)!\n\n## Features\n\n* Import from over 6000 banks\n* Import over the command line for easy automation\n* Import over an API for easy automation\n* Use rules and data mapping for transaction clarity\n\nMany more features are listed in the [documentation](https://docs.firefly-iii.org/data-importer).\n\n## Who's it for?\n\nThis application is for people who want to track their finances, keep an eye on their money **without having to upload their financial records to the cloud**. You're a bit tech-savvy, you like open source software, and you don't mind tinkering with (self-hosted) servers.\n\n## Need help?\n\nIf you need support using Firefly III or the associated tools, come find us!\n\n- [GitHub Discussions for questions and support](https://github.com/firefly-iii/firefly-iii/discussions/)\n- [Gitter.im for a good chat and a quick answer](https://gitter.im/firefly-iii/firefly-iii)\n- [GitHub Issues for bugs and issues](https://github.com/firefly-iii/firefly-iii/issues)\n- [Follow me around for news and updates on Mastodon](https://fosstodon.org/@ff3)",
+ "website": "https://www.firefly-iii.org/",
+ "source": "https://github.com/firefly-iii/data-importer",
+ "main_port": 8150,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8150",
+   "required": true
+  },
+  {
+   "key": "FIREFLY_III_URL",
+   "label": "Firefly III URL",
+   "type": "text"
+  },
+  {
+   "key": "FIREFLY_III_CLIENT_ID",
+   "label": "Firefly III Public Client ID",
+   "type": "number"
+  },
+  {
+   "key": "FIREFLY_III_ACCESS_TOKEN",
+   "label": "Firefly III OAuth Access Token",
+   "type": "text"
+  }
+ ],
+ "compose": "services:\n  firefly-iii-data-importer:\n    image: fireflyiii/data-importer:version-2\n    container_name: firefly-iii-data-importer\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:8080\n    environment:\n      - FIREFLY_III_URL=${FIREFLY_III_URL}\n      - FIREFLY_III_ACCESS_TOKEN=${FIREFLY_III_ACCESS_TOKEN}\n      - FIREFLY_III_CLIENT_ID=${FIREFLY_III_CLIENT_ID}\n      - TZ=${TZ}\n      - TRUSTED_PROXIES=**\n      - VERIFY_TLS_SECURITY=false\n      - APP_ENV=local\n      - APP_DEBUG=false\n      - LOG_CHANNEL=stack\n      - LOG_LEVEL=info\n"
+}

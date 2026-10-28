@@ -1,0 +1,52 @@
+{
+ "id": "hoarder-karakeep",
+ "name": "Hoarder (karakeep)",
+ "version": "0.34.1",
+ "category": "Utilities",
+ "tagline": "Self-hostable bookmark-everything app",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/hoarder/metadata/logo.jpg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "### Hoarder\n\nA self-hostable bookmark-everything app with a touch of AI for the data hoarders out there.\n\n![homepage screenshot](https://github.com/hoarder-app/hoarder/blob/main/screenshots/homepage.png?raw=true)\n\n## Features\n\n- 🔗 Bookmark links, take simple notes and store images and pdfs.\n- ⬇️ Automatic fetching for link titles, descriptions and images.\n- 📋 Sort your bookmarks into lists.\n- 🔎 Full text search of all the content stored.\n- ✨ AI-based (aka chatgpt) automatic tagging. With supports for local models using ollama!\n- 🔖 [Chrome plugin](https://chromewebstore.google.com/detail/hoarder/kgcjekpmcjjogibpjebkhaanilehneje) and [Firefox addon](https://addons.mozilla.org/en-US/firefox/addon/hoarder/) for quick bookmarking.\n- 📱 An [iOS app](https://apps.apple.com/us/app/hoarder-app/id6479258022), and an [Android app](https://play.google.com/store/apps/details?id=app.hoarder.hoardermobile\u0026pcampaignid=web_share).\n- 🗄️ Full page archival (using [monolith](https://github.com/Y2Z/monolith)) to protect against link rot.\n- ☑️ Bulk actions support.\n- 🌙 Dark mode support.\n- 💾 Self-hosting first.\n- [Planned] Downloading the content for offline reading.\n\n**⚠️ This app is under heavy development and it's far from stable.**\n\n## Documentation\n\n- [Installation](https://docs.hoarder.app/installation/docker)\n- [Configuration](https://docs.hoarder.app/configuration)\n- [Screenshots](https://docs.hoarder.app/screenshots)\n- [Security Considerations](https://docs.hoarder.app/security-considerations)\n- [Development](https://docs.hoarder.app/Development/setup)",
+ "website": "https://karakeep.com/",
+ "source": "https://github.com/hoarder-app/hoarder",
+ "main_port": 8685,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8685",
+   "required": true
+  },
+  {
+   "key": "NEXTAUTH_SECRET",
+   "label": "Nextauth Secret",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "MEILI_MASTER_KEY",
+   "label": "Meili master key",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "OPENAI_API_KEY",
+   "label": "OpenAI API Key",
+   "type": "text"
+  }
+ ],
+ "compose": "services:\n  hoarder:\n    image: ghcr.io/hoarder-app/hoarder:0.34.1\n    container_name: hoarder\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/data/app:/data\n    ports:\n      - ${APP_PORT}:3000\n    environment:\n      - MEILI_ADDR=http://hoarder-meilisearch:7700\n      - BROWSER_WEB_URL=http://hoarder-chrome:9222\n      - DATA_DIR=/data\n      - HOARDER_VERSION=0.16.0\n      - OPENAI_API_KEY=${OPENAI_API_KEY}\n      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}\n      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}\n      - NEXTAUTH_URL=${APP_PROTOCOL:-http}://${APP_DOMAIN}\n  hoarder-chrome:\n    image: ghcr.io/karakeep-app/karakeep-chrome:release\n    container_name: hoarder-chrome\n    restart: unless-stopped\n    command:\n      - '--disable-gpu'\n      - '--disable-dev-shm-usage'\n      - '--hide-scrollbars'\n      - '--disable-blink-features=AutomationControlled'\n      - '--window-size=1440,900'\n  hoarder-meilisearch:\n    image: getmeili/meilisearch:v1.55\n    container_name: hoarder-meilisearch\n    restart: unless-stopped\n    environment:\n      - MEILI_NO_ANALYTICS=true\n      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}\n      - MEILI_UPGRADE_DB=true\n    volumes:\n      - ${APP_DATA_DIR}/data/melli_data:/meili_data\n"
+}

@@ -1,0 +1,33 @@
+{
+ "id": "write-freely",
+ "name": "Write-Freely",
+ "version": "0.17",
+ "category": "Social",
+ "tagline": "Markdown-based publishing platform.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/write-freely/metadata/logo.jpg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "\u0026nbsp;\n\u003cp align=\"center\"\u003e\n  \u003ca href=\"https://writefreely.org\"\u003e\u003cimg src=\"https://writefreely.org/img/writefreely.svg\" width=\"350px\" alt=\"WriteFreely\" /\u003e\u003c/a\u003e\n\u003c/p\u003e\n\u003chr /\u003e\n\u0026nbsp;\n\nWriteFreely is a clean, minimalist publishing platform made for writers. Start a blog, share knowledge within your organization, or build a community around the shared act of writing.\n\n![WriteFreely's clean writing interface](https://i.snap.as/cQZxXoz.png)\n\n[Try the writing experience](https://write.as/new)\n\n---\n\n## Admin Creation\n\nYou will likely want to create an admin account after installation. You can do\nthat by using the container's terminal to run the following command:\n\n\u003e Replace **YOUR_USERNAME** and **YOUR_PASSWORD** with your desired admin username and password\n\u003e \n```bash\nwritefreely -c /mnt/config/etc/writefreely.ini --create-admin YOUR_USERNAME:YOUR_PASSWORD\n```\n\nor run the command from outside the container's terminal by using:\n\n```bash\ndocker exec -it write-freely writefreely -c /mnt/config/etc/writefreely.ini --create-admin [username]:[password]\n```\n\nThis will create your initial admin user account.\n\n\u003e **Security Note:** The password will be visible in your command history. Consider clearing your history after running this command.\n\n---\n\n## Features\n\n### Made for writing\n\nBuilt on a plain, auto-saving editor, WriteFreely gives you a distraction-free writing environment. Once published, your words are front and center, and easy to read.\n\n### A connected community\n\nStart writing together, publicly or privately. Connect with other communities, whether running WriteFreely, [Plume](https://joinplu.me/), or other ActivityPub-powered software. And bring members on board from your existing platforms, thanks to our OAuth 2.0 support.\n\n### Intuitive organization\n\nCategorize articles [with hashtags](https://writefreely.org/docs/latest/writer/hashtags), and create static pages from normal posts by [_pinning_ them](https://writefreely.org/docs/latest/writer/static) to your blog. Create draft posts and publish to multiple blogs from one account.\n\n### International\n\nBlog elements are localized in 20+ languages, and WriteFreely includes first-class support for non-Latin and right-to-left (RTL) script languages.\n\n### Private by default\n\nWriteFreely collects minimal data, and never publicizes more than a writer consents to. Writers can seamlessly create multiple blogs from a single account for different pen names or purposes without publicly revealing their association.\n\u003chr /\u003e\n\n\n### Server Configuration\n\nThere are some important configuration files you need to be aware of and potentially customize.\n\n\n| Path                         |\n|-------------------------------------|\n| /runtipi/app-data/write-freely/config/etc/writefreely.ini |\n| /runtipi/app-data/write-freely/config/www/writefreely/*      |\n\n\n\nModifications to these files will require a service restart to pull in the changes made.",
+ "website": "https://writefreely.org/",
+ "source": "https://hub.docker.com/r/nephatrine/write-freely",
+ "main_port": 8574,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8574",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  write-freely:\n    image: nephatrine/write-freely:0.17\n    container_name: write-freely\n    environment:\n      TZ: ${TZ}\n      PUID: 1000\n      PGID: 1000\n    ports:\n      - 70:70/tcp\n      - ${APP_PORT}:8080/tcp\n    volumes:\n      - ${APP_DATA_DIR}/data/config:/mnt/config\n    restart: unless-stopped\n"
+}

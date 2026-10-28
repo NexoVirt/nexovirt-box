@@ -1,0 +1,31 @@
+{
+ "id": "webtop",
+ "name": "Webtop",
+ "version": "21db23d80427859457e1abada23ed51b1d876c70bfb173ad602150e0b6deec94",
+ "category": "Home",
+ "tagline": "Alpine, Ubuntu, Fedora, and Arch based containers containing full desktop environments in officially supported flavors accessible via any modern web browser.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/webtop-logo.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Webtop - Alpine, Ubuntu, Fedora, and Arch based containers containing full desktop environments in officially supported flavors accessible via any modern web browser.",
+ "main_port": 3000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/webtop:arch-kde-version-2025-07-12@sha256:21db23d80427859457e1abada23ed51b1d876c70bfb173ad602150e0b6deec94\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 3001\n        published: 3001\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

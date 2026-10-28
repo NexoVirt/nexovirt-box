@@ -1,0 +1,30 @@
+{
+ "id": "mysql-workbench",
+ "name": "Mysql-workbench",
+ "version": "7a9d8e4d6dd3907c6a2e6468617fbc3d1ba8a8847185a817369124de7ac01cde",
+ "category": "Home",
+ "tagline": "A unified visual tool for database architects, developers, and DBAs. MySQL Workbench provides data modeling, SQL development, and comprehensive administration tools for server configuration, user administration, backup, and much more.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/mysql-workbench-icon.png",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "MySQL Workbench is a unified visual tool for database architects, developers, and DBAs. MySQL Workbench provides data modeling, SQL development, and comprehensive administration tools for server configuration, user administration, backup, and much more.",
+ "main_port": 3000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/mysql-workbench:8.0.47@sha256:7a9d8e4d6dd3907c6a2e6468617fbc3d1ba8a8847185a817369124de7ac01cde\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 3001\n        published: 3001\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

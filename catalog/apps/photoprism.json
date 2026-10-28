@@ -1,0 +1,55 @@
+{
+ "id": "photoprism",
+ "name": "PhotoPrism",
+ "version": "latest",
+ "category": "Photography",
+ "tagline": "AI-Powered Photos App for the Decentralized Web. We are on a mission to protect your freedom and privacy.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/photoprism/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## AI-Powered Photos App for the Decentralized Web 🌈💎✨ \n\n- **username**: admin\n\u003cbr /\u003e\n\nPhotoPrism® is an AI-Powered Photos App for the Decentralized Web. It makes use of the latest technologies to tag and find pictures automatically without getting in your way. You can run it at home, on a private server, or in the cloud.\nTo get a first impression, you are welcome to play with our [public demo](https://try.photoprism.app/). Be careful not to upload any private pictures.\n\n![Screenshot](https://camo.githubusercontent.com/5e03a87e47aad26ad7248b8b43eac6471fe96f7b655ac2e532697692753c3ff8/68747470733a2f2f646c2e70686f746f707269736d2e6170702f696d672f75692f6465736b746f702d3130303070782e6a7067)",
+ "website": "https://www.photoprism.app/",
+ "source": "https://github.com/photoprism/photoprism",
+ "main_port": 8110,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8110",
+   "required": true
+  },
+  {
+   "key": "PHOTOPRISM_ADMIN_PASSWORD",
+   "label": "Photoprism admin password",
+   "type": "password",
+   "required": true,
+   "min": 8,
+   "max": 50
+  },
+  {
+   "key": "DB_PASSWORD",
+   "label": "Photoprism DB password",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "DB_ROOT_PASSWORD",
+   "label": "Photoprism root DB password",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  photoprism:\n    image: photoprism/photoprism:latest\n    container_name: photoprism\n    depends_on:\n      - photoprism-db\n    restart: unless-stopped\n    ports:\n      - \"${APP_PORT}:2342\"\n    environment:\n      PHOTOPRISM_ADMIN_PASSWORD: ${PHOTOPRISM_ADMIN_PASSWORD}\n      PHOTOPRISM_SITE_URL: \"${APP_PROTOCOL:-http}://${APP_DOMAIN}/\"\n      PHOTOPRISM_ORIGINALS_LIMIT: 5000\n      PHOTOPRISM_HTTP_COMPRESSION: \"gzip\"\n      PHOTOPRISM_LOG_LEVEL: \"info\"\n      PHOTOPRISM_PUBLIC: \"false\"\n      PHOTOPRISM_READONLY: \"false\"\n      PHOTOPRISM_EXPERIMENTAL: \"false\"\n      PHOTOPRISM_DISABLE_CHOWN: \"false\"\n      PHOTOPRISM_DISABLE_WEBDAV: \"false\"\n      PHOTOPRISM_DISABLE_SETTINGS: \"false\"\n      PHOTOPRISM_DISABLE_TENSORFLOW: \"false\"\n      PHOTOPRISM_DISABLE_FACES: \"false\"\n      PHOTOPRISM_DISABLE_CLASSIFICATION: \"false\"\n      PHOTOPRISM_DISABLE_RAW: \"false\"\n      PHOTOPRISM_RAW_PRESETS: \"false\"\n      PHOTOPRISM_JPEG_QUALITY: 85\n      PHOTOPRISM_DETECT_NSFW: \"false\"\n      PHOTOPRISM_UPLOAD_NSFW: \"true\"\n      PHOTOPRISM_DATABASE_DRIVER: \"mysql\"\n      PHOTOPRISM_DATABASE_SERVER: \"photoprism-db:3306\"\n      PHOTOPRISM_DATABASE_NAME: \"photoprism\"\n      PHOTOPRISM_DATABASE_USER: \"photoprism\"\n      PHOTOPRISM_DATABASE_PASSWORD: \"${DB_PASSWORD}\"\n      PHOTOPRISM_SITE_CAPTION: \"AI-Powered Photos App\"\n    working_dir: \"/photoprism\"\n    volumes:\n      - \"${ROOT_FOLDER_HOST}/media/data/images:/photoprism/originals\"\n      - \"${APP_DATA_DIR}/data/photoprism/storage:/photoprism/storage\"\n  photoprism-db:\n    restart: unless-stopped\n    image: mariadb:10.8\n    container_name: photoprism-db\n    command: mysqld --innodb-buffer-pool-size=128M --transaction-isolation=READ-COMMITTED --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --max-connections=512 --innodb-rollback-on-timeout=OFF --innodb-lock-wait-timeout=120\n    volumes:\n      - \"${APP_DATA_DIR}/data/mariadb:/var/lib/mysql\"\n    environment:\n      MARIADB_DATABASE: \"photoprism\"\n      MARIADB_USER: \"photoprism\"\n      MARIADB_PASSWORD: \"${DB_PASSWORD}\"\n      MARIADB_ROOT_PASSWORD: \"${DB_ROOT_PASSWORD}\"\n"
+}

@@ -1,0 +1,32 @@
+{
+ "id": "bitmagnet",
+ "name": "Bitmagnet",
+ "version": "v0.10.1",
+ "category": "Media",
+ "tagline": "A self-hosted BitTorrent indexer.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/bitmagnet/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "A self-hosted BitTorrent indexer, DHT crawler, content classifier and torrent search engine with web UI, GraphQL API and Servarr stack integration.\n\nVisit the website at bitmagnet.io.",
+ "website": "https://bitmagnet.io/",
+ "source": "https://github.com/bitmagnet-io/bitmagnet",
+ "main_port": 0,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "BITMAGNENT_DB_PASSWORD",
+   "label": "BITMAGNENT_DB_PASSWORD",
+   "type": "password",
+   "min": 40,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  bitmagnet:\n    image: 'ghcr.io/bitmagnet-io/bitmagnet:v0.10.1'\n    command:\n      - 'worker'\n      - 'run'\n      - '--keys=http_server'\n      - '--keys=queue_server'\n      - '--keys=dht_crawler'\n    ports:\n      - '3334:3334/tcp'\n      - '3334:3334/udp'\n    environment:\n      - 'POSTGRES_HOST=bitmagnet-db'\n      - 'POSTGRES_NAME=bitmagnet'\n      - 'POSTGRES_USER=tipi'\n      - 'POSTGRES_PASSWORD=${BITMAGNENT_DB_PASSWORD}'\n      - 'REDIS_ADDR=bitmagnet-redis:6379'\n    depends_on:\n      bitmagnet-db:\n        condition: 'service_healthy'\n      bitmagnet-redis:\n        condition: 'service_started'\n    x-runtipi:\n      internal_port: 3333\n      is_main: true\n  bitmagnet-db:\n    image: 'postgres:17-alpine'\n    volumes:\n      - '${APP_DATA_DIR}/data/postgres:/var/lib/postgresql/data'\n    environment:\n      - 'POSTGRES_PASSWORD=${BITMAGNENT_DB_PASSWORD}'\n      - 'POSTGRES_USER=tipi'\n      - 'POSTGRES_DB=bitmagnet'\n    healthcheck:\n      test: 'pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}'\n      interval: '30s'\n      timeout: '5s'\n      retries: 5\n      start_period: '20s'\n  bitmagnet-redis:\n    image: 'redis:alpine'\n    command: '--save 60 1 --loglevel warning'\n    volumes:\n      - '${APP_DATA_DIR}/data/redis:/data'\n    healthcheck:\n      test: 'redis-cli ping | grep PONG'\n      interval: '30s'\n      timeout: '3s'\n      retries: 5\n      start_period: '20s'\nx-runtipi:\n  schema_version: 2\n"
+}

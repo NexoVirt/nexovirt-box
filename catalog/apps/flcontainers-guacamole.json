@@ -1,0 +1,31 @@
+{
+ "id": "flcontainers-guacamole",
+ "name": "FlContainers Guacamole",
+ "version": "81a420f386ef8cbb4697208e13ea90f6a10a54619981241bed672e4a41b5f77f",
+ "category": "Developer",
+ "tagline": "Fully packaged Multi-Arch Guacamole.",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/apache-guacamole.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "A Docker Container for Apache Guacamole, a client-less remote desktop gateway. It supports standard protocols like VNC, RDP, and SSH over HTML5.",
+ "main_port": 8080,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8080",
+   "required": true
+  }
+ ],
+ "compose": "# Define the services required for the application\nservices:\n  # app service configuration\n  app:\n    # Docker image to use for this service\n    image: flcontainers/guacamole:1.6.0@sha256:81a420f386ef8cbb4697208e13ea90f6a10a54619981241bed672e4a41b5f77f\n    # Container name\n    container_name: big-bear-flcontainers-guacamole\n    # Restart policy for the container\n    restart: always\n    # Environment variables for the app service\n    environment:\n      tz: \"UTC\"\n      EXTENSIONS: \"auth-totp,auth-ldap\"\n    # Map port 8080 on the host to port 8080 on the container\n    ports:\n      - \"${APP_PORT}:8080\"\n"
+}

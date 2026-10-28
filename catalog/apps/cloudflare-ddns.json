@@ -1,0 +1,40 @@
+{
+ "id": "cloudflare-ddns",
+ "name": "Cloudflare DDNS",
+ "version": "3.3.0",
+ "category": "Networking",
+ "tagline": "Update DNS records on Cloudflare.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/cloudflare-ddns/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Cloudflare DDNS\n\nCloudflare DDNS is a Docker image that update DNS records on Cloudflare on schedule.\n\n\u003chttps://github.com/joshuaavalon/docker-cloudflare\u003e\n\n\u003e Warning ⚠️: This app is no longer maintained, you can keep using it but you may face issues. If you want a maintained alternative you can try the `DDNS Updater` app.",
+ "source": "https://github.com/joshuaavalon/docker-cloudflare",
+ "main_port": 0,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "CF_DNS__DOMAINS_0__NAME",
+   "label": "Domain",
+   "type": "domain",
+   "required": true,
+   "min": 3,
+   "max": 50
+  },
+  {
+   "key": "CF_DNS__AUTH__SCOPED_TOKEN",
+   "label": "Token",
+   "type": "password",
+   "required": true,
+   "min": 40,
+   "max": 40
+  }
+ ],
+ "compose": "services:\n  cloudflare-ddns:\n    container_name: cloudflare-ddns\n    image: ghcr.io/joshuaavalon/cloudflare-ddns:3.3.0\n    environment:\n      - CF_DNS__AUTH__SCOPED_TOKEN=${CF_DNS__AUTH__SCOPED_TOKEN}\n      #- CF_DNS__CRON=\"*/5 * * * *\"\n      - CF_DNS__DOMAINS_0__NAME=${CF_DNS__DOMAINS_0__NAME}\n      - CF_DNS__DOMAINS_0__PROXIED=false #true\n      #- CF_DNS__LOG_LEVEL=info\n      - CF_DNS__LOG_TYPE=json #Set to json for JSON log output.\n      #- CF_DNS__TIMEOUT 5000 #Timeout for network request. Disable if timeout \u003c= 0.\n    restart: unless-stopped\n"
+}

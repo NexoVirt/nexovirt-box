@@ -1,0 +1,37 @@
+{
+ "id": "teable",
+ "name": "Teable",
+ "version": "latest",
+ "category": "Productivity",
+ "tagline": "Teable adopts a concise spreadsheet interface, yet creates powerful database applications",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Teable/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "Teable is a new generation open-source database platform. It provides an intuitive spreadsheet-like experience, while being powered by a high-performance Postgres database underneath, combining ease of use with powerful data processing capabilities.\n\n**Key Features:**\n- **High Performance**: Built on the Postgres core, it effortlessly handles millions of records with extremely fast response times.\n- **Modern Interface**: Offers multiple views including grid, kanban, gallery, and forms, with a clean and user-friendly design.\n- **Real-time Collaboration**: Supports multi-user online collaboration with real-time data synchronisation.\n- **Automation \u0026 API**: Provides powerful RESTful APIs to enable flexible integration and automation.\n\n**Learn More:**\n- [Teable Official Website](https://teable.ai)\n- [Teable GitHub Repository](https://github.com/teableio/teable)\n- [Help Documentation](https://help.teable.ai)",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Teable/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Teable/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Teable/screenshot-3.png"
+ ],
+ "website": "https://teable.ai",
+ "main_port": 3200,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3200",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  teable:\n    image: teableio/teable:latest\n    container_name: teable\n    restart: unless-stopped\n    deploy:\n      resources:\n        reservations:\n          memory: 512M\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/assets\n        target: /app/.assets\n    environment:\n      - TZ=$TZ\n      - NEXT_ENV_IMAGES_ALL_REMOTE=true\n      - PUBLIC_ORIGIN=http://127.0.0.1:3000\n      - PRISMA_DATABASE_URL=postgresql://example:example@teable-db:5432/teable-db\n      - BACKEND_CACHE_PROVIDER=redis\n      - BACKEND_CACHE_REDIS_URI=redis://default:password@teable-cache:6379/0\n    networks:\n      - teable-network\n    depends_on:\n      teable-db:\n        condition: service_healthy\n      teable-cache:\n        condition: service_healthy\n  teable-db:\n    image: postgres:15\n    restart: unless-stopped\n    container_name: teable-db\n    deploy:\n      resources:\n        reservations:\n          memory: 256M\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/data\n        target: /var/lib/postgresql/data\n    environment:\n      - TZ=$TZ\n      - POSTGRES_DB=teable-db\n      - POSTGRES_USER=example\n      - POSTGRES_PASSWORD=example\n    networks:\n      - teable-network\n    healthcheck:\n      test:\n        - CMD-SHELL\n        - sh -c 'pg_isready -U example -d teable-db'\n      interval: 10s\n      timeout: 3s\n      retries: 3\n  teable-cache:\n    image: redis:7.2.4\n    restart: unless-stopped\n    container_name: teable-cache\n    deploy:\n      resources:\n        reservations:\n          memory: 256M\n    expose:\n      - '6379'\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/teable-cache-data\n        target: /data\n    networks:\n      - teable-network\n    command:\n      - redis-server\n      - --requirepass password\n    healthcheck:\n      test:\n        - CMD\n        - redis-cli\n        - --raw\n        - incr\n        - ping\n      interval: 10s\n      timeout: 3s\n      retries: 3\nnetworks:\n  teable-network:\n    name: teable-network\n    driver: bridge\n"
+}

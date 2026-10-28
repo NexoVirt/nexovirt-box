@@ -1,0 +1,40 @@
+{
+ "id": "alist",
+ "name": "Alist",
+ "version": "v3.40.0",
+ "category": "Productivity",
+ "tagline": "Mount your cloud drive on your home NAS",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Alist/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "Alist transforms how you manage and access your files at home, whether on your TV, phone, or any other device. Unlike traditional cloud storage, Alist offers a unified experience across multiple platforms, making it a breeze to keep your media and documents at your fingertips.\n\nWith features like easy installation, support for multiple storage providers (local, Aliyundrive, Onedrive, Google Drive), WebDAV support, dark mode, protected routes with password authentication, file previews for videos, audio, office files, PDFs, code, images, package and batch downloads, single sign-on, offline torrent downloads, file encryption, and additional tools like a text editor and Cloudflare workers proxy, Alist ensures a seamless and secure file management experience.\n\nDeploying Alist on private cloud devices like Zima brings unmatched convenience with multi-device access, ensuring your files are always within reach and secure, no matter where you are.",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Alist/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Alist/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Alist/screenshot-3.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Alist/screenshot-4.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Alist/screenshot-5.png"
+ ],
+ "website": "https://alistgo.com/",
+ "main_port": 5244,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "5244",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  alist:\n    image: xhofe/alist:v3.40.0\n    deploy:\n      resources:\n        reservations:\n          memory: \"64M\"\n    network_mode: bridge\n    ports:\n      - target: 5244\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/data\n        target: /opt/alist/data\n    container_name: alist\n"
+}

@@ -1,0 +1,31 @@
+{
+ "id": "webcord",
+ "name": "Webcord",
+ "version": "1a411f2a5c679bc0839301a7618e05b819ada9000b9792b52b55f3387c47d52b",
+ "category": "Home",
+ "tagline": "Can be summarized as a pack of security and privacy hardenings, Discord features reimplementations, Electron / Chromium / Discord bugs workarounds, stylesheets, internal pages and wrapped https://discord. Com page, designed to conform with ToS as much as it is possible (or hide the changes that might violate it from Discord's eyes).",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/webcord-icon.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "WebCord can be summarized as a pack of security and privacy hardenings, Discord features reimplementations, Electron / Chromium / Discord bugs workarounds, stylesheets, internal pages and wrapped https://discord.com page, designed to conform with ToS as much as it is possible (or hide the changes that might violate it from Discord's eyes).",
+ "main_port": 3000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/webcord:4.14.0@sha256:1a411f2a5c679bc0839301a7618e05b819ada9000b9792b52b55f3387c47d52b\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 3001\n        published: 3001\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

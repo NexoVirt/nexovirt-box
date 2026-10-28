@@ -1,0 +1,31 @@
+{
+ "id": "minisatip",
+ "name": "Minisatip",
+ "version": "3ff7892f3cdf3fa3dd0f90f526fb345837febf86b8f11d8f680ec09612fbc6f2",
+ "category": "Home",
+ "tagline": "A multi-threaded satip server version 1. 2 that runs under Linux and it was tested with DVB-S, DVB-S2, DVB-T, DVB-T2, DVB-C, DVB-C2, ATSC and ISDB-T cards.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/minisatip-icon.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Minisatip is a multi-threaded satip server version 1.2 that runs under Linux and it was tested with DVB-S, DVB-S2, DVB-T, DVB-T2, DVB-C, DVB-C2, ATSC and ISDB-T cards.",
+ "main_port": 8875,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8875",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/minisatip:2.0.103@sha256:3ff7892f3cdf3fa3dd0f90f526fb345837febf86b8f11d8f680ec09612fbc6f2\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n      RUN_OPTS: ''\n    ports:\n      - target: 8875\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 554\n        published: 554\n        protocol: tcp\n      - target: 1900\n        published: 1900\n        protocol: udp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

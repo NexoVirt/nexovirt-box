@@ -1,0 +1,24 @@
+{
+ "id": "ba-kal",
+ "name": "Baïkal",
+ "version": "0.13.0",
+ "category": "Data",
+ "tagline": "Calendar + Contacts server",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/baikal/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "Baïkal is a lightweight CalDAV+CardDAV server. It offers an extensive web interface with easy management of users, address books and calendars. It is fast and simple to install and only needs a basic php capable server. The data can be stored in a MySQL or a SQLite database.\n\nBaïkal allows to seamlessly access your contacts and calendars from every device. It is compatible with iOS, Mac OS X, DAVx5 on Android, Mozilla Thunderbird and every other CalDAV and CardDAV capable application. Protect your privacy by hosting calendars and contacts yourself - with Baïkal.",
+ "website": "https://sabre.io/baikal/",
+ "source": "https://github.com/aalmenar/baikal-docker",
+ "main_port": 0,
+ "scheme": "http",
+ "questions": [],
+ "compose": "services:\n  baikal:\n    image: ghcr.io/aalmenar/baikal:0.13.0\n    volumes:\n      - ${APP_DATA_DIR}/config:/var/www/baikal/config\n      - ${APP_DATA_DIR}/specific:/var/www/baikal/Specific\n    x-runtipi:\n      internal_port: 80\n      is_main: true\nx-runtipi:\n  schema_version: 2\n"
+}

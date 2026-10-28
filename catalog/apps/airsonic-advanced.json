@@ -1,0 +1,31 @@
+{
+ "id": "airsonic-advanced",
+ "name": "Airsonic-advanced",
+ "version": "a0945c317c94380f0f06abcbab36f49a13ad5c2741e26cd0fbc670a061ef5548",
+ "category": "Home",
+ "tagline": "A free, web-based media streamer, providing ubiquitious access to your music. Use it to share your music with friends, or to listen to your own music while at work. You can stream to multiple players simultaneously, for instance to one player in your kitchen and another in your living room.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/airsonic-banner.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Airsonic-advanced is a free, web-based media streamer, providing ubiquitious access to your music. Use it to share your music with friends, or to listen to your own music while at work. You can stream to multiple players simultaneously, for instance to one player in your kitchen and another in your living room.",
+ "main_port": 4040,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "4040",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/airsonic-advanced:11.1.4@sha256:a0945c317c94380f0f06abcbab36f49a13ad5c2741e26cd0fbc670a061ef5548\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n      CONTEXT_PATH: ''\n      JAVA_OPTS: ''\n    ports:\n      - target: 4040\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n      - type: bind\n        source: ${APP_DATA_DIR}/music\n        target: /music\n      - type: bind\n        source: ${APP_DATA_DIR}/playlists\n        target: /playlists\n      - type: bind\n        source: ${APP_DATA_DIR}/podcasts\n        target: /podcasts\n      - type: bind\n        source: ${APP_DATA_DIR}/media\n        target: /media\n"
+}

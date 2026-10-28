@@ -1,0 +1,23 @@
+{
+ "id": "mongodb-4",
+ "name": "MongoDB 4",
+ "version": "4.4.22",
+ "category": "Developer",
+ "tagline": "A free and open-source cross-platform document-oriented database program. Classified as a NoSQL database program, MongoDB uses JSON-like documents with schemata.",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/MongoDB4/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "MongoDB is a free and open-source cross-platform document-oriented database program. Classified as a NoSQL database program, MongoDB uses JSON-like documents with schemata. MongoDB is developed by MongoDB Inc., and is published under a combination of the Server Side Public License and the Apache License.",
+ "website": "https://www.mongodb.com/",
+ "main_port": 0,
+ "scheme": "http",
+ "questions": [],
+ "compose": "services:\n  mongodb4:\n    image: mongo:4.4.22\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n    ports:\n      - target: 27017\n        published: \"27017\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/data/configdb\n        target: /data/configdb\n      - type: bind\n        source: ${APP_DATA_DIR}/data/db\n        target: /data/db\n    container_name: mongodb4\n"
+}

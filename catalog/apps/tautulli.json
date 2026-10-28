@@ -1,0 +1,33 @@
+{
+ "id": "tautulli",
+ "name": "Tautulli",
+ "version": "2.18.2",
+ "category": "Media",
+ "tagline": "Monitoring and tracking tool for Plex Media Server.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/tautulli/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## A Python based monitoring and tracking tool for Plex Media Server. \n\n-   Responsive web design viewable on desktop, tablet and mobile web browsers.\n-   Themed to complement Plex/Web.\n-   Easy configuration setup (no separate web server required).\n-   Monitor current Plex Media Server activity.\n-   Fully customizable notifications for stream activity and recently added media.\n-   Top statistics on home page with configurable duration and measurement metric.\n-   Global watching history with search/filtering \u0026 dynamic column sorting.\n-   Full user list with general information and comparison stats.\n-   Individual user information including devices IP addresses.\n-   Complete library statistics and media file information.\n-   Rich analytics presented using Highcharts graphing.\n-   Beautiful content information pages.\n-   Full sync list data on all users syncing items from your library.\n-   And many more!!\n\u003cbr /\u003e\n\n![Screenshot](https://camo.githubusercontent.com/8e79a14ca41c16c2b1390fd3b3d686e90d5f1aaf2b466327f20d03fd123156cc/68747470733a2f2f74617574756c6c692e636f6d2f696d616765732f73637265656e73686f74732f61637469766974792d636f6d707265737365642e6a70673f763d32)",
+ "website": "https://tautulli.com/",
+ "source": "https://github.com/Tautulli/Tautulli",
+ "main_port": 8181,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8181",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  tautulli:\n    container_name: tautulli\n    image: lscr.io/linuxserver/tautulli:2.18.2\n    environment:\n      - PUID=1000\n      - PGID=1000\n      - TZ=${TZ}\n    volumes:\n      - ${APP_DATA_DIR}/data/config:/config\n    ports:\n      - ${APP_PORT}:8181\n    restart: unless-stopped\n"
+}

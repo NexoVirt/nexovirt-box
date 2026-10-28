@@ -1,0 +1,59 @@
+{
+ "id": "dozzle",
+ "name": "Dozzle",
+ "version": "v11.3.5",
+ "category": "Developer",
+ "tagline": "Dozzle is a small web based app to monitor Docker logs",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/dozzle/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "docker_socket": true,
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Doozle\n\nDozzle is a small lightweight application with a web based interface to monitor Docker logs. It doesn’t store any log files. It is for live monitoring of your container logs only.\n\n![Screenshot](https://github.com/amir20/dozzle/blob/master/docs/.vitepress/theme/media/poster.jpg?raw=true)\n\n## Features\n\n- Intelligent fuzzy search for container names 🤖\n- Search logs using regex 🔦\n- Start, stop and restart containers\n- Small memory footprint 🏎\n- Split screen for viewing multiple logs\n- Download logs easy\n- Live stats with memory and CPU usage\n- Authentication with username and password 🚨\n\nhttps://github.com/amir20/dozzle\n\n## Credentials\n\nIf you choose `simple` as the `Auth provider` the default credentials for the app will be Username `admin` with Password `password`.\n\nTo change those credentials, stop the app and change the default settings in `runtipi/app-data/dozzle/data/users.yml`.\n\n```bash\nusers:\n  admin:\n    name: admin\n    password: \"5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8\"\n```\n\nThe password is created as follows:\n\n### Windows\n\nOpen *Command Prompt*.\n\nPaste this command and replace `your-password` with your password.\n\n```bash\necho|set /p=\"your-password\" \u003e %TMP%/hash.txt | certutil -hashfile %TMP%/hash.txt SHA256 | findstr /v \"hash\"\n```\n\n### MacOS\n\nOpen *Terminal*.\n\nPaste this command and replace `your-password` with your password.\n\n```bash\necho -n 'your-password' | shasum -a 256\n```\n\n### Linux\n\nOpen your terminal.\n\nPaste this command and replace `your-password` with your password.\n\n```bash\necho -n 'your-password' | sha256sum\n```",
+ "website": "https://dozzle.dev/",
+ "source": "https://github.com/amir20/dozzle",
+ "main_port": 8013,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8013",
+   "required": true
+  },
+  {
+   "key": "DOZZLE_AUTH_PROVIDER",
+   "label": "Auth Provider",
+   "type": "select",
+   "hint": "'Use none' for no authentication or 'simple' for username 'admin' and password 'password'. To change credentials, consult the instructions on the app description.",
+   "default": "none",
+   "required": true,
+   "options": [
+    "none",
+    "simple"
+   ]
+  },
+  {
+   "key": "DOZZLE_ENABLE_ACTIONS",
+   "label": "Enable Actions",
+   "type": "boolean",
+   "hint": "Dozzle now supports Container Actions, which allows you to start, stop and restart container from within the UI in the dropdown menu.",
+   "default": "true"
+  },
+  {
+   "key": "DOZZLE_NO_ANALYTICS",
+   "label": "Disable Google Analytics",
+   "type": "boolean",
+   "default": "true"
+  }
+ ],
+ "compose": "services:\n  dozzle:\n    container_name: dozzle\n    image: amir20/dozzle:v11.3.5\n    restart: unless-stopped\n    volumes:\n      - /var/run/docker.sock:/var/run/docker.sock\n      - ${APP_DATA_DIR}/data:/data\n    ports:\n      - ${APP_PORT}:8080\n    environment:\n      - DOZZLE_NO_ANALYTICS=${DOZZLE_NO_ANALYTICS:-true}\n      - DOZZLE_AUTH_PROVIDER=${DOZZLE_AUTH_PROVIDER:-none}\n      - DOZZLE_ENABLE_ACTIONS=${DOZZLE_ENABLE_ACTIONS:-true}\n"
+}

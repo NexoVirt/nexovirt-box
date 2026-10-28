@@ -1,0 +1,46 @@
+{
+ "id": "peppermint",
+ "name": "Peppermint",
+ "version": "latest",
+ "category": "Utilities",
+ "tagline": "An open source ticket management \u0026 help desk solution.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/peppermint/metadata/logo.jpg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "Ticket Management System in order to help helpdesks \u0026 service desks manage internal staff \u0026 customer requests\n\nThe default login credentials are\n\n```\nUser: admin@admin.com\nPassword: 1234\n```\n\n## [](https://github.com/Peppermint-Lab/peppermint#introduction)Introduction\n\nIt's a self hosted alternative to popular services such as zendesk\n\n[![](https://github.com/Peppermint-Lab/peppermint/raw/master/static/homepage.png)](https://github.com/Peppermint-Lab/peppermint/blob/master/static/homepage.png)\n\n## [](https://github.com/Peppermint-Lab/peppermint#-features)✨ Features\n\n-   **Ticket Creation**: Bog standard ticket creation with a markdown editor and file uploads\n-   **A log of client history**\n-   **Markdown based Notebook with todo lists**\n-   **Responsive**: Designed for variable screen sizes from mobile up to 4k\n-   **Multi-deployment**: Quickly deploy using docker \u0026 pm2\n-   **Simple to Use**: Designed to be easy to use with a simple logical workflow\n\n## [](https://github.com/Peppermint-Lab/peppermint#documentation)Documentation\n\nWe have started working on creating documentation for peppermint which covers development to general usage. Click [here](https://docs.peppermint.sh) to be taken directly there.\n\n## [](https://github.com/Peppermint-Lab/peppermint#motivation)Motivation\n\n-   This was initially a project to tie together my react and nodeJS skills and show something for my portfolio\n-   It looked terrible! But it worked and showed functionaility, which got me a job.\n-   Learn and deploy with docker\n-   Redo the UI, completly from the ground up. Which has now been completed and for me looks great.\n-   Build on this foundation and create a fully fledged product which offers what the big boys offer, but, at a much better ROI than signing up for zendesk etc.\n\n## [](https://github.com/Peppermint-Lab/peppermint#screenshots)Screenshots\n\n[![Logo](https://github.com/Peppermint-Lab/peppermint/raw/master/static/homepage.png)](https://github.com/Peppermint-Lab/peppermint/blob/master/static/homepage.png) [![Logo](https://github.com/Peppermint-Lab/peppermint/raw/master/static/create_a_ticket.png)](https://github.com/Peppermint-Lab/peppermint/blob/master/static/create_a_ticket.png) [![Logo](https://github.com/Peppermint-Lab/peppermint/raw/master/static/tickets.png)](https://github.com/Peppermint-Lab/peppermint/blob/master/static/tickets.png) [![Logo](https://github.com/Peppermint-Lab/peppermint/raw/master/static/detail.png)](https://github.com/Peppermint-Lab/peppermint/blob/master/static/detail.png)",
+ "source": "https://github.com/Peppermint-Lab/peppermint",
+ "main_port": 8216,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8216",
+   "required": true
+  },
+  {
+   "key": "PEPPERMINT_DB_PASSWORD",
+   "label": "Peppermint DB Password",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "PEPPERMINT_DOMAIN_API",
+   "label": "API URL",
+   "type": "text",
+   "hint": "Can be an exposable domiain like peppermintapi.example.com or peppermintapi.tipi.local",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  peppermint:\n    image: pepperlabs/peppermint:latest\n    container_name: peppermint\n    environment:\n      - DB_USERNAME=tipi\n      - DB_PASSWORD=${PEPPERMINT_DB_PASSWORD}\n      - DB_HOST=peppermint-db\n      - API_URL={APP_PROTOCOL:-http}://${PEPPERMINT_DOMAIN_API}\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:3000\n      - 8217:5003\n    depends_on:\n      - peppermint-db\n  peppermint-db:\n    container_name: peppermint-db\n    image: postgres:latest\n    restart: unless-stopped\n    environment:\n      - POSTGRES_USER=tipi\n      - POSTGRES_PASSWORD=${PEPPERMINT_DB_PASSWORD}\n      - POSTGRES_DB=peppermint\n    volumes:\n      - ${APP_DATA_DIR}/data/postgres:/var/lib/postgresql/data\n"
+}

@@ -1,0 +1,32 @@
+{
+ "id": "flightlog",
+ "name": "Flightlog",
+ "version": "v2.1.15",
+ "category": "Utilities",
+ "tagline": "Flightlog, a web application that keeps track of your personal flight history",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/flightlog/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Flightlog: Easily keep track of your personal flight history\n\nFlightlog is a web application inspired by [Flugstatistik](https://flugstatistik.de), with more features, a modern UI and a streamlined user experience.\n\nRead more on [GitHub](https://github.com/perdian/flightlog)",
+ "source": "https://github.com/perdian/flightlog/",
+ "main_port": 8934,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8934",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  flightlog:\n    container_name: flightlog\n    image: perdian/flightlog:v2.1.15\n    environment:\n      - FLIGHTLOG_SERVER_CONTEXT_PATH=/\n    volumes:\n      - ${APP_DATA_DIR}/data/db:/var/flightlog/database\n    ports:\n      - ${APP_PORT}:8080\n"
+}

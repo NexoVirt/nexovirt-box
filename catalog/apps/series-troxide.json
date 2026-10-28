@@ -1,0 +1,31 @@
+{
+ "id": "series-troxide",
+ "name": "Series-troxide",
+ "version": "a86c0f9b6500be2596e3fdf12bf3b341f6b842c1b1fc88d44b6ef3362f9b58df",
+ "category": "Other",
+ "tagline": "A Simple and Modern Series Tracker",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/series-troxide-logo.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Series Troxide a Simple and Modern Series Tracker",
+ "main_port": 3000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/series-troxide:0.5.1@sha256:a86c0f9b6500be2596e3fdf12bf3b341f6b842c1b1fc88d44b6ef3362f9b58df\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 3001\n        published: 3001\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

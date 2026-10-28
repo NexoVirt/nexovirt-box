@@ -1,0 +1,35 @@
+{
+ "id": "label-studio",
+ "name": "Label Studio",
+ "version": "1.23.0",
+ "category": "AI",
+ "tagline": "Label Studio is an open source data labeling tool. It lets you label data types like audio, text, images, videos, and time series with a simple and straightforward UI and export to various model formats. It can be used to prepare raw data or improve existing training data to get more accurate ML models.",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/LabelStudio/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "Label Studio is an open source data labeling tool. It lets you label data types like audio, text, images, videos, and time series with a simple and straightforward UI and export to various model formats. It can be used to prepare raw data or improve existing training data to get more accurate ML models.",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/LabelStudio/screenshot-1.jpg"
+ ],
+ "website": "https://labelstud.io/",
+ "main_port": 3080,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3080",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  label-studio:\n    environment:\n      PGID: $PGID\n      PUID: $PUID\n      TZ: $TZ\n    image: heartexlabs/label-studio:1.23.0\n    deploy:\n      resources:\n        reservations:\n          memory: 256M\n    network_mode: bridge\n    ports:\n      - target: 8080\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/data\n        target: /label-studio/data\n"
+}

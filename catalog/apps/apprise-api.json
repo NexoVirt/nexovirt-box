@@ -1,0 +1,31 @@
+{
+ "id": "apprise-api",
+ "name": "Apprise-api",
+ "version": "43bd5d9912aae31341b33cec9a08f137241ef2468f67f04dac2e41870ddfbeed",
+ "category": "Home",
+ "tagline": "Takes advantage of Apprise through your network with a user-friendly API. * Send notifications to more than 100 services. * An incredibly lightweight gateway to Apprise. * A production ready micro-service at your disposal. * A Simple Website to verify and test your configuration with. Apprise API was designed to easily fit into existing (and new) eco-systems that are looking for a simple notification solution.",
+ "icon": "https://cdn.jsdelivr.net/gh/caronc/apprise-api@master/apprise_api/static/logo.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Apprise-api Takes advantage of Apprise through your network with a user-friendly API. * Send notifications to more than 100 services. * An incredibly lightweight gateway to Apprise. * A production ready micro-service at your disposal. * A Simple Website to verify and test your configuration with. Apprise API was designed to easily fit into existing (and new) eco-systems that are looking for a simple notification solution.",
+ "main_port": 8000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/apprise-api:2.0.2@sha256:43bd5d9912aae31341b33cec9a08f137241ef2468f67f04dac2e41870ddfbeed\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n      APPRISE_ATTACH_SIZE: ''\n    ports:\n      - target: 8000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n      - type: bind\n        source: ${APP_DATA_DIR}/attachments\n        target: /attachments\n"
+}

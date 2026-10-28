@@ -1,0 +1,31 @@
+{
+ "id": "swag",
+ "name": "Swag",
+ "version": "705de71e24e98f3a2907664d6ae37a83d85001748abedf0d10904b928f191029",
+ "category": "Home",
+ "tagline": "SWAG - Secure Web Application Gateway (formerly known as letsencrypt, no relation to Let's Encrypt™) sets up an Nginx webserver and reverse proxy with php support and a built-in certbot client that automates free SSL server certificate generation and renewal processes (Let's Encrypt and ZeroSSL). It also contains fail2ban for intrusion prevention.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/swag.gif",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "SWAG - Secure Web Application Gateway (formerly known as letsencrypt, no relation to Let's Encrypt™) sets up an Nginx webserver and reverse proxy with php support and a built-in certbot client that automates free SSL server certificate generation and renewal processes (Let's Encrypt and ZeroSSL). It also contains fail2ban for intrusion prevention.",
+ "main_port": 443,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "443",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/swag:5.8.0@sha256:705de71e24e98f3a2907664d6ae37a83d85001748abedf0d10904b928f191029\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n      URL: ''\n      VALIDATION: ''\n      SUBDOMAINS: ''\n      CERTPROVIDER: ''\n      CERT_PROFILE: ''\n      DNSPLUGIN: ''\n      PROPAGATION: ''\n      EMAIL: ''\n      ONLY_SUBDOMAINS: ''\n      EXTRA_DOMAINS: ''\n      STAGING: ''\n      DISABLE_F2B: ''\n      SWAG_AUTORELOAD: ''\n      SWAG_AUTORELOAD_WATCHLIST: ''\n    ports:\n      - target: 443\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 80\n        published: 80\n        protocol: tcp\n      - target: 443\n        published: \"${APP_PORT}\"\n        protocol: udp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

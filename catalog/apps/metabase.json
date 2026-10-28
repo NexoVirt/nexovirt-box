@@ -1,0 +1,33 @@
+{
+ "id": "metabase",
+ "name": "Metabase",
+ "version": "v0.64.3",
+ "category": "Data",
+ "tagline": "The simplest, fastest way to get business intelligence and analytics to everyone in your company",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/metabase/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Metabase\n\nThe simplest, fastest way to get business intelligence and analytics to everyone in your company\n\nMetabase is the easy, open-source way for everyone in your company to ask questions and learn from data.\n\n## App Links\n\n\u003chttps://www.metabase.com\u003e\n\n\u003chttps://github.com/metabase/metabase\u003e\n\n\u003chttps://hub.docker.com/r/metabase/metabase\u003e",
+ "website": "https://metabase.com/",
+ "source": "https://github.com/metabase/metabase",
+ "main_port": 8680,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8680",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  metabase:\n    container_name: metabase\n    image: metabase/metabase:v0.64.3\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:3000\n    environment:\n      - MGID=${GID-1000}\n      - MB_DB_FILE=/metabase-data/metabase.db\n      - JAVA_TIMEZONE=${TZ}\n    volumes:\n      - ${APP_DATA_DIR}/data/metabase/data:/metabase-data\n      - ${APP_DATA_DIR}/data/metabase/plugins:/plugins\n"
+}

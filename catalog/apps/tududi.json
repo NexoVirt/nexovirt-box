@@ -1,0 +1,50 @@
+{
+ "id": "tududi",
+ "name": "Tududi",
+ "version": "733bceb71e60ba73d75e33d66569edaf8be55b5cd113830ecaee11b48e8e392a",
+ "category": "Productivity",
+ "tagline": "tududi is a task and project management web application built with Sinatra",
+ "icon": "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps/apps/tududi/logo.png",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "tududi is a task and project management web application built with Sinatra. It allows users to efficiently manage their tasks and projects, categorize them into different areas, and track due dates. tududi is designed to be intuitive and easy to use, providing a seamless experience for personal productivity.",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps@main/apps/tududi/screenshots/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps@main/apps/tududi/screenshots/screenshot-2.png"
+ ],
+ "main_port": 9292,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "9292",
+   "required": true
+  },
+  {
+   "key": "SECRET_TUDUDI_USER_PASSWORD",
+   "label": "Tududi user password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
+   "key": "SECRET_TUDUDI_SESSION_SECRET",
+   "label": "Tududi session secret",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-tududi application\nservices:\n  # Service name: big-bear-tududi\n  # The `big-bear-tududi` service definition\n  big-bear-tududi:\n    # Name of the container\n    container_name: big-bear-tududi\n    # Image to be used for the container\n    image: chrisvel/tududi:0.87@sha256:733bceb71e60ba73d75e33d66569edaf8be55b5cd113830ecaee11b48e8e392a\n    # Container restart policy\n    restart: unless-stopped\n    # Environment variables\n    environment:\n      - TUDUDI_USER_EMAIL=admin@example.com\n      - TUDUDI_USER_PASSWORD=${SECRET_TUDUDI_USER_PASSWORD}\n      - TUDUDI_SESSION_SECRET=${SECRET_TUDUDI_SESSION_SECRET}\n      - TUDUDI_INTERNAL_SSL_ENABLED=false\n    # Volumes to be mounted to the container\n    volumes:\n      # Mounting the tududi database directory\n      - ${APP_DATA_DIR}/tududi/db:/usr/src/app/tududi_db\n    # Ports mapping between host and container\n    ports:\n      # Mapping port 9292 of the host to port 9292 of the container\n      - \"${APP_PORT}:9292\"\n"
+}

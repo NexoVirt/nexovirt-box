@@ -1,0 +1,32 @@
+{
+ "id": "ddns-updater",
+ "name": "DDNS Updater",
+ "version": "v2.10.0",
+ "category": "Utilities",
+ "tagline": "Program to keep DNS A and/or AAAA records updated for multiple DNS providers.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/ddns-updater/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Lightweight universal DDNS Updater program\n\nProgram to keep DNS A and/or AAAA records updated for multiple DNS providers\n\n## Versioned documentation\n\nThis readme and the [docs/](docs/) directory are **versioned** to match the program version:\n\n| Version  | Readme link                                                           | Docs link                                                       |\n| -------- | --------------------------------------------------------------------- | --------------------------------------------------------------- |\n| Latest   | [README](https://github.com/qdm12/ddns-updater/blob/master/README.md) | [docs/](https://github.com/qdm12/ddns-updater/tree/master/docs) |\n| `v2.7.0` | [README](https://github.com/qdm12/ddns-updater/blob/v2.7.0/README.md) | [docs/](https://github.com/qdm12/ddns-updater/blob/v2.7.0/docs) |\n| `v2.6.1` | [README](https://github.com/qdm12/ddns-updater/blob/v2.6.1/README.md) | [docs/](https://github.com/qdm12/ddns-updater/blob/v2.6.1/docs) |\n| `v2.5.0` | [README](https://github.com/qdm12/ddns-updater/blob/v2.5.0/README.md) | [docs/](https://github.com/qdm12/ddns-updater/blob/v2.5.0/docs) |\n\n## Features\n\n- Available as a Docker image [`qmcgaw/ddns-updater`](https://hub.docker.com/r/qmcgaw/ddns-updater) and [`ghcr.io/qdm12/ddns-updater`](\u003c(https://github.com/qdm12/ddns-updater/pkgs/container/ddns-updater)\u003e)\n- 🆕 Available as [zero-dependency binaries for Linux, Windows and MacOS](https://github.com/qdm12/ddns-updater/releases)\n- Updates periodically A records for different DNS providers:\n  - Aliyun\n  - AllInkl\n  - Changeip\n  - Cloudflare\n  - DD24\n  - DDNSS.de\n  - deSEC\n  - DigitalOcean\n  - DonDominio\n  - DNSOMatic\n  - DNSPod\n  - Dreamhost\n  - DuckDNS\n  - DynDNS\n  - Dynu\n  - EasyDNS\n  - FreeDNS\n  - Gandi\n  - GCP\n  - GoDaddy\n  - GoIP.de\n  - He.net\n  - Hetzner\n  - Infomaniak\n  - INWX\n  - Ionos\n  - Linode\n  - LuaDNS\n  - Name.com\n  - Namecheap\n  - Netcup\n  - NoIP\n  - Now-DNS\n  - Njalla\n  - OpenDNS\n  - OVH\n  - Porkbun\n  - Route53\n  - Selfhost.de\n  - Servercow.de\n  - Spdyn\n  - Strato.de\n  - Variomedia.de\n  - Zoneedit\n  - **Want more?** [Create an issue for it](https://github.com/qdm12/ddns-updater/issues/new/choose)!\n- Web user interface (Desktop)\n\n  ![Web UI](https://github.com/qdm12/ddns-updater/raw/master/readme/webui-desktop.gif)\n\n- Web user interface (Mobile)\n\n  ![Mobile Web UI](https://github.com/qdm12/ddns-updater/raw/master/readme/webui-mobile.png)\n\n- Send notifications with [**Shoutrrr**](https://containrrr.dev/shoutrrr/v0.8/services/overview/) using `SHOUTRRR_ADDRESSES` _you will need user-config for this_\n- Container (Docker/K8s) specific features:\n  - Lightweight 12MB Docker image based on the Scratch Docker image\n  - Docker healthcheck verifying the DNS resolution of your domains\n  - Images compatible with `amd64`, `386`, `arm64`, `armv7`, `armv6`, `s390x`, `ppc64le`, `riscv64` CPU architectures\n- Persistence with a JSON file _updates.json_ to store old IP addresses with change times for each record",
+ "source": "https://github.com/qdm12/ddns-updater",
+ "main_port": 8356,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8356",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  ddns-updater:\n    container_name: ddns-updater\n    image: qmcgaw/ddns-updater:v2.10.0\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/config:/updater/data\n    ports:\n      - ${APP_PORT}:8000\n"
+}

@@ -1,0 +1,39 @@
+{
+ "id": "reactive-resume-v6",
+ "name": "Reactive Resume v6",
+ "version": "9ba846665ec3b703c904f61ed75cc0e2c0fe71efd2fd51f45600c6ce23744e78",
+ "category": "Other",
+ "tagline": "Reactive Resume v6",
+ "icon": "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps/apps/reactive-resume-v6/logo.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Reactive Resume v6 resume builder. This is a new app, separate from Reactive Resume v5. v6 stores uploads on a local volume, renders PDFs in the app, and bundles PostgreSQL 18. It does not include MinIO, Redis, or Browserless. Do not attach it to a v5 database volume. A v5 database migration is one-way, and PostgreSQL 18 cannot open the v5 data directory.",
+ "main_port": 3028,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3028",
+   "required": true
+  },
+  {
+   "key": "SECRET_AUTH_SECRET",
+   "label": "Auth secret",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  big-bear-reactive-resume-v6:\n    container_name: big-bear-reactive-resume-v6\n    image: amruthpillai/reactive-resume:v6.0.6@sha256:9ba846665ec3b703c904f61ed75cc0e2c0fe71efd2fd51f45600c6ce23744e78\n    restart: unless-stopped\n    ports:\n      - \"${APP_PORT}:3000\"\n    depends_on:\n      big-bear-reactive-resume-v6-db:\n        condition: service_healthy\n    environment:\n      APP_URL: \"http://localhost:3028\"\n      AUTH_SECRET: ${SECRET_AUTH_SECRET}\n      DATABASE_URL: \"postgresql://postgres:postgres@big-bear-reactive-resume-v6-db:5432/postgres\"\n    volumes:\n      - ${APP_DATA_DIR}/data:/app/data\n    networks:\n      - big-bear-reactive-resume-v6-network\n  big-bear-reactive-resume-v6-db:\n    container_name: big-bear-reactive-resume-v6-db\n    image: postgres:18@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336\n    restart: unless-stopped\n    environment:\n      POSTGRES_DB: postgres\n      POSTGRES_USER: postgres\n      POSTGRES_PASSWORD: \"postgres\"\n    volumes:\n      - ${APP_DATA_DIR}/pg:/var/lib/postgresql\n    healthcheck:\n      test: [\"CMD-SHELL\", \"pg_isready -U postgres -d postgres\"]\n      interval: 10s\n      timeout: 5s\n      retries: 10\n    networks:\n      - big-bear-reactive-resume-v6-network\nnetworks:\n  big-bear-reactive-resume-v6-network:\n    driver: bridge\n"
+}

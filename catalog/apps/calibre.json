@@ -1,0 +1,31 @@
+{
+ "id": "calibre",
+ "name": "Calibre",
+ "version": "b198fc03a6abc6be7e251a9958e50e74634b00e447c7b25e92c191c8077ba378",
+ "category": "Home",
+ "tagline": "A powerful and easy to use e-book manager. Users say it's outstanding and a must-have. It'll allow you to do nearly everything and it takes things a step beyond normal e-book software. It's also completely free and open source and great for both casual users and computer experts.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/calibre-logo.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Calibre is a powerful and easy to use e-book manager. Users say it's outstanding and a must-have. It'll allow you to do nearly everything and it takes things a step beyond normal e-book software. It's also completely free and open source and great for both casual users and computer experts.",
+ "main_port": 8080,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8080",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/calibre:9.17.0@sha256:b198fc03a6abc6be7e251a9958e50e74634b00e447c7b25e92c191c8077ba378\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n      CUSTOM_USER: $CUSTOM_USER\n      PASSWORD: $PASSWORD\n      CLI_ARGS: ''\n    ports:\n      - target: 8080\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 8181\n        published: 8181\n        protocol: tcp\n      - target: 8081\n        published: 8081\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

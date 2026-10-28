@@ -1,0 +1,34 @@
+{
+ "id": "portainer",
+ "name": "Portainer",
+ "version": "2.45.3",
+ "category": "Utilities",
+ "tagline": "Making Docker and Kubernetes management easy.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/portainer/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "docker_socket": true,
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Portainer\n\n**Portainer Community Edition** is a lightweight service delivery platform for containerized applications that can be used to manage Docker, Swarm, Kubernetes and ACI environments. It is designed to be as simple to deploy as it is to use. The application allows you to manage all your orchestrator resources (containers, images, volumes, networks and more) through a ‘smart’ GUI and/or an extensive API.\n\nPortainer consists of a single container that can run on any cluster. It can be deployed as a Linux container or a Windows native container.\n\n## Features \u0026 Functions\n\nView [this](https://www.portainer.io/products) table to see all of the Portainer CE functionality and compare to Portainer Business.\n\n- [Portainer CE for Docker / Docker Swarm](https://www.portainer.io/solutions/docker)\n- [Portainer CE for Kubernetes](https://www.portainer.io/solutions/kubernetes-ui)\n\n## Limitations\n\nPortainer supports \"Current - 2 docker versions only. Prior versions may operate, however these are not supported.",
+ "website": "https://www.portainer.io",
+ "source": "https://github.com/portainer/portainer",
+ "main_port": 9443,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "9443",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  portainer:\n    image: portainer/portainer-ce:2.45.3\n    container_name: portainer\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:9443\n    volumes:\n      - /var/run/docker.sock:/var/run/docker.sock\n      - ${APP_DATA_DIR}/data:/data\n"
+}

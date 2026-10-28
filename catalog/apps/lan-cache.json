@@ -1,0 +1,30 @@
+{
+ "id": "lan-cache",
+ "name": "LAN Cache",
+ "version": "155817065b13cc427aa0014acc34bbb389591400d7639c95abcfcfb2230ad7f0",
+ "category": "Networking",
+ "tagline": "LAN Party game caching made easy",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/lancache-net.png",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Make the most of your network. Get more play for your gamers. Download your games once and serve them out to many people at your LAN.",
+ "main_port": 8080,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8080",
+   "required": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-lancache application\nservices:\n  # Service name: app\n  app:\n    image: lancachenet/monolithic:latest@sha256:155817065b13cc427aa0014acc34bbb389591400d7639c95abcfcfb2230ad7f0 # Docker image for the caching service\n    environment:\n      # Toggle for load balancer usage or separate IPs for each service\n      - USE_GENERIC_CACHE=true\n      # IPs for lancache monolithic instance; affects DNS resolution\n      - LANCACHE_IP=10.0.39.1\n      # Host IP for the DNS server binding\n      - DNS_BIND_IP=10.0.39.1\n      # Upstream DNS for forwarded lookups\n      - UPSTREAM_DNS=8.8.8.8\n      # Local storage path for cache data\n      - CACHE_ROOT=./lancache\n      # Customizable disk cache size\n      - CACHE_DISK_SIZE=2000g\n      # Memory allocation for nginx cache indexing\n      - CACHE_INDEX_SIZE=500m\n      # Maximum age for cached content\n      - CACHE_MAX_AGE=3650d\n      # Container timezone setting for log timestamps\n      - TZ=UTC\n    restart: unless-stopped\n    ports:\n      - \"${APP_PORT}:80\"\n      - 10443:443\n    volumes:\n      # Mount points for cache and logs\n      - ${APP_DATA_DIR}/cache:/data/cache\n      - ${APP_DATA_DIR}/logs:/data/logs\n  # DNS service configuration\n  dns:\n    image: lancachenet/lancache-dns:latest@sha256:6e046a40e9f0467b1df97ca2ba9b8b7c0d4404736a349c0f8df11fa212871a03 # Docker image for DNS service\n    environment:\n      # Toggle for load balancer usage or separate IPs for each service\n      - USE_GENERIC_CACHE=true\n      # IPs for lancache monolithic instance; affects DNS resolution\n      - LANCACHE_IP=10.0.39.1\n      # Host IP for the DNS server binding\n      - DNS_BIND_IP=10.0.39.1\n      # Upstream DNS for forwarded lookups\n      - UPSTREAM_DNS=8.8.8.8\n      # Local storage path for cache data\n      - CACHE_ROOT=./lancache\n      # Customizable disk cache size\n      - CACHE_DISK_SIZE=2000g\n      # Memory allocation for nginx cache indexing\n      - CACHE_INDEX_SIZE=500m\n      # Maximum age for cached content\n      - CACHE_MAX_AGE=3650d\n      # Container timezone setting for log timestamps\n      - TZ=UTC\n    restart: unless-stopped\n    ports:\n      - 53:53/udp\n      - 53:53/tcp\n"
+}

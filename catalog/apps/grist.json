@@ -1,0 +1,43 @@
+{
+ "id": "grist",
+ "name": "Grist",
+ "version": "1.7.21",
+ "category": "Utilities",
+ "tagline": "Grist is the evolution of spreadsheets.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/grist/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Grist is the evolution of spreadsheets\n\nGrist is a modern relational spreadsheet. It combines the flexibility of a spreadsheet with the robustness of a database to organize your data and make you more productive.\n\nhttps://user-images.githubusercontent.com/118367/151245587-892e50a6-41f5-4b74-9786-fe3566f6b1fb.mp4",
+ "website": "https://www.getgrist.com/",
+ "source": "https://github.com/gristlabs/grist-core",
+ "main_port": 8484,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8484",
+   "required": true
+  },
+  {
+   "key": "GRIST_SANDBOX_FLAVOR",
+   "label": "GRIST_SANDBOX_FLAVOR",
+   "type": "select",
+   "required": true,
+   "options": [
+    "unsandboxed",
+    "gvisor"
+   ]
+  }
+ ],
+ "compose": "services:\n  grist:\n    container_name: grist\n    environment:\n      - APP_HOME_URL=${APP_PROTOCOL:-http}://${APP_DOMAIN}\n      - GRIST_SANDBOX_FLAVOR=${GRIST_SANDBOX_FLAVOR}\n    image: gristlabs/grist:1.7.21\n    ports:\n      - ${APP_PORT}:8484\n    restart: always\n    volumes:\n      - ${APP_DATA_DIR}/data/grist-data:/persist\n"
+}

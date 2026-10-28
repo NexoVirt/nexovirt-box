@@ -1,0 +1,38 @@
+{
+ "id": "fileflows",
+ "name": "FileFlows",
+ "version": "stable",
+ "category": "Media",
+ "tagline": "File processing made easy!",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/FileFlows/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "docker_socket": true,
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "Save storage space with efficient file processing.\n\nFileFlows lets you monitor and process any file type with custom flows. Videos, audio, images, archives, comics, eBooks—you name it!",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/FileFlows/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/FileFlows/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/FileFlows/screenshot-3.png"
+ ],
+ "website": "https://fileflows.com/",
+ "main_port": 19200,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "19200",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  fileflows:\n    container_name: fileflows\n    devices:\n      - /dev/dri:/dev/dri\n    environment:\n      PGID: $PGID\n      PUID: $PUID\n      TZ: $TZ\n    hostname: fileflows\n    image: revenz/fileflows:stable\n    labels:\n      icon: https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/FileFlows/icon.svg\n    restart: unless-stopped\n    ports:\n      - target: 5000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    network_mode: bridge\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/data\n        target: /app/Data\n      - type: bind\n        source: ${APP_DATA_DIR}/logs\n        target: /app/Logs\n      - type: bind\n        source: ${APP_DATA_DIR}/common\n        target: /app/common\n      - type: bind\n        source: ${APP_DATA_DIR}/temp\n        target: /temp\n      - type: bind\n        source: ${SHARED_DIR}/Media\n        target: /Media\n      - type: bind\n        source: /var/run/docker.sock\n        target: /var/run/docker.sock\n"
+}

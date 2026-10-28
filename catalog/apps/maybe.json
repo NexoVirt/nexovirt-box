@@ -1,0 +1,52 @@
+{
+ "id": "maybe",
+ "name": "Maybe",
+ "version": "latest",
+ "category": "Finance",
+ "tagline": "Personal finance management application",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Maybe/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "Maybe is a personal finance management application designed to help you track your expenses, income, and investments in one place. With an intuitive interface and powerful features, Maybe makes it easy to understand your financial situation and make informed decisions about your money.\n\n**Key Features:**\n- **Expense Tracking**: Easily log and categorize your expenses\n- **Income Management**: Track multiple income sources\n- **Investment Monitoring**: Keep an eye on your investments and their performance\n- **Budget Planning**: Create and maintain budgets to control your spending\n- **Financial Reports**: Generate detailed reports to understand your financial habits\n- **AI-Powered Insights**: Get personalized financial advice using AI technology\n\n**Use Cases:**\n- Personal budget management\n- Expense tracking and categorization\n- Investment portfolio monitoring\n- Financial goal setting and tracking\n- Cash flow analysis\n\n**Learn More:**\n- [Maybe GitHub Repository](https://github.com/maybe-finance/maybe)",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Maybe/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Maybe/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Maybe/screenshot-3.png"
+ ],
+ "main_port": 23000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "23000",
+   "required": true
+  },
+  {
+   "key": "SECRET_POSTGRES_PASSWORD",
+   "label": "Postgres password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
+   "key": "SECRET_SECRET_KEY_BASE",
+   "label": "Secret key base",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  maybe-web:\n    container_name: maybe-web\n    image: ghcr.io/maybe-finance/maybe:latest\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/app/storage\n        target: /rails/storage\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    restart: unless-stopped\n    environment:\n      POSTGRES_USER: maybe_user\n      POSTGRES_PASSWORD: ${SECRET_POSTGRES_PASSWORD}\n      POSTGRES_DB: maybe_production\n      SECRET_KEY_BASE: ${SECRET_SECRET_KEY_BASE}\n      SELF_HOSTED: \"true\"\n      RAILS_FORCE_SSL: \"false\"\n      RAILS_ASSUME_SSL: \"false\"\n      DB_HOST: maybe-db\n      DB_PORT: 5432\n      REDIS_URL: redis://maybe-redis:6379/1\n      OPENAI_ACCESS_TOKEN: ${OPENAI_ACCESS_TOKEN}\n    depends_on:\n      maybe-db:\n        condition: service_healthy\n      maybe-redis:\n        condition: service_healthy\n    networks:\n      - maybe_net\n    deploy:\n      resources:\n        reservations:\n          memory: 1024M\n  maybe-worker:\n    container_name: maybe-worker\n    image: ghcr.io/maybe-finance/maybe:latest\n    command: ['bundle', 'exec', 'sidekiq']\n    restart: unless-stopped\n    depends_on:\n      maybe-redis:\n        condition: service_healthy\n    environment:\n      POSTGRES_USER: maybe_user\n      POSTGRES_PASSWORD: ${SECRET_POSTGRES_PASSWORD}\n      POSTGRES_DB: maybe_production\n      SECRET_KEY_BASE: ${SECRET_SECRET_KEY_BASE}\n      SELF_HOSTED: \"true\"\n      RAILS_FORCE_SSL: \"false\"\n      RAILS_ASSUME_SSL: \"false\"\n      DB_HOST: maybe-db\n      DB_PORT: 5432\n      REDIS_URL: redis://maybe-redis:6379/1\n      OPENAI_ACCESS_TOKEN: ${OPENAI_ACCESS_TOKEN}\n    networks:\n      - maybe_net\n    deploy:\n      resources:\n        reservations:\n          memory: 1024M\n  maybe-db:\n    container_name: maybe-db\n    image: postgres:16\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/pgdata\n        target: /var/lib/postgresql/data\n    environment:\n      POSTGRES_USER: maybe_user\n      POSTGRES_PASSWORD: ${SECRET_POSTGRES_PASSWORD}\n      POSTGRES_DB: maybe_production\n    healthcheck:\n      test: [\"CMD-SHELL\", \"pg_isready -U maybe_user -d maybe_production\"]\n      interval: 5s\n      timeout: 5s\n      retries: 5\n    networks:\n      - maybe_net\n    deploy:\n      resources:\n        reservations:\n          memory: 1024M\n  maybe-redis:\n    container_name: maybe-redis\n    image: redis:8.2.1-alpine3.22\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/redis/data\n        target: /data\n    healthcheck:\n      test: [\"CMD\", \"redis-cli\", \"ping\"]\n      interval: 5s\n      timeout: 5s\n      retries: 5\n    networks:\n      - maybe_net\n    deploy:\n      resources:\n        reservations:\n          memory: 1024M\nnetworks:\n  maybe_net:\n    driver: bridge\n"
+}

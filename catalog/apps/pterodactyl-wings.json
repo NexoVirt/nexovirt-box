@@ -1,0 +1,32 @@
+{
+ "id": "pterodactyl-wings",
+ "name": "Pterodactyl Wings",
+ "version": "85d92f778d47cbc255f559a476d82915c4c5cb2973c3e6d44c82046513d53365",
+ "category": "Developer",
+ "tagline": "Pterodactyl Wings",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/pterodactyl.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "docker_socket": true,
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Wings is Pterodactyl's server control plane, built for the rapidly changing gaming industry and designed to be highly performant and secure. Wings provides an HTTP API allowing you to interface directly with running server instances, fetch server logs, generate backups, and control all aspects of the server lifecycle.",
+ "main_port": 2022,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "2022",
+   "required": true
+  }
+ ],
+ "compose": "# Services section that specifies how the different services should be run\nservices:\n  # This is the main app service for Pterodactyl Wings\n  app:\n    # Name of the container\n    container_name: pterodactyl-wings\n    # Docker image to use for the container\n    image: ghcr.io/pterodactyl/wings:v1.12.1@sha256:85d92f778d47cbc255f559a476d82915c4c5cb2973c3e6d44c82046513d53365\n    # Determines the restart policy. In this case, the container will always restart if it stops.\n    restart: always\n    # Maps the host's port 2022 to the container's port 2022\n    ports:\n      - \"8080:8080\"\n      - \"${APP_PORT}:2022\"\n    # Allocate a pseudo-TTY, making it act like a terminal\n    tty: true\n    # Set environment variables for the container\n    environment:\n      # Set the timezone to UTC\n      TZ: \"UTC\"\n      # Set the User ID for the Wings process\n      WINGS_UID: 988\n      # Set the Group ID for the Wings process\n      WINGS_GID: 988\n      # Set the username for the Wings process\n      WINGS_USERNAME: pterodactyl\n    # Mount paths from the host into the container\n    volumes:\n      # Mount the Docker socket, allowing the container to communicate with the host's Docker daemon\n      - \"/var/run/docker.sock:/var/run/docker.sock\"\n      # Mount the Docker containers directory\n      - \"/var/lib/docker/containers/:/var/lib/docker/containers/\"\n      # Mount the SSL certificates in read-only mode\n      - \"/etc/ssl/certs:/etc/ssl/certs:ro\"\n      # Mount a temporary directory for Pterodactyl\n      - \"/tmp/pterodactyl:/tmp/pterodactyl/\"\n      # Mount the configuration directory for Pterodactyl\n      - \"/etc/pterodactyl:/etc/pterodactyl/\"\n      # Mount the logs directory for Pterodactyl\n      - \"/var/log/pterodactyl:/var/log/pterodactyl/\"\n      # Mount the library directory for Pterodactyl\n      - \"/var/lib/pterodactyl:/var/lib/pterodactyl/\"\n"
+}

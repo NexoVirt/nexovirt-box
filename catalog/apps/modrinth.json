@@ -1,0 +1,30 @@
+{
+ "id": "modrinth",
+ "name": "Modrinth",
+ "version": "6b6e632c4b18b4e72b9f0672c3ff3171de97832fa7b626eeba279ee5205cf295",
+ "category": "Home",
+ "tagline": "A unique, open source launcher that allows you to play your favorite mods, and keep them up to date, all in one neat little package.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/modrinth-logo.png",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Modrinth App is a unique, open source launcher that allows you to play your favorite mods, and keep them up to date, all in one neat little package.",
+ "main_port": 3000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/modrinth:0.22.0@sha256:6b6e632c4b18b4e72b9f0672c3ff3171de97832fa7b626eeba279ee5205cf295\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 3001\n        published: 3001\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

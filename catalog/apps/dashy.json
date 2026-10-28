@@ -1,0 +1,33 @@
+{
+ "id": "dashy",
+ "name": "Dashy",
+ "version": "4.9.8",
+ "category": "Utilities",
+ "tagline": "A self-hostable personal dashboard built for you.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/dashy/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "_Dashy helps you organize your self-hosted services by making them accessible from a single place_  \n[![](https://camo.githubusercontent.com/6c0964f4604a6807c263c83fff293258a908bdff7587910976d11c4e67a589bb/68747470733a2f2f692e6962622e636f2f796862743643592f64617368792e706e67)](https://camo.githubusercontent.com/6c0964f4604a6807c263c83fff293258a908bdff7587910976d11c4e67a589bb/68747470733a2f2f692e6962622e636f2f796862743643592f64617368792e706e67)\n\n## Features 🌈\n\n-   📃 Support for multiple pages\n-   🚦 Real-time status monitoring for each of your apps/links\n-   📊 Use widgets to display info and dynamic content from self-hosted services\n-   🔎 Instant search by name, domain, or tags + customizable hotkeys \u0026 keyboard shortcuts\n-   🎨 Many built-in color themes, with UI color editor and support for custom CSS\n-   🧸 Many icon options - Font-Awesome, homelab icons, auto-fetching Favicon, images, emojis, etc.\n-   💂 Optional authentication with multi-user access, configurable privileges, and SSO support\n-   🌎 Multi-language support, with 10+ human-translated languages, and more on the way\n-   ☁ Optional, encrypted, free off-site cloud backup and restore feature available\n-   💼 A workspace view, for easily switching between multiple apps simultaneously\n-   🛩️ A minimal view, for use as a fast-loading browser Startpage\n-   🖱️ Choose app launch methods: new tab, same tab, clipboard, pop-up modal, or open in workspace view\n-   📏 Customizable layout, sizes, text, component visibility, sort order, behavior, etc.\n-   🖼️ Options for a full-screen background image, custom nav-bar links, HTML footer, title, etc.\n-   🚀 Easy to setup with Docker, or on bare metal, or with 1-Click cloud deployment\n-   ⚙️ Easy single-file YAML-based configuration, and option to configure app through the UI\n-   ✨ Under active development with improvements and new features added regularly\n-   🤏 Small bundle size, fully responsive UI, and PWA for basic offline access\n-   🆓 100% free and open-source\n-   🔐 Strong focus on privacy\n-   🌈 And loads more...",
+ "website": "https://dashy.to/",
+ "source": "https://github.com/lissy93/dashy",
+ "main_port": 8205,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8205",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  dashy:\n    container_name: dashy\n    image: ghcr.io/lissy93/dashy:4.9.8\n    ports:\n      - ${APP_PORT}:8080\n    volumes:\n      - ${APP_DATA_DIR}/data/dashy:/app/user-data\n    restart: unless-stopped\n"
+}

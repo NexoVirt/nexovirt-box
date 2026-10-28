@@ -1,0 +1,36 @@
+{
+ "id": "dispatcharr",
+ "name": "Dispatcharr",
+ "version": "0.29.0",
+ "category": "Media",
+ "tagline": "IPTV Stream Management and DVR",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Dispatcharr/icon.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "Dispatcharr is an IPTV stream management platform for managing channels, streams, EPG data, VOD, and DVR functionality.",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Dispatcharr/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Dispatcharr/screenshot-2.png"
+ ],
+ "website": "https://dispatcharr.io",
+ "main_port": 9191,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "9191",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  dispatcharr:\n    image: ghcr.io/dispatcharr/dispatcharr:0.29.0\n    deploy:\n      resources:\n        reservations:\n          memory: 512M\n    restart: unless-stopped\n    ports:\n      - \"${APP_PORT}:9191\"\n    volumes:\n      - ${APP_DATA_DIR}/data:/data\n    environment:\n      DISPATCHARR_ENV: aio\n      REDIS_HOST: localhost\n      CELERY_BROKER_URL: redis://localhost:6379/0\n      DISPATCHARR_LOG_LEVEL: info\n    container_name: dispatcharr\n"
+}

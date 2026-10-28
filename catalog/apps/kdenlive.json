@@ -1,0 +1,31 @@
+{
+ "id": "kdenlive",
+ "name": "Kdenlive",
+ "version": "4c908a8d2e43d788e37f7f1193014f5303b81f452942f26c46cb2a99d7db2d3b",
+ "category": "Home",
+ "tagline": "A powerful free and open source cross-platform video editing program made by the KDE community. Feature rich and production ready.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/kdenlive-logo.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Kdenlive is a powerful free and open source cross-platform video editing program made by the KDE community. Feature rich and production ready.",
+ "main_port": 3000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/kdenlive:423.08.5@sha256:4c908a8d2e43d788e37f7f1193014f5303b81f452942f26c46cb2a99d7db2d3b\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 3001\n        published: 3001\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

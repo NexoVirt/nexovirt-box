@@ -1,0 +1,33 @@
+{
+ "id": "maintainerr",
+ "name": "Maintainerr",
+ "version": "3.31.0",
+ "category": "Media",
+ "tagline": "Maintainerr will manage the storage space on your plex server, launching automated actions to delete your files.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/maintainerr/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "\u003cb\u003eMaintainerr\u003c/b\u003e makes managing your media easy.\n\n- Do you hate being the janitor of your server?\n- Do you have a lot of media that never gets watched?\n- Do your users constantly request media, and let it sit there afterward never to be touched again?\n\nIf you answered yes to any of those questions.. You NEED \u003cb\u003eMaintainerr\u003c/b\u003e.\nIt's a one-stop-shop for handling those outlying shows and movies that take up precious space on your server.\n\n# Features\n\n- Configure rules specific to your needs, based off of several available options from Plex, Overseerr, Radarr, and Sonarr.\n- Manually add media to a collection, in case it's not included after rule execution. (one-off items that don't match a rule set)\n- Selectively exclude media from being added to a collection, even if it matches a rule.\n- Show a collection, containing rule matched media, on the Plex home screen for a specific duration before deletion. Think \"Leaving soon\".\n- Optionally, use a manual Plex collection, in case you don't want \u003cb\u003eMaintainerr\u003c/b\u003e to add \u0026 remove Plex collections at will.\n- Manage media straight from the collection within Plex. \u003cb\u003eMaintainerr\u003c/b\u003e will sync and add or exclude media to/from the internal collection.\n\n- Remove or unmonitor media from \\*arr\n- Clear requests from Overseerr\n- Delete files from disk\n\n\u003cbr /\u003e\nCurrently, \u003cb\u003eMaintainerr\u003c/b\u003e supports rule parameters from these apps :\n\n- Plex\n- Overseerr\n- Radarr\n- Sonarr\n\n# Preview\n\n![image](https://raw.githubusercontent.com/jorenn92/Maintainerr/main/ui/public/screenshots/overview_screenshot.png)\n![image](https://raw.githubusercontent.com/jorenn92/Maintainerr/main/ui/public/screenshots/rules_screenshot.png)\n![image](https://raw.githubusercontent.com/jorenn92/Maintainerr/main/ui/public/screenshots/collections_screenshot.png)\n![image](https://raw.githubusercontent.com/jorenn92/Maintainerr/main/ui/public/screenshots/rule_example_screenshot.png)",
+ "website": "https://maintainerr.info/",
+ "source": "https://github.com/Maintainerr/Maintainerr",
+ "main_port": 8030,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8030",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  maintainerr:\n    image: ghcr.io/maintainerr/maintainerr:3.31.0\n    container_name: maintainerr\n    volumes:\n      - ${APP_DATA_DIR}/data/config:/opt/data\n    environment:\n      - TZ=${TZ}\n    ports:\n      - ${APP_PORT}:6246\n    restart: unless-stopped\n"
+}

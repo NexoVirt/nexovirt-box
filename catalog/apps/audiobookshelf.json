@@ -1,0 +1,24 @@
+{
+ "id": "audiobookshelf",
+ "name": "Audiobookshelf",
+ "version": "2.37.2",
+ "category": "Books",
+ "tagline": "Audiobookshelf is a self-hosted audiobook and podcast server.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/audiobookshelf/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# AudiobookShelf\nAudiobookshelf is a self-hosted audiobook and podcast server.\n\n### Features\n\n* Fully **open-source**, including the [android \u0026 iOS app](https://github.com/advplyr/audiobookshelf-app) *(in beta)*\n* Stream all audio formats on the fly\n* Search and add podcasts to download episodes w/ auto-download\n* Multi-user support w/ custom permissions\n* Keeps progress per user and syncs across devices\n* Auto-detects library updates, no need to re-scan\n* Upload books and podcasts w/ bulk upload drag and drop folders\n* Backup your metadata + automated daily backups\n* Progressive Web App (PWA)\n* Chromecast support on the web app and android app\n* Fetch metadata and cover art from several sources\n* Chapter editor and chapter lookup (using [Audnexus API](https://audnex.us/))\n* Merge your audio files into a single m4b\n* Embed metadata and cover image into your audio files (using [Tone](https://github.com/sandreas/tone))\n* Basic ebook support and ereader\n  * Epub, pdf, cbr, cbz\n  * Send ebook to device (i.e. Kindle)\n* Open RSS feeds for podcasts and audiobooks\n\n# Folder Info\n\n| Root Folder                         | Container Folder |\n|-------------------------------------|------------------|\n| /runtipi/app-data/audiobookshelf/config\t | /config          |\n| /runtipi/app-data/audiobookshelf/metadata\t | /metadata          |\n| /runtipi/media/data/books/spoken    | /audiobooks      |\n| /runtipi/media/data/podcasts        | /podcasts        |",
+ "website": "https://audiobookshelf.org/",
+ "source": "https://github.com/advplyr/audiobookshelf",
+ "main_port": 0,
+ "scheme": "http",
+ "questions": [],
+ "compose": "services:\n  audiobookshelf:\n    image: ghcr.io/advplyr/audiobookshelf:2.37.2\n    volumes:\n      - ${ROOT_FOLDER_HOST}/media/data/books/spoken:/audiobooks\n      - ${ROOT_FOLDER_HOST}/media/data/podcasts:/podcasts\n      - ${APP_DATA_DIR}/data/config:/config\n      - ${APP_DATA_DIR}/data/metadata:/metadata\n    x-runtipi:\n      internal_port: 80\n      is_main: true\nx-runtipi:\n  schema_version: 2\n"
+}

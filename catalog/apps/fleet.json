@@ -1,0 +1,31 @@
+{
+ "id": "fleet",
+ "name": "Fleet",
+ "version": "6a0c946a9339b848a5f31d06ff45876dd94fee8cc19b1f8b6a8b0b60e3bbff24",
+ "category": "Other",
+ "tagline": "Provides an online web interface which displays a set of maintained images from one or more owned repositories.",
+ "icon": "https://cdn.jsdelivr.net/gh/WisdomSky/CasaOS-LinuxServer-AppStore@main/default-icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Fleet provides an online web interface which displays a set of maintained images from one or more owned repositories.",
+ "main_port": 8080,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8080",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/fleet:2.3.3@sha256:6a0c946a9339b848a5f31d06ff45876dd94fee8cc19b1f8b6a8b0b60e3bbff24\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n      fleet_admin_authentication_type: ''\n      fleet_database_url: ''\n      fleet_database_username: ''\n      fleet_database_password: ''\n      fleet_admin_secret: ''\n    ports:\n      - target: 8080\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

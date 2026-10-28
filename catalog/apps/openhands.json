@@ -1,0 +1,37 @@
+{
+ "id": "openhands",
+ "name": "OpenHands",
+ "version": "0.59",
+ "category": "AI",
+ "tagline": "Open-source AI-powered coding assistant",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/OpenHands/icon.svg",
+ "architectures": [
+  "amd64"
+ ],
+ "docker_socket": true,
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "OpenHands is an open-source AI-powered coding assistant that provides developers with intelligent code completion, generation, and debugging capabilities. It runs in a sandboxed environment to ensure security and isolation while allowing access to various development tools and resources.\n\n**Key Features:**\n- AI-powered code completion and generation\n- Interactive debugging and error resolution\n- Support for multiple programming languages\n- Secure sandboxed execution environment\n- Customizable runtime configurations\n- Integration with Docker for containerized workflows\n\n**Learn More:**\n- [OpenHands Official Website](https://www.all-hands.dev)\n- [OpenHands GitHub Repository](https://github.com/All-Hands-AI/OpenHands)\n- [Documentation](https://docs.all-hands.dev)",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/OpenHands/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/OpenHands/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/OpenHands/screenshot-3.png"
+ ],
+ "website": "https://www.openhands.dev/",
+ "main_port": 13333,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "13333",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  openhands:\n    image: ghcr.io/all-hands-ai/openhands:0.59\n    container_name: openhands\n    environment:\n      - SANDBOX_RUNTIME_CONTAINER_IMAGE=ghcr.io/all-hands-ai/runtime:main-nikolaik\n      #- SANDBOX_USER_ID=${SANDBOX_USER_ID:-1234} # enable this only if you want a specific non-root sandbox user but you will have to manually adjust permissions of ~/.openhands for this user\n      - WORKSPACE_MOUNT_PATH=${APP_DATA_DIR}/workspace\n    ports:\n      - \"${APP_PORT}:3000\"\n    extra_hosts:\n      - \"host.docker.internal:host-gateway\"\n    volumes:\n      - /var/run/docker.sock:/var/run/docker.sock\n      - ${APP_DATA_DIR}/openhands:/.openhands\n      - ${APP_DATA_DIR}/workspace:/opt/workspace_base\n    stdin_open: true\n    tty: true\n"
+}

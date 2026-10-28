@@ -1,0 +1,31 @@
+{
+ "id": "grav",
+ "name": "Grav",
+ "version": "a355dd195ae6245bcae467fdfa10b71ae54f0f93c423eb54e3e4c1f920c6fce7",
+ "category": "Home",
+ "tagline": "A Fast, Simple, and Flexible, file-based Web-platform.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/grav-logo.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Grav is a Fast, Simple, and Flexible, file-based Web-platform.",
+ "main_port": 80,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "80",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/grav:2.2.13@sha256:a355dd195ae6245bcae467fdfa10b71ae54f0f93c423eb54e3e4c1f920c6fce7\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n    ports:\n      - target: 80\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

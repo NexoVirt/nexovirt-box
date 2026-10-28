@@ -1,0 +1,30 @@
+{
+ "id": "ejbca-community",
+ "name": "EJBCA Community",
+ "version": "ef574ed81c1e2bb335902f1097b09f9408fe32f2c3abbccfe80999d1c9b50164",
+ "category": "Social",
+ "tagline": "The open-source public key infrastructure (PKI) and certificate authority (CA)",
+ "icon": "https://cdn.jsdelivr.net/gh/Keyfactor/ejbca-ce/.github/images/community-ejbca-icon.png",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "The open-source public key infrastructure (PKI) and certificate authority (CA) software EJBCA is one of the longest running CA software projects. EJBCA covers all your needs - from certificate enrollment, via certificate management, to certificate validation.",
+ "main_port": 8443,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8443",
+   "required": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-ejbca-ce application\nservices:\n  # Service name: app\n  # The `app` service definition\n  big-bear-ejbca-ce:\n    # Name of the container\n    container_name: big-bear-ejbca-ce\n    # Image to be used for the container\n    image: keyfactor/ejbca-ce:9.6.3@sha256:ef574ed81c1e2bb335902f1097b09f9408fe32f2c3abbccfe80999d1c9b50164\n    # Container restart policy\n    restart: unless-stopped\n    # Volumes to be mounted to the container\n    volumes:\n      # Mounting the local ejbca-ce/persistent directory to /mnt/persistent inside the container\n      - ${APP_DATA_DIR}/persistent:/mnt/persistent\n    # Ports mapping between host and container\n    ports:\n      # Mapping port 8080 of the host to port 8080 of the container\n      - \"8080:8080\"\n      # Mapping port 8443 of the host to port 8443 of the container\n      - \"${APP_PORT}:8443\"\n    # Environment variables\n    environment:\n      - TLS_SETUP_ENABLED=simple\n"
+}

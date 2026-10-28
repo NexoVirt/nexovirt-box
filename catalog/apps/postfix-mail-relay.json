@@ -1,0 +1,83 @@
+{
+ "id": "postfix-mail-relay",
+ "name": "Postfix Mail Relay",
+ "version": "1.4.0",
+ "category": "Utilities",
+ "tagline": "Simple SMTP relay for environments where you may have private servers with no Internet connection.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/postfix-relay/metadata/logo.jpg",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Postfix Mail Relay\n\nSimple SMTP relay, originally based on [alterrebe/docker-mail-relay](https://github.com/alterrebe/docker-mail-relay), but has been rewritten since.\n\n## Description\n\nThe container provides a simple SMTP relay for environments like Amazon VPC where you may have private servers with no Internet connection\nand therefore with no access to external mail relays (e.g. Amazon SES, SendGrid and others). You need to supply the container with your\nexternal mail relay address and credentials. The image is tested with `Amazon SES`, `Sendgrid`, `Gmail` and `Mandrill`\n\n## Changes since `alterrebe/docker-mail-relay`\n\n* Uses `alpine` image instead of `ubuntu`.\n* Uses `envsubst` for templating instead of `j2cli`.\n* All output goes to `stdout` and `stderr` including `maillog`.\n* Included `superviserd` event watcher which will exit the `supervisord` process if one of the monitored processes dies unexpectedly.\n* Doesn't use TLS on `smtpd` side.\n* And other changes to make the image as **KISS** as possible\n\n## Changed in version `1.3.0`\n\n* Remove `rsyslog` dependancy\n* Remove `supervisor`\n* Even more **KISS**, just single script used to configure and run `postfix`\n\n## Environment variables\n\n| ENV. Variable            | Description                                                                                                                        |\n| ------------------------ | -----------------------------------------------------------------------------------------------------------------------------------|\n| `ACCEPTED_NETWORKS`      | Space delimited list of networks to accept mail from. Default: `192.168.0.0/16 172.16.0.0/12 10.0.0.0/8`                     |\n| `RECIPIENT_RESTRICTIONS` | Space delimited list of allowed `RCPT TO` addresses. Default: **unrestricted**                                               |\n| `SMTP_HOST`              | External relay DNS name. Default: `email-smtp.us-east-1.amazonaws.com`                                                       |\n| `SMTP_LOGIN`             | Login to connect to the external relay. **Required**                                                                         |\n| `SMTP_PASSWORD`          | Password to connect to the external relay. **Required**                                                                      |\n| `SMTP_PORT`              | External relay TCP port. Default: `25`                                                                                       |\n| `TLS_VERIFY`             | Trust level for checking remote side cert. Default: `may` (\u003chttp://www.postfix.org/postconf.5.html#smtp_tls_security_level\u003e) |\n| `USE_TLS`                | Remote require tls. Must be `yes` or `no`. Default: `no`                                                                     |",
+ "source": "https://github.com/shamil/docker-postfix-relay",
+ "main_port": 2525,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "2525",
+   "required": true
+  },
+  {
+   "key": "RELAY_ACCEPTED_NETWORKS",
+   "label": "Accepted Networks",
+   "type": "text",
+   "hint": "Space delimited list of networks to accept mail from.",
+   "placeholder": "192.168.0.0/16 172.16.0.0/12 10.0.0.0/8"
+  },
+  {
+   "key": "RELAY_SMTP_HOST",
+   "label": "SMTP Host",
+   "type": "text",
+   "hint": "External relay DNS name.",
+   "placeholder": "smtp.sendgrid.net",
+   "required": true
+  },
+  {
+   "key": "RELAY_SMTP_LOGIN",
+   "label": "SMTP Login",
+   "type": "text",
+   "hint": "Login to connect to the external relay.",
+   "placeholder": "apikey",
+   "required": true
+  },
+  {
+   "key": "RELAY_SMTP_PASSWORD",
+   "label": "SMTP Password",
+   "type": "password",
+   "hint": "Password to connect to the external relay.",
+   "placeholder": "password",
+   "required": true
+  },
+  {
+   "key": "RELAY_SMTP_PORT",
+   "label": "SMTP Port",
+   "type": "number",
+   "hint": "External relay TCP port.",
+   "placeholder": "25"
+  },
+  {
+   "key": "RELAY_TLS_VERIFY",
+   "label": "TLS Verify",
+   "type": "text",
+   "hint": "Trust level for checking remote side cert: http://www.postfix.org/postconf.5.html#smtp_tls_security_level",
+   "placeholder": "none|may|encrypt|dane|dane-only|fingerprint|verify|secure"
+  },
+  {
+   "key": "RELAY_USE_TLS",
+   "label": "Use TLS",
+   "type": "text",
+   "hint": "Remote require tls.",
+   "placeholder": "yes|no"
+  }
+ ],
+ "compose": "services:\n  postfix-relay:\n    container_name: postfix-relay\n    # user: root\n    image: simenduev/postfix-relay:1.4.0\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:25\n    volumes:\n      - ${APP_DATA_DIR}/data/config:/root/config:rw\n    environment:\n      - ACCEPTED_NETWORKS=${RELAY_ACCEPTED_NETWORKS}\n      - SMTP_HOST=${RELAY_SMTP_HOST}\n      - SMTP_LOGIN=${RELAY_SMTP_LOGIN}\n      - SMTP_PASSWORD=${RELAY_SMTP_PASSWORD}\n      - SMTP_PORT=${RELAY_SMTP_PORT}\n      - TLS_VERIFY=${RELAY_TLS_VERIFY}\n      - USE_TLS=${RELAY_USE_TLS}\n    healthcheck:\n      test: netstat -an | grep 25 \u003e /dev/null; if [ 0 != $? ]; then exit 1; fi;\n      interval: 10s\n      timeout: 5s\n      retries: 5\n      start_period: 30s\n"
+}

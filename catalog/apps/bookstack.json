@@ -1,0 +1,48 @@
+{
+ "id": "bookstack",
+ "name": "Bookstack",
+ "version": "26.09.20260929",
+ "category": "Data",
+ "tagline": "BookStack is a self-hosted platform for organising and storing information.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/bookstack/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "BookStack is an opinionated wiki system that provides a pleasant and simple out-of-the-box experience. New users to an instance should find the experience intuitive and only basic word-processing skills should be required to get involved in creating content on BookStack. The platform should provide advanced power features to those that desire it but they should not interfere with the core simple user experience.\n\nBookStack is not designed as an extensible platform to be used for purposes that differ to the statement above.\n\nIn regard to development philosophy, BookStack has a relaxed, open \u0026 positive approach. At the end of the day this is free software developed and maintained by people donating their own free time.\n\n## Credentials\n\nUsername: admin@admin.com\nPassword: password",
+ "website": "https://www.bookstackapp.com/",
+ "source": "https://github.com/BookStackApp/BookStack",
+ "main_port": 0,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_KEY",
+   "label": "App key",
+   "type": "password",
+   "hint": "https://github.com/linuxserver/docker-bookstack?tab=readme-ov-file#parameters",
+   "min": 32,
+   "max": 32,
+   "generate": true
+  },
+  {
+   "key": "ROOT_ACCESS_PASSWORD",
+   "label": "Root access password",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "BOOKSTACK_DB_PASS",
+   "label": "Database password",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  bookstack:\n    image: 'lscr.io/linuxserver/bookstack:26.09.20260929'\n    volumes:\n      - '${APP_DATA_DIR}/data/config:/config'\n    environment:\n      - 'TZ=${TZ}'\n      - 'APP_URL=${APP_PROTOCOL:-http}://${APP_DOMAIN}'\n      - 'APP_KEY=base64:${APP_KEY}'\n      - 'DB_HOST=bookstack-db'\n      - 'DB_USERNAME=tipi'\n      - 'DB_PASSWORD=${BOOKSTACK_DB_PASS}'\n      - 'DB_DATABASE=bookstackapp'\n    depends_on:\n      - 'bookstack-db'\n    x-runtipi:\n      internal_port: 80\n      is_main: true\n  bookstack-db:\n    image: 'lscr.io/linuxserver/mariadb'\n    volumes:\n      - '${APP_DATA_DIR}/data/db:/config'\n    environment:\n      - 'TZ=${TZ}'\n      - 'MYSQL_ROOT_PASSWORD=${ROOT_ACCESS_PASSWORD}'\n      - 'MYSQL_DATABASE=bookstackapp'\n      - 'MYSQL_USER=tipi'\n      - 'MYSQL_PASSWORD=${BOOKSTACK_DB_PASS}'\n    x-runtipi:\n      is_main: false\nx-runtipi:\n  schema_version: 2\n"
+}

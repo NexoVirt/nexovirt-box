@@ -1,0 +1,34 @@
+{
+ "id": "real-debrid-torrent-client",
+ "name": "Real-Debrid Torrent Client",
+ "version": "",
+ "category": "Media",
+ "tagline": "",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/RDTClient/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/RDTClient/screenshot-1.png"
+ ],
+ "main_port": 6500,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "6500",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  rdtclient:\n    environment:\n      PGID: $PGID\n      PUID: $PUID\n      TZ: $TZ\n      UMASK: \"002\"\n    cpu_shares: 50\n    command: []\n    container_name: rdtclient\n    deploy:\n      resources:\n        reservations:\n          memory: 64M\n    image: rogerfar/rdtclient:2.0.136\n    labels:\n      icon: https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/RDTClient/icon.svg\n    ports:\n      - target: 6500\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: ${SHARED_DIR}/Downloads\n        target: /data/downloads\n      - type: bind\n        source: ${APP_DATA_DIR}/db\n        target: /data/db\n    network_mode: bridge\n    privileged: false\n"
+}

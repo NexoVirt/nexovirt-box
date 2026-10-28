@@ -1,0 +1,31 @@
+{
+ "id": "compose-toolbox",
+ "name": "Compose Toolbox",
+ "version": "1cb6f19f3ea5ef08467870f542155619f9389bcf0dc68499e2c57a7c540f39b2",
+ "category": "Developer",
+ "tagline": "Compose file editor \u0026 validator",
+ "icon": "https://cdn.jsdelivr.net/gh/bluegoosemedia/composetoolbox@498d1527dcf9cc6422300216df6244ea79ae3630/public/favicon.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Self-hosted tool to edit, validate, and get suggestions for docker-compose.yml files.",
+ "main_port": 3002,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3002",
+   "required": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-composetoolbox application\nservices:\n  # Service name: big-bear-composetoolbox\n  # The `big-bear-composetoolbox` service definition\n  big-bear-composetoolbox:\n    # Environment variables\n    environment:\n      # Node environment\n      NODE_ENV: production\n    # Image to be used for the container\n    image: ghcr.io/bluegoosemedia/composetoolbox:latest@sha256:1cb6f19f3ea5ef08467870f542155619f9389bcf0dc68499e2c57a7c540f39b2\n    pull_policy: always\n    # Ports mapping between host and container\n    ports:\n      - \"${APP_PORT}:3000\"\n    # Container restart policy\n    restart: unless-stopped\n    # Volumes to be mounted to the container\n    volumes:\n      - ${APP_DATA_DIR}/data:/app/data\n    # Name of the container\n    container_name: \"big-bear-composetoolbox\"\n"
+}

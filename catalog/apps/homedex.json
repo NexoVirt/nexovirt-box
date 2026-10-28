@@ -1,0 +1,41 @@
+{
+ "id": "homedex",
+ "name": "Homedex",
+ "version": "c896084c063a358ed19932587d98f9a54d5520e5b2f9e1672ade279f8f0dcea0",
+ "category": "Home",
+ "tagline": "Read-only homelab inventory",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons@main/png/homedex.png",
+ "architectures": [
+  "amd64",
+  "arm64",
+  "armv7"
+ ],
+ "docker_socket": true,
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Homedex 0.2.5 is a read-only homelab inventory of services, ports, routes, and certificate expiry.",
+ "main_port": 7377,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "7377",
+   "required": true
+  },
+  {
+   "key": "SECRET_HOMEDEX_ADMIN_PASSWORD",
+   "label": "Homedex admin password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  homedex:\n    image: ghcr.io/harshshah0203/homedex:0.2.5@sha256:c896084c063a358ed19932587d98f9a54d5520e5b2f9e1672ade279f8f0dcea0\n    container_name: homedex\n    restart: unless-stopped\n    depends_on:\n      - docker-socket-proxy\n    ports:\n      - \"${APP_PORT}:7377\"\n    environment:\n      HOMEDEX_DATA_DIR: /data\n      HOMEDEX_LISTEN: \":7377\"\n      HOMEDEX_ADMIN_PASSWORD: ${SECRET_HOMEDEX_ADMIN_PASSWORD}\n    volumes:\n      - ${APP_DATA_DIR}/data:/data\n    read_only: true\n    tmpfs:\n      - /tmp\n    cap_drop:\n      - ALL\n    security_opt:\n      - no-new-privileges:true\n    networks:\n      - app\n      - discovery\n  docker-socket-proxy:\n    image: tecnativa/docker-socket-proxy:v0.5.0@sha256:1f5038b54f06c3e18422902cf00ba21803d1c97805aae032e5e6673d532d3459\n    container_name: homedex-socket-proxy\n    restart: unless-stopped\n    environment:\n      CONTAINERS: \"1\"\n      IMAGES: \"1\"\n      INFO: \"1\"\n      NETWORKS: \"1\"\n      VERSION: \"1\"\n      POST: \"0\"\n      ALLOW_START: \"0\"\n      ALLOW_STOP: \"0\"\n      ALLOW_RESTARTS: \"0\"\n    volumes:\n      - /var/run/docker.sock:/var/run/docker.sock:ro\n    read_only: true\n    tmpfs:\n      - /run\n      - /tmp\n    cap_drop:\n      - ALL\n    security_opt:\n      - no-new-privileges:true\n    networks:\n      - discovery\nnetworks:\n  app:\n    driver: bridge\n  discovery:\n    driver: bridge\n    internal: true\n"
+}

@@ -1,0 +1,33 @@
+{
+ "id": "emby",
+ "name": "Emby",
+ "version": "4.10.2",
+ "category": "Media",
+ "tagline": "A media server for your home collection",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/emby/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## Emby\n\nBringing all of your home videos, music, and photos together into one place has never been easier. Your personal Emby Server automatically converts and streams your media on-the-fly to play on any device.\n\n![Emby](https://emby.media/resources/Screenshot_2015-09-28-22-42-491.png)\n\n### Folder Info\n\n| Root Folder                            | Container Folder |\n|----------------------------------------|------------------|\n| /runtipi/app-data/emby/data/config     | /config          |\n| /runtipi/media/data                    | /media/data      |",
+ "website": "https://emby.media",
+ "source": "https://github.com/MediaBrowser/Emby",
+ "main_port": 8325,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8325",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  emby:\n    image: lscr.io/linuxserver/emby:4.10.2\n    container_name: emby\n    volumes:\n      - ${APP_DATA_DIR}/data/config:/config\n      - ${ROOT_FOLDER_HOST}/media/data:/media/data\n    environment:\n      - PUID=1000\n      - PGID=1000\n      - TZ=${TZ}\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:8096\n"
+}

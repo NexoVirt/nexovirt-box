@@ -1,0 +1,33 @@
+{
+ "id": "qbittorrent",
+ "name": "qBittorrent",
+ "version": "5.3.0",
+ "category": "Utilities",
+ "tagline": "Fast, easy, and free BitTorrent client",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/qbittorrent/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## Fast, easy, and free BitTorrent client\n\nThe [Qbittorrent](https://www.qbittorrent.org/) project aims to provide an open-source software alternative to µTorrent. qBittorrent is based on the Qt toolkit and libtorrent-rasterbar library.\n\n## Credentials\n\nPlease note that starting from version 4.6.1, qBittorrent no longer provides a default password. Instead, a randomly generated password is used and can be found in the container logs. Please check the logs for the password. Alternatively, you can manually modify the config file to set it to the hash of `adminadmin`. Example:\n\n```\n [Preferences]\nWebUI\\Password_PBKDF2=\"@ByteArray(ARQ77eY1NUZaQsuDHbIMCA==:0WMRkYTUWVT9wVvdDtHAjU9b3b7uB8NR1Gur2hmQCvCDpm39Q+PsJRJPaCU51dEiz+dTzh8qbPsL8WkFljQYFQ==)\" \n```\n\n## Folder Info \n\n| Root Folder                               | Container Folder |\n|-------------------------------------------|------------------|\n| /runtipi/app-data/qbittorrent/data/config | /config          |\n| /runtipi/media/torrents                   | /media/torrents  |",
+ "website": "https://www.qbittorrent.org/",
+ "source": "https://github.com/qbittorrent/qBittorrent",
+ "main_port": 8133,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8133",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  qbittorrent:\n    image: lscr.io/linuxserver/qbittorrent:5.3.0\n    container_name: qbittorrent\n    environment:\n      - PUID=1000\n      - PGID=1000\n      - TZ=${TZ}\n      - WEBUI_PORT=${APP_PORT}\n    volumes:\n      - ${APP_DATA_DIR}/data/config:/config\n      - ${ROOT_FOLDER_HOST}/media/torrents:/media/torrents\n    ports:\n      - ${APP_PORT}:${APP_PORT}\n      - '6881:6881'\n      - 6881:6881/udp\n    restart: unless-stopped\n"
+}

@@ -1,0 +1,69 @@
+{
+ "id": "mempool",
+ "name": "Mempool",
+ "version": "v3.3.2",
+ "category": "Finance",
+ "tagline": "Bitcoin mempool visualizer and blockchain explorer",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/mempool/metadata/logo.jpg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## Explore the Bitcoin ecosystem with mempool\r\n\r\nMempool is the fully-featured mempool visualizer, explorer, and API service running at mempool.space.\r\n\r\nIt is an open-source project developed and operated for the benefit of the Bitcoin community, with a focus on the emerging transaction fee market that is evolving Bitcoin into a multi-layer ecosystem.\r\n\r\n## Required apps\r\nTo be able to run mempool, you need to install this apps first:\r\n- Bitcoin: [Install here](/app-store/bitcoind)\r\n- Electrs: [Install here](/app-store/electrs)\r\n\r\n\u003cimg src=\"https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExN2J3bWNwZ3N4a2FodjBmdTJoa3RubWVka2dvOXByc3VsenowdGdoaCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/hrpYgIn4o6tja5acUn/giphy.gif\" alt=\"drawing\" width=\"800\"/\u003e",
+ "website": "https://mempool.space/",
+ "source": "https://github.com/mempool/mempool",
+ "main_port": 2200,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "2200",
+   "required": true
+  },
+  {
+   "key": "BITCOIND_DIR",
+   "label": "Custom Bitcoin data folder location (for .cookie file)",
+   "type": "text",
+   "hint": "Default, tipi bitcoin folder",
+   "placeholder": "/home/\u003cuser\u003e/runtipi/app-data/\u003cappstore\u003e/bitcoind/data",
+   "required": true
+  },
+  {
+   "key": "CORE_RPC_HOST",
+   "label": "Custom Bitcoin node host address",
+   "type": "text",
+   "hint": "Default, tipi bitcoin host"
+  },
+  {
+   "key": "ELECTRUM_HOST",
+   "label": "Custom Electrs host address",
+   "type": "text",
+   "hint": "Default, tipi electrs host",
+   "placeholder": "172.27.0.1"
+  },
+  {
+   "key": "ELECTRUM_PORT",
+   "label": "Custom Electrs host port",
+   "type": "number",
+   "hint": "Default, tipi electrs host",
+   "placeholder": "50001",
+   "default": "50001"
+  },
+  {
+   "key": "MEMPOOL_DB_PASSWORD",
+   "label": "Mempool DB password",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  mempool:\n    container_name: mempool\n    image: mempool/frontend:v3.3.2\n    restart: unless-stopped\n    stop_grace_period: 1m\n    command: nginx -g 'daemon off;'\n    ports:\n      - ${APP_PORT}:8080\n    depends_on:\n      - mempool-db\n    environment:\n      FRONTEND_HTTP_PORT: '8080'\n      BACKEND_MAINNET_HTTP_HOST: mempool-api\n  mempool-api:\n    container_name: mempool-api\n    image: mempool/backend:v3.3.2\n    restart: unless-stopped\n    stop_grace_period: 1m\n    user: '0:0'\n    volumes:\n      - ${BITCOIND_DIR:-${APP_DATA_DIR}/../bitcoind/data}:/data/.bitcoin:ro\n      - ${APP_DATA_DIR}/data:/backend/cache\n    command: ./start.sh\n    depends_on:\n      - mempool-db\n    environment:\n      MEMPOOL_BACKEND: electrum\n      ELECTRUM_HOST: ${ELECTRUM_HOST:-electrs}\n      ELECTRUM_PORT: ${ELECTRUM_PORT:-50001}\n      ELECTRUM_TLS_ENABLED: 'false'\n      CORE_RPC_HOST: ${CORE_RPC_HOST:-bitcoind}\n      CORE_RPC_PORT: '8332'\n      CORE_RPC_COOKIE: true\n      CORE_RPC_COOKIE_PATH: /data/.bitcoin/.cookie\n      CORE_RPC_TIMEOUT: '60000'\n      DATABASE_ENABLED: 'true'\n      DATABASE_HOST: mempool-db\n      DATABASE_DATABASE: mempool\n      DATABASE_USERNAME: mempool\n      DATABASE_PASSWORD: ${MEMPOOL_DB_PASSWORD}\n      STATISTICS_ENABLED: 'true'\n  mempool-db:\n    container_name: mempool-db\n    image: mariadb:10.5.21\n    restart: unless-stopped\n    stop_grace_period: 1m\n    environment:\n      MYSQL_DATABASE: mempool\n      MYSQL_USER: mempool\n      MYSQL_PASSWORD: ${MEMPOOL_DB_PASSWORD}\n      MYSQL_ROOT_PASSWORD: ${MEMPOOL_DB_PASSWORD}\n    volumes:\n      - ${APP_DATA_DIR}/data/db:/var/lib/mysql\n"
+}

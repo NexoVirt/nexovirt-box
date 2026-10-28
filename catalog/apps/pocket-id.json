@@ -1,0 +1,31 @@
+{
+ "id": "pocket-id",
+ "name": "Pocket ID",
+ "version": "45bdeaf3fcd6d07cf8721e98785d93324bb8e65b586498874c05a3d489c8094e",
+ "category": "Other",
+ "tagline": "Passkey-based OIDC authentication",
+ "icon": "https://images.weserv.nl/?url=https%3A%2F%2Fpocket-id.org%2Fimg%2Flogo.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Simple and easy-to-use OIDC provider that allows users to authenticate with their passkeys to your services.",
+ "main_port": 1411,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "1411",
+   "required": true
+  }
+ ],
+ "compose": "# Service definitions for the pocket-id application\nservices:\n  # Service configuration for the pocket-id application\n  big-bear-pocketid:\n    container_name: big-bear-pocketid # Name of the pocket-id container\n    image: ghcr.io/pocket-id/pocket-id:v2.7@sha256:45bdeaf3fcd6d07cf8721e98785d93324bb8e65b586498874c05a3d489c8094e # Docker image to use for pocket-id\n    restart: unless-stopped # Restart policy: Restart unless manually stopped\n    cpu_shares: 90\n    deploy:\n      resources:\n        limits:\n          memory: 2048M\n    environment:\n      - APP_URL=http://localhost:1411 # Application URL for pocket-id, should be set to your domain name e.g https://pocketid.example.com if using a reverse proxy\n      - TRUST_PROXY=false # Whether to trust proxy headers, set to true if behind a reverse proxy\n      - MAXMIND_LICENSE_KEY= # MaxMind license key for geolocation, optional\n      - PUID=1000 # User ID for file permissions\n      - PGID=1000 # Group ID for file permissions\n    hostname: big-bear-pocketid\n    labels:\n      icon: https://pocket-id.org/img/logo.png # Icon URL\n    ports:\n      - target: 1411\n        published: \"${APP_PORT}\"\n        protocol: tcp # Port mapping between host and container\n    volumes:\n      - ${APP_DATA_DIR}/data:/app/data\n    network_mode: bridge\n    privileged: false\n    # Optional healthcheck\n    healthcheck:\n      test: \"curl -f http://localhost:1411/healthz\" # Health check command\n      interval: 1m30s\n      timeout: 5s\n      retries: 2\n      start_period: 10s\n"
+}

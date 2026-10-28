@@ -1,0 +1,32 @@
+{
+ "id": "sealskin",
+ "name": "Sealskin",
+ "version": "888dc5097fd74b445ff99c6d6c0c9d7c64b817554d855250b59dfcb2669eac30",
+ "category": "Home",
+ "tagline": "A self-hosted, client-server platform that enables users to run powerful, containerized desktop applications streamed directly to a web browser. It uses a browser extension to intercept user actions—such as clicking a link or downloading a file and redirects them to a secure, isolated application environment running on a remote server.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/selkies-logo.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "docker_socket": true,
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Sealskin is a self-hosted, client-server platform that enables users to run powerful, containerized desktop applications streamed directly to a web browser. It uses a browser extension to intercept user actions—such as clicking a link or downloading a file and redirects them to a secure, isolated application environment running on a remote server.",
+ "main_port": 8443,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8443",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/sealskin:0.4.0@sha256:888dc5097fd74b445ff99c6d6c0c9d7c64b817554d855250b59dfcb2669eac30\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n      HOST_URL: ''\n    ports:\n      - target: 8443\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 8000\n        published: 8000\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n      - type: bind\n        source: ${APP_DATA_DIR}/storage\n        target: /storage\n      - type: bind\n        source: /var/run/docker.sock\n        target: /var/run/docker.sock\n"
+}

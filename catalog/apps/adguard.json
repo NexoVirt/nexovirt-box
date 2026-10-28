@@ -1,0 +1,30 @@
+{
+ "id": "adguard",
+ "name": "Adguard",
+ "version": "v0.107.79",
+ "category": "Networking",
+ "tagline": "World's most advanced adblocker!",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/adguard/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## AdGuard Home is a network-wide software for blocking ads \u0026 tracking.\n\nAfter you set it up, it'll cover ALL your home devices, and you don't need any client-side software for that.\nIt operates as a DNS server that re-routes tracking domains to a \"black hole\", thus preventing your devices from connecting to those servers. It's based on software we use for our public AdGuard DNS servers -- both share a lot of common code.\n\n![Screenshot](https://cdn.adguard.com/public/Adguard/Common/adguard_home.gif)",
+ "website": "https://adguard-dns.io/kb/fr/adguard-home/getting-started/",
+ "source": "https://github.com/AdguardTeam/AdGuardHome",
+ "main_port": 0,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "NETWORK_INTERFACE",
+   "label": "Network Interface (default: 0.0.0.0)",
+   "type": "text"
+  }
+ ],
+ "compose": "services:\n  adguard:\n    image: adguard/adguardhome:v0.107.79\n    ports:\n      - ${NETWORK_INTERFACE:-0.0.0.0}:53:53/tcp\n      - ${NETWORK_INTERFACE:-0.0.0.0}:53:53/udp\n      - ${NETWORK_INTERFACE:-0.0.0.0}:853:853/tcp\n      - ${NETWORK_INTERFACE:-0.0.0.0}:853:853/udp\n    volumes:\n      - ${APP_DATA_DIR}/data/work:/opt/adguardhome/work\n      - ${APP_DATA_DIR}/data/conf:/opt/adguardhome/conf\n    x-runtipi:\n      internal_port: 80\n      is_main: true\nx-runtipi:\n  schema_version: 2\n"
+}

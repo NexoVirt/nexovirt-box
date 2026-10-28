@@ -1,0 +1,50 @@
+{
+ "id": "odysseus",
+ "name": "Odysseus",
+ "version": "5bb9e5cde7cd238e2b9ca9f9bcbc461dea9eb66524b9112c302ff0d90b6ca3ee",
+ "category": "AI",
+ "tagline": "Self-hosted AI workspace",
+ "icon": "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps/apps/odysseus/logo.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Odysseus is a self-hosted AI workspace. It bundles chat, web search via SearXNG, and a ChromaDB vector store so you can run your own private AI environment with the LLM provider of your choice.",
+ "screenshots": [
+  "https://raw.githubusercontent.com/pewdiepie-archdaemon/odysseus/main/docs/odysseus.jpg"
+ ],
+ "main_port": 7000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "7000",
+   "required": true
+  },
+  {
+   "key": "SECRET_ODYSSEUS_ADMIN_PASSWORD",
+   "label": "Odysseus admin password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
+   "key": "SECRET_SEARXNG_SECRET",
+   "label": "Searxng secret",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-odysseus application\nservices:\n  # Service name: big-bear-odysseus\n  # The main Odysseus AI workspace service\n  big-bear-odysseus:\n    # Name of the container\n    container_name: big-bear-odysseus\n    # Image to be used for the container\n    image: bigbeartechworld/big-bear-odysseus:2026.10.22@sha256:5bb9e5cde7cd238e2b9ca9f9bcbc461dea9eb66524b9112c302ff0d90b6ca3ee\n    # Container restart policy\n    restart: unless-stopped\n    # Ports mapping between host and container\n    ports:\n      # Mapping port 7000 of the host to port 7000 of the container\n      - \"${APP_PORT}:7000\"\n    environment:\n      # Process user ID\n      - PUID=1000\n      # Process group ID\n      - PGID=1000\n      # Require login to access the workspace\n      - AUTH_ENABLED=true\n      # Admin password (override via .env, default is insecure)\n      - ODYSSEUS_ADMIN_PASSWORD=${SECRET_ODYSSEUS_ADMIN_PASSWORD}\n      # SearXNG search instance URL\n      - SEARXNG_INSTANCE=http://searxng:8080\n      # ChromaDB host\n      - CHROMADB_HOST=chromadb\n      # ChromaDB port\n      - CHROMADB_PORT=8000\n    # Volumes to be mounted to the container\n    volumes:\n      # Application data\n      - ${APP_DATA_DIR}/data:/app/data\n      # Application logs\n      - ${APP_DATA_DIR}/logs:/app/logs\n    # Start order dependencies\n    depends_on:\n      searxng:\n        condition: service_healthy\n      chromadb:\n        condition: service_started\n    # Healthcheck for the Odysseus API\n    healthcheck:\n      test: [\"CMD\", \"curl\", \"-f\", \"http://localhost:7000/api/health\"]\n      interval: 30s\n      timeout: 10s\n      retries: 3\n      start_period: 40s\n    networks:\n      - big_bear_odysseus_network\n  # Service name: chromadb\n  # Vector database for Odysseus\n  chromadb:\n    # Name of the container\n    container_name: big-bear-odysseus-chromadb\n    # Image to be used for the container\n    image: chromadb/chroma:1.5.9@sha256:1e0b73a187a28757c572acba508c46f48c9e8b0acaf5c20e6d95cdedce1acdf6\n    # Container restart policy\n    restart: unless-stopped\n    environment:\n      # Disable anonymized telemetry\n      - ANONYMIZED_TELEMETRY=FALSE\n    # Volumes to be mounted to the container\n    volumes:\n      # ChromaDB persistence\n      - ${APP_DATA_DIR}/chromadb:/chroma/chroma\n    networks:\n      - big_bear_odysseus_network\n  # Service name: searxng\n  # Web search backend; settings seeded into the named volume on first run\n  searxng:\n    # Name of the container\n    container_name: big-bear-odysseus-searxng\n    # Image to be used for the container\n    image: searxng/searxng:2026.6.2-e964708c0@sha256:0872beb1d495d41f2dda73d7aea83746657afdd2be3010eb1b11f5a541555c9e\n    # Container restart policy\n    restart: unless-stopped\n    # Inline entrypoint seeds settings.yml (secret + html/json formats) into the volume\n    entrypoint:\n      - /bin/sh\n      - -c\n      - |\n        set -eu\n        if [ ! -s /etc/searxng/settings.yml ]; then\n          secret=\"$${SEARXNG_SECRET:-}\"\n          if [ -z \"$$secret\" ]; then\n            secret=\"$$(python -c 'import secrets; print(secrets.token_urlsafe(48))')\"\n          fi\n          cat \u003e /etc/searxng/settings.yml \u003c\u003cEOF\n        use_default_settings: true\n        server:\n          secret_key: \"$$secret\"\n        search:\n          formats:\n            - html\n            - json\n        EOF\n        fi\n        exec /usr/local/searxng/entrypoint.sh\n    environment:\n      # Base URL for SearXNG\n      - SEARXNG_BASE_URL=http://localhost:8080/\n      # Optional fixed secret (auto-generated if empty)\n      - SEARXNG_SECRET=${SECRET_SEARXNG_SECRET}\n    # Volumes to be mounted to the container\n    volumes:\n      # SearXNG config persistence\n      - ${APP_DATA_DIR}/searxng:/etc/searxng\n    cap_drop:\n      - ALL\n    cap_add:\n      - CHOWN\n      - SETGID\n      - SETUID\n      - DAC_OVERRIDE\n    # Healthcheck for the SearXNG service\n    healthcheck:\n      test: [\"CMD-SHELL\", \"python -c \\\"import urllib.request; urllib.request.urlopen('http://localhost:8080/', timeout=5).read(1)\\\"\"]\n      interval: 10s\n      timeout: 6s\n      retries: 20\n      start_period: 10s\n    networks:\n      - big_bear_odysseus_network\n  # Service name: ntfy\n  # Optional notification service\n  ntfy:\n    # Name of the container\n    container_name: big-bear-odysseus-ntfy\n    # Image to be used for the container\n    image: binwiederhier/ntfy:v2.34.0@sha256:901e14503d3f605f445be0e68f2ac71f0aa73391897ce6ceb599f8c48d8b3792\n    # Container restart policy\n    restart: unless-stopped\n    # Run the ntfy server\n    command: serve\n    # Ports mapping between host and container (bound to loopback by default)\n    ports:\n      - \"127.0.0.1:8091:80\"\n    environment:\n      # Base URL for ntfy\n      - NTFY_BASE_URL=http://localhost:8091\n    # Volumes to be mounted to the container\n    volumes:\n      # ntfy cache\n      - ${APP_DATA_DIR}/ntfy:/var/cache/ntfy\n    networks:\n      - big_bear_odysseus_network\n# Network configuration\nnetworks:\n  big_bear_odysseus_network:\n    driver: bridge\n"
+}

@@ -1,0 +1,39 @@
+{
+ "id": "ls-adguard-home-sync",
+ "name": "LS Adguard Home Sync",
+ "version": "b5408234cc8073cc0a7e38762eecb5c3a0f7c8aae8bf0db4adac36ef99258a07",
+ "category": "Networking",
+ "tagline": "LS Adguard Home Sync",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/adguard-home.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "🛡️ Synchronize AdGuard Home config to replicas. This is the LinuxServer version.",
+ "main_port": 8080,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8080",
+   "required": true
+  },
+  {
+   "key": "SECRET_ORIGIN_PASSWORD",
+   "label": "Origin password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-adguard-home-sync application\nservices:\n  # Service name: big-bear-ls-adguard-home-sync\n  # The `big-bear-ls-adguard-home-sync` service definition\n  big-bear-ls-adguard-home-sync:\n    # Name of the container\n    container_name: big-bear-ls-adguard-home-sync\n    # Image to be used for the container\n    image: linuxserver/adguardhome-sync:0.9.5@sha256:b5408234cc8073cc0a7e38762eecb5c3a0f7c8aae8bf0db4adac36ef99258a07\n    # Container restart policy\n    restart: unless-stopped\n    # Environment variables\n    environment:\n      - PUID=1000\n      - PGID=1000\n      - TZ=Etc/UTC\n      - LOG_LEVEL=info\n      - ORIGIN_URL=https://192.168.1.2:3000\n      - ORIGIN_USERNAME=bigbear\n      - ORIGIN_PASSWORD=${SECRET_ORIGIN_PASSWORD}\n      - REPLICA_URL=https://192.168.1.3:3000\n      - REPLICA_USERNAME=bigbear\n      - REPLICA_PASSWORD=${SECRET_ORIGIN_PASSWORD}\n      - CRON=\"0 */2 * * *\"\n      - RUN_ON_START=true\n      - API_PORT=8080\n    # Volumes to be mounted to the container\n    volumes:\n      # Mounting the local adguard-home-sync/config directory to /config inside the container\n      - ${APP_DATA_DIR}/config:/config\n    # Ports mapping between host and container\n    ports:\n      # Mapping port 8080 of the host to port 8080 of the container\n      - \"${APP_PORT}:8080\"\n"
+}

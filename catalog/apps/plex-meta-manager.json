@@ -1,0 +1,22 @@
+{
+ "id": "plex-meta-manager",
+ "name": "Plex-meta-manager",
+ "version": "7703177e6f29ac7bbe555a7f6c21dd05e59af3bd885582933059ce660ae5536f",
+ "category": "Other",
+ "tagline": "A Python 3 script that can be continuously run using YAML configuration files to update on a schedule the metadata of the movies, shows, and collections in your libraries as well as automatically build collections based on various methods all detailed in the wiki.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/plex-meta-manager-banner.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Plex-meta-manager is a Python 3 script that can be continuously run using YAML configuration files to update on a schedule the metadata of the movies, shows, and collections in your libraries as well as automatically build collections based on various methods all detailed in the wiki.",
+ "main_port": 8080,
+ "scheme": "http",
+ "questions": [],
+ "compose": "services:\n  app:\n    image: linuxserver/plex-meta-manager:1.21.1@sha256:7703177e6f29ac7bbe555a7f6c21dd05e59af3bd885582933059ce660ae5536f\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n      PMM_CONFIG: ''\n      PMM_TIME: ''\n      PMM_RUN: ''\n      PMM_TEST: ''\n      PMM_NO_MISSING: ''\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

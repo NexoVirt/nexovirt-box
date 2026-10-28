@@ -1,0 +1,31 @@
+{
+ "id": "vert",
+ "name": "VERT",
+ "version": "9f69e1f0a61be4882f8b1e9ba35647e8df4a91669fb4c3cdf30aeb88c247c600",
+ "category": "Developer",
+ "tagline": "The next-generation file converter. Open source, fully local and free forever.",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/vert.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "VERT is a file conversion utility that uses WebAssembly to convert files on your device instead of a cloud. Convert images, audio, documents, and video with support for over 250+ file formats. No file or file size limits.",
+ "main_port": 3030,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3030",
+   "required": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-vert application\nservices:\n  # Service name: app\n  # The `app` service definition\n  app:\n    # Name of the container\n    container_name: big-bear-vert\n    # Image to be used for the container\n    image: ghcr.io/vert-sh/vert:sha-a1b0b15@sha256:9f69e1f0a61be4882f8b1e9ba35647e8df4a91669fb4c3cdf30aeb88c247c600\n    # Container restart policy\n    restart: unless-stopped\n    # Ports mapping between host and container\n    ports:\n      # Mapping port 3030 of the host to port 80 of the container\n      - \"${APP_PORT}:80\"\n"
+}

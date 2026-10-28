@@ -1,0 +1,42 @@
+{
+ "id": "nightscout",
+ "name": "nightscout",
+ "version": "28ec928271a293745724f934df2ed9f2cddaf66442de734c2780662171b611a2",
+ "category": "Home",
+ "tagline": "Nightscout",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/nightscout.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "This acts as a web-based CGM (Continuous Glucose Monitor) to allow multiple caregivers to remotely view a patient's glucose data in real time. The server reads a MongoDB which is intended to be data from a physical CGM, where it sends new SGV (sensor glucose values) as the data becomes available. The data is then displayed graphically and blood glucose values are predicted 0.5 hours ahead using an autoregressive second order model. Alarms are generated for high and low values, which can be cleared by any watcher of the data.",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps@main/apps/nightscout/screenshots/screenshot.png"
+ ],
+ "main_port": 1337,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "1337",
+   "required": true
+  },
+  {
+   "key": "SECRET_API_SECRET",
+   "label": "Api secret",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-nightscout application\nservices:\n  big-bear-nightscout:\n    # Name of the container\n    container_name: big-bear-nightscout\n    # Image to be used for the container\n    image: nightscout/cgm-remote-monitor:15.0.9@sha256:28ec928271a293745724f934df2ed9f2cddaf66442de734c2780662171b611a2\n    # Container restart policy\n    restart: unless-stopped\n    # Port mappings for the container\n    ports:\n      - \"${APP_PORT}:1337\"\n    # Environment variables for the container\n    environment:\n      ### Variables for the container\n      NODE_ENV: production\n      # TZ - Timezone for the container\n      TZ: Etc/UTC\n      ### Overridden variables for Docker Compose setup\n      # The `nightscout` service can use HTTP, because we use `traefik` to serve the HTTPS\n      # and manage TLS certificates\n      INSECURE_USE_HTTP: \"true\"\n      # For all other settings, please refer to the Environment section of the README\n      ### Required variables\n      # MONGO_CONNECTION - The connection string for your Mongo database.\n      # Something like mongodb://sally:sallypass@ds099999.mongolab.com:99999/nightscout\n      # The default connects to the `mongo` included in this docker-compose file.\n      # If you change it, you probably also want to comment out the entire `mongo` service block\n      # and `depends_on` block above.\n      MONGO_CONNECTION: mongodb://big-bear-nightscout-mongo:27017/nightscout\n      # API_SECRET - A secret passphrase that must be at least 12 characters long.\n      API_SECRET: ${SECRET_API_SECRET} # change_me\n      ### Features\n      # ENABLE - Used to enable optional features, expects a space delimited list, such as: careportal rawbg iob\n      # See https://github.com/nightscout/cgm-remote-monitor#plugins for details\n      ENABLE: careportal rawbg iob\n      # AUTH_DEFAULT_ROLES (readable) - possible values readable, denied, or any valid role name.\n      # When readable, anyone can view Nightscout without a token. Setting it to denied will require\n      # a token from every visit, using status-only will enable api-secret based login.\n      AUTH_DEFAULT_ROLES: denied\n      # For all other settings, please refer to the Environment section of the README\n      # https://github.com/nightscout/cgm-remote-monitor#environment\n    # Service dependencies\n    depends_on:\n      - big-bear-nightscout-mongo\n    # Networks for the container\n    networks:\n      - big-bear-nightscout-network\n  big-bear-nightscout-mongo:\n    # Name of the MongoDB container\n    container_name: big-bear-nightscout-mongo\n    # Image to be used for the MongoDB container\n    image: mongo:4.4@sha256:4be76f674fc4b27859816811b8baa3c51830eb1dbf4ca81a51e26b79edd662ef\n    # Networks for the MongoDB container\n    networks:\n      - big-bear-nightscout-network\n    # Volume mappings for the MongoDB container\n    volumes:\n      - ${APP_DATA_DIR}/mongo-data:/data/db\n# Network definitions\nnetworks:\n  big-bear-nightscout-network:\n    driver: bridge\n"
+}

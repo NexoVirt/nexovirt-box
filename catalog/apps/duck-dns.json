@@ -1,0 +1,51 @@
+{
+ "id": "duck-dns",
+ "name": "Duck DNS",
+ "version": "b14c520a-ls8",
+ "category": "Networking",
+ "tagline": "Duck DNS is a free Dynamic DNS service",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/duckdns/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# DuckDNS\n\n[Duckdns](https://duckdns.org/) is a free service which will point a DNS (sub domains of duckdns.org) to an IP of your choice. The service is completely free, and doesn't require reactivation or forum posts to maintain its existence.\n\n## Application Setup\n\n- Go to the [duckdns website](https://duckdns.org/), register your subdomain(s) and retrieve your token\n- Create a container with your subdomain(s) and token. If you own user.duckdns.org, you put `SUBDOMAINS=user` you would NOT put a sub subdomain like overseerr from overseerr.user.ducksdns.org\n- It will update your IP with the DuckDNS service every 5 minutes (with a random jitter)\n\n## Notice regarding automatic detection\n\nUsing the `UPDATE_IP` variable whatever its value (`ipv4`, `ipv6` or `both`) uses external _Cloudflare whoami_ service to detect public IP addresses.\n**Be aware that using this variable will query a third-party service other than DuckDNS.**\n\nOmitting the `UPDATE_IP` variable uses DuckDNS for detection and only supports IPv4.",
+ "website": "https://docs.linuxserver.io/images/docker-duckdns/",
+ "source": "https://github.com/linuxserver/docker-duckdns",
+ "main_port": 0,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "DUCKDNS_SUBDOMAINS",
+   "label": "Subdomains (comma separated). E.g. `mydomain1,mydomain2`.",
+   "type": "text",
+   "required": true,
+   "min": 3,
+   "max": 1024
+  },
+  {
+   "key": "DUCKDNS_TOKEN",
+   "label": "DuckDNS Token",
+   "type": "password",
+   "required": true,
+   "min": 3,
+   "max": 128
+  },
+  {
+   "key": "DUCKDNS_UPDATE_IP",
+   "label": "Update IP (blank, ipv4, ipv6 or both). Setting this value uses external Cloudflare whoami service. Omitting the field uses DuckDNS for detection and only supports IPv4.",
+   "type": "text"
+  },
+  {
+   "key": "DUCKDNS_ENABLE_LOG_FILE",
+   "label": "Enable logging",
+   "type": "boolean"
+  }
+ ],
+ "compose": "services:\n  duckdns:\n    container_name: duckdns # Should be exact same name as \"id\" field in config.json\n    image: lscr.io/linuxserver/duckdns:b14c520a-ls8 # Try to avoid \"latest\" tag. As it may break configs in the future.\n    environment:\n      - PUID=1000\n      - PGID=1000\n      - TZ=${TZ}\n      - SUBDOMAINS=${DUCKDNS_SUBDOMAINS}\n      - TOKEN=${DUCKDNS_TOKEN}\n      - UPDATE_IP=${DUCKDNS_UPDATE_IP}\n      - LOG_FILE=${DUCKDNS_ENABLE_LOG_FILE}\n    volumes:\n      - ${APP_DATA_DIR}/data/config:/config\n    restart: unless-stopped\n"
+}

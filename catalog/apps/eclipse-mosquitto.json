@@ -1,0 +1,49 @@
+{
+ "id": "eclipse-mosquitto",
+ "name": "Eclipse Mosquitto",
+ "version": "2.0.22",
+ "category": "Utilities",
+ "tagline": "The MQTT protocol provides a lightweight method of carrying out messaging using a publish/subscribe model.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/eclipse-mosquitto/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Eclipse Mosquitto MQTT Broker with UI\r\n\r\nThis app consists of two images providing an MQTT broker and a UI for managing access to the broker.\r\nThe configuration is adapted from the GitHub repo: [shantanoo-desai/mqtt-rbac-docker-init](https://github.com/shantanoo-desai/mqtt-rbac-docker-init)\r\n\r\n\r\n## Eclipse Mosquitto\r\n\r\n[Eclipse Mosquitto](https://mosquitto.org/) is an open source (EPL/EDL licensed) message broker that implements the MQTT protocol versions 5.0, 3.1.1 and 3.1. Mosquitto is lightweight and is suitable for use on all devices from low power single board computers to full servers.\r\n\r\nMosquitto is part of the [Eclipse Foundation](https://eclipse.org/), and is an [iot.eclipse.org project](https://iot.eclipse.org/). The development is driven by Cedalo.\r\n\r\nThe broker is configured by default that it listens to the port **1883** for tcp connections.\r\nTo also use websocket connection you can enable it by edit the `/runtipi/app-date/eclipse-mosquitto/data/config/moscquitto.conf` with the following content:\r\n\r\n```\r\nlistener 9001\r\nprotocol websockets\r\n```\r\n\r\n**Note**\r\nWebSockets, while powerful, can introduce vulnerabilities if left unsecured. They should be secured using TLS/encryption.\r\nFor more detailed information the [mosquitto documentation](https://mosquitto.org/man/mosquitto-conf-5.html). \r\n\r\n\r\n## Cedalo Management Center\r\n\r\n[Cedalo Management Center](https://github.com/cedalo/management-center) allows to easily manage, monitor and inspect instances of Eclipse Mosquitto. There are some pro features that can only be activated by getting a license from cedalo.\r\n\r\n![cedalo_mgm_center.png](https://github.com/runtipi/runtipi-appstore/blob/master/apps/eclipse-mosquitto/metadata/cedalo_mgm_center.png)\r\n\r\nBy default the following features are provided:\r\n\r\n- A system dashboard to view key figures, showing broker traffic, license and client infos.\r\n- Table of clients, which have connected to the broker, for inspection purposes.\r\n- A topic tree, displaying those topics that have been addressed, while the MMC is running.\r\n- Management of broker security allowing to modify clients, group and roles.\r\n- A terminal to execute commands related to the dynamic security API\r\n- Management Center infos and settings\r\n\r\nThe access to the broker is handled by the [dynamic-security plugin](https://mosquitto.org/documentation/dynamic-security/) in the mosquitto broker. The configuration is stored in the file `/runtipi/app-date/eclipse-mosquitto/data/config/dynamic-security.json`. This file is generated during the first launch of the the mosquitto image.\r\n\r\n\r\n## Links\r\n\r\n### See the following links for more information on MQTT:\r\n\r\n- Community page: [http://mqtt.org/](http://mqtt.org/)\r\n- MQTT v3.1.1 standard: [https://docs.oasis-open.org/mqtt/mqtt/v3.1.1/mqtt-v3.1.1.html](https://docs.oasis-open.org/mqtt/mqtt/v3.1.1/mqtt-v3.1.1.html)\r\n- MQTT v5.0 standard: [https://docs.oasis-open.org/mqtt/mqtt/v5.0/mqtt-v5.0.html](https://docs.oasis-open.org/mqtt/mqtt/v5.0/mqtt-v5.0.html)\r\n\r\n### Mosquitto project information is available at the following locations:\r\n\r\n- Main homepage: [https://mosquitto.org/](https://mosquitto.org/)\r\n- Find existing bugs or submit a new bug: [https://github.com/eclipse/mosquitto/issues](https://github.com/eclipse/mosquitto/issues)\r\n- Source code repository: [https://github.com/eclipse/mosquitto](https://github.com/eclipse/mosquitto)\r\n\r\nThere is also a public test server available at [https://test.mosquitto.org/](https://test.mosquitto.org/)\r\n\r\n### More information about the management center is available at the following locations:\r\n\r\n- Main homepage: [https://cedalo.com/mqtt-broker-pro-mosquitto/](https://cedalo.com/mqtt-broker-pro-mosquitto/)\r\n- Documentation: [https://docs.cedalo.com/mosquitto/management-center/introduction](https://docs.cedalo.com/mosquitto/management-center/introduction)\r\n- Source code repository: [https://github.com/cedalo/management-center](https://github.com/cedalo/management-center)",
+ "website": "https://mosquitto.org/",
+ "source": "https://github.com/eclipse/mosquitto/",
+ "main_port": 8288,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8288",
+   "required": true
+  },
+  {
+   "key": "MQTT_ADMIN_PASSWORD",
+   "label": "MQTT Broker Admin Password",
+   "type": "password",
+   "required": true,
+   "min": 6,
+   "max": 50
+  },
+  {
+   "key": "CEDALO_MC_PASSWORD",
+   "label": "Cedalo Management Center Password",
+   "type": "password",
+   "required": true,
+   "min": 6,
+   "max": 50
+  }
+ ],
+ "compose": "services:\n  eclipse-mosquitto:\n    image: eclipse-mosquitto:2.0.22\n    container_name: eclipse-mosquitto\n    environment:\n      - TZ=${TZ}\n      - MQTT_DYNSEC_ADMIN_USER=admin\n      - MQTT_DYNSEC_ADMIN_PASSWORD=${MQTT_ADMIN_PASSWORD}\n    ports:\n      - '1883:1883'\n    command:\n      - /dynsec-setup.sh\n      - /usr/sbin/mosquitto\n      - '-c'\n      - /mosquitto/config/mosquitto.conf\n    expose:\n      - 1883\n    volumes:\n      - ${APP_DATA_DIR}/data/data:/mosquitto/data\n      - ${APP_DATA_DIR}/data/config:/mosquitto/config\n      - ${APP_DATA_DIR}/data/scripts/dynsec-setup.sh:/dynsec-setup.sh\n    restart: unless-stopped\n  mosquitto-management-center:\n    image: cedalo/management-center:2\n    container_name: mosquitto-management-center\n    environment:\n      - TZ=${TZ}\n      - CEDALO_MC_BROKER_ID=mosquitto-broker\n      - CEDALO_MC_BROKER_NAME=mosquitto-broker-2\n      - CEDALO_MC_BROKER_URL=mqtt://${INTERNAL_IP}:1883\n      - CEDALO_MC_BROKER_USERNAME=admin\n      - CEDALO_MC_BROKER_PASSWORD=${MQTT_ADMIN_PASSWORD}\n      - CEDALO_MC_USERNAME=admin\n      - CEDALO_MC_PASSWORD=${CEDALO_MC_PASSWORD}\n    ports:\n      - ${APP_PORT}:8088\n    expose:\n      - 8088\n    depends_on:\n      - eclipse-mosquitto\n    restart: unless-stopped\n"
+}

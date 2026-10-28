@@ -1,0 +1,54 @@
+{
+ "id": "linkwarden",
+ "name": "Linkwarden",
+ "version": "v2.16.3",
+ "category": "Data",
+ "tagline": "A self-hosted, open-source collaborative bookmark manager",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/linkwarden/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Linkwarden\n\n## [](https://github.com/linkwarden/linkwarden#intro--motivation)Intro \u0026 motivation\n\n**Linkwarden is a self-hosted, open-source collaborative bookmark manager to collect, organize and archive webpages.** The objective is to organize useful webpages and articles you find across the web in one place, and since useful webpages can go away (see the inevitability of [Link Rot](https://www.howtogeek.com/786227/what-is-link-rot-and-how-does-it-threaten-the-web/)), Linkwarden also saves a copy of each webpage as a Screenshot and PDF, ensuring accessibility even if the original content is no longer available.\n\nAdditionally, Linkwarden is designed with collaboration in mind, sharing links with the public and/or allowing multiple users to work together seamlessly.\n\n[![](https://github.com/linkwarden/linkwarden/raw/main/assets/showcase_image.png)](https://github.com/linkwarden/linkwarden/blob/main/assets/showcase_image.png)\n\n**A bit of a \"history\"** Linkwarden has been completely rebuilt and redesigned from ground up, so pretty much the only thing it has in common with its predecessor is the idea behind it - bookmark management.\n\n## Features\n\n-   ✅ Auto capture a screenshot and a PDF of each link.\n-   ✅ Organize links by collection, name, description and multiple tags.\n-   ✅ Collaborate on gathering links in a collection.\n-   ✅ Customize the permissions of each member.\n-   ✅ Share your collected links with the world.\n-   ✅ Search, filter and sort by link details.\n-   ✅ Responsive design and supports most browsers.\n\n\n## Screenshots\n\n[![](https://github.com/linkwarden/linkwarden/raw/main/assets/collections.png)](https://github.com/linkwarden/linkwarden/blob/main/assets/collections.png)\n\n[![](https://github.com/linkwarden/linkwarden/raw/main/assets/collaborators.png)](https://github.com/linkwarden/linkwarden/blob/main/assets/collaborators.png)\n\n[![](https://github.com/linkwarden/linkwarden/raw/main/assets/link_details.png)](https://github.com/linkwarden/linkwarden/blob/main/assets/link_details.png)",
+ "website": "https://docs.linkwarden.app/",
+ "source": "https://github.com/linkwarden/linkwarden",
+ "main_port": 8199,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8199",
+   "required": true
+  },
+  {
+   "key": "LINKWARDEN_DB_PASSWORD",
+   "label": "Linkwarden DB Password",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "LINKWARDEN_NEXTAUTH_SECRET",
+   "label": "Linkwarden Nextauth Secret",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "LINKWARDEN_NEXT_PUBLIC_DISABLE_REGISTRATION",
+   "label": "Disable Registration",
+   "type": "boolean",
+   "hint": "Needed for at least one user. If on registration will be disabled.",
+   "default": "false"
+  }
+ ],
+ "compose": "services:\n  linkwarden:\n    image: ghcr.io/linkwarden/linkwarden:v2.16.3\n    container_name: linkwarden\n    environment:\n      - DATABASE_URL=postgresql://tipi:${LINKWARDEN_DB_PASSWORD}@linkwarden-db:5432/linkwarden\n      - NEXTAUTH_SECRET=${LINKWARDEN_NEXTAUTH_SECRET}\n      - NEXTAUTH_URL=${APP_PROTOCOL:-http}://${APP_DOMAIN}/api/v1/auth\n      - NEXT_PUBLIC_DISABLE_REGISTRATION=${LINKWARDEN_NEXT_PUBLIC_DISABLE_REGISTRATION}\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/data/linkwarden:/data/data\n    ports:\n      - ${APP_PORT}:3000\n    depends_on:\n      - linkwarden-db\n  linkwarden-db:\n    container_name: linkwarden-db\n    image: postgres:16-alpine\n    restart: unless-stopped\n    environment:\n      - POSTGRES_USER=tipi\n      - POSTGRES_PASSWORD=${LINKWARDEN_DB_PASSWORD}\n      - POSTGRES_DB=linkwarden\n    volumes:\n      - ${APP_DATA_DIR}/data/postgres:/var/lib/postgresql/data\n"
+}

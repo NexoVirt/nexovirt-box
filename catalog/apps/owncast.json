@@ -1,0 +1,33 @@
+{
+ "id": "owncast",
+ "name": "Owncast",
+ "version": "0.3.0",
+ "category": "Media",
+ "tagline": "Take control over your live stream video by running it yourself. Streaming + chat out of the box.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/owncast/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## Initial Setup Notice\n### Setting Up an Exposed Instance with SSL Certs\nAs Owncast uses the RTMP protocol for ingesting incoming streams, the typical Cloudflare Zero Access configuration will not work as it does not have RTMP as an option for routing. \n\nYou can optionally follow [this guide](https://gist.github.com/oscoDOTblog/6e8102d7d82ffaeaae16f41bef98b739) for setting up an exposed Owncast server with your RunTipi instance. \n\n### Admin Dashboard Access\n\nTo access the admin dashboard, simply visit `/admin` in your browser.\nThe login username is set to `admin`.\nThe password to login is initially set to the stream key, which is `abc123` by default.\n\n### Security Recommendations\n\nFor security reasons, we highly encourage you to change both the stream key and your admin password immediately after installation. You can do this by visiting `/admin/config/server/` and following the provided instructions.\n\n\n### Additional Configuration\n\nFor more detailed configuration options, please refer to the documentation available at https://owncast.online/docs/configuration/.\n\n\n## About The Project\n\nOwncast is an open source, self-hosted, decentralized, single user live video streaming and chat server for running your own live streams similar in style to the large mainstream options. It offers complete ownership over your content, interface, moderation and audience. \n[Visit the demo](https://watch.owncast.online) for an example.\n\n## Use with your existing broadcasting software\n\nIn general, Owncast is compatible with any software that uses `RTMP` to broadcast to a remote server. `RTMP` is what all the major live streaming services use, so if you’re currently using one of those it’s likely that you can point your existing software at your Owncast instance instead.\n\nOBS, Streamlabs, Restream and many others have been used with Owncast. [Read more about compatibility with existing software](https://owncast.online/docs/broadcasting/).\n\n## Contributing\n\nOwncast is a growing open source project that is giving freedom, flexibility and fun to live streamers.\nAnd while we have a small team of kind, talented and thoughtful volunteers, we have gaps in our skillset that we’d love to fill so we can get even better at building tools that make a difference for people.\n\nWe abide by our [Code of Conduct](https://owncast.online/contribute/) and feel strongly about open, appreciative, and empathetic people joining us.\nWe’ve been very lucky to have this so far, so maybe you can help us with your skills and passion, too!\n\nThere is a larger, more detailed, and more up-to-date [guide for helping contribute to Owncast on our website](https://owncast.online/help/).\n\n## License\n\nDistributed under the MIT License. See `LICENSE` for more information.\n\n## Supported by\n\n- This project is tested with [BrowserStack](https://browserstack.com).\n\n## Contact\n\nProject chat: [Join us on Rocket.Chat](https://owncast.rocket.chat/home) if you want to contribute, follow along, or if you have questions.\n\nGabe Kangas - [@gabek@social.gabekangas.com](https://social.gabekangas.com/gabek) - email [gabek@real-ity.com](mailto:gabek@real-ity.com)\n\nProject Link: [https://github.com/owncast/owncast](https://github.com/owncast/owncast)",
+ "website": "https://owncast.online/",
+ "source": "https://github.com/owncast/owncast",
+ "main_port": 8198,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8198",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  owncast:\n    container_name: owncast\n    image: owncast/owncast:0.3.0\n    volumes:\n      - ${APP_DATA_DIR}/data:/app/data\n    ports:\n      - ${APP_PORT}:8080\n      - '1935:1935'\n    restart: unless-stopped\n"
+}

@@ -1,0 +1,37 @@
+{
+ "id": "qui",
+ "name": "Qui",
+ "version": "v1.28.0",
+ "category": "Media",
+ "tagline": "Fast, modern web interface for qBittorrent",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Qui/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "**One dashboard for all your qBittorrent instances.** Qui is a fast, modern web interface for qBittorrent. Instead of juggling several separate WebUI tabs, you connect every qBittorrent instance to Qui and manage them all from a single, responsive dashboard. It ships as a lightweight single binary, so it stays quick and resource-friendly even when you are watching thousands of torrents.\n\n**Automation and cross-seeding built in.** Built by the team behind autobrr, Qui goes well beyond basic torrent listing. It adds powerful rule-based automation, built-in cross-seeding that automatically finds and adds matching torrents across your trackers, scheduled backups with restore, and a clean multi-language interface. Point it at your Torznab-compatible indexers — such as Prowlarr or Jackett — to put cross-seeding on autopilot, then filter, search, and bulk-manage torrents across every instance at once.\n\n**Made for your private cloud.** Running Qui on a private cloud device like Zima keeps everything in one place on hardware you control. Pair it with your qBittorrent containers for local-network speeds, full ownership of your data, and a single tidy interface for your entire download stack — accessible from any device in your home.",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Qui/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Qui/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Qui/screenshot-3.png"
+ ],
+ "website": "https://getqui.com",
+ "main_port": 7476,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "7476",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  # Qui Application\n  qui:\n    container_name: qui\n    image: ghcr.io/autobrr/qui:v1.28.0\n    restart: unless-stopped\n    depends_on:\n      postgres:\n        condition: service_healthy\n    deploy:\n      resources:\n        reservations:\n          memory: \"128M\"\n    ports:\n      - \"${APP_PORT}:7476\"\n    volumes:\n      - ${APP_DATA_DIR}/qui:/config\n    environment:\n      QUI__DATABASE_ENGINE: postgres\n      QUI__DATABASE_DSN: postgres://qui:qui@qui-postgres:5432/qui?sslmode=disable\n    networks:\n      - qui_network\n  # PostgreSQL Database\n  postgres:\n    container_name: qui-postgres\n    image: postgres:16-alpine\n    restart: unless-stopped\n    deploy:\n      resources:\n        reservations:\n          memory: \"128M\"\n    environment:\n      POSTGRES_USER: qui\n      POSTGRES_PASSWORD: qui\n      POSTGRES_DB: qui\n    volumes:\n      - ${APP_DATA_DIR}/postgres:/var/lib/postgresql/data\n    healthcheck:\n      test: [\"CMD-SHELL\", \"pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB\"]\n      interval: 10s\n      timeout: 5s\n      retries: 5\n    networks:\n      - qui_network\nnetworks:\n  qui_network:\n    driver: bridge\n"
+}

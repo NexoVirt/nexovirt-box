@@ -1,0 +1,47 @@
+{
+ "id": "gemdigest-bot",
+ "name": "GemDigest Bot",
+ "version": "6f49c511af7f2f7a1b9e652e517e6a222760632e7b69801a4997787e40065cc6",
+ "category": "Other",
+ "tagline": "Your personal article summarizer",
+ "icon": "https://cdn.jsdelivr.net/gh/Piero24/GemDigest/.github/images/casOS_logo.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Simplify your reads, amplify your time! 📚✨ GemDigest is a Telegram bot that summarizes articles from any website into bite-sized nuggets, saving you time and energy for what matters most. 📱👋",
+ "main_port": 3333,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3333",
+   "required": true
+  },
+  {
+   "key": "SECRET_TELEGRAM_API_KEY",
+   "label": "Telegram api key",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
+   "key": "SECRET_GEMINI_API_KEY",
+   "label": "Gemini api key",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "# Service definitions for the gem-digest-bot application\nservices:\n  # Service name: big-bear-gem-digest-bot\n  # The `big-bear-gem-digest-bot` service definition\n  big-bear-gem-digest-bot:\n    # Name of the container\n    container_name: big-bear-gem-digest-bot\n    # Docker image to use\n    image: piero24/gemdigest:1.0@sha256:6f49c511af7f2f7a1b9e652e517e6a222760632e7b69801a4997787e40065cc6\n    # Mount local directory to the container's /home/dev directory\n    volumes:\n      - ${APP_DATA_DIR}/extra/configs:/gem_digest_bot/extra_configs\n    # Environment variables with default values\n    environment:\n      TELEGRAM_API_KEY: ${SECRET_TELEGRAM_API_KEY}\n      GEMINI_API_KEY: ${SECRET_GEMINI_API_KEY}\n      # Add more users separating their id with \";\"\n      ADMIN_USER_ID: 123;456\n    # Container restart policy\n    restart: unless-stopped\n    # Ports mapping between host and container\n    ports:\n      # Example: Mapping port 8080 of the host to port 8080 of the container (adjust as needed)\n      - \"${APP_PORT}:8080\"\n"
+}

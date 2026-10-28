@@ -1,0 +1,37 @@
+{
+ "id": "alby-hub",
+ "name": "Alby Hub ✨",
+ "version": "",
+ "category": "Finance",
+ "tagline": "Self-custodial Bitcoin Lightning wallet with integrated node and app connections.",
+ "icon": "https://cdn.jsdelivr.net/gh/getAlby/hub@master/frontend/public/icon-512.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "Alby Hub is an open-source, self-custodial Bitcoin Lightning wallet, with the easiest-to-use Lightning Network node for everyone.\nWhether you're an individual, creator, or developer, Alby Hub is your centre for seamless Bitcoin payments.\nEffortlessly connect to a variety of apps like the Alby Browser Extension or Alby Go mobile app, create sub-wallets for family and friends, and take full control of your funds—all within an intuitive interface and developer-ready APIs.\n\n**USEFUL LINKS**\n- [Source Repository](https://github.com/getAlby/hub)\n- [Support](https://support.getalby.com/)\n- [Marketing Site](https://albyhub.com/)\n- [Community of users and developers](https://discord.getalby.com)\n- [Feedback Board, feature requests, bug reports[(https://feedback.getalby.com)",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/getAlby/umbrel-community-app-store@master/alby-albyhub/images/node.png",
+  "https://cdn.jsdelivr.net/gh/getAlby/umbrel-community-app-store@master/alby-albyhub/images/store.png",
+  "https://cdn.jsdelivr.net/gh/getAlby/umbrel-community-app-store@master/alby-albyhub/images/wallet.png"
+ ],
+ "website": "https://albyhub.com/",
+ "main_port": 58000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "58000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  albyhub:\n    environment:\n      PGID: $PGID\n      PUID: $PUID\n      TZ: $TZ\n      UMASK: \"002\"\n      WORK_DIR: /data/albyhub\n      LOG_EVENTS: true\n    command: []\n    container_name: albyhub\n    image: ghcr.io/getalby/hub:v1.22.2\n    deploy:\n      resources:\n        reservations:\n          memory: 1024M\n    labels:\n      icon: https://cdn.jsdelivr.net/gh/getAlby/hub@master/frontend/public/icon-512.png\n    ports:\n      - target: 8080\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    restart: on-failure\n    stop_grace_period: 1m\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/data\n        target: /data\n    network_mode: bridge\n    privileged: false\n"
+}

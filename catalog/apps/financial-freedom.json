@@ -1,0 +1,55 @@
+{
+ "id": "financial-freedom",
+ "name": "Financial Freedom",
+ "version": "e36fc6e42b8fd41f9f715b2a26461f1c2365355ff139b8d5d2cfdc60593ccdf2",
+ "category": "Other",
+ "tagline": "Financial Freedom",
+ "icon": "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps/apps/financial-freedom/logo.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Keep investors and their buyers out of your financial data. Own 100% of your data and start building financial wealth.",
+ "main_port": 8443,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8443",
+   "required": true
+  },
+  {
+   "key": "SECRET_APP_KEY",
+   "label": "App key",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
+   "key": "SECRET_MAIL_PASSWORD",
+   "label": "Mail password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
+   "key": "SECRET_MYSQL_ROOT_PASSWORD",
+   "label": "Mysql root password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-financial-freedom application\nservices:\n  # Service name: app\n  # The `app` service definition\n  app:\n    # Name of the container\n    container_name: big-bear-financial-freedom\n    # Image to be used for the container\n    image: serversideup/financial-freedom:v0.2.0-alpha1@sha256:e36fc6e42b8fd41f9f715b2a26461f1c2365355ff139b8d5d2cfdc60593ccdf2\n    # Container restart policy\n    restart: unless-stopped\n    # financial-freedom-network networks\n    networks:\n      - financial-freedom-network\n    # Volumes to be mounted to the container\n    volumes:\n      - ${APP_DATA_DIR}/logs:/var/www/html/storage/logs\n      - ${APP_DATA_DIR}/sessions:/var/www/html/storage/framework/sessions\n    # Ports mapping between host and container\n    ports:\n      # Mapping port 8080 of the host to port 80 of the container\n      - 8080:80\n      # Mapping port 8443 of the host to port 443 of the container\n      - \"${APP_PORT}:443\"\n    environment:\n      # App Settings\n      - APP_NAME=\"Financial Freedom\"\n      - APP_ENV=production # Change to \"local\" for development\n      - APP_DEBUG=false # Change to \"true\" for development\n      - APP_URL=http://[CASAOS_IP]:8080\n      - APP_KEY=${SECRET_APP_KEY} # Run `php artisan key:generate`\n      # Database Settings\n      - DB_ROOT_PASSWORD=cd876479-f30b-43f2-8714-e52e040c657a\n      - DB_HOST=mariadb # You generally don't need to change this\n      - DB_DATABASE=financialfreedom\n      - DB_USERNAME=bigbear\n      - DB_PASSWORD=cd876479-f30b-43f2-8714-e52e040c657a\n      # Mail Settings\n      - MAIL_MAILER=smtp\n      - MAIL_HOST=mailpit\n      - MAIL_PORT=1025\n      - MAIL_USERNAME=null\n      - MAIL_PASSWORD=${SECRET_MAIL_PASSWORD}\n      - MAIL_ENCRYPTION=${SECRET_MAIL_PASSWORD}\n      - MAIL_FROM_ADDRESS=noreply@financialfreedom.dev.test\n      - MAIL_FROM_NAME=\"Financial Freedom\"\n      # serversideup/php settings\n      - SSL_MODE=mixed\n      - AUTORUN_ENABLED=true\n      - AUTORUN_LARAVEL_EVENT_CACHE=false\n      - AUTORUN_LARAVEL_ROUTE_CACHE=false\n      - AUTORUN_LARAVEL_STORAGE_LINK=false\n      - AUTORUN_LARAVEL_VIEW_CACHE=false\n      # Financial Freedom Settings\n      - FINANCIAL_FREEDOM_ALLOW_REGISTRATION=false\n      ############################################\n      # Development Settings (don't change these)\n      ############################################\n      - LOG_CHANNEL=stack\n      - BROADCAST_DRIVER=log\n      - CACHE_DRIVER=file\n      - QUEUE_CONNECTION=sync\n      - SESSION_LIFETIME=120\n      - SESSION_DRIVER=cookie\n      - MYSQL_ROOT_PASSWORD=${SECRET_MYSQL_ROOT_PASSWORD}\n      - MYSQL_DATABASE=\"financialfreedom\"\n      - MYSQL_USER=\"bigbear\"\n      - MYSQL_PASSWORD=${SECRET_MYSQL_ROOT_PASSWORD}\n  mariadb:\n    image: mariadb:10.11@sha256:be981e4113326ada8d6004174dd09eeaefc03094037f811182a52d4f2e737350\n    volumes:\n      - ${APP_DATA_DIR}/mariadb:/var/lib/mysql\n    # financial-freedom-network is defined in networks section\n    networks:\n      - financial-freedom-network\n    # The 'environment' key is used to set environment variables inside the container.\n    environment:\n      # PUID \u0026 PGID are used to set user/group IDs.\n      - PUID=1000\n      - PGID=1000\n      # TZ sets the timezone for the container.\n      - TZ=Etc/UTC\n      # MYSQL_ROOT_PASSWORD sets the root password for MariaDB.\n      - MYSQL_ROOT_PASSWORD=cd876479-f30b-43f2-8714-e52e040c657a\n      # MYSQL_DATABASE sets the name of a database to be created on image startup (optional).\n      - MYSQL_DATABASE=financialfreedom\n      # MYSQL_USER \u0026 MYSQL_PASSWORD are used to create a new user (optional).\n      - MYSQL_USER=bigbear\n      - MYSQL_PASSWORD=cd876479-f30b-43f2-8714-e52e040c657a\n      # REMOTE_SQL allows linking to a remote SQL server (optional).\n      - REMOTE_SQL=\n# Networks used by the application\nnetworks:\n  # Define the network for AdGuard Home\n  financial-freedom-network:\n    driver: bridge\n"
+}

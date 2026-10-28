@@ -1,0 +1,98 @@
+{
+ "id": "bitcoin",
+ "name": "Bitcoin",
+ "version": "28.0",
+ "category": "Finance",
+ "tagline": "Bitcoin core node",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/bitcoind/metadata/logo.jpg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Bitcoin core\n\nBitcoin Core is free and open-source software that serves as a bitcoin node.\n\n### Warning\nThe current size of the bitcoin blockchain is [more than 500 GB.](https://ycharts.com/indicators/bitcoin_blockchain_size)\n\n\n## What Is A Full Node?\n\nA full node is a program that fully validates transactions and blocks. Almost all full nodes also help the network by accepting transactions and blocks from other full nodes, validating those transactions and blocks, and then relaying them to further full nodes.\n\nMost full nodes also serve lightweight clients by allowing them to transmit their transactions to the network and by notifying them when a transaction affects their wallet. If not enough nodes perform this function, clients won’t be able to connect through the peer-to-peer network—they’ll have to use centralized services instead.\n\nMany people and organizations volunteer to run full nodes using spare computing and bandwidth resources—but more volunteers are needed to allow Bitcoin to continue to grow. This document describes how you can help and what helping will cost you.\n\n## Minimum Requirements\nBitcoin Core full nodes have certain requirements. If you try running a node on weak hardware, it may work—but you’ll likely spend more time dealing with issues. If you can meet the following requirements, you’ll have an easy-to-use node.\n\n- Desktop or laptop hardware running recent versions of Windows, Mac OS X, or Linux.\n\n- 7 gigabytes of free disk space, accessible at a minimum read/write speed of 100 MB/s.\n\n- 2 gigabytes of memory (RAM)\n\n- A broadband Internet connection with upload speeds of at least 400 kilobits (50 kilobytes) per second\n\n- An unmetered connection, a connection with high upload limits, or a connection you regularly monitor to ensure it doesn’t exceed its upload limits. It’s common for full nodes on high-speed connections to use 200 gigabytes upload or more a month. Download usage is around 20 gigabytes a month, plus around an additional 500 gigabytes the first time you start your node.",
+ "source": "https://github.com/lncm/docker-bitcoind",
+ "main_port": 0,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "BITCOIND_PRUNING",
+   "label": "Reduce storage requirements by enabling pruning (deleting) of old blocks",
+   "type": "number",
+   "hint": "default: 0 = disable pruning blocks, 1 = allow manual pruning via RPC, \u003e=550 = automatically prune block files to stay under the specified target size in MiB"
+  },
+  {
+   "key": "BITCOIND_DB_CACHE",
+   "label": "DB Cache Size (In mb)",
+   "type": "number",
+   "hint": "Set database cache size in megabytes; machines sync faster with a larger cache. Recommend setting as high as possible based upon machine's available RAM. Default 450 Mb."
+  },
+  {
+   "key": "BITCOIND_MAX_MEMPOOL",
+   "label": "Max Mempool Size (In mb)",
+   "type": "number",
+   "hint": "Keep the transaction memory pool below \u003cn\u003e megabytes. Default 300 Mb."
+  },
+  {
+   "key": "BITCOIND_LISTEN",
+   "label": "Listen for Incoming Connections",
+   "type": "select",
+   "hint": "Accept incoming connections from peers.",
+   "options": [
+    "1",
+    "0"
+   ]
+  },
+  {
+   "key": "BITCOIND_SERVER",
+   "label": "Accept JSON-RPC requests",
+   "type": "select",
+   "hint": "Allows you to use bitcoin-cli to communicate with the node",
+   "options": [
+    "1",
+    "0"
+   ]
+  },
+  {
+   "key": "BITCOIND_MAXPEERS",
+   "label": "Max Peer Connections",
+   "type": "number",
+   "hint": "Maintain at most N connections to peers. Leave empty for default 125."
+  },
+  {
+   "key": "BITCOIND_TXINDEX",
+   "label": "Enable txindex",
+   "type": "select",
+   "hint": "Enabled by default",
+   "options": [
+    "1",
+    "0"
+   ]
+  },
+  {
+   "key": "BITCOIND_BLOOM_FILTERS",
+   "label": "Enable peer bloom filters",
+   "type": "select",
+   "hint": "Enabled by default",
+   "options": [
+    "1",
+    "0"
+   ]
+  },
+  {
+   "key": "BITCOIND_BLOCK_FILTER",
+   "label": "Enable block filter index",
+   "type": "select",
+   "hint": "Enabled by default",
+   "options": [
+    "1",
+    "0"
+   ]
+  }
+ ],
+ "compose": "services:\n  bitcoind:\n    image: 'lncm/bitcoind:v28.0'\n    command:\n      - '-dbcache=${BITCOIND_DB_CACHE:-450}'\n      - '-maxmempool=${BITCOIND_MAX_MEMPOOL:-300}'\n      - '-listen=${BITCOIND_LISTEN:-1}'\n      - '-server=${BITCOIND_SERVER:-1}'\n      - '-rpcallowip=0.0.0.0/0'\n      - '-rpcbind=0.0.0.0'\n      - '-prune=${BITCOIND_PRUNING:-0}'\n      - '-maxconnections=${BITCOIND_MAXPEERS:-125}'\n      - '-txindex=${BITCOIND_TXINDEX:-1}'\n      - '-peerbloomfilters=${BITCOIND_BLOOM_FILTERS:-1}'\n      - '-blockfilterindex=${BITCOIND_BLOCK_FILTER:-1}'\n      - '-peerblockfilters=${BITCOIND_BLOCK_FILTER:-1}'\n    user: '0:0'\n    ports:\n      - '8332:8332/tcp'\n      - '28332:28332/tcp'\n      - '28333:28333/tcp'\n    volumes:\n      - '${APP_DATA_DIR}/data:/root/.bitcoin'\n    stop_grace_period: '15m30s'\n    x-runtipi:\n      internal_port: 8333\n      is_main: true\nx-runtipi:\n  schema_version: 2\n"
+}

@@ -1,0 +1,33 @@
+{
+ "id": "kavita",
+ "name": "Kavita",
+ "version": "0.9.1",
+ "category": "Media",
+ "tagline": "Kavita is a fast, feature rich, cross platform reading server",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/kavita/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Folder Info\n| Root Folder                                 | Container Folder |\n|---------------------------------------------|------------------|\n| /runtipi/app-data/kavita/data/kavita-config | /config          |\n| /runtipi/media/data/books                   | /books           |\n| /runtipi/media/data/comics                  | /comics          |\n| /runtipi/media/data/manga                   | /manga           |\n\n---\n\n## [First Time Setup Guide](https://wiki.kavitareader.com/en/guides/first-time-setup)\n---\n\n[![new_github_preview_stills](https://user-images.githubusercontent.com/735851/169657008-37812c18-5490-4e2a-9dcb-4806f8c87c69.gif)](https://user-images.githubusercontent.com/735851/169657008-37812c18-5490-4e2a-9dcb-4806f8c87c69.gif) [![new_github_preview_stills](https://user-images.githubusercontent.com/735851/169657008-37812c18-5490-4e2a-9dcb-4806f8c87c69.gif)\n\n](https://user-images.githubusercontent.com/735851/169657008-37812c18-5490-4e2a-9dcb-4806f8c87c69.gif)[](https://user-images.githubusercontent.com/735851/169657008-37812c18-5490-4e2a-9dcb-4806f8c87c69.gif)\n\nKavita is a fast, feature rich, cross platform reading server. Built with a focus for being a full solution for all your reading needs. Setup your own server and share your reading collection with your friends and family!\n\n## [](https://github.com/Kareadita/Kavita#goals)Goals\n\n-   [x]  Serve up Manga/Webtoons/Comics (cbr, cbz, zip/rar/rar5, 7zip, raw images) and Books (epub, pdf)\n-   [x]  First class responsive readers that work great on any device (phone, tablet, desktop)\n-   [x]  Dark mode and customizable theming support\n-   [ ]  Provide a plugin system to allow external metadata integration and scrobbling for read status, ratings, and reviews\n-   [x]  Rich Metadata support with filtering and searching\n-   [x]  Ways to group reading material: Collections, Reading Lists, Want to Read\n-   [x]  Ability to manage users, access, and ratings\n-   [x]  Fully Accessible with active accessibility audits\n-   [x]  Dedicated webtoon reading mode\n-   [ ]  Full localization support\n-   [ ]  And so much [more...](https://github.com/Kareadita/Kavita/projects)",
+ "website": "https://www.kavitareader.com/",
+ "source": "https://github.com/Kareadita/Kavita",
+ "main_port": 8175,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8175",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  kavita:\n    container_name: kavita\n    image: jvmilazz0/kavita:0.9.1\n    ports:\n      - ${APP_PORT}:5000\n    volumes:\n      - ${APP_DATA_DIR}/data/kavita-config:/kavita/config\n      - ${ROOT_FOLDER_HOST}/media/data/books:/books\n      - ${ROOT_FOLDER_HOST}/media/data/comics:/comics\n      - ${ROOT_FOLDER_HOST}/media/data/manga:/manga\n    environment:\n      - TZ=${TZ}\n    restart: unless-stopped\n"
+}

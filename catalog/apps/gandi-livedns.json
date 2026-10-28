@@ -1,0 +1,84 @@
+{
+ "id": "gandi-livedns",
+ "name": "gandi-livedns",
+ "version": "latest",
+ "category": "Networking",
+ "tagline": "Update your Gandi DNS zone records with your WAN IP",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/gandi-livedns/metadata/logo.jpg",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## gandi-livedns\n\nThe purpose of this container is to update DNS zone records using Gandi's LiveDNS (http://doc.livedns.gandi.net/) with your WAN IP.\n\nThis image is extremely lightweight  (Alpine Linux based) and has very few dependencies. The actual DNS update program is coded in shell script only.\n\n***Warning : update scripts have been updated to use Gandi's Personal Access Tokens (PATs).***\n\nYou need to create a new Personal Access Token for this application, with at least the \"Manage domain name technical configurations\" premissions.\nSee https://api.gandi.net/docs/authentication/\n\n### Configuration\nMandatory variables:\n* GANDI_PAT: your Gandi Personal Acces Token (be sure to enable \"Manage domain name technical configurations\")\n* APIKEY: *deprecated* provided for backward compatibility. Value will be used as GANDI_PAT if provided\n* DOMAIN: your Gandi domain\n* RECORD_LIST: DNS records to update separated by \";\"\n\nOptional variables :\n* REFRESH_INTERVAL: Delay between updates in seconds (default: 10mn)\n* TTL: Set Time To Live for records (default: 300)\n* SET_IPV4: Update A record (default: yes)\n* SET_IPV6: Update AAAA record (default: no)\n* FORCE_IPV4: Force the IPv4 address to be used in DNS A records\n* FORCE_IPV6: Force the IPv6 address to be used in DNS AAAA records\n\n### Examples\nThe easiest way to run gandi-livedns is simply to *docker run* it from a computer in your network, leaving it running in the background with all the default settings.\n```sh\ndocker run -d \\\n\t-e \"GANDI_PAT=\u003cYOUR_VERY_SECRET_PERSONAL_ACCESS_TOKEN\u003e\" \\\n\t-e \"RECORD_LIST=blog;www;@\" \\\n\t-e \"DOMAIN=your-gandi-hosted-domain.com\" \\\n\tjbbodart/gandi-livedns\n```\nThis will update **blog.your-gandi-hosted-domain.com**, **www.your-gandi-hosted-domain.com**, and **your-gandi-hosted-domain.com** with your internet-facing IP (IPv4) every 10 minutes\n\nAn equivalent setup using docker-compose could look like this:  \n**docker-compose.yml**\n```yml\nversion: '3.7'\n...\n    services:\n    ...\n        dyndns:\n            image: jbbodart/gandi-livedns\n            restart: unless-stopped\n            env_file:\n                - \"dyndns.env\"\n```\n\n**dyndns.env**\n```properties\nGANDI_PAT=\u003cYOUR_VERY_SECRET_PERSONAL_ACCESS_TOKEN\u003e\nRECORD_LIST=blog;www;@\nDOMAIN=your-gandi-hosted-domain.com\n```",
+ "website": "http://doc.livedns.gandi.net/",
+ "source": "https://github.com/jbbodart/gandi-livedns",
+ "main_port": 0,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "GANDI_LIVEDNS_PAT",
+   "label": "Gandi Personal Access Token",
+   "type": "text",
+   "required": true,
+   "min": 40,
+   "max": 40
+  },
+  {
+   "key": "GANDI_LIVEDNS_RECORD_LIST",
+   "label": "Record list",
+   "type": "text",
+   "hint": "DNS records separated by ;",
+   "placeholder": "blog;www;@",
+   "required": true
+  },
+  {
+   "key": "GANDI_LIVEDNS_DOMAIN",
+   "label": "Domain",
+   "type": "text",
+   "hint": "Your Gandi domain name",
+   "placeholder": "example.com",
+   "required": true
+  },
+  {
+   "key": "GANDI_LIVEDNS_REFRESH_INTERVAL",
+   "label": "Refresh interval in seconds",
+   "type": "number",
+   "hint": "Leave empty for default 600"
+  },
+  {
+   "key": "GANDI_LIVEDNS_TTL",
+   "label": "TTL in seconds",
+   "type": "number",
+   "hint": "Leave empty for default 300"
+  },
+  {
+   "key": "GANDI_LIVEDNS_SET_IPV4",
+   "label": "Update A record (yes/no)",
+   "type": "text",
+   "hint": "Leave empty for default yes"
+  },
+  {
+   "key": "GANDI_LIVEDNS_SET_IPV6",
+   "label": "Update AAAA record (yes/no)",
+   "type": "text",
+   "hint": "Leave empty for default no"
+  },
+  {
+   "key": "GANDI_LIVEDNS_FORCE_IPV4",
+   "label": "Force the IPv4 address to be used in DNS A records",
+   "type": "text",
+   "hint": "Leave empty for default yes"
+  },
+  {
+   "key": "GANDI_LIVEDNS_FORCE_IPV6",
+   "label": "Force the IPv6 address to be used in DNS A records",
+   "type": "text",
+   "hint": "Leave empty for default no"
+  }
+ ],
+ "compose": "services:\n  gandi-livedns:\n    image: jbbodart/gandi-livedns:latest\n    container_name: gandi-livedns\n    restart: unless-stopped\n    environment:\n      GANDI_PAT: ${GANDI_LIVEDNS_PAT}\n      RECORD_LIST: ${GANDI_LIVEDNS_RECORD_LIST}\n      DOMAIN: ${GANDI_LIVEDNS_DOMAIN}\n      REFRESH_INTERVAL: ${GANDI_LIVEDNS_REFRESH_INTERVAL}\n      TTL: ${GANDI_LIVEDNS_TTL}\n      SET_IPV4: ${GANDI_LIVEDNS_SET_IPV4}\n      SET_IPV6: ${GANDI_LIVEDNS_SET_IPV6}\n      FORCE_IPV4: ${GANDI_LIVEDNS_FORCE_IPV4}\n      FORCE_IPV6: ${GANDI_LIVEDNS_FORCE_IPV6}\n"
+}

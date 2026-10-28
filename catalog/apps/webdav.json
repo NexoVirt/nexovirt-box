@@ -1,0 +1,36 @@
+{
+ "id": "webdav",
+ "name": "WebDAV",
+ "version": "amd64",
+ "category": "Productivity",
+ "tagline": "A web-based file sharing and management protocol",
+ "icon": "https://icon.casaos.io/main/all/webdav.png",
+ "architectures": [
+  "amd64",
+  "386",
+  "arm64",
+  "arm"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "WebDAV is a web-based protocol that allows you to share and manage files over the internet, providing a collaborative environment for file editing and versioning.",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/WebDAV/screenshot-1.png"
+ ],
+ "main_port": 5005,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "5005",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  webdav:\n    cpu_shares: 90\n    command: []\n    container_name: webdav\n    deploy:\n      resources:\n        limits:\n          memory: 15806M\n    environment:\n      - GID=1000\n      - PASSWORD=casaos\n      - TZ=Europe/Madrid\n      - UDI=1000\n      - USERNAME=casaos\n    image: ugeek/webdav:amd64\n    labels:\n      icon: https://icon.casaos.io/main/all/webdav.png\n    ports:\n      - target: 80\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: /media/ZimaOS-HD/Media\n        target: /media\n    network_mode: bridge\n    privileged: false\n"
+}

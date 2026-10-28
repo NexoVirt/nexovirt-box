@@ -1,0 +1,56 @@
+{
+ "id": "ztnet",
+ "name": "ZTnet",
+ "version": "0.7.18",
+ "category": "Networking",
+ "tagline": "Self-hosted ZeroTier network controller with web UI for centralized management.",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Ztnet/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "ZTNET is a powerful ZeroTier network management tool that simplifies network configuration and management through an intuitive Web interface, ideal for teams and individual users. Its modern design and rich features provide an efficient solution for building secure, scalable virtual networks.\n\nThe tool centers on an intuitive Web interface and organization with multi-user support. Developed in TypeScript, it acts as an intermediary between users and the ZeroTier Controller API, enabling collaborative network management within organizations to streamline team tasks. Integration with ZeroTier Central API allows direct management of networks, nodes, and members through a user-friendly interface, enhancing configuration efficiency.\n\nIt supports custom private root servers to create isolated network environments, improving privacy and control. Personalized user spaces enable users to independently create and manage networks. Support for 6plane and rfc4193 IPv6 addressing enriches enterprise or personal networking capabilities. Compatibility with ARM64 and AMD64 architectures ensures broad device support. The tool focuses on user-friendly and flexible design to deliver a modern network management experience.\n\n**Key Features:**\n- Intuitive Web interface for simplified ZeroTier network management\n- Organization and multi-user support for team collaboration\n- Integration with ZeroTier Central API for managing networks and nodes\n- Custom private root server for enhanced privacy and control\n- Personalized user spaces for independent network creation and management\n- Support for 6plane and rfc4193 IPv6 addressing\n- Compatibility with ARM64 and AMD64 architectures for diverse devices\n\n**Learn More:**\n- [ZTnet Official Website](https://ztnet.network/)\n- [ZTnet GitHub](https://github.com/sinamics/ztnet)",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Ztnet/screenshot-1.jpg",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Ztnet/screenshot-2.jpg",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Ztnet/screenshot-3.jpg",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Ztnet/screenshot-4.jpg",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Ztnet/screenshot-5.jpg",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Ztnet/screenshot-6.jpg"
+ ],
+ "website": "https://ztnet.network/",
+ "main_port": 3050,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3050",
+   "required": true
+  },
+  {
+   "key": "SECRET_POSTGRES_PASSWORD",
+   "label": "Postgres password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
+   "key": "SECRET_NEXTAUTH_SECRET",
+   "label": "Nextauth secret",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  ztnet:\n    image: sinamics/ztnet:0.7.18\n    container_name: ztnet\n    deploy:\n      resources:\n        reservations:\n          memory: 256M\n    restart: unless-stopped\n    working_dir: /app\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: /var/lib/zerotier-one\n        target: /var/lib/zerotier-one\n    environment:\n      ZT_ADDR: http://172.17.0.1:9993\n      POSTGRES_HOST: ztnet-postgres\n      POSTGRES_PORT: 5432\n      POSTGRES_USER: ztnet\n      POSTGRES_PASSWORD: ${SECRET_POSTGRES_PASSWORD}\n      POSTGRES_DB: ztnet\n      NEXTAUTH_URL: http://0.0.0.0:3050\n      NEXTAUTH_SECRET: ${SECRET_NEXTAUTH_SECRET}\n      NEXTAUTH_URL_INTERNAL: http://ztnet:3000\n    networks:\n      - ztnet-network\n    depends_on:\n      - ztnet-postgres\n  ztnet-postgres:\n    container_name: ztnet-postgres\n    image: postgres:15.2-alpine\n    restart: unless-stopped\n    environment:\n      POSTGRES_USER: ztnet\n      POSTGRES_PASSWORD: ${SECRET_POSTGRES_PASSWORD}\n      POSTGRES_DB: ztnet\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/postgres-data\n        target: /var/lib/postgresql/data\n    networks:\n      - ztnet-network\nnetworks:\n  ztnet-network:\n    driver: bridge\n    ipam:\n      driver: default\n      config:\n        - subnet: 172.31.255.0/29\n"
+}

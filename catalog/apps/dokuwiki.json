@@ -1,0 +1,33 @@
+{
+ "id": "dokuwiki",
+ "name": "DokuWiki",
+ "version": "2024-02-06b-ls250",
+ "category": "Media",
+ "tagline": "DokuWiki is a simple to use and highly versatile Open Source wiki software",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/dokuwiki/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "DokuWiki - Documentation Wiki Platform\n======================================\n\n`DokuWiki`_ is wiki software aimed at small companies documentation\nneeds. It works on plain text files and thus needs no database. It has a\nsimple but powerful syntax (similar to the one used by MediaWiki) which\nmakes sure the data files remain readable outside the wiki and eases the\ncreation of structured texts.",
+ "website": "https://www.dokuwiki.org/dokuwiki",
+ "source": "https://github.com/dokuwiki/dokuwiki",
+ "main_port": 8149,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8149",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  dokuwiki:\n    container_name: dokuwiki\n    image: lscr.io/linuxserver/dokuwiki:2024-02-06b-ls250\n    ports:\n      - ${APP_PORT}:80\n    volumes:\n      - ${APP_DATA_DIR}/data/config:/config\n    environment:\n      - TZ=${TZ}\n"
+}

@@ -1,0 +1,32 @@
+{
+ "id": "what-s-up-docker",
+ "name": "What's Up Docker",
+ "version": "7cbdfa9bb56de7ad820e3efea16205c3cf09e5f06192436530c5c798964607f0",
+ "category": "Developer",
+ "tagline": "What's Up Docker",
+ "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/whats-up-docker.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "docker_socket": true,
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Gets you notified when new versions of your Docker containers are available and lets you react the way you want.",
+ "main_port": 3000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3000",
+   "required": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-wud application\nservices:\n  # Service definition for the main application\n  app:\n    image: fmartinou/whats-up-docker:6.6.1@sha256:7cbdfa9bb56de7ad820e3efea16205c3cf09e5f06192436530c5c798964607f0\n    container_name: wud\n    volumes:\n      - /var/run/docker.sock:/var/run/docker.sock\n    ports:\n      - \"${APP_PORT}:3000\"\n"
+}

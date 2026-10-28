@@ -1,0 +1,33 @@
+{
+ "id": "mstream-music",
+ "name": "mStream Music",
+ "version": "v5.12.2-ls190",
+ "category": "Music",
+ "tagline": "The easiest music streaming server available",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/mstream/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# mStream Music\n\nmStream is a personal music streaming server. You can use mStream to stream your music from your home computer to any device, anywhere.\n\n| Main | Shared | Admin |\n| --- | --- | --- |\n| [![main](https://github.com/IrosTheBeggar/mStream/raw/master/docs/designs/mstreamv5.png?raw=true)](https://github.com/IrosTheBeggar/mStream/blob/master/docs/designs/mstreamv5.png?raw=true) | [![shared](https://github.com/IrosTheBeggar/mStream/raw/master/docs/designs/shared.png?raw=true)](https://github.com/IrosTheBeggar/mStream/blob/master/docs/designs/shared.png?raw=true) | [![admin](https://github.com/IrosTheBeggar/mStream/raw/master/docs/designs/admin.png?raw=true)](https://github.com/IrosTheBeggar/mStream/blob/master/docs/designs/admin.png?raw=true) |\n\n## [](https://github.com/IrosTheBeggar/mStream#demo--other-links)Demo \u0026 Other Links\n\n#### [](https://github.com/IrosTheBeggar/mStream#check-out-the-demo)[Check Out The Demo!](https://demo.mstream.io/)\n\n#### [](https://github.com/IrosTheBeggar/mStream#discord-channel)[Discord Channel](https://discord.gg/AM896Rr)\n\n#### [](https://github.com/IrosTheBeggar/mStream#website)[Website](https://mstream.io)\n\n### [](https://github.com/IrosTheBeggar/mStream#server-features)Server Features\n\n-   Cross Platform. Works on Windows, OSX, Linux, \u0026 FreeBSD\n-   Light on memory and CPU\n-   Tested on multi-terabyte libraries\n-   Runs on ARM boards like the Raspberry Pi\n\n### [](https://github.com/IrosTheBeggar/mStream#webapp-features)WebApp Features\n\n-   Gapless Playback\n-   Milkdrop Visualizer\n-   Playlist Sharing\n-   Upload Files through the file explorer\n\n## [](https://github.com/IrosTheBeggar/mStream#android-app)Android App\n\n[![mStream Android App](https://github.com/IrosTheBeggar/mStream/raw/master/webapp/assets/img/play-store-logo.png)](https://play.google.com/store/apps/details?id=mstream.music\u0026hl=en_US\u0026gl=US)\n\n[This App is Open Source. See the Source Code](https://github.com/IrosTheBeggar/mstream_music/releases)\n\n## [](https://github.com/IrosTheBeggar/mStream#ios-app)iOS App\n\n[![mStream iOS App](https://github.com/IrosTheBeggar/mStream/raw/master/webapp/assets/img/app-store-logo.png)](https://apps.apple.com/us/app/mstream-player/id1605378892)\n\n[Made by Niera Tech](https://mplayer.nieratech.com/)\n\n    \n**Supported File Formats:** flac, mp3, mp4, wav, ogg, opus, aac, m4a",
+ "website": "https://mstream.io/",
+ "source": "https://github.com/IrosTheBeggar/mStream",
+ "main_port": 8162,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8162",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  mstream:\n    container_name: mstream\n    image: lscr.io/linuxserver/mstream:v5.12.2-ls190\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:3000\n    volumes:\n      - ${APP_DATA_DIR}/data/mstream-config:/data\n      - ${ROOT_FOLDER_HOST}/media/data/music:/music\n    environment:\n      - PUID=1000\n      - PGID=1000\n      - TZ=${TZ}\n"
+}

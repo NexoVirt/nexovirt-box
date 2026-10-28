@@ -1,0 +1,47 @@
+{
+ "id": "code-server",
+ "name": "Code Server",
+ "version": "4.143.1",
+ "category": "Developer",
+ "tagline": "VS Code in the browser",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/code-server/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## Run VS Code on any machine anywhere and access it in the browser.\n\n- Code on any device with a consistent development environment\n- Use cloud servers to speed up tests, compilations, downloads, and more\n- Preserve battery life when you're on the go; all intensive tasks run on your server\n\n![Screenshot](https://raw.githubusercontent.com/coder/code-server/main/docs/assets/screenshot-1.png)\n![Screenshot](https://raw.githubusercontent.com/coder/code-server/main/docs/assets/screenshot-2.png)",
+ "source": "https://github.com/coder/code-server",
+ "main_port": 8138,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8138",
+   "required": true
+  },
+  {
+   "key": "CODESERVER_PASSWORD",
+   "label": "Password",
+   "type": "password",
+   "required": true,
+   "min": 3,
+   "max": 50
+  },
+  {
+   "key": "CODESERVER_SUDO_PASSWORD",
+   "label": "Sudo Password",
+   "type": "password",
+   "min": 3,
+   "max": 50
+  }
+ ],
+ "compose": "services:\n  code-server:\n    image: lscr.io/linuxserver/code-server:4.143.1\n    container_name: code-server\n    environment:\n      - PUID=1000\n      - PGID=1000\n      - TZ=${TZ}\n      - PASSWORD=${CODESERVER_PASSWORD}\n      - SUDO_PASSWORD=${CODESERVER_SUDO_PASSWORD}\n      - DEFAULT_WORKSPACE=/config/workspace\n    volumes:\n      - ${APP_DATA_DIR}/data/config:/config\n      - ${APP_DATA_DIR}/data/projects:/projects\n      - ${ROOT_FOLDER_HOST}:/runtipi\n    ports:\n      - ${APP_PORT}:8443\n    restart: unless-stopped\n"
+}

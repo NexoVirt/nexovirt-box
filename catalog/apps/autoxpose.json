@@ -1,0 +1,32 @@
+{
+ "id": "autoxpose",
+ "name": "autoxpose",
+ "version": "8b07a7c693c4270bb04adf4e68c16681de1336384ce70e86a507ab02ffeb09cd",
+ "category": "Networking",
+ "tagline": "",
+ "icon": "https://cdn.jsdelivr.net/gh/mostafa-wahied/autoxpose@main/packages/frontend/public/autoxpose-logo.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "docker_socket": true,
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "autoxpose 0.5.2 watches Docker labels and creates DNS records plus reverse-proxy hosts.",
+ "main_port": 4949,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "4949",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  autoxpose:\n    image: mostafawahied/autoxpose:0.6.0@sha256:8b07a7c693c4270bb04adf4e68c16681de1336384ce70e86a507ab02ffeb09cd\n    container_name: autoxpose\n    restart: unless-stopped\n    ports:\n      - \"${APP_PORT}:3000\"\n    environment:\n      SERVER_IP: \"\"\n      LAN_IP: \"\"\n    volumes:\n      - ${APP_DATA_DIR}/data:/app/packages/backend/data\n      - /var/run/docker.sock:/var/run/docker.sock:ro\n"
+}

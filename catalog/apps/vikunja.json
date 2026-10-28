@@ -1,0 +1,47 @@
+{
+ "id": "vikunja",
+ "name": "Vikunja",
+ "version": "2.7.1",
+ "category": "Utilities",
+ "tagline": "The Todo-app to organize your life.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/vikunja/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## The Todo-app to organize your life.\n\n- Create TODO lists with tasks\n- Reminder for tasks\n- Namespaces: A \"group\" which bundles multiple lists\n- Share lists and namespaces with teams and users with granular permissions\n- Plenty of details for tasks\n\nSee the [features page](https://vikunja.cloud/features) on our website for a more exaustive list or try it on [try.vikunja.io](https://try.vikunja.io)!\n\n![](https://vikunja.io/images/vikunja/09-task-detail-dark.png)",
+ "website": "https://vikunja.io",
+ "source": "https://github.com/go-vikunja/vikunja",
+ "main_port": 8135,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8135",
+   "required": true
+  },
+  {
+   "key": "VIKUNJA_DB_PASSWORD",
+   "label": "Vikunja database password",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "VIKUNJA_SERVICE_SECRET",
+   "label": "Vikunja secret",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  vikunja:\n    container_name: vikunja\n    image: vikunja/vikunja:2.7.1\n    environment:\n      VIKUNJA_DATABASE_HOST: vikunja-db\n      VIKUNJA_DATABASE_PASSWORD: ${VIKUNJA_DB_PASSWORD}\n      VIKUNJA_DATABASE_TYPE: postgres\n      VIKUNJA_DATABASE_USER: tipi\n      VIKUNJA_DATABASE_DATABASE: vikunja\n      VIKUNJA_SERVICE_JWTSECRET: ${VIKUNJA_SERVICE_SECRET}\n      VIKUNJA_SERVICE_PUBLICURL: ${APP_PROTOCOL:-http}://${APP_DOMAIN}/\n    volumes:\n      - ${APP_DATA_DIR}/data/files:/app/vikunja/files\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:3456\n    depends_on:\n      vikunja-db:\n        condition: service_healthy\n  vikunja-db:\n    container_name: vikunja-db\n    image: postgres:14\n    environment:\n      POSTGRES_PASSWORD: ${VIKUNJA_DB_PASSWORD}\n      POSTGRES_USER: tipi\n      POSTGRES_DB: vikunja\n    volumes:\n      - ${APP_DATA_DIR}/data/db:/var/lib/postgresql/data\n    healthcheck:\n      test:\n        - CMD-SHELL\n        - pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB\n      interval: 5s\n      timeout: 5s\n      retries: 5\n"
+}

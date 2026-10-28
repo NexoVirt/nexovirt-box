@@ -1,0 +1,32 @@
+{
+ "id": "umbrel-os",
+ "name": "Umbrel OS",
+ "version": "11cb2635ff795284c0d406a1336ede0e386cc0f494457b1bf22e889ec6a77bdc",
+ "category": "Other",
+ "tagline": "Umbrel OS",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/umbrelos.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "docker_socket": true,
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Umbrel is a personal server OS that makes self-hosting accessible to everyone.",
+ "main_port": 8080,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8080",
+   "required": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-umbrel application\nservices:\n  # Service name: big-bear-umbrel\n  # The `big-bear-umbrel` service definition\n  big-bear-umbrel:\n    # Name of the container\n    container_name: big-bear-umbrel\n    # Image to be used for the container\n    image: dockurr/umbrel:2.0.0@sha256:11cb2635ff795284c0d406a1336ede0e386cc0f494457b1bf22e889ec6a77bdc\n    # Container restart policy\n    restart: unless-stopped\n    # Ports mapping between host and container\n    ports:\n      # Mapping port 8080 of the host to port 80 of the container\n      - \"${APP_PORT}:80\"\n    # Volumes to be mounted to the container\n    volumes:\n      # Mounting the local /DATA/AppData/$AppID directory to /data inside the container\n      - ${APP_DATA_DIR}/data:/data\n      # Mounting docker.sock to allow docker management via Umbrel\n      - /var/run/docker.sock:/var/run/docker.sock\n    # Stop grace period for the container\n    stop_grace_period: 1m\n"
+}

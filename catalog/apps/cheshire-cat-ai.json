@@ -1,0 +1,33 @@
+{
+ "id": "cheshire-cat-ai",
+ "name": "Cheshire Cat AI",
+ "version": "1.9.2",
+ "category": "AI",
+ "tagline": "A production-ready AI framework to develop AI agents.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/cheshire-cat-ai/metadata/logo.jpg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "\u003ca name=\"readme-top\"\u003e\u003c/a\u003e\n\n\u003cbr /\u003e\n\u003cdiv align=\"center\"\u003e\n  \u003ch2\u003eCheshire-Cat (Stregatto)\u003c/h2\u003e\n\u003cbr/\u003e\n  \u003ca href=\"https://github.com/cheshire-cat-ai/core\"\u003e\n  \u003cimg alt=\"GitHub Repo stars\" src=\"https://img.shields.io/github/stars/cheshire-cat-ai/core?style=social\"\u003e\n\u003c/a\u003e\n  \u003ca href=\"https://discord.gg/bHX5sNFCYU\"\u003e\n        \u003cimg src=\"https://img.shields.io/discord/1092359754917089350?logo=discord\"\n            alt=\"chat on Discord\"\u003e\u003c/a\u003e\n  \u003ca href=\"https://github.com/cheshire-cat-ai/core/issues\"\u003e\n  \u003cimg alt=\"GitHub issues\" src=\"https://img.shields.io/github/issues/cheshire-cat-ai/core\"\u003e\n  \u003c/a\u003e\n  \u003ca href=\"https://github.com/cheshire-cat-ai/core/tags\"\u003e\n  \u003cimg alt=\"GitHub tag (with filter)\" src=\"https://img.shields.io/github/v/tag/cheshire-cat-ai/core\"\u003e\n  \u003c/a\u003e\n  \u003cimg alt=\"GitHub top language\" src=\"https://img.shields.io/github/languages/top/cheshire-cat-ai/core\"\u003e\n\n\u003cp align=\"center\"\u003e\n    \u003cimg align=\"center\" src=https://cheshire-cat-ai.github.io/docs/assets/img/quickstart/write-hook/marvin-sockseller.png alt=\"Wikipedia picture of the Cheshire Cat\"\u003e\n\u003c/p\u003e\n\n\u003c/div\u003e\n\n## Production-ready AI assistant framework\n\nThe Cheshire Cat is a framework to build custom AIs on top of any language model. \nIf you have ever used systems like WordPress or Django to build web apps, imagine the Cat as a similar tool, but specific for AI.\n\n## Docs and Resources\n\n- [Official Documentation](https://cheshire-cat-ai.github.io/docs/)\n- [Discord Server](https://discord.gg/bHX5sNFCYU)\n- [Website](https://cheshirecat.ai/)\n- [YouTube tutorial - How to install](https://youtu.be/Rvx19TZBCrw)\n- [Tutorial - Write your first plugin](https://cheshirecat.ai/write-your-first-plugin/)\n\n## Why using the Cat\n\n- ⚡️ API first, so you get a microservice to easily add a conversational layer to your app\n- 🐘 Remembers conversations and documents and uses them in conversation\n- 🚀 Extensible via plugins (public plugin registry + private plugins allowed)\n- 🎚 Event callbacks, function calling (tools), conversational forms\n- 🏛 Easy to use admin panel (chat, visualize memory and plugins, adjust settings)\n- 🌍 Supports any language model (works with OpenAI, Google, Ollama, HuggingFace, custom services)\n- 🐋 Production-ready - 100% [dockerized](https://docs.docker.com/get-docker/)\n- 👩‍👧‍👦 Active [Discord community](https://discord.gg/bHX5sNFCYU) and easy to understand [docs](https://cheshire-cat-ai.github.io/docs/)\n \nWe are committed to openness, privacy and creativity, we want to bring AI to the long tail. To learn more about our vision and values, read the [Code of Ethics](https://cheshirecat.ai/code-of-ethics/).\n\n\n## Roadmap \u0026 Contributing\n\nThe Detailed roadmap is [here](https://github.com/cheshire-cat-ai/core/blob/main/readme/ROADMAP.md).\nSend your pull request to the `develop` branch. Here is a [full guide to contributing](https://github.com/cheshire-cat-ai/core/blob/main/readme/CONTRIBUTING.md).\n\nJoin our [community on Discord](https://discord.gg/bHX5sNFCYU) and give the project a star ⭐!\nThanks again!🙏\n\n## Which way to go?\n\n\u003cp align=\"right\"\u003e(\u003ca href=\"#readme-top\"\u003eback to top\u003c/a\u003e)\u003c/p\u003e\n\n\u003cp align=\"center\"\u003e\n    \u003cimg align=\"center\" src=https://raw.githubusercontent.com/cheshire-cat-ai/core/main/readme/cheshire-cat.jpeg width=400px alt=\"Wikipedia picture of the Cheshire Cat\"\u003e\n\u003c/p\u003e\n\n```\n\"Would you tell me, please, which way I ought to go from here?\"\n\"That depends a good deal on where you want to get to,\" said the Cat.\n\"I don't much care where--\" said Alice.\n\"Then it doesn't matter which way you go,\" said the Cat.\n\n(Alice's Adventures in Wonderland - Lewis Carroll)\n\n```",
+ "website": "https://cheshirecat.ai",
+ "source": "https://github.com/cheshire-cat-ai/core",
+ "main_port": 1865,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "1865",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  cheshire-cat-ai:\n    image: ghcr.io/cheshire-cat-ai/core:1.9.2\n    container_name: cheshire-cat-ai\n    ports:\n      - ${APP_PORT}:80\n    environment:\n      - PYTHONUNBUFFERED=1\n      - WATCHFILES_FORCE_POLLING=true\n    volumes:\n      - ${APP_DATA_DIR}/data/static:/app/cat/static\n      - ${APP_DATA_DIR}/data/plugins:/app/cat/plugins\n      - ${APP_DATA_DIR}/data/data:/app/cat/data\nnetworks:\n  tipi-main-network:\n    driver: bridge\n"
+}

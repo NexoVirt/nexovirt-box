@@ -1,0 +1,49 @@
+{
+ "id": "silverbullet",
+ "name": "Silverbullet",
+ "version": "2.12.1",
+ "category": "Utilities",
+ "tagline": "SilverBullet is a creative space where you collect, create and expand your personal knowledge, while also letting you constantly evolve the tools you use to do so.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/silverbullet/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# SilverBullet\nSilverBullet aims to be your **workshop for the mind**: a creative space where you collect, create and expand your personal knowledge, while also letting you constantly evolve the tools you use to do so.\n\nWhile you _can_ use SilverBullet as a simple note taking application that stores notes in plain markdown files on disk, it becomes truly powerful in the hands of more technical power users. By leveraging metadata annotations, its Objects infrastructure, Live Queries and Live Templates, SilverBullet becomes a powerful _end-user programming tool_, enabling you to quickly develop various types of ad-hoc knowledge applications. SilverBullet is implemented as an open-source, self-hosted, offline-capable web application.\n\nYou’ve been told there is _no such thing_ as a [silver bullet](https://en.wikipedia.org/wiki/Silver_bullet). You were told wrong.\n\n[![Introduction to SilverBullet](http://img.youtube.com/vi/BbNbZgOwB-Y/0.jpg)](https://www.youtube.com/watch?v=BbNbZgOwB-Y)\n\n## Features\nSilverBullet...\n* Runs in any modern browser (including on mobile) as a PWA in two Client Modes (_online_ and _synced_ mode), where the _synced mode_ enables **100% offline operation**, keeping a copy of content in the browser, syncing back to the server when a network connection is available.\n* Provides an enjoyable markdown writing experience with a clean UI, rendering text using Live Preview, further **reducing visual noise** while still providing direct access to the underlying markdown syntax.\n* Supports wiki-style **page linking** using the `[[page link]]` syntax. Incoming links are indexed and appear as “Linked Mentions” at the bottom of the pages linked to thereby providing _bi-directional linking_. \n* Optimized for **keyboard-based operation**:\n  * Quickly navigate between pages using the **page switcher** (triggered with `Cmd-k` on Mac or `Ctrl-k` on Linux and Windows).\n  * Run commands via their keyboard shortcuts or the **command palette** (triggered with `Cmd-/` or `Ctrl-/` on Linux and Windows).\n  * Use Slash Commands to perform common text editing operations.\n* Provides a platform for [end-user programming](https://www.inkandswitch.com/end-user-programming/) through its support for Objects, Live Queries and Live Templates.\n* Robust extension mechanism using plugs.\n* **Self-hosted**: you own your data. All content is stored as plain files in a folder on disk. Back up, sync, edit, publish, script with any additional tools you like.\n* SilverBullet is [open source, MIT licensed](https://github.com/silverbulletmd/silverbullet) software.",
+ "website": "https://silverbullet.md",
+ "source": "https://github.com/silverbulletmd/silverbullet",
+ "main_port": 8214,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8214",
+   "required": true
+  },
+  {
+   "key": "SB_USER",
+   "label": "Username",
+   "type": "text",
+   "required": true,
+   "min": 3,
+   "max": 50
+  },
+  {
+   "key": "SB_PASSWORD",
+   "label": "Password",
+   "type": "password",
+   "required": true,
+   "min": 8,
+   "max": 50
+  }
+ ],
+ "compose": "services:\n  silverbullet:\n    image: zefhemel/silverbullet:2.12.1\n    container_name: silverbullet\n    restart: unless-stopped\n    volumes:\n      - /etc/localtime:/etc/localtime:ro\n      - ${APP_DATA_DIR}/space:/space\n    environment:\n      - SB_USER=${SB_USER}:${SB_PASSWORD}\n    ports:\n      - ${APP_PORT}:3000\n"
+}

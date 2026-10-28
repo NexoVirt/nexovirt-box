@@ -1,0 +1,32 @@
+{
+ "id": "cadvisor",
+ "name": "cAdvisor",
+ "version": "3de2bd5203120b866d74a9b283b2ffb8ec382fbf9dc321814700c6ea6f44ec57",
+ "category": "Networking",
+ "tagline": "cAdvisor",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/cadvisor.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "docker_socket": true,
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "cAdvisor (Container Advisor) provides container users an understanding of the resource usage and performance characteristics of their running containers. It is a running daemon that collects, aggregates, processes, and exports information about running containers. Specifically, for each container it keeps resource isolation parameters, historical resource usage, histograms of complete historical resource usage and network statistics. This data is exported by container and machine-wide.",
+ "main_port": 8085,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8085",
+   "required": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-cadvisor application\nservices:\n  # Service for cAdvisor, a tool to monitor container performance\n  app:\n    # Docker image to be used for cAdvisor\n    image: gcr.io/cadvisor/cadvisor:v0.55.1@sha256:3de2bd5203120b866d74a9b283b2ffb8ec382fbf9dc321814700c6ea6f44ec57\n    # Name of the container instance\n    container_name: monitoring_cadvisor\n    # Restart policy - Restart the container unless it's stopped manually\n    restart: unless-stopped\n    # List of device mappings between host and container\n    devices:\n      # Map the host's kernel message log to the container\n      - \"/dev/kmsg:/dev/kmsg\"\n    # Volumes to be mounted to the container\n    volumes:\n      # Mount the root directory of the host in a read-only mode\n      - /:/rootfs:ro\n      # Mount the var run directory of the host in a read-write mode\n      - /var/run:/var/run:rw\n      # Mount Docker socket to allow cAdvisor to monitor other containers\n      - /var/run/docker.sock:/var/run/docker.sock:rw\n      # Mount system directory of the host in a read-only mode for system metrics\n      - /sys:/sys:ro\n      # Mount Docker library directory in a read-only mode\n      - /var/lib/docker/:/var/lib/docker:ro\n      # Mount the disk directory of the host in a read-only mode for disk metrics\n      - /dev/disk/:/dev/disk:ro\n    # Ports to be exposed from the container\n    expose:\n      # Expose port 8080 from the container\n      - 8080\n    # Port mappings between host and container\n    ports:\n      # Map port 8085 of the host to port 8080 of the container\n      - \"${APP_PORT}:8080\"\n"
+}

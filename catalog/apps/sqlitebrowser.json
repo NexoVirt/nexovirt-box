@@ -1,0 +1,31 @@
+{
+ "id": "sqlitebrowser",
+ "name": "Sqlitebrowser",
+ "version": "03f747bdf1f035d0752693cb0ff415a508badaf0de28bfe7a1765009c51ed6ed",
+ "category": "Home",
+ "tagline": "A high quality, visual, open source tool to create, design, and edit database files compatible with SQLite.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/sqlitebrowser-banner.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "DB Browser for SQLite is a high quality, visual, open source tool to create, design, and edit database files compatible with SQLite.",
+ "main_port": 3000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/sqlitebrowser:18.04.1@sha256:03f747bdf1f035d0752693cb0ff415a508badaf0de28bfe7a1765009c51ed6ed\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 3001\n        published: 3001\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

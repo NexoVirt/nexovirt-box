@@ -1,0 +1,31 @@
+{
+ "id": "uisp",
+ "name": "UISP",
+ "version": "f7f3f7820cb3e86bfbe0691585410482b5079f9708b400c810fbdc4cc9fd6590",
+ "category": "Developer",
+ "tagline": "UISP",
+ "icon": "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps/apps/uisp/logo.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "All-in-one docker image for Ubiquiti UISP (formerly UNMS). Supports x86_64 and ARM (Raspberry Pi).",
+ "main_port": 10443,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "10443",
+   "required": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-uisp application\nservices:\n  # Service name: big-bear-uisp\n  # The `big-bear-uisp` service definition\n  big-bear-uisp:\n    # Name of the container\n    container_name: big-bear-uisp\n    # Image to be used for the container\n    image: nico640/docker-unms:2.4.155.1@sha256:f7f3f7820cb3e86bfbe0691585410482b5079f9708b400c810fbdc4cc9fd6590\n    # Container restart policy\n    restart: unless-stopped\n    # Environment variables for the container\n    environment:\n      - TZ=UTC\n    # Volumes to be mounted to the container\n    volumes:\n      # Mounting the local /DATA/AppData/big-bear-uisp/config directory to /config inside the container\n      - ${APP_DATA_DIR}/config:/config\n    # Ports mapping between host and container\n    ports:\n      # Mapping port 8080 of the host to port 80 of the container\n      - \"8080:80\"\n      # Mapping port 10443 of the host to port 443 of the container\n      - \"${APP_PORT}:443\"\n"
+}

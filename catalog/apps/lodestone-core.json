@@ -1,0 +1,33 @@
+{
+ "id": "lodestone-core",
+ "name": "Lodestone Core",
+ "version": "0.5.1",
+ "category": "Gaming",
+ "tagline": "Server hosting tool for Minecraft and other multiplayers.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/lodestone-core/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## Lodestone Core\n\nA free, open source server hosting tool for Minecraft and other multiplayers\n\n### Important Connection and Setup Information\n\n- **Important Connection**: Connect to your remote hosted lodestone instance at the [Lodestone Web Gui](https://www.lodestone.cc) or with the [Desktop Apps Here](https://github.com/Lodestone-Team/dashboard/releases/latest)\n\n- **First User Setup**: After connecting to the panel, it will ask you to setup your inital user. To find the secret key, you can find it in your logs with `docker logs lodestone-core`\n\n### Ports\n\n- Ports 25565-25575 are open for Minecraft Servers\n\n- Port 16662 used by the [Lodestone Dashboard](https://lodestone.cc)\n\n### Features and roadmap\n\n- [x] Clean and intuitive UI\n- [x] One-click installation and setup\n- [x] Collaborative remote server and resource management\n- [x] Priority on safety and security\n- [ ] User permission management 🚧\n- [ ] Automated macros and tasks 🚧\n- [ ] Connecting without port forward 🚧\n\nFor any troubleshooting, see our [wiki](https://github.com/Lodestone-Team/lodestone/wiki/Known-Issues).\n\n### Safety \u0026 Security\n\nLodestone Core is written entirely in safe Rust, and uses`#![forbid(unsafe_code)]`. However **we can't guarantee the safety of the crates and binaries we link to**, as those may use unsafe rust.\n\nLodestone is created with security as a top priority. While most of the safety critical code such as login and permissions management have been tested thoroughly, **no formal security audit has been done for any part of Lodestone.**",
+ "website": "https://lodestone.cc",
+ "source": "https://github.com/Lodestone-Team/lodestone_core",
+ "main_port": 16662,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "16662",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  lodestone-core:\n    container_name: lodestone-core\n    image: ghcr.io/lodestone-team/lodestone_core:0.5.1\n    ports:\n      - ${APP_PORT}:16662\n      - 25565-25575:25565-25575\n    restart: unless-stopped\n    user: 0:0\n    volumes:\n      - ${APP_DATA_DIR}/data/lodestone-data:/root/.lodestone\n"
+}

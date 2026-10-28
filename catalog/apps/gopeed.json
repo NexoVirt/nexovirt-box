@@ -1,0 +1,38 @@
+{
+ "id": "gopeed",
+ "name": "Gopeed",
+ "version": "v1.9.3",
+ "category": "Media",
+ "tagline": "Open source, lightweight, native, supports (HTTP, BitTorrent, Magnet, etc.) for downloading.",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Gopeed/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64",
+  "arm"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "Gopeed is a modern high-speed download tool supporting HTTP, BitTorrent, and Magnet protocols, offering a beautiful interface and powerful functionality. Its lightweight design and multi-platform support make it ideal for efficient file downloading across various devices.\n\nThe tool's core features include high-speed downloading and an elegant interface. It leverages Golang coroutines for concurrent downloading, supporting HTTP, HTTPS, BitTorrent, and Magnet protocols for fast, stable performance. The interface follows Material Design standards, including a dark mode, balancing aesthetics and usability. Advanced features include seeding, DHT, PEX, uTP, Webtorrent, and UPnP support, with daily automatic tracker list updates to enhance download efficiency.\n\nIt provides a RESTful API for open integration, allowing users to remotely control download tasks, pause, or delete them. Decentralized extensions enable JavaScript plugins to enhance functionality, such as downloading videos or music from websites. The tool's speed, flexibility, and user-friendly design deliver a modern download solution.\n\n**Key Features:**\n- High-speed downloading with HTTP, BitTorrent, Magnet protocols\n- Seeding, DHT, PEX, uTP, Webtorrent, UPnP\n- Daily automatic tracker list updates\n- RESTful API for remote download task control\n- Decentralized extensions with JavaScript plugins\n\n**Learn More:**\n- [Gopeed Official Website](https://gopeed.com)\n- [Gopeed GitHub Repository](https://github.com/gopeedlab/gopeed)",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Gopeed/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Gopeed/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Gopeed/screenshot-3.png"
+ ],
+ "website": "https://gopeed.com",
+ "main_port": 9999,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "9999",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  gopeed:\n    container_name: gopeed\n    deploy:\n      resources:\n        limits:\n          memory: 256M\n        reservations:\n          memory: 256M\n    image: liwei2633/gopeed:v1.9.3\n    ports:\n      - target: 9999\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/data\n        target: /app/storage\n      - type: bind\n        source: ${SHARED_DIR}/Downloads\n        target: /app/Downloads\n    network_mode: bridge\n    privileged: false\n"
+}

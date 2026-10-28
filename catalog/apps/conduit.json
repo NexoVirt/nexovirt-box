@@ -1,0 +1,68 @@
+{
+ "id": "conduit",
+ "name": "Conduit",
+ "version": "0.10.15",
+ "category": "Social",
+ "tagline": "Conduit is a simple, fast and reliable chat server written in Rust",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/matrix-conduit/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Conduit\n### A Matrix homeserver written in Rust\n\n#### What is Matrix?\n[Matrix](https://matrix.org) is an open network for secure and decentralized\ncommunication. Users from every Matrix homeserver can chat with users from all\nother Matrix servers. You can even use bridges (also called Matrix appservices)\nto communicate with users outside of Matrix, like a community on Discord.\n\n#### What is the goal?\n\nAn efficient Matrix homeserver that's easy to set up and just works. You can install\nit on a mini-computer like the Raspberry Pi to host Matrix for your family,\nfriends or company.\n\n#### Can I try it out?\n\nYes! You can test our Conduit instance by opening a Matrix client (\u003chttps://app.element.io\u003e or Element Android for\nexample) and registering on the `conduit.rs` homeserver.\n\n*Registration is currently disabled because of scammers. For an account please\n  message us (see contact section below).*\n\nServer hosting for conduit.rs is donated by the Matrix.org Foundation.\n\n#### What is the current status?\n\nConduit is Beta, meaning you can join and participate in most\nMatrix rooms, but not all features are supported and you might run into bugs\nfrom time to time.\n\nThere are still a few important features missing:\n\n- E2EE emoji comparison over federation (E2EE chat works)\n- Outgoing read receipts, typing, presence over federation (incoming works)\n\nCheck out the [Conduit 1.0 Release Milestone](https://gitlab.com/famedly/conduit/-/milestones/3).\n\n#### How can I deploy my own?\n\n- Simple install (this was tested the most): [DEPLOY.md](DEPLOY.md)\n- Debian package: [debian/README.Debian](debian/README.Debian)\n- Nix/NixOS: [nix/README.md](nix/README.md)\n- Docker: [docker/README.md](docker/README.md)\n\nIf you want to connect an Appservice to Conduit, take a look at [APPSERVICES.md](APPSERVICES.md).\n\n#### How can I contribute?\n\n1. Look for an issue you would like to work on and make sure it's not assigned\n   to other users\n2. Ask someone to assign the issue to you (comment on the issue or chat in\n   [#conduit:fachschaften.org](https://matrix.to/#/#conduit:fachschaften.org))\n3. Fork the repo and work on the issue.[#conduit:fachschaften.org](https://matrix.to/#/#conduit:fachschaften.org) is happy to help :)\n4. Submit a MR\n\n#### Thanks to\n\nThanks to FUTO, Famedly, Prototype Fund (DLR and German BMBF) and all individuals for financially supporting this project.\n\nThanks to the contributors to Conduit and all libraries we use, for example:\n\n- Ruma: A clean library for the Matrix Spec in Rust\n- axum: A modular web framework\n\n#### Contact\n\nIf you run into any question, feel free to\n- Ask us in `#conduit:fachschaften.org` on Matrix\n- Write an E-Mail to `conduit@koesters.xyz`\n- Send an direct message to `timo@fachschaften.org` on Matrix\n- [Open an issue on GitLab](https://gitlab.com/famedly/conduit/-/issues/new)\n\n#### Donate\n\nLiberapay: \u003chttps://liberapay.com/timokoesters/\u003e\\\nBitcoin: `bc1qnnykf986tw49ur7wx9rpw2tevpsztvar5x8w4n`\n\n#### Logo\n\nLightning Bolt Logo: https://github.com/mozilla/fxemoji/blob/gh-pages/svgs/nature/u26A1-bolt.svg \\\nLogo License: https://github.com/mozilla/fxemoji/blob/gh-pages/LICENSE.md",
+ "website": "https://docs.conduit.rs/",
+ "source": "https://gitlab.com/famedly/conduit",
+ "main_port": 0,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "ALLOW_REGISTRATION",
+   "label": "Allow Registration",
+   "type": "boolean",
+   "hint": "WARNING! First user will be admin"
+  },
+  {
+   "key": "ALLOW_FEDERATION",
+   "label": "Allow Federation",
+   "type": "boolean"
+  },
+  {
+   "key": "TRUSTED_SERVERS",
+   "label": "Trusted Servers",
+   "type": "text",
+   "hint": "List of domain names",
+   "placeholder": "[\"matrix.org\"]"
+  },
+  {
+   "key": "MAX_REQUEST_SIZE",
+   "label": "Max request size",
+   "type": "number",
+   "hint": "In bytes, for example 20000000"
+  },
+  {
+   "key": "LOG",
+   "label": "Loggin Level",
+   "type": "text",
+   "hint": "Available levels: error, warn, info, debug, trace",
+   "placeholder": "warn,rocket=off,_=off,sled=off"
+  },
+  {
+   "key": "TURN_URIS",
+   "label": "TURN URIs",
+   "type": "text",
+   "hint": "List of TURN server URIs turn:/turns:",
+   "placeholder": "[\"turn:\u003cyour server domain\u003e?transport=udp\", \"turn:\u003cyour server domain\u003e?transport=tcp\"]"
+  },
+  {
+   "key": "TURN_SECRET",
+   "label": "TURN Secret",
+   "type": "password"
+  }
+ ],
+ "compose": "services:\n  matrix-conduit:\n    container_name: matrix-conduit\n    image: matrixconduit/matrix-conduit:v0.10.15\n    environment:\n      CONDUIT_SERVER_NAME: ${APP_DOMAIN}\n      CONDUIT_DATABASE_PATH: /var/lib/matrix-conduit/\n      CONDUIT_DATABASE_BACKEND: rocksdb\n      CONDUIT_ADDRESS: 0.0.0.0\n      CONDUIT_PORT: 6167\n      CONDUIT_LOG: ${LOG:-warn,rocket=off,_=off,sled=off}\n      CONDUIT_MAX_REQUEST_SIZE: ${MAX_REQUEST_SIZE:-20000000}\n      CONDUIT_ALLOW_REGISTRATION: ${ALLOW_REGISTRATION:-false}\n      CONDUIT_ALLOW_FEDERATION: ${ALLOW_FEDERATION:-false}\n      CONDUIT_TRUSTED_SERVERS: ${TRUSTED_SERVERS:-[]}\n      CONDUIT_ALLOW_CHECK_FOR_UPDATES: false\n      CONDUIT_TURN_URIS: ${TURN_URIS:-[\"turn:localhost?transport=udp\", \"turn:localhost?transport=tcp\"]}\n      CONDUIT_TURN_SECRET: ${TURN_SECRET:-turnsecret}\n      CONDUIT_CONFIG: ''\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/data:/var/lib/matrix-conduit/\n  matrix-conduit-well-known:\n    container_name: matrix-conduit-well-known\n    build:\n      context: nginx\n      dockerfile: Dockerfile\n    environment:\n      APP_DOMAIN: ${APP_DOMAIN}\n    restart: unless-stopped\n"
+}

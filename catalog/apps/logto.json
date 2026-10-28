@@ -1,0 +1,47 @@
+{
+ "id": "logto",
+ "name": "Logto",
+ "version": "1.45.0",
+ "category": "Security",
+ "tagline": "Logto is a cost-effective open-source alternative to Auth0.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/logto/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "[![](https://github.com/logto-io/logto/raw/master/logo.png)](https://logto.io)\n\nLogto is a cost-effective open-source alternative to Auth0. It offers a seamless developer experience and is well-suited for individuals and growing companies.\n\n🧑💻 **A frontend-to-backend identity solution**\n\n-   OIDC-based authentication and RBAC authorization.\n-   Passwordless sign in and much more diverse options, including Email, Phone number, Username, Google, Facebook and other social sign in methods.\n-   Beautiful UI components with customizable CSS to fit your business needs.\n\n📦 **Out-of-box infrastructure**\n\n-   A ready-to-use management API can serve as your authentication provider, eliminating the need for extra implementation.\n-   SDKs that can integrate your apps with Logto quickly, multi-platform and language compatible, tailored to your development environment.\n-   Flexible connectors, scalable with community contributions, customizable with SAML, OAuth, and OIDC protocols.\n\n💻 **Enterprise-ready solutions**\n\n-   RBAC to control your resource through scalable role authorization for diverse use cases.\n-   User management and audit Logs to understand identity related user info and keep your security on track.\n-   We are currently working on SSO, Organizations and MFA! Stay tuned!\n\nBoringly, we call it \"[customer identity access management](https://en.wikipedia.org/wiki/Customer_identity_access_management)\" (CIAM) or \"customer identity solution.\"\n\n[Subscribe to us](https://logto.io/subscribe/?utm_source=github\u0026utm_medium=repo_logto) right away to receive up-to-date information about the Logto Cloud (SaaS) as well as in-time feature updates.\n\n## Get started\n\n-   Visit our 🎨 [website](https://logto.io/?utm_source=github\u0026utm_medium=repo_logto) for a brief introduction if you are new to Logto.\n-   A step-by-step guide is available on 📖 [docs.logto.io](https://docs.logto.io/?utm_source=github\u0026utm_medium=repo_logto).",
+ "website": "https://logto.io/",
+ "source": "https://github.com/logto-io/logto",
+ "main_port": 8203,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8203",
+   "required": true
+  },
+  {
+   "key": "LOGTO_DB_PASSWORD",
+   "label": "Database Password",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "LOGTO_ADMIN_URL",
+   "label": "Logto Admin Console URL URL",
+   "type": "text",
+   "hint": "Example: admin.example.com",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  logto:\n    depends_on:\n      logto-db:\n        condition: service_healthy\n    image: svhd/logto:1.45.0\n    container_name: logto\n    entrypoint:\n      - sh\n      - '-c'\n      - npm run cli db seed -- --swe \u0026\u0026 npm start\n    ports:\n      - ${APP_PORT}:3001\n      - '8204:3002'\n    environment:\n      - NODE_ENV=production\n      - TRUST_PROXY_HEADER=1\n      - DB_URL=postgres://tipi:${LOGTO_DB_PASSWORD}@logto-db:5432/logto\n      - ENDPOINT=https://${APP_DOMAIN}\n      - ADMIN_ENDPOINT=https://${LOGTO_ADMIN_URL}\n  logto-db:\n    container_name: logto-db\n    image: postgres:14\n    restart: unless-stopped\n    environment:\n      - POSTGRES_USER=tipi\n      - POSTGRES_PASSWORD=${LOGTO_DB_PASSWORD}\n      - POSTGRES_DB=logto\n    volumes:\n      - ${APP_DATA_DIR}/data/postgres:/var/lib/postgresql/data\n    healthcheck:\n      test:\n        - CMD-SHELL\n        - pg_isready\n      interval: 10s\n      timeout: 5s\n      retries: 5\n"
+}

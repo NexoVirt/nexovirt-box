@@ -1,0 +1,37 @@
+{
+ "id": "emby-nvidia-gpu",
+ "name": "Emby(Nvidia GPU)",
+ "version": "4.9.5.0",
+ "category": "Media",
+ "tagline": "TAKE YOUR MEDIA ANYWHERE WITH EMBY",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Emby/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "Bringing all of your home videos, music, and photos together into one place has never been easier. Your personal Emby Server automatically converts and streams your media on-the-fly to play on any device.",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Emby/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Emby/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Emby/screenshot-3.png"
+ ],
+ "website": "https://emby.media/",
+ "main_port": 8096,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8096",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  emby:\n    devices:\n      - /dev/dri:/dev/dri\n      - /dev/vchiq:/dev/vchiq\n      - /dev/video10:/dev/video10\n      - /dev/video11:/dev/video11\n      - /dev/video12:/dev/video12\n    environment:\n      UID: \"1000\"\n      GID: \"100\"\n      GIDLIST: \"100\"\n      TZ: $TZ\n      NVIDIA_VISIBLE_DEVICES: all\n    image: emby/embyserver:4.9.5.0\n    runtime: nvidia\n    deploy:\n      resources:\n        reservations:\n          memory: 512M\n          devices:\n            - driver: nvidia\n              count: all\n              capabilities: [gpu]\n    network_mode: bridge\n    ports:\n      - target: 8096\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 8920\n        published: \"8920\"\n        protocol: tcp\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n      - type: bind\n        source: ${SHARED_DIR}/Media/TV Shows\n        target: /data/tvshows\n      - type: bind\n        source: ${SHARED_DIR}/Media/Movies\n        target: /data/movies\n    container_name: emby\n"
+}

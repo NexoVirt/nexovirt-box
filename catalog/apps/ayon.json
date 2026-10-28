@@ -1,0 +1,30 @@
+{
+ "id": "ayon",
+ "name": "Ayon",
+ "version": "def63d3138061857115faf7de0950bb01d4f116272c03a0d3f0d28fcf7e6fc21",
+ "category": "Developer",
+ "tagline": "Ayon",
+ "icon": "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps/apps/ayon/logo.png",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "This is the official Docker-based deployment for the Ayon Server. Ayon is a robust tool designed to manage and automate workflows in the animation and visual effects industries.",
+ "main_port": 5000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "5000",
+   "required": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-ayon application\nservices:\n  # Service name: big-bear-ayon\n  # The `big-bear-ayon` service definition\n  big-bear-ayon:\n    # Name of the container\n    container_name: big-bear-ayon\n    # Image to be used for the container\n    image: ynput/ayon:1.3.6-20240823@sha256:def63d3138061857115faf7de0950bb01d4f116272c03a0d3f0d28fcf7e6fc21\n    # Container restart policy\n    restart: unless-stopped\n    # Healthcheck configuration to ensure the service is running properly\n    healthcheck:\n      test: [\"CMD\", \"curl\", \"-f\", \"http://localhost:5000/api/info\"]\n      interval: 10s\n      timeout: 2s\n      retries: \"3\"\n    # Volumes to be mounted to the container\n    volumes:\n      - \"${APP_DATA_DIR}/addons:/addons\"\n      - \"${APP_DATA_DIR}/storage:/storage\"\n      # comment out the following line on Windows\n      - \"/etc/localtime:/etc/localtime:ro\"\n    # Ports mapping between host and container\n    ports:\n      # Mapping port 5000 of the host to port 5000 of the container\n      - \"${APP_PORT}:5000\"\n    expose: [\"5000\"]\n    networks:\n      - big-bear-ayon-network\n    depends_on:\n      postgres:\n        condition: service_healthy\n      redis:\n        condition: service_started\n  # Service definition for the PostgreSQL database\n  postgres:\n    image: postgres:15-alpine@sha256:3d0f7584ed7d04e27fa050d6683a74746608faf21f202be78460d679cc56461f\n    container_name: postgres\n    restart: unless-stopped\n    environment:\n      - POSTGRES_USER=ayon\n      - POSTGRES_PASSWORD=ayon\n      - POSTGRES_DB=ayon\n    volumes:\n      - ${APP_DATA_DIR}/postgres:/var/lib/postgresql/data\n    healthcheck:\n      test: [\"CMD-SHELL\", \"pg_isready -U ayon\"]\n      interval: 10s\n      timeout: 5s\n      retries: \"5\"\n    expose: [\"5432\"]\n    networks:\n      - big-bear-ayon-network\n  # Service definition for the Redis database\n  redis:\n    image: redis:7.4.6-alpine@sha256:7a7c6b5c49a6896d0a58ee0c6dc0dcabe14f30f0a2f7d2d1362d276fa2d43166\n    container_name: redis\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/redis:/data\n    healthcheck:\n      test: [\"CMD-SHELL\", \"redis-cli ping | grep PONG\"]\n      interval: 5s\n      timeout: 5s\n      retries: \"5\"\n    expose: [\"6379\"]\n    networks:\n      - big-bear-ayon-network\nnetworks:\n  big-bear-ayon-network:\n    driver: bridge\n"
+}

@@ -1,0 +1,40 @@
+{
+ "id": "syncthing",
+ "name": "Syncthing",
+ "version": "2.1.7",
+ "category": "Data",
+ "tagline": "Peer-to-peer file synchronization between your devices",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/syncthing/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## Peer-to-peer file synchronization between your devices\n\nSyncthing is a continuous file synchronization program. It synchronizes files between two or more computers. We strive to fulfill the goals below. The goals are listed in order of importance, the most important one being the first. This is the summary version of the goal list - for more commentary, see the full Goals document.\n\n1. **Safe From Data Loss**\n\n   Protecting the user's data is paramount. We take every reasonable\n   precaution to avoid corrupting the user's files.\n\n2. **Secure Against Attackers**\n\n   Again, protecting the user's data is paramount. Regardless of our other\n   goals we must never allow the user's data to be susceptible to\n   eavesdropping or modification by unauthorized parties.\n\n3. **Easy to Use**\n\n   Syncthing should be approachable, understandable and inclusive.\n\n4. **Automatic**\n\n   User interaction should be required only when absolutely necessary.\n\n5. **Universally Available**\n\n   Syncthing should run on every common computer. We are mindful that the\n   latest technology is not always available to any given individual.\n\n6. **For Individuals**\n\n   Syncthing is primarily about empowering the individual user with safe,\n   secure and easy to use file synchronization.\n\n7. **Everything Else**\n\n   There are many things we care about that don't make it on to the list. It\n   is fine to optimize for these values, as long as they are not in conflict\n   with the stated goals above.",
+ "website": "https://syncthing.net",
+ "source": "https://github.com/syncthing",
+ "main_port": 8090,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8090",
+   "required": true
+  },
+  {
+   "key": "SYNCTHING_HOSTNAME",
+   "label": "Hostname",
+   "type": "text",
+   "hint": "Set a hostname for the Syncthing instance",
+   "placeholder": "tipi"
+  }
+ ],
+ "compose": "services:\n  syncthing:\n    container_name: syncthing\n    image: syncthing/syncthing:2.1.7\n    stop_grace_period: 1m\n    hostname: ${SYNCTHING_HOSTNAME:-tipi}\n    environment:\n      - PUID=1000\n      - PGID=1000\n    volumes:\n      - ${APP_DATA_DIR}/data:/var/syncthing\n      - ${ROOT_FOLDER_HOST}/media/data/syncthing:/media/data/syncthing\n    ports:\n      - ${APP_PORT}:8384\n      - 22000:22000/tcp\n      - 22000:22000/udp\n      - 21027:21027/udp\n    restart: unless-stopped\n"
+}

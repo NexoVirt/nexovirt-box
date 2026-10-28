@@ -1,0 +1,35 @@
+{
+ "id": "snapdrop",
+ "name": "snapdrop",
+ "version": "",
+ "category": "Productivity",
+ "tagline": "Cross-platform file sharing made easy.",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Snapdrop/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "Snapdrop is a Progressive Web App (PWA) that allows you to transfer files between devices in the same network without having to install anything.",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Snapdrop/screenshot-1.png"
+ ],
+ "website": "https://snapdrop.net",
+ "main_port": 89,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "89",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  snapdrop:\n    environment:\n      - PGID=$PGID\n      - PUID=$PUID\n      - TZ=$TZ\n    image: linuxserver/snapdrop:version-eac78009\n    network_mode: bridge\n    ports:\n      - target: 443\n        published: \"443\"\n        protocol: tcp\n      - target: 80\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n    privileged: false\n    container_name: snapdrop\n"
+}

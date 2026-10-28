@@ -1,0 +1,32 @@
+{
+ "id": "rdesktop",
+ "name": "Rdesktop",
+ "version": "c779495feea3bbfbac0fcd239c5be5981a8744df97646236c685357f90fb5565",
+ "category": "Other",
+ "tagline": "Containers containing full desktop environments in many popular flavors for Alpine, Ubuntu, Arch, and Fedora accessible via RDP.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/rdesktop.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "docker_socket": true,
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Rdesktop - Containers containing full desktop environments in many popular flavors for Alpine, Ubuntu, Arch, and Fedora accessible via RDP.",
+ "main_port": 3389,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3389",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/rdesktop:arch-kde-version-arch-2025-01-10@sha256:c779495feea3bbfbac0fcd239c5be5981a8744df97646236c685357f90fb5565\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n    ports:\n      - target: 3389\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n      - type: bind\n        source: /var/run/docker.sock\n        target: /var/run/docker.sock\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

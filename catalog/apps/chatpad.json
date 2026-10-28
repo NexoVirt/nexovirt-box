@@ -1,0 +1,31 @@
+{
+ "id": "chatpad",
+ "name": "Chatpad",
+ "version": "b0b2364a3ad97812bd88c1f33541ba4281e0bbff1878b509cef354ae7ec3278d",
+ "category": "Other",
+ "tagline": "Not just another ChatGPT user-interface!",
+ "icon": "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps/apps/chatpad/logo.jpeg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Recently, there has been a surge of UIs for ChatGPT, making it the new to-do app that everyone wants to try their hand at. Chatpad sets itself apart with a broader vision - to become the ultimate interface for ChatGPT users.",
+ "main_port": 8080,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8080",
+   "required": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-chatpad application\nservices:\n  # Service name: chatpad\n  # The `chatpad` service definition\n  big-bear-chatpad:\n    # Name of the container\n    container_name: big-bear-chatpad\n    # Image to be used for the container\n    image: ghcr.io/deiucanta/chatpad:f45cd53bc410412610c1ba1cbd84cd137d8e167d@sha256:b0b2364a3ad97812bd88c1f33541ba4281e0bbff1878b509cef354ae7ec3278d\n    # Container restart policy\n    restart: unless-stopped\n    # Ports mapping between host and container\n    ports:\n      # Mapping port 8080 of the host to port 80 of the container\n      - \"${APP_PORT}:80\"\n"
+}

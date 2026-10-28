@@ -1,0 +1,33 @@
+{
+ "id": "wizarr",
+ "name": "Wizarr",
+ "version": "v2026.10.1",
+ "category": "Utilities",
+ "tagline": "Wizarr is an automatic user invitation system for Plex and Jellyfin.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/wizarr/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "Wizarr is an automatic user invitation system for Plex and Jellyfin. Create a unique link and share it to a user and they will be invited to your Media Server after they complete there signup proccess! They can even be guided to download the clients and read instructions on how to use your media software!\n\n## Where is V2?\n\nWizarr V2 has moved to the v2 branch [here](https://github.com/Wizarrrr/wizarr/tree/v2), your still more than welcome to use v2 however it will no longer be supported, we recommend using our new version, trust us it's 🔥.\n\n## Major Features Include\n\n- Automatic Invitation to your Media Server (Plex, Jellyfin)\n- Support for Passkey authentication for Admin Users\n- Create multiple invitations with different configurations\n- Make invitations and users expire after a certain amount of time\n- Automatically add users to your Request System (Ombi, Jellyseerr, Overseerr)\n- Add users to your Discord Server\n- Create a custom HTML page\n- Multi-Language Support\n- Scheduled Tasks to keep Wizarr updated with your Media Server\n- Live logs directly from the Wizarr Web UI\n- Multiple Admin Users with different permissions\n- Notification System\n- API for Developers with Swagger UI\n- Light and Dark Mode Support\n- Session Management for Admin Users\n\n## Whats to come\n\n- Added API Endpoints\n- Multi-Server Support\n- Mass Emailing to Client Users\n- OAuth Support with custom providers\n- Use your own Database\n- 2FA Support for Admin Users\n- Built in Update System\n- Full Wizard Customization with Drag and Drop Template Editor\n- Jellyfin and Plex user permissions management tool\n- Invite Request System for users to request invite\n- and much more!\n\n## Documentation\n\nAny issues we welcome you to come onto our [Discord](https://discord.gg/XXCz7aM3ak) and ask for a member of staff, we would be happy to help.\n\nIf you want to help contribute to Wizarr by building V3's documentation we would really appreciate it, again join the [Discord](https://discord.gg/XXCz7aM3ak) and we can get you started.\n\n\u003ca href=\"https://discord.gg/XXCz7aM3ak\"\u003e\n\u003cimg alt=\"Chat on Discord\" src=\"https://img.shields.io/discord/1020742926856372224\"/\u003e\n\u003c/a\u003e\n\n## Thank you\n\nA big thank you ❤️ to these amazing people for contributing to this project!\n\n\u003ca href=\"https://github.com/wizarrrr/wizarr/graphs/contributors\"\u003e\n  \u003cimg src=\"https://contrib.rocks/image?repo=wizarrrr/wizarr\" /\u003e\n\u003c/a\u003e",
+ "website": "https://docs.wizarr.dev/",
+ "source": "https://github.com/Wizarrrr/wizarr",
+ "main_port": 5690,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "5690",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  wizarr:\n    container_name: wizarr\n    image: ghcr.io/wizarrrr/wizarr:v2026.10.1\n    ports:\n      - ${APP_PORT}:5690\n    volumes:\n      - ${APP_DATA_DIR}/data/database:/data/database\n"
+}

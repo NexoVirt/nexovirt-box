@@ -1,0 +1,39 @@
+{
+ "id": "smokeping",
+ "name": "Smokeping",
+ "version": "2.9.0",
+ "category": "Networking",
+ "tagline": "Free open source network performance monitoring tool",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Smokeping/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "keeps track of your network latency.",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Smokeping/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Smokeping/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Smokeping/screenshot-3.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Smokeping/screenshot-4.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Smokeping/screenshot-5.png"
+ ],
+ "website": "https://oss.oetiker.ch/smokeping/",
+ "main_port": 10280,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "10280",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  smokeping:\n    environment:\n      PGID: \"1000\"\n      PUID: \"1000\"\n      TZ: Europe/London\n    image: linuxserver/smokeping:2.9.0\n    deploy:\n      resources:\n        reservations:\n          memory: 64M\n    network_mode: bridge\n    ports:\n      - target: 80\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n      - type: bind\n        source: ${APP_DATA_DIR}/data\n        target: /data\n    container_name: smokeping\n"
+}

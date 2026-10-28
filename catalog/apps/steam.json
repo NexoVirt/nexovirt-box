@@ -1,0 +1,30 @@
+{
+ "id": "steam",
+ "name": "Steam",
+ "version": "ed97628a6943b103e3f2ff617c6ceb9062db16cebab6cf71e42a1ceb5ea0cff5",
+ "category": "Home",
+ "tagline": "The ultimate destination for playing, discussing, and creating games.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/steam-logo.png",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Steam is the ultimate destination for playing, discussing, and creating games.",
+ "main_port": 3000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/steam:version-0779c5e2@sha256:ed97628a6943b103e3f2ff617c6ceb9062db16cebab6cf71e42a1ceb5ea0cff5\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 3001\n        published: 3001\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

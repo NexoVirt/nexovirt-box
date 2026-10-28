@@ -1,0 +1,52 @@
+{
+ "id": "barrage",
+ "name": "Barrage",
+ "version": "0.3.0",
+ "category": "Utilities",
+ "tagline": "Minimal Deluge WebUI with full mobile support",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/barrage/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Barrage\n\nMinimal Deluge WebUI with full mobile support\n\n## [](https://github.com/maulik9898/barrage/blob/main/README.md#features)Features\n\n- Responsive mobile first design\n- Add torrent by URL or magnet\n- Sort and Filter Torrents\n- Global upload and Download speed limits\n- Change File Priority\n- Change Torrent options",
+ "source": "https://github.com/maulik9898/barrage",
+ "main_port": 0,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "NEXTAUTH_SECRET",
+   "label": "NEXTAUTH_SECRET",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "DELUGE_URL",
+   "label": "Deluge URL",
+   "type": "text",
+   "hint": "URL of your deluge client",
+   "required": true
+  },
+  {
+   "key": "DELUGE_PASSWORD",
+   "label": "Deluge password",
+   "type": "text",
+   "required": true
+  },
+  {
+   "key": "BARRAGE_PASSWORD",
+   "label": "Barrage password",
+   "type": "password",
+   "required": true,
+   "min": 3,
+   "max": 50
+  }
+ ],
+ "compose": "services:\n  barrage:\n    image: 'maulik9898/barrage:0.3.0'\n    environment:\n      - 'NEXTAUTH_SECRET=${NEXTAUTH_SECRET}'\n      - 'DELUGE_URL=${DELUGE_URL}'\n      - 'DELUGE_PASSWORD=${DELUGE_PASSWORD}'\n      - 'BARRAGE_PASSWORD=${BARRAGE_PASSWORD}'\n    x-runtipi:\n      internal_port: 3000\n      is_main: true\nx-runtipi:\n  schema_version: 2\n"
+}

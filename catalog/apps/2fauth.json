@@ -1,0 +1,33 @@
+{
+ "id": "2fauth",
+ "name": "2FAuth",
+ "version": "8.0.3",
+ "category": "Security",
+ "tagline": "Manage your Two-Factor Authentication codes.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/2fauth/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# 2FAuth\n\nA web app to manage your Two-Factor Authentication (2FA) accounts and generate their security codes\n\n[**2FAuth Demo**](https://demo.2fauth.app/)  \nCredentials (login - password) : *demo@2fauth.app* - *demo*\n\n\u003e Encountered an issue after an update ? Check the end of this readme.\n\n## Purpose\n\n2FAuth is a web based self-hosted alternative to One Time Passcode (OTP) generators like Google Authenticator, designed for both mobile and desktop.\n\nIt aims to ease you perform your 2FA authentication steps whatever the device you handle, with a clean and suitable interface.\n\nI created it because :\n\n* Most of the UIs for this kind of apps show tokens for all accounts in the same time with stressful countdowns (in my opinion)\n* I wanted my 2FA accounts to be stored in a standalone database I can easily backup and restore (did you already encountered a smartphone loss with all your 2FA accounts in Google Auth? I did...)\n* I hate taking out my smartphone to get an OTP when I use a desktop computer\n* I love coding and I love self-hosted solutions\n\n## Main features\n\n* Manage your 2FA accounts and organize them using Groups\n* Scan and decode any QR code to add account in no time\n* Add custom account without QR code thanks to an advanced form\n* Edit accounts, even the imported ones\n* Generate TOTP and HOTP security codes and Steam Guard codes\n\n2FAuth is currently fully localized in English and French. See [Contributing](#contributing) if you want to help on adding more languages.\n\n## Security\n\n2FAuth provides several security mechanisms to protect your 2FA data as best as possible.\n\n### Single user app\n\nYou have to create a user account and authenticate yourself to use the app. It is not possible to create more than one user account, the app is thought for personal use.\n\n### Modern authentication\n\nYou can sign in 2FAuth using a security key like a Yubikey or a Titan key and disable the traditional login form.\n\n### Data encryption\n\nSensitive data stored in the database can be encrypted to protect them against db compromise. Encryption is provided as an option which is disabled by default. It is strongly recommanded to backup the APP_KEY value of your .env file (or the whole file) when encryption is On.\n\n### Auto logout\n\n2FAuth automatically log you out after an inactivity period to prevent long life session. The auto logout can be deactivated or triggered when a security code is copied.\n\n### RFC compliance\n\n2FAuth generates OTP according to RFC 4226 (HOTP Algorithm) and RFC 6238 (TOTP Algorithm) thanks to [Spomky-Labs/OTPHP](https://github.com/Spomky-Labs/otphp) php library.\n\n---\n\n### v8 update\nYou may face an error message when updating 2fauth to v8, you can execute the following command :\n```\ndocker exec -it 2fauth_migrated-2fauth-1 php artisan 2fauth:fix-passport-key-permissions\n```\nMore information on the official migration guide : https://docs.2fauth.app/getting-started/upgrade/upgrading-to-v8",
+ "website": "https://docs.2fauth.app/",
+ "source": "https://github.com/Bubka/2FAuth",
+ "main_port": 0,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "TWOFAUTH_APP_KEY",
+   "label": "TWOFAUTH_APP_KEY",
+   "type": "password",
+   "min": 32,
+   "max": 32,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  2fauth:\n    image: 2fauth/2fauth:8.0.3\n    volumes:\n      - ${APP_DATA_DIR}/data:/2fauth\n    environment:\n      - ASSET_URL=${APP_PROTOCOL:-http}://${APP_DOMAIN}\n      - APP_URL=${APP_PROTOCOL:-http}://${APP_DOMAIN}\n      - APP_KEY=${TWOFAUTH_APP_KEY}\n      - TRUSTED_PROXIES=172.18.0.0/16\n    x-runtipi:\n      internal_port: 8000\n      is_main: true\nx-runtipi:\n  schema_version: 2\n"
+}

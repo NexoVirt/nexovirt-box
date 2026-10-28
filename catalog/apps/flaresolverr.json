@@ -1,0 +1,33 @@
+{
+ "id": "flaresolverr",
+ "name": "Flaresolverr",
+ "version": "v3.5.2",
+ "category": "Media",
+ "tagline": "Bypass Cloudflare and DDoS-GuARD.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/flaresolverr/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# FlareSolverr\n\nFlareSolverr is a proxy server to bypass Cloudflare and DDoS-GUARD protection.\n\n## How it works\n\nFlareSolverr starts a proxy server, and it waits for user requests in an idle state using few resources.\nWhen some request arrives, it uses [Selenium](https://www.selenium.dev) with the\n[undetected-chromedriver](https://github.com/ultrafunkamsterdam/undetected-chromedriver)\nto create a web browser (Chrome). It opens the URL with user parameters and waits until the Cloudflare challenge\nis solved (or timeout). The HTML code and the cookies are sent back to the user, and those cookies can be used to\nbypass Cloudflare using other HTTP clients.\n\n**NOTE**: Web browsers consume a lot of memory. If you are running FlareSolverr on a machine with few RAM, do not make\nmany requests at once. With each request a new browser is launched.\n\nIt is also possible to use a permanent session. However, if you use sessions, you should make sure to close them as\nsoon as you are done using them.",
+ "website": "https://github.com/FlareSolverr/FlareSolverr",
+ "source": "https://github.com/FlareSolverr/FlareSolverr",
+ "main_port": 8666,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8666",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  flaresolverr:\n    container_name: flaresolverr\n    image: ghcr.io/flaresolverr/flaresolverr:v3.5.2\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:8191\n    environment:\n      - LOG_LEVEL=${FLARESOLVERR_LOG_LEVEL-info}\n      - TZ=${TZ}\n"
+}

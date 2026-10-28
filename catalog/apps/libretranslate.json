@@ -1,0 +1,33 @@
+{
+ "id": "libretranslate",
+ "name": "LibreTranslate",
+ "version": "v1.9.6",
+ "category": "Utilities",
+ "tagline": "Free and Open Source Machine Translation API. 100% self-hosted, offline capable and easy to setup.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/libretranslate/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# LibreTranslate\n\n[Try it online!](https://libretranslate.com) | [API Docs](https://libretranslate.com/docs) | [Community Forum](https://community.libretranslate.com/)\n\nFree and Open Source Machine Translation API, entirely self-hosted. Unlike other APIs, it doesn't rely on proprietary providers such as Google or Azure to perform translations. Instead, its translation engine is powered by the open source [Argos Translate](https://github.com/argosopentech/argos-translate) library.\n\n![image](https://user-images.githubusercontent.com/64697405/139015751-279f31ac-36f1-4950-9ea7-87e76bf65f51.png)",
+ "website": "https://docs.libretranslate.com/",
+ "source": "https://github.com/LibreTranslate/LibreTranslate",
+ "main_port": 8121,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8121",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  libretranslate:\n    container_name: libretranslate\n    image: libretranslate/libretranslate:v1.9.6\n    ports:\n      - ${APP_PORT}:5000\n    restart: unless-stopped\n"
+}

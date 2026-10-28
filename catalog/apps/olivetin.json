@@ -1,0 +1,33 @@
+{
+ "id": "olivetin",
+ "name": "Olivetin",
+ "version": "latest",
+ "category": "Utilities",
+ "tagline": "Give safe and simple access to predefined shell commands from a web interface.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/olivetin/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## OliveTin\n\nOliveTin gives **safe** and **simple** access to predefined shell commands from a web interface.\n\n\u003cimg alt = \"screenshot\" src = \"https://github.com/OliveTin/OliveTin/blob/main/var/marketing/screenshotDesktop.png?raw=true\" /\u003e\n\n### Use cases\n\n**Safely** give access to commands, for less technical people;\n\n* eg: Give your family a button to `podman restart plex`\n* eg: Give junior admins a simple web form with dropdowns, to start your custom script. `backupScript.sh --folder {{ customerName }}`\n* eg: Enable SSH access to the server for the next 20 mins `firewall-cmd --add-service ssh --timeout 20m`\n\n**Simplify** complex commands, make them accessible and repeatable;\n\n* eg: Expose complex commands on touchscreen tablets stuck on walls around your house. `wake-on-lan aa:bb:cc:11:22:33`\n* eg: Run long-lived commands on your servers from your cell phone. `dnf update -y`\n* eg: Define complex commands with lots of preset arguments, and turn a few arguments into dropdown select boxes. `docker rm {{ container }} \u0026\u0026 docker create {{ container }} \u0026\u0026 docker start {{ container }}`\n\n[Join the community on Discord](https://discord.gg/jhYWWpNJ3v) to talk with other users about use cases, or to ask for support in getting started.\n\n### YouTube demo video\n\n[![YouTube demo video](https://raw.githubusercontent.com/OliveTin/OliveTin/main/var/marketing/YouTubeBanner.png)](https://www.youtube.com/watch?v=UBgOfNrzId4)\n\n### Features\n\n* **Responsive, touch-friendly UI** - great for tablets and mobile\n* **Super simple config in YAML** - because if it's not YAML now-a-days, it's not \"cloud native\" :-)\n* **Dark mode** - for those of you that roll that way.\n* **Accessible** - passes all the accessibility checks in Firefox, and issues with accessibility are taken seriously.\n* **Container** - available for quickly testing and getting it up and running, great for the selfhosted community.\n* **Integrate with anything** - OliveTin just runs Linux shell commands, so theoretially you could integrate with a bunch of stuff just by using curl, ping, etc. However, writing your own shell scripts is a great way to extend OliveTin.\n* **Lightweight on resources** - uses only a few MB of RAM and barely any CPU. Written in Go, with a web interface written as a modern, responsive, Single Page App that uses the REST/gRPC API.\n* **Good amount of unit tests and style checks** - helps potential contributors be consistent, and helps with maintainability.\n\n### Documentation\n\nAll documentation can be found at http://docs.olivetin.app . This includes installation and usage guide, etc.\n\n### Quickstart reference for `config.yaml`\n\nThis is a quick example of `config.yaml` - but again, lots of documentation for how to write your `config.yaml` can be found at [the documentation site.](https://docs.olivetin.app)\n\n* (Recommended) [Linux package install (.rpm/.deb)](https://docs.olivetin.app/install-linuxpackage.html) install instructions\n* [Container (podman/docker)](https://docs.olivetin.app/install-container.html) install instructions\n* [Docker compose](https://docs.olivetin.app/install-compose.html) install instructions\n* [Helm on Kubernetes](https://docs.olivetin.app/install-helm.html) install instructions\n* [Kubernetes (manual)](https://docs.olivetin.app/install-k8s.html) install instructions\n* [.tar.gz (manual)](https://docs.olivetin.app/install-targz.html) install instructions\n\nPut this `config.yaml` in `/etc/OliveTin/` if you're running a standard service, or mount it at `/config` if running in a container.\n\n```yaml\n# Listen on all addresses available, port 1337\nlistenAddressSingleHTTPFrontend: 0.0.0.0:1337\n\n# Choose from INFO (default), WARN and DEBUG\nlogLevel: \"INFO\"\n\n# Actions (buttons) to show up on the WebUI:\nactions:\n  # Docs: https://docs.olivetin.app/action-container-control.html\n- title: Restart Plex\n  icon: restart\n  shell: docker restart plex\n\n  # This will send 1 ping\n  # Docs: https://docs.olivetin.app/action-ping.html\n- title: Ping host\n  shell: ping {{ host }} -c {{ count }}\n  icon: ping\n  arguments:\n    - name: host\n      title: host\n      type: ascii_identifier\n      default: example.com\n\n    - name: count\n      title: Count\n      type: int\n      default: 1\n\n  # Restart http on host \"webserver1\"\n  # Docs: https://docs.olivetin.app/action-ssh.html\n- title: restart httpd\n  icon: restart\n  shell: ssh root@webserver1 'service httpd restart'\n```\n\nA full example config can be found at in this repository - [config.yaml](https://github.com/OliveTin/OliveTin/blob/main/config.yaml).",
+ "website": "https://www.olivetin.app/",
+ "source": "https://github.com/OliveTin/OliveTin",
+ "main_port": 1337,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "1337",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  olivetin:\n    container_name: olivetin\n    image: jamesread/olivetin:latest\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/data:/config\n    ports:\n      - ${APP_PORT}:1337\n"
+}

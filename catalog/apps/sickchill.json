@@ -1,0 +1,40 @@
+{
+ "id": "sickchill",
+ "name": "Sickchill",
+ "version": "2023.6.27",
+ "category": "Media",
+ "tagline": "Automatic video library manager for TV Shows",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Sickchill/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "SickChill is an automatic Video Library Manager for TV Shows. It watches for new episodes of your favorite shows, and when they are posted it does its magic: automatic torrent/nzb searching, downloading, and processing at the qualities you want.",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Sickchill/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Sickchill/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Sickchill/screenshot-3.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Sickchill/screenshot-4.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Sickchill/screenshot-5.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Sickchill/screenshot-6.png"
+ ],
+ "website": "https://sickchill.github.io",
+ "main_port": 8081,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8081",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  sickchill:\n    environment:\n      PGID: \"1000\"\n      PUID: \"1000\"\n      TZ: Europe/London\n    image: linuxserver/sickchill:2023.6.27\n    deploy:\n      resources:\n        reservations:\n          memory: 64M\n    network_mode: bridge\n    ports:\n      - target: 8081\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n      - type: bind\n        source: ${SHARED_DIR}/Downloads\n        target: /downloads\n      - type: bind\n        source: ${SHARED_DIR}/Media/TV Shows\n        target: /tv\n    container_name: sickchill\n"
+}

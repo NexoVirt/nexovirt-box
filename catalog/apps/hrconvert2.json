@@ -1,0 +1,33 @@
+{
+ "id": "hrconvert2",
+ "name": "HRConvert2",
+ "version": "latest",
+ "category": "Other",
+ "tagline": "HRConvert2 is a self-hosted drag-and-drop file conversion server \u0026 file sharing tool that supports 86 file formats with 4 color schemes \u0026 13 end-user selctable languages.",
+ "icon": "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps@main/apps/hrconvert2/logo.png",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "HRConvert2 is a self-hosted drag-and-drop file conversion server \u0026 file sharing tool that supports 86 file formats with 4 color schemes \u0026 13 end-user selctable languages.",
+ "screenshots": [
+  "https://github.com/zelon88/HRConvert2/raw/master/Documentation/Screenshots/HRConvert2-1.png"
+ ],
+ "main_port": 48113,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "48113",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: dwaaan/hrconvert2-docker:latest\n    ports:\n      - target: 80\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    restart: unless-stopped\n"
+}

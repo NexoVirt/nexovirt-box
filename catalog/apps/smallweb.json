@@ -1,0 +1,33 @@
+{
+ "id": "smallweb",
+ "name": "Smallweb",
+ "version": "0.28.4",
+ "category": "Developer",
+ "tagline": "Your internet folder",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/smallweb/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Smallweb - Host websites from your internet folder\n\n\u003e Warning ⚠️: Make sure to customize the `domain` and `additionalDomains` properties in the smallweb config (`.smallweb/config.json`) to your own needs. For more information check the documentation [here](https://www.smallweb.run/docs/reference/config).\n\nSmallweb is a lightweight web server based on [Deno](https://deno.com). It draws inspiration from both legacy specifications like [CGI](https://en.wikipedia.org/wiki/Common_Gateway_Interface), modern serverless platforms such as [Val Town](https://val.town) and static sites generators like [Blot.im](https://blot.im).\n\nSmallweb maps domains to folders in your filesystem. For example, if you own the `pomdtr.me` domain:\n\n- `https://www.pomdtr.me` maps to `~/smallweb/www`\n- `https://example.pomdtr.me` maps to `~/smallweb/example`\n\nCreating a new website is as simple as creating a folder and opening the corresponding URL in your browser. There's no need to configure a build step (unless you want to) or start a development server. Since servers are mapped to folders, you can manage them using standard Unix tools like `cp`, `mv`, or `rm`.\n\n## A self-hosted personal cloud\n\nEach incoming HTTP request is sandboxed in a single Deno subprocess by the Smallweb evaluation server. If there are no incoming requests, no resources are used, making it an ideal solution for low-traffic websites.\n\nSmallweb does not use Docker, but it still sandboxes your code using Deno. And if you website suddenly go viral, you can move your site to Deno Deploy in one command.\n\n## Installation\n\nAll the instructions are available in the [docs](https://docs.smallweb.run).\n\n## Examples\n\nAll the websites on the `smallweb.run` domain are hosted using smallweb (including this one):\n\n- \u003chttps://docs.smallweb.run\u003e\n- \u003chttps://blog.smallweb.run\u003e\n- \u003chttps://excalidraw.smallweb.run\u003e\n\nSince creating smallweb websites is so easy, you can even create super simple ones. For example, when I want to invite someone to the smallweb discord server, I just send him the link \u003chttps://discord.smallweb.run\u003e, which maps to `~/smallweb/discord/main.ts` on my vps.\n\n```ts\nexport default {\n  fetch: () =\u003e Response.redirect(\"https://discord.gg/BsgQK42qZe\"),\n};\n```",
+ "website": "https://smallweb.run",
+ "source": "https://github.com/pomdtr/smallweb",
+ "main_port": 7777,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "7777",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  smallweb:\n    container_name: smallweb\n    image: ghcr.io/pomdtr/smallweb:0.28.4\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:7777\n    volumes:\n      - ${APP_DATA_DIR}/data/:/smallweb\n"
+}

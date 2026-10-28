@@ -1,0 +1,31 @@
+{
+ "id": "doublecommander",
+ "name": "Doublecommander",
+ "version": "efd6e23446d4eca9a29e3ff81b1209e18a13465fa50073d4de4fb51e233a98ac",
+ "category": "Home",
+ "tagline": "A free cross platform open source file manager with two panels side by side. It is inspired by Total Commander and features some new ideas.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/doublecommander-icon.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Double Commander is a free cross platform open source file manager with two panels side by side. It is inspired by Total Commander and features some new ideas.",
+ "main_port": 3000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/doublecommander:version-8143f818@sha256:efd6e23446d4eca9a29e3ff81b1209e18a13465fa50073d4de4fb51e233a98ac\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 3001\n        published: 3001\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n      - type: bind\n        source: ${APP_DATA_DIR}/data\n        target: /data\n"
+}

@@ -1,0 +1,59 @@
+{
+ "id": "movary",
+ "name": "Movary",
+ "version": "0.82.1",
+ "category": "Media",
+ "tagline": "Movary is a self-hosted web application to track and rate your watched movies.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/movary/metadata/logo.jpg",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "\u003ch1 align=\"center\"\u003e\n  \u003ca href=\"https://movary.org\"\u003e\u003cimg src=\"https://github.com/leepeuker/movary/raw/main/public/images/movary-logo-192x192.png\" height=\"160px\" width=\"160px\"\u003e\u003c/a\u003e\n  \u003cbr\u003e\n  Movary\n  \u003cbr\u003e\n\u003c/h1\u003e\n\n\u003ch4 align=\"center\"\u003eThe central hub to track, rate and explore your movie watch history\u003c/h4\u003e\n\n\u003cp align=\"center\"\u003e\n\u003ca href=\"https://hub.docker.com/r/leepeuker/movary\" target=\"_blank\" rel=\"noopener noreferrer\"\u003e\u003cimg src=\"https://img.shields.io/docker/pulls/leepeuker/movary\" \u003e\u003c/a\u003e\n\u003ca href=\"https://github.com/leepeuker/movary\" target=\"_blank\" rel=\"noopener noreferrer\"\u003e\u003cimg src=\"https://img.shields.io/github/stars/leepeuker/movary?style=flat\u0026color=yellow\u0026label=github%20stars\" \u003e\u003c/a\u003e\n\u003ca href=\"https://github.com/leepeuker/movary/issues\" target=\"_blank\" rel=\"noopener noreferrer\"\u003e\u003cimg src=\"https://img.shields.io/github/issues/leepeuker/movary?color=eba434\u0026label=github%20issues\" \u003e\u003c/a\u003e\n\u003ca href=\"https://discord.gg/KbcSqggrgW\" target=\"_blank\" rel=\"noopener noreferrer\"\u003e\u003cimg src=\"https://img.shields.io/discord/1125830398715363399\" \u003e\u003c/a\u003e\n\u003ca href=\"https://github.com/leepeuker/movary/blob/main/LICENSE\" target=\"_blank\" rel=\"noopener noreferrer\"\u003e\u003cimg src=\"https://img.shields.io/github/license/leepeuker/movary\" \u003e\u003c/a\u003e\n\u003c/p\u003e\n\n\u003cp align=\"center\"\u003e\n\u003ca href=\"https://movary.org\" target=\"_blank\" rel=\"noopener noreferrer\"\u003eWebsite\u003c/a\u003e •\n\u003ca href=\"https://docs.movary.org/install/docker/\" target=\"_blank\" rel=\"noopener noreferrer\"\u003eInstallation\u003c/a\u003e •\n\u003ca href=\"https://docs.movary.org/\" target=\"_blank\" rel=\"noopener noreferrer\"\u003eDocs\u003c/a\u003e •\n\u003ca href=\"https://api.movary.org/\" target=\"_blank\" rel=\"noopener noreferrer\"\u003eApi\u003c/a\u003e •\n\u003ca href=\"https://demo.movary.org/\" target=\"_blank\" rel=\"noopener noreferrer\"\u003eDemo\u003c/a\u003e\n\u003c/p\u003e\n\nMovary is a free and open source web application to track, rate and explore your movie watch history.\nYou can host it for yourself and others.\nIt offers detailed statistics, \nthird-party integrations for importing and exporting your history from platforms like Trakt, Letterboxd, or Netflix,\nautomated play tracking for Plex, Jellyfin or Emby and much [more](#features).\n\n![Movary Dashboard Example](https://raw.githubusercontent.com/leepeuker/movary/main/docs/images/dashboard-screenshot.png)\n\n\n**Disclaimer:** This project is still in an experimental (but usable) state.\nThere are plans to add more and improve existing features before creating the 1.0 Release,\nwhich can lead to sudden breaking changes from time to time, so keep the release notes in mind when updating until then.\n\n## Features\n\n- Movie watch history: Collect and manage your watch history and ratings\n- Statistics: Analyze your movie watching behavior and history, like e.g. most watched actors/directors/genres/languages/years\n- Customization: You decide how your dashboard should look like, what format to use when displaying dates and more\n- Third party integrations: Import and export your history and ratings from/to platforms like Trakt, Letterboxd, or Netflix\n- Scrobbler: Automatically add new plays and ratings from Plex, Jellyfin or Emby\n- Own your personal data: Users can decide who can see their data and export/import/delete the data and their accounts at any time\n- Locally stored metadata: Using e.g. themoviedb.org and imdb as sources, all metadata movary uses for your history entries can be stored locally\n- PWA: Can be installed as a smartphone app ([How to install PWAs in chrome](https://support.google.com/chrome/answer/9658361?hl=en\u0026co=GENIE.Platform%3DAndroid\u0026oco=1))\n- User-management: Use Movary alone or with others\n- Completely free, no ads, no tracking and open source! :)\n\n## Demo\n\nA demo installation can be found [here](https://demo.movary.org/) (User: `testUser@movary.org` Password:`testUser`).\n\n## Documentation\n\nThe documentation for the latest release is located [here](https://docs.movary.org). Please report missing or wrong information.\n\n## Support\n\n- Please report bugs and request features/changes via [Github issues](https://github.com/leepeuker/movary/issues/new/choose)\n- Ask for help or discuss related topics via [Github discussions](https://github.com/leepeuker/movary/discussions)\n- Join our [Discord server](https://discord.gg/KbcSqggrgW)\n\n## Contributors\n\n* [@leepeuker](https://github.com/leepeuker) as Lee Peuker\n* [@JVT038](https://github.com/JVT038) as JVT038\n* [@pbogre](https://github.com/pbogre) as Pietro Bonaldo Gregori",
+ "source": "https://github.com/leepeuker/movary",
+ "main_port": 8155,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8155",
+   "required": true
+  },
+  {
+   "key": "MOVARY_MYSQL_PASSWORD",
+   "label": "MySQL Password",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "MOVARY_PLEX_IDENTIFIER",
+   "label": "Plex Identifier",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "MOVARY_JELLYFIN_IDENTIFIER",
+   "label": "Jellyfin Identifier",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "MOVARY_TMDB_API_KEY",
+   "label": "The MovieDB API Key",
+   "type": "text",
+   "hint": "Get from https://www.themoviedb.org/settings/api",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  movary:\n    image: leepeuker/movary:0.82.1\n    container_name: movary\n    environment:\n      - TMDB_API_KEY=${MOVARY_TMDB_API_KEY}\n      - TIMEZONE=${TZ}\n      - DATABASE_MODE=mysql\n      - DATABASE_MYSQL_HOST=movary-db\n      - DATABASE_MYSQL_NAME=movary\n      - DATABASE_MYSQL_USER=tipi\n      - DATABASE_MYSQL_PASSWORD=${MOVARY_MYSQL_PASSWORD}\n      - TMDB_ENABLE_IMAGE_CACHING=1\n      - APPLICATION_URL=${APP_PROTOCOL:-http}://${APP_DOMAIN}\n      - PLEX_IDENTIFIER=${MOVARY_PLEX_IDENTIFIER}\n      - JELLYFIN_DEVICE_ID=${MOVARY_JELLYFIN_IDENTIFIER}\n    user: '1000:1000'\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/data/movary:/app/storage\n    ports:\n      - ${APP_PORT}:80\n    depends_on:\n      movary-db:\n        condition: service_healthy\n  movary-migration:\n    image: leepeuker/movary:0.82.1\n    container_name: movary-migration\n    command: php bin/console.php database:migration:migrate\n    environment:\n      - TMDB_API_KEY=${MOVARY_TMDB_API_KEY}\n      - TIMEZONE=${TZ}\n      - DATABASE_MODE=mysql\n      - DATABASE_MYSQL_HOST=movary-db\n      - DATABASE_MYSQL_NAME=movary\n      - DATABASE_MYSQL_USER=tipi\n      - DATABASE_MYSQL_PASSWORD=${MOVARY_MYSQL_PASSWORD}\n      - TMDB_ENABLE_IMAGE_CACHING=1\n      - APPLICATION_URL=${APP_PROTOCOL:-http}://${APP_DOMAIN}\n      - PLEX_IDENTIFIER=${MOVARY_PLEX_IDENTIFIER}\n      - JELLYFIN_DEVICE_ID=${MOVARY_JELLYFIN_IDENTIFIER}\n    user: '1000:1000'\n    volumes:\n      - ${APP_DATA_DIR}/data/movary:/app/storage\n    depends_on:\n      movary-db:\n        condition: service_healthy\n  movary-db:\n    image: mysql:8.0\n    container_name: movary-db\n    environment:\n      MYSQL_DATABASE: movary\n      MYSQL_USER: tipi\n      MYSQL_PASSWORD: ${MOVARY_MYSQL_PASSWORD}\n      MYSQL_ROOT_PASSWORD: ${MOVARY_MYSQL_PASSWORD}\n    volumes:\n      - ${APP_DATA_DIR}/data/mysql:/var/lib/mysql\n    healthcheck:\n      test:\n        - CMD\n        - mysqladmin\n        - ping\n        - '-h'\n        - localhost\n      timeout: 20s\n      retries: 10\n"
+}

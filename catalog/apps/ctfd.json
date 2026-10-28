@@ -1,0 +1,54 @@
+{
+ "id": "ctfd",
+ "name": "CTFd",
+ "version": "3.8.9",
+ "category": "Utilities",
+ "tagline": "Cyber Security Training made simple.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/ctfd/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# ![](https://github.com/CTFd/CTFd/blob/master/CTFd/themes/core/static/img/logo.png?raw=true)\n\n## What is CTFd?\n\nCTFd is a Capture The Flag framework focusing on ease of use and customizability. It comes with everything you need to run a CTF and it's easy to customize with plugins and themes.\n\n![CTFd is a CTF in a can.](https://github.com/CTFd/CTFd/blob/master/CTFd/themes/core/static/img/scoreboard.png?raw=true)\n\n## Features\n\n- Create your own challenges, categories, hints, and flags from the Admin Interface\n  - Dynamic Scoring Challenges\n  - Unlockable challenge support\n  - Challenge plugin architecture to create your own custom challenges\n  - Static \u0026 Regex based flags\n    - Custom flag plugins\n  - Unlockable hints\n  - File uploads to the server or an Amazon S3-compatible backend\n  - Limit challenge attempts \u0026 hide challenges\n  - Automatic bruteforce protection\n- Individual and Team based competitions\n  - Have users play on their own or form teams to play together\n- Scoreboard with automatic tie resolution\n  - Hide Scores from the public\n  - Freeze Scores at a specific time\n- Scoregraphs comparing the top 10 teams and team progress graphs\n- Markdown content management system\n- SMTP + Mailgun email support\n  - Email confirmation support\n  - Forgot password support\n- Automatic competition starting and ending\n- Team management, hiding, and banning\n- Customize everything using the [plugin](https://docs.ctfd.io/docs/plugins/overview) and [theme](https://docs.ctfd.io/docs/themes/overview) interfaces\n- Importing and Exporting of CTF data for archival\n- And a lot more...",
+ "website": "https://ctfd.io/",
+ "source": "https://github.com/CTFd/CTFd",
+ "main_port": 8546,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8546",
+   "required": true
+  },
+  {
+   "key": "CTFD_MYSQL_DB_PASSWORD",
+   "label": "CTFD_MYSQL_DB_PASSWORD",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "CTFD_SECRET_KEY",
+   "label": "CTFD_SECRET_KEY",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "CTFD_MYSQL_ROOT_PASSWORD",
+   "label": "CTFD_MYSQL_ROOT_PASSWORD",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  ctfd:\n    image: ctfd/ctfd:3.8.9\n    container_name: ctfd\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:8000\n    environment:\n      - UPLOAD_FOLDER=/var/uploads\n      - DATABASE_URL=mysql+pymysql://tipi:${CTFD_MYSQL_DB_PASSWORD}@ctfd-db/ctfd\n      - REDIS_URL=redis://ctfd-redis:6379\n      - WORKERS=1\n      - LOG_FOLDER=/var/log/CTFd\n      - ACCESS_LOG=-\n      - ERROR_LOG=-\n      - REVERSE_PROXY=true\n      - SECRET_KEY=${CTFD_SECRET_KEY}\n    volumes:\n      - ${APP_DATA_DIR}/data/uploads:/var/log/CTFd\n      - ${APP_DATA_DIR}/data/uploads:/var/uploads\n    depends_on:\n      - ctfd-db\n  ctfd-db:\n    image: mariadb:10.4.12\n    restart: unless-stopped\n    container_name: ctfd-db\n    environment:\n      - MYSQL_ROOT_PASSWORD=${CTFD_MYSQL_ROOT_PASSWORD}\n      - MYSQL_USER=tipi\n      - MYSQL_PASSWORD=${CTFD_MYSQL_DB_PASSWORD}\n      - MYSQL_DATABASE=ctfd\n    volumes:\n      - ${APP_DATA_DIR}/data/db:/var/lib/mysql\n    command:\n      - mysqld\n      - '--character-set-server=utf8mb4'\n      - '--collation-server=utf8mb4_unicode_ci'\n      - '--wait_timeout=28800'\n      - '--log-warnings=0'\n  ctfd-redis:\n    image: redis:4\n    container_name: ctfd-redis\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/data/redis:/data\n"
+}

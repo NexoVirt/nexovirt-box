@@ -1,0 +1,32 @@
+{
+ "id": "monero-daemon",
+ "name": "Monero Daemon",
+ "version": "0.18.3.4",
+ "category": "Finance",
+ "tagline": "Monero is a private, decentralized cryptocurrency that keeps your finances confidential and secure.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/monerod/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# The Monero network daemon\n\nMonero is a private, decentralized cryptocurrency that keeps your finances confidential and secure.\n\n## Required hardware\n  \n- 2+ vCPUs/cores\n- 4GB+ RAM\n- 75GB+ SSD\n\n## Why run your own Monero node?\n\nThe Monero network relies on a distributed web of Monero nodes, each of which validate transactions, propagate transactions to the rest of the network, and helps new nodes easily and quickly synchronize to the current state of the network.\n\nRunning a Monero node for yourself not only helps to give you the stronger network-level privacy guarantees, but also helps to increase the decentralization, stability, and speed of the Monero network.\n\nEach node can expose two different services, each of which has a positive impact on the network in a unique way:\n\n- Peer-to-Peer (p2p) port (default 18080): this port allows other nodes on the network to connect to your node to download the blockchain and to send you any transactions they validate that you do not yet have. It also increases overall network privacy, as your node participates in the [Dandelion++](https://www.monerooutreach.org/stories/dandelion.html) propagation of transactions.\n- Remote Procedure Call (RPC) port (default 18089 for restricted): Exposing this port (especially with the `public-node` arg) allows other users on the network, especially those using mobile wallets or the GUI wallet in \"Simple\" mode, to connect to your node to sync their wallets, without needing to run their own full node locally.",
+ "source": "https://github.com/sethforprivacy/simple-monerod-docker",
+ "main_port": 18080,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "18080",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  monerod:\n    image: sethsimmons/simple-monerod:v0.18.3.4\n    ports:\n      - ${APP_PORT}:18080\n    restart: unless-stopped\n    container_name: monerod\n    volumes:\n      - ${APP_DATA_DIR}/data:/home/monero/.bitmonero\n    command: \u003e-\n      --rpc-restricted-bind-ip=0.0.0.0 --rpc-restricted-bind-port=18089 --public-node --no-igd --enable-dns-blocklist --prune-blockchain --zmq-pub=tcp://0.0.0.0:18083\n"
+}

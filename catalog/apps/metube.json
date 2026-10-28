@@ -1,0 +1,32 @@
+{
+ "id": "metube",
+ "name": "MeTube",
+ "version": "latest",
+ "category": "Media",
+ "tagline": "Self-hosted YouTube downloader.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/metube/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# MeTube\n\nWeb GUI for youtube-dl (using the [yt-dlp](https://github.com/yt-dlp/yt-dlp) fork) with playlist support. Allows you to download videos from YouTube and [dozens of other sites](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md).\n\n![screenshot1](https://raw.githubusercontent.com/alexta69/metube/master/screenshot.gif)\n\n## Folder Info\n\n| Root Folder                        | Container Folder |\n| ---------------------------------- | ---------------- |\n| /runtipi/media/downloads/complete/ | /downloads       |",
+ "source": "https://github.com/alexta69/metube",
+ "main_port": 8250,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8250",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  metube:\n    image: ghcr.io/alexta69/metube:latest\n    container_name: metube\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:8081\n    volumes:\n      - ${ROOT_FOLDER_HOST}/media/downloads/complete/:/downloads\n"
+}

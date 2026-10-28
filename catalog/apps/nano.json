@@ -1,0 +1,32 @@
+{
+ "id": "nano",
+ "name": "Nano",
+ "version": "abba1dc5b14d99b1996a52b51d51f9247deea6f2c540d030c02060ea46491843",
+ "category": "Other",
+ "tagline": "A digital payment protocol designed to be accessible and lightweight, with a focus on removing inefficiencies present in other cryptocurrencies. With ultrafast transactions and zero fees on a secure, green and decentralized network, this makes Nano ideal for everyday transactions.",
+ "icon": "https://cdn.jsdelivr.net/gh/WisdomSky/CasaOS-LinuxServer-AppStore@main/default-icon.svg",
+ "architectures": [
+  "amd64",
+  "armv7",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Nano is a digital payment protocol designed to be accessible and lightweight, with a focus on removing inefficiencies present in other cryptocurrencies. With ultrafast transactions and zero fees on a secure, green and decentralized network, this makes Nano ideal for everyday transactions.",
+ "main_port": 8075,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8075",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/nano:21.2.20220522@sha256:abba1dc5b14d99b1996a52b51d51f9247deea6f2c540d030c02060ea46491843\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n      PEER_HOST: ''\n      LIVE_GENESIS_PUB: ''\n      LIVE_GENESIS_ACCOUNT: ''\n      LIVE_GENESIS_WORK: ''\n      LIVE_GENESIS_SIG: ''\n      CLI_OPTIONS: ''\n      LMDB_BOOTSTRAP_URL: ''\n    ports:\n      - target: 8075\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 7076\n        published: 3000\n        protocol: tcp\n      - target: 7077\n        published: 3001\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

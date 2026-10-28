@@ -1,0 +1,30 @@
+{
+ "id": "lsio-api",
+ "name": "Lsio-api",
+ "version": "374295622f0cc2e951b2f2b7b431fa1718102d2145335cee84b8c24ce72f46fb",
+ "category": "Other",
+ "tagline": "This container needs special attention. Please check https://hub. Docker. Com/r/linuxserver/lsio-api for details.",
+ "icon": "https://cdn.jsdelivr.net/gh/WisdomSky/CasaOS-LinuxServer-AppStore@main/default-icon.svg",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "This container needs special attention. Please check https://hub.docker.com/r/linuxserver/lsio-api for details.",
+ "main_port": 80,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "80",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/lsio-api:version-9eda67ec@sha256:374295622f0cc2e951b2f2b7b431fa1718102d2145335cee84b8c24ce72f46fb\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n    ports:\n      - target: 80\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

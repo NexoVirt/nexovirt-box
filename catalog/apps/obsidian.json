@@ -1,0 +1,37 @@
+{
+ "id": "obsidian",
+ "name": "Obsidian",
+ "version": "1.12.7",
+ "category": "Productivity",
+ "tagline": "Obsidian is a knowledge management app for creating, linking, and visually organizing Markdown notes.",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Obsidian/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "Obsidian is a self-hosted knowledge management app designed for creating, linking, and organizing notes, operating on local Markdown files, leveraging WebDAV and kasmVNC remote desktop technology to deliver a near-native experience in browsers. Its intuitive interface supports storing and editing notes on devices, ensuring full data ownership, ideal for crafting a lasting second brain.\n\nThe app's core features include robust note management and connectivity, suitable for various scenarios. Bi-directional linking connects related notes, forming a web of knowledge, while the Graph View visualizes note relationships, helping users uncover hidden connections. It supports Markdown editing with live preview for easy formatting and structuring. Hundreds of community plugins and themes offer extended functionality, such as calendars, kanban boards, PDF annotation, and advanced search, enabling tailored workflows. The Canvas feature provides infinite visual organization space, aiding students in organizing research, writers in developing stories, or professionals in managing projects. Notes are stored as standard Markdown files, openable with any text editor, ensuring future-proof portability.\n\nIt enhances usability through community-provided documentation, and whether for personal knowledge bases or team collaboration, the app's high flexibility and intuitive operation offer a modern knowledge management solution.\n\n**Key Features:**\n- Local storage, ensuring full data ownership\n- Bi-directional note linking for a knowledge web\n- Graph View for visualizing note connections\n- Extensible plugin system for personalized needs\n- Markdown support with live preview\n- Infinite Canvas for visual organization\n- Theme customization for enhanced visuals\n\n**Learn More:**\n- [Obsidian Official Website](https://obsidian.md)\n- [DockerHub](https://hub.docker.com/r/linuxserver/obsidian)",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Obsidian/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Obsidian/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Obsidian/screenshot-3.png"
+ ],
+ "website": "https://obsidian.md",
+ "main_port": 15324,
+ "scheme": "https",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "15324",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  obsidian:\n    image: lscr.io/linuxserver/obsidian:1.12.7\n    container_name: obsidian\n    deploy:\n      resources:\n        reservations:\n          memory: 512M\n    shm_size: \"1gb\"\n    network_mode: bridge\n    ports:\n      - target: 3000\n        published: \"15323\"\n        protocol: tcp\n      - target: 3001\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n    environment:\n      PUID: 1000\n      PGID: 1000\n      TZ: $TZ\n"
+}

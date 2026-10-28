@@ -1,0 +1,33 @@
+{
+ "id": "deluge",
+ "name": "Deluge",
+ "version": "18.04.1",
+ "category": "Utilities",
+ "tagline": "Deluge is a lightweight, Free Software, cross-platform BitTorrent client.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/deluge/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# [Deluge](https://github.com/linuxserver/docker-deluge)\n\n[Deluge](http://deluge-torrent.org/) is a lightweight, Free Software, cross-platform BitTorrent client.\n\n- Full Encryption\n- WebUI\n- Plugin System\n- Much more...\n\n## [](https://github.com/linuxserver/docker-deluge#application-setup)Application Setup\n\nWhen first installed the download path is set to a non-existent directory `/downloads`.\nTo set a correct path :\n  1. Access the Deluge WebUI\n  2. Go to **Preferences** on the top bar\n  3. In **Downloads** check the **Folders** section\n  4. Edit **Download to** and enter `/media/torrents/complete`\n\nFeel free to adapt the settings further to your convenience.\n\nIf you still encounter an error, make sure that user `1000` has access to the directory. If you work with another user, change the environment variables `PUID` \u0026 `PGID` accordingly through user-config.\n\n# Default credentials\n\nUsername: admin\nPassword: deluge\n\n---\n\n# Folder Info\n\n| Root Folder                                  | Container Folder |\n|----------------------------------------------|------------------|\n| /runtipi/app-data/deluge/data/deluge/config\t | /config          |\n| /runtipi/media/torrents                 | /media/torrents       |",
+ "website": "https://www.deluge-torrent.org/",
+ "source": "https://github.com/linuxserver/docker-deluge",
+ "main_port": 8144,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8144",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  deluge:\n    image: lscr.io/linuxserver/deluge:18.04.1\n    container_name: deluge\n    environment:\n      - PUID=1000\n      - PGID=1000\n      - TZ=${TZ}\n      - DELUGE_LOGLEVEL=error #optional\n    volumes:\n      - ${APP_DATA_DIR}/data/deluge/config:/config\n      - ${ROOT_FOLDER_HOST}/media/torrents:/media/torrents\n    ports:\n      - ${APP_PORT}:8112\n      - 6881:6881\n      - 6881:6881/udp\n    restart: unless-stopped\n"
+}

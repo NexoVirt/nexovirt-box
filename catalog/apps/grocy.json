@@ -1,0 +1,33 @@
+{
+ "id": "grocy",
+ "name": "Grocy",
+ "version": "4.7.1",
+ "category": "Automation",
+ "tagline": "ERP beyond your fridge",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/grocy/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "Default login is user **admin** with password **admin**, please change the password immediately (user menu at the top right corner)\n\n## ERP beyond your fridge\n\ngrocy is a web-based self-hosted groceries \u0026 household management solution for your home\n\n## Screenshots\n\n### Stock overview\n\n![Stock overview](https://github.com/grocy/grocy/raw/master/.github/publication_assets/stock.png \"Stock overview\")\n\n### Shopping List\n\n![Shopping List](https://github.com/grocy/grocy/raw/master/.github/publication_assets/shoppinglist.png \"Shopping List\")\n\n### Meal Plan\n\n![Meal Plan](https://github.com/grocy/grocy/raw/master/.github/publication_assets/mealplan.png \"Meal Plan\")\n\n### Chores overview\n\n![Chores overview](https://github.com/grocy/grocy/raw/master/.github/publication_assets/chores.png \"Chores overview\")",
+ "website": "https://grocy.info/",
+ "source": "https://github.com/grocy/grocy",
+ "main_port": 8136,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8136",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  grocy:\n    image: lscr.io/linuxserver/grocy:4.7.1\n    container_name: grocy\n    volumes:\n      - ${APP_DATA_DIR}/data:/config\n    restart: unless-stopped\n    environment:\n      - PUID=1000\n      - PGID=1000\n      - TZ=${TZ}\n    ports:\n      - ${APP_PORT}:80\n"
+}

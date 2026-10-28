@@ -1,0 +1,40 @@
+{
+ "id": "openspeedtest",
+ "name": "OpenSpeedTest",
+ "version": "v2.0.6",
+ "category": "Networking",
+ "tagline": "HTML5 Network Speed Test Server.",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/OpenSpeedTest/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64",
+  "ppc64le",
+  "s390x",
+  "386",
+  "arm"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "An application for launching HTML5 Network Speed Test Server. You can test download \u0026 upload speed from any device within your network with a web browser that is IE10 or new.",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/OpenSpeedTest/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/OpenSpeedTest/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/OpenSpeedTest/screenshot-3.png"
+ ],
+ "main_port": 3004,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3004",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  openspeedtest:\n    image: openspeedtest/latest:v2.0.6\n    deploy:\n      resources:\n        reservations:\n          memory: 64M\n    network_mode: bridge\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    restart: always\n    container_name: openspeedtest\n"
+}

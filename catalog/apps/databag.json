@@ -1,0 +1,32 @@
+{
+ "id": "databag",
+ "name": "Databag",
+ "version": "latest",
+ "category": "Utilities",
+ "tagline": "Messenger for the Decentralized Web",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/databag/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Databag\nDatabag is a federated chat app for self-hosting that focuses on user privacy and security; the service includes clients for iOS, Android, and browser.",
+ "source": "https://github.com/balzack/databag",
+ "main_port": 8201,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8201",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  databag:\n    container_name: databag\n    image: balzack/databag:latest\n    ports:\n      - ${APP_PORT}:7000\n    volumes:\n      - ${APP_DATA_DIR}/data/databag:/var/lib/databag\n"
+}

@@ -1,0 +1,52 @@
+{
+ "id": "minio",
+ "name": "Minio",
+ "version": "latest",
+ "category": "Developer",
+ "tagline": "High Performance Object Storage.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/minio/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# ⚠️ Long-term deprecation Notice\n\nThe team behind Minio decided to stop providing [Docker images](https://github.com/minio/minio/issues/21647#issuecomment-3439134621) for the Community Edition.\nThis follows a removing of the GUI a few version earlier.\n\nIn this regard we can't provide support.\nThis app will now use a [community build](https://github.com/golithus/minio-builds) with the `latest` tag.\n\nIn this state we can't recommand using Minio and we encourage you to look for an alternative.\n\n# Minio - Open Source Object Storage\n\nHost your own Amazon S3 compatible Object Storage!\n\n## Installation Info\n\nThis MinIO setup requires two exposed URLS\n\n- The console URL\n- The S3 API URL\n\nWhile the console URL is defined by the runtipi's default expose URL you need to define the S3 API URL in the settings when installing.\n\n**Example:**\n\n- API: Minio S3 API URL: s3.mydomain.com\n- Console: Exposed URL: minio.mydomain.com\n\n| Exposed Service     | Local Port | Exposed Domain     |\n| ------------------- | ---------- | ------------------ |\n| Minio API           | IP:8000    | s3.mydomain.com    |\n| Minio Admin Console | IP:8001    | minio.mydomain.com |\n\n## About\n\nMinIO is a High Performance Object Storage released under GNU Affero General Public License v3.0. It is API compatible with Amazon S3 cloud storage service. Use MinIO to build high performance infrastructure for machine learning, analytics and application data workloads.\n\nSee https://github.com/minio/minio for more details",
+ "website": "https://min.io",
+ "source": "https://github.com/minio/minio",
+ "main_port": 8001,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8001",
+   "required": true
+  },
+  {
+   "key": "MINIO_ROOT_USER",
+   "label": "Minio root username",
+   "type": "text",
+   "required": true
+  },
+  {
+   "key": "MINIO_ROOT_PASSWORD",
+   "label": "Minio root password",
+   "type": "password",
+   "required": true,
+   "min": 8
+  },
+  {
+   "key": "MINIO_API_URL",
+   "label": "Minio S3 API URL (when exposed)",
+   "type": "text",
+   "placeholder": "s3.example.com"
+  }
+ ],
+ "compose": "services:\n  minio:\n    container_name: minio\n    image: ghcr.io/golithus/minio:latest\n    restart: unless-stopped\n    environment:\n      - MINIO_ROOT_USER=${MINIO_ROOT_USER}\n      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}\n      - MINIO_BROWSER_REDIRECT_URL=${APP_PROTOCOL:-http}://${APP_DOMAIN}\n      - MINIO_DOMAIN=${APP_DOMAIN}\n    ports:\n      - 8000:9000\n      - ${APP_PORT}:9001\n    volumes:\n      - ${APP_DATA_DIR}/data/minio/data:/data\n    command: \"server --console-address :9001 /data\"\n"
+}

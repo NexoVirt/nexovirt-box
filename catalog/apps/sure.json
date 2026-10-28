@@ -1,0 +1,55 @@
+{
+ "id": "sure",
+ "name": "Sure",
+ "version": "0.6.5-hotfix.1",
+ "category": "Finance",
+ "tagline": "Personal finance management application",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Sure/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "Sure is a personal finance management application designed to help you track your expenses, income, and investments in one place. With an intuitive interface and powerful features, Sure makes it easy to understand your financial situation and make informed decisions about your money.\n\n**Key Features:**\n- **Expense Tracking**: Easily log and categorize your expenses\n- **Income Management**: Track multiple income sources\n- **Investment Monitoring**: Keep an eye on your investments and their performance\n- **Budget Planning**: Create and maintain budgets to control your spending\n- **Financial Reports**: Generate detailed reports to understand your financial habits\n- **AI-Powered Insights**: Get personalized financial advice using AI technology\n\n**Use Cases:**\n- Personal budget management\n- Expense tracking and categorization\n- Investment portfolio monitoring\n- Financial goal setting and tracking\n- Cash flow analysis\n\n**Learn More:**\n- [Sure GitHub Repository](https://github.com/we-promise/sure)",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Sure/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Sure/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Sure/screenshot-3.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Sure/screenshot-4.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Sure/screenshot-5.png"
+ ],
+ "website": "https://sure.am",
+ "main_port": 23000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "23000",
+   "required": true
+  },
+  {
+   "key": "SECRET_POSTGRES_PASSWORD",
+   "label": "Postgres password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
+   "key": "SECRET_SECRET_KEY_BASE",
+   "label": "Secret key base",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  sure-web:\n    container_name: sure-web\n    image: ghcr.io/we-promise/sure:0.6.5-hotfix.1\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/app/storage\n        target: /rails/storage\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    restart: unless-stopped\n    environment:\n      POSTGRES_USER: sure_user\n      POSTGRES_PASSWORD: ${SECRET_POSTGRES_PASSWORD}\n      POSTGRES_DB: sure_production\n      SECRET_KEY_BASE: ${SECRET_SECRET_KEY_BASE}\n      SELF_HOSTED: \"true\"\n      RAILS_FORCE_SSL: \"false\"\n      RAILS_ASSUME_SSL: \"false\"\n      DB_HOST: sure-db\n      DB_PORT: 5432\n      REDIS_URL: redis://sure-redis:6379/1\n      OPENAI_ACCESS_TOKEN: ${OPENAI_ACCESS_TOKEN}\n    depends_on:\n      sure-db:\n        condition: service_healthy\n      sure-redis:\n        condition: service_healthy\n    networks:\n      - sure_net\n    deploy:\n      resources:\n        reservations:\n          memory: 1024M\n  sure-worker:\n    container_name: sure-worker\n    image: ghcr.io/we-promise/sure:0.6.5-hotfix.1\n    command: ['bundle', 'exec', 'sidekiq']\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/app/storage\n        target: /rails/storage\n    depends_on:\n      sure-redis:\n        condition: service_healthy\n    environment:\n      POSTGRES_USER: sure_user\n      POSTGRES_PASSWORD: ${SECRET_POSTGRES_PASSWORD}\n      POSTGRES_DB: sure_production\n      SECRET_KEY_BASE: ${SECRET_SECRET_KEY_BASE}\n      SELF_HOSTED: \"true\"\n      RAILS_FORCE_SSL: \"false\"\n      RAILS_ASSUME_SSL: \"false\"\n      DB_HOST: sure-db\n      DB_PORT: 5432\n      REDIS_URL: redis://sure-redis:6379/1\n      OPENAI_ACCESS_TOKEN: ${OPENAI_ACCESS_TOKEN}\n    networks:\n      - sure_net\n    deploy:\n      resources:\n        reservations:\n          memory: 1024M\n  sure-db:\n    container_name: sure-db\n    image: postgres:16\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/pgdata\n        target: /var/lib/postgresql/data\n    environment:\n      POSTGRES_USER: sure_user\n      POSTGRES_PASSWORD: ${SECRET_POSTGRES_PASSWORD}\n      POSTGRES_DB: sure_production\n    healthcheck:\n      test: [\"CMD-SHELL\", \"pg_isready -U sure_user -d sure_production\"]\n      interval: 5s\n      timeout: 5s\n      retries: 5\n    networks:\n      - sure_net\n    deploy:\n      resources:\n        reservations:\n          memory: 1024M\n  sure-redis:\n    container_name: sure-redis\n    image: redis:8.2.1-alpine3.22\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/redis/data\n        target: /data\n    healthcheck:\n      test: [\"CMD\", \"redis-cli\", \"ping\"]\n      interval: 5s\n      timeout: 5s\n      retries: 5\n    networks:\n      - sure_net\n    deploy:\n      resources:\n        reservations:\n          memory: 1024M\nnetworks:\n  sure_net:\n    driver: bridge\n"
+}

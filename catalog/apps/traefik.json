@@ -1,0 +1,33 @@
+{
+ "id": "traefik",
+ "name": "Traefik",
+ "version": "v3.7.16",
+ "category": "Other",
+ "tagline": "Cloud-native Networking Stack That Just Works.",
+ "icon": "https://raw.githubusercontent.com/pi-hosted/pi-hosted/master/images/traefik.png",
+ "architectures": [
+  "amd64",
+  "armv7",
+  "arm64"
+ ],
+ "docker_socket": true,
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Cloud-Native Networking Stack That Just Works.",
+ "main_port": 48104,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "48104",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: traefik:v3.7.16\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n      TRAEFIK_API: false\n      TRAEFIK_API_DASHBOARD: true\n      TRAEFIK_API_INSECURE: false\n    ports:\n      - target: 80\n        published: 48102\n        protocol: tcp\n      - target: 443\n        published: 48103\n        protocol: tcp\n      - target: 8080\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/traefik.toml\n        target: /etc/traefik/traefik.toml\n      - type: bind\n        source: ${APP_DATA_DIR}/traefik.yml\n        target: /etc/traefik/traefik.yml\n      - type: bind\n        source: ${APP_DATA_DIR}/config.yml\n        target: /etc/traefik/config.yml\n      - type: bind\n        source: ${APP_DATA_DIR}/acme.json\n        target: /etc/traefik/acme.json\n      - type: bind\n        source: /var/run/docker.sock\n        target: /var/run/docker.sock\n"
+}

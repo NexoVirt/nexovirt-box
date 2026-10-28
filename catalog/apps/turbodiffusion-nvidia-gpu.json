@@ -1,0 +1,35 @@
+{
+ "id": "turbodiffusion-nvidia-gpu",
+ "name": "TurboDiffusion(Nvidia GPU)",
+ "version": "20260312",
+ "category": "AI",
+ "tagline": "An accelerated video generation framework that speeds up end-to-end diffusion while preserving video quality",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/TurboDiffusion_Nvidia/icon.png",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "TurboDiffusion is an accelerated text-to-video generation framework based on the Latent Consistency Model (LCM). It leverages various TurboWan2 models to rapidly generate high-quality videos from text descriptions. The framework supports both image and video generation and provides optimized checkpoints for different GPU configurations.\n\n**Key Features:**\n- Ultra-fast video and image generation\n- Intuitive Gradio WebUI\n- Optimized for different GPU configurations\n- Quantized and unquantized checkpoints\n- Flexible model configuration\n\n**Hardware Requirements:**\n- Recommended: RTX 3090 or above\n- GPU VRAM: \u003e 30 GB\n- System RAM: \u003e 40 GB\n- CUDA-compatible NVIDIA drivers\n\n**Learn More:**\n- [TurboDiffusion GitHub](https://github.com/thu-ml/TurboDiffusion)",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/TurboDiffusion_Nvidia/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/TurboDiffusion_Nvidia/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/TurboDiffusion_Nvidia/screenshot-3.png"
+ ],
+ "main_port": 27860,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "27860",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  turbodiffusion:\n    image: icewhaletech/turbodiffusion:20260312\n    container_name: turbodiffusion\n    deploy:\n      resources:\n        reservations:\n          memory: 40G\n          devices:\n            - driver: nvidia\n              count: all\n              capabilities:\n                - gpu\n    environment:\n      MODEL_PATHS: /workspace/TurboDiffusion/checkpoints_host,/workspace/TurboDiffusion/checkpoints\n      NVIDIA_VISIBLE_DEVICES: all\n      NVIDIA_DRIVER_CAPABILITIES: compute,utility,video\n      CUDA_HOME: /usr/local/cuda\n      PYTHONPATH: /workspace/TurboDiffusion/turbodiffusion\n    ports:\n      - target: 7860\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/models\n        target: /workspace/TurboDiffusion/checkpoints_host\n      - type: bind\n        source: ${APP_DATA_DIR}/outputs\n        target: /workspace/TurboDiffusion/outputs\n    working_dir: /workspace/TurboDiffusion\n    command:\n      - python\n      - turbodiffusion/app_gradio.py\n    restart: unless-stopped\n"
+}

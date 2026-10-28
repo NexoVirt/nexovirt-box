@@ -1,0 +1,55 @@
+{
+ "id": "lobe-chat",
+ "name": "Lobe Chat",
+ "version": "1.143.3",
+ "category": "AI",
+ "tagline": "LLM chatbot framework",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/lobe-chat/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Lobe Chat\n\nLobeChat is an open-source, high-performance chatbot framework that supports\nspeech synthesis, multimodal, and extensible\n([Function Call](https://platform.openai.com/docs/guides/function-calling)) plugin system.\n\n## Settings\n| Environment Variable | Required | Description | Example |\n| -------------------- | -------- | ------------| --------|\n| `OPENAI_API_KEY`     | Yes      | API key for OpenAI. You can generate it on [your OpenAI account page](https://platform.openai.com/api-keys). **Note:** Keep your `OPENAI_API_KEY` secure to prevent unauthorized access. | `sk-xxxxxx...xxxxxx` |\n| `OPENAI_PROXY_URL`   | No       | Override the default OpenAI API base URL for requests. **Caution:** Only use a trusted proxy to ensure the security of your data. | `https://api.chatanywhere.cn/v1`\u003cbr/\u003eThe default value is\u003cbr/\u003e`https://api.openai.com/v1` |\n| `ACCESS_CODE`        | No       | Password to avoid leaking. If you want to have multiple passwords, use a comma separated list. **Security Best Practice:** Avoid storing passwords directly in environment variables. Use a secrets management service to protect sensitive information. | `awCTe)re_r74` or `rtrt_ewee3@09!` or `code1,code2,code3` |\n| `CUSTOM_MODELS`      | No       | Control the model list. Use `+` to add a model, `-` to hide a model, and `model_name=display_name` to customize the display name of a model, separated by commas. | `qwen-7b-chat,+glm-6b,-gpt-3.5-turbo` |",
+ "website": "https://github.com/lobehub/lobe-chat",
+ "source": "https://github.com/lobehub/lobe-chat",
+ "main_port": 3210,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3210",
+   "required": true
+  },
+  {
+   "key": "OPENAI_API_KEY",
+   "label": "OpenAI API Key",
+   "type": "text",
+   "required": true
+  },
+  {
+   "key": "OPENAI_PROXY_URL",
+   "label": "OpenAI API URL",
+   "type": "text"
+  },
+  {
+   "key": "CUSTOM_MODELS",
+   "label": "Custom Models",
+   "type": "text",
+   "hint": "Comma separated list of model IDs"
+  },
+  {
+   "key": "ACCESS_CODE",
+   "label": "Password",
+   "type": "password"
+  }
+ ],
+ "compose": "services:\n  lobe-chat:\n    container_name: lobe-chat\n    image: lobehub/lobe-chat:1.143.3\n    environment:\n      - OPENAI_API_KEY=${OPENAI_API_KEY}\n      - OPENAI_PROXY_URL=${OPEANAI_PROXY_URL}\n      - CUSTOM_MODELS=${CUSTOM_MODELS}\n      - ACCESS_CODE=${ACCESS_CODE}\n    ports:\n      - ${APP_PORT}:3210\n    restart: unless-stopped\n"
+}

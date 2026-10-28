@@ -1,0 +1,35 @@
+{
+ "id": "index-tts-nvidia-gpu",
+ "name": "Index-TTS(Nvidia GPU)",
+ "version": "2.0",
+ "category": "AI",
+ "tagline": "An Industrial-Level Controllable and Efficient Zero-Shot Text-To-Speech System",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Index-TTS_Nvidia/icon.svg",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "IndexTTS2 is an advanced zero-shot text-to-speech model that innovatively achieves complete decoupling of emotional expression and speaker identity. The model supports precise speech duration control and multimodal emotion control, capable of maintaining the target timbre while accurately reproducing the specified emotional intonation.\n\nThe model employs a three-stage training paradigm and introduces GPT latent representations, ensuring excellent speech clarity and stability even under high emotional expression. Through the Qwen-based soft instruction mechanism, users can easily control the emotional characteristics of generated speech using natural language descriptions.\n\nIn multi-dataset evaluations, IndexTTS2 surpasses existing zero-shot TTS models in key metrics such as word error rate, speaker similarity, and emotion fidelity, providing industry-leading speech synthesis quality.\n\n**Key Features:**\n- Zero-shot TTS capability to replicate any timbre without training\n- Independent control of emotion and timbre with multimodal emotion input\n- Precise duration control with explicit token count specification for perfect audio-video synchronization\n- Natural language-based emotion control to guide speech generation through text descriptions\n\n**Prerequisites:**\n- Please ensure available memory \u003e 12 GB, otherwise the application may not run properly\n- NVIDIA GPU with ≥ 8 GB VRAM (recommended for optimal performance)\n- NVIDIA CUDA Toolkit version ≥ 12.8\n\n**Learn More:**\n- [IndexTTS GitHub](https://github.com/index-tts/index-tts)",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Index-TTS_Nvidia/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Index-TTS_Nvidia/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Index-TTS_Nvidia/screenshot-3.png"
+ ],
+ "main_port": 7867,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "7867",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  index-tts-nvidia:\n    image: icewhaletech/index-tts:2.0\n    container_name: index-tts\n    restart: unless-stopped\n    ports:\n      - target: 7860\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    environment:\n      NVIDIA_VISIBLE_DEVICES: all\n    deploy:\n      resources:\n        reservations:\n          memory: 8G\n          devices:\n            - driver: nvidia\n              count: all\n              capabilities: [gpu]\n"
+}

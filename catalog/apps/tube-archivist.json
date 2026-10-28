@@ -1,0 +1,57 @@
+{
+ "id": "tube-archivist",
+ "name": "Tube Archivist",
+ "version": "v0.6.0",
+ "category": "Media",
+ "tagline": "Your self-hosted YouTube media server",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/tubearchivist/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Your self-hosted YouTube media server\n\n![Tube Archivist](https://github.com/tubearchivist/tubearchivist/blob/master/assets/tube-archivist-banner.jpg?raw=true \"Tube Archivist Banner\")\n\n## Core functionality\n\n* Subscribe to your favorite YouTube channels\n* Download Videos using **yt-dlp**\n* Index and make videos searchable\n* Play videos\n* Keep track of viewed and unviewed videos\n\n## Folder Info \n\n| Root Folder                                | Container Folder |\n|--------------------------------------------|------------------|\n| /runtipi/app-data/tubearchivist/data/cache | /cache           |\n| /runtipi/media/data/youtube                | /youtube         |\n\nIf your /runtipi/media folder is remote mounted with NFS, follow the app\ncustomization instructions to set the environment variables for HOST_UID and\nHOST_GID to the owner of your media folder.\n\nCustomization documentation:\nhttps://www.runtipi.io/docs/guides/customize-app-config\n\nTubeArchivist installation documentation:\nhttps://github.com/tubearchivist/tubearchivist#installing",
+ "website": "https://www.tubearchivist.com/",
+ "source": "https://github.com/tubearchivist/tubearchivist",
+ "main_port": 8120,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8120",
+   "required": true
+  },
+  {
+   "key": "TA_USER",
+   "label": "Tube Archivist Username",
+   "type": "text",
+   "required": true,
+   "min": 3,
+   "max": 50
+  },
+  {
+   "key": "TA_PASSWORD",
+   "label": "Tube Archivist Password",
+   "type": "password",
+   "required": true,
+   "min": 3,
+   "max": 50
+  },
+  {
+   "key": "ELASTIC_PASSWORD",
+   "label": "Elasticsearch Password",
+   "type": "password",
+   "min": 3,
+   "max": 50,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  tubearchivist:\n    container_name: tubearchivist\n    restart: unless-stopped\n    image: bbilly1/tubearchivist:v0.6.0\n    ports:\n      - ${APP_PORT}:8000\n    volumes:\n      - ${ROOT_FOLDER_HOST}/media/data/youtube:/youtube\n      - ${APP_DATA_DIR}/data/cache:/cache\n    environment:\n      - ES_URL=http://tubearchivist-es:9200\n      - REDIS_HOST=tubearchivist-redis\n      - HOST_UID=1000\n      - HOST_GID=1000\n      - TA_USERNAME=${TA_USER}\n      - TA_PASSWORD=${TA_PASSWORD}\n      - TA_HOST=${APP_DOMAIN}\n      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}\n    depends_on:\n      - tubearchivist-es\n      - tubearchivist-redis\n  tubearchivist-redis:\n    image: redislabs/rejson:latest\n    container_name: tubearchivist-redis\n    restart: always\n    volumes:\n      - ${APP_DATA_DIR}/data/redis-data:/data\n    depends_on:\n      - tubearchivist-es\n  tubearchivist-es:\n    image: elasticsearch:8.18.0\n    container_name: tubearchivist-es\n    restart: always\n    environment:\n      - xpack.security.enabled=true\n      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}\n      - discovery.type=single-node\n      - ES_JAVA_OPTS=-Xms512m -Xmx512m\n      - path.repo=/usr/share/elasticsearch/data/snapshot\n    volumes:\n      - ${APP_DATA_DIR}/data/es:/usr/share/elasticsearch/data\n    expose:\n      - '9200'\n"
+}

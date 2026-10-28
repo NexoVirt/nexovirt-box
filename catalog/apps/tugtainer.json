@@ -1,0 +1,60 @@
+{
+ "id": "tugtainer",
+ "name": "Tugtainer",
+ "version": "0330b152f199bea42822d489cd9eb33572c4327b624f4e8d4d1981ad3d1b16d5",
+ "category": "Developer",
+ "tagline": "Docker Container Update Automator",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/docker.png",
+ "architectures": [
+  "amd64"
+ ],
+ "docker_socket": true,
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Tugtainer is a self-hosted app for automating updates of your docker containers with a web UI. It's like watchtower but with more control and a user-friendly interface.",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps@main/apps/tugtainer/screenshots/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps@main/apps/tugtainer/screenshots/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps@main/apps/tugtainer/screenshots/screenshot-3.png"
+ ],
+ "main_port": 9412,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "9412",
+   "required": true
+  },
+  {
+   "key": "SECRET_REFRESH_TOKEN_LIFETIME_MIN",
+   "label": "Refresh token lifetime min",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
+   "key": "SECRET_JWT_SECRET_KEY",
+   "label": "Jwt secret key",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
+   "key": "SECRET_ACCESS_TOKEN_LIFETIME_MIN",
+   "label": "Access token lifetime min",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-tugtainer application\nservices:\n  # Service name: big-bear-tugtainer\n  # The `big-bear-tugtainer` service definition\n  big-bear-tugtainer:\n    # Name of the container\n    container_name: big-bear-tugtainer\n    # Image to be used for the container\n    image: quenary/tugtainer:v1.44.3@sha256:0330b152f199bea42822d489cd9eb33572c4327b624f4e8d4d1981ad3d1b16d5\n    # Container restart policy\n    restart: unless-stopped\n    # Ports to expose from the container\n    ports:\n      - \"${APP_PORT}:80\"\n    # Environment variables for the container\n    environment:\n      TZ: \"UTC\"\n      LOG_LEVEL: \"warning\"\n      JWT_SECRET_KEY: ${SECRET_JWT_SECRET_KEY}\n      AGENT_SECRET: ${SECRET_JWT_SECRET_KEY}\n      ACCESS_TOKEN_LIFETIME_MIN: ${SECRET_ACCESS_TOKEN_LIFETIME_MIN}\n      REFRESH_TOKEN_LIFETIME_MIN: ${SECRET_REFRESH_TOKEN_LIFETIME_MIN}\n      HTTPS: \"FALSE\"\n    # Volumes to be mounted to the container\n    volumes:\n      - ${APP_DATA_DIR}/data:/tugtainer\n      - /var/run/docker.sock:/var/run/docker.sock\n"
+}

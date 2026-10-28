@@ -1,0 +1,40 @@
+{
+ "id": "hfs",
+ "name": "HFS",
+ "version": "v3.3.4",
+ "category": "Productivity",
+ "tagline": "Share files through your browser",
+ "icon": "https://raw.githubusercontent.com/rejetto/hfs/main/admin/public/hfs-logo-icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "HFS is an HTTP file server with uploads, downloads, user accounts, permissions,\na virtual file system and plugins. Manage it through the Admin panel and share\nfiles with users through the web interface.\nThis installation starts with a dedicated empty shared folder. To share an\nexisting folder, change the host path of the /shares volume in app settings.",
+ "website": "https://rejetto.com/hfs/",
+ "main_port": 8082,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8082",
+   "required": true
+  },
+  {
+   "key": "SECRET_HFS_INITIAL_ADMIN_PASSWORD",
+   "label": "Hfs initial admin password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  hfs:\n    image: rejetto/hfs:v3.3.4\n    restart: unless-stopped\n    network_mode: bridge\n    ports:\n      - target: 80\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    environment:\n      HFS_PORT: \"80\"\n      HFS_INITIAL_ADMIN_PASSWORD: ${SECRET_HFS_INITIAL_ADMIN_PASSWORD}\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /data\n      - type: bind\n        source: ${APP_DATA_DIR}/shares\n        target: /shares\n"
+}

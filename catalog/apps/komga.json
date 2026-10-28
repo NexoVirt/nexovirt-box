@@ -1,0 +1,33 @@
+{
+ "id": "komga",
+ "name": "Komga",
+ "version": "1.29.2",
+ "category": "Media",
+ "tagline": "A media server for your comics, mangas, BDs, magazines and eBooks.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/komga/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## Komga\n\nKomga is a media server for your comics, mangas, BDs, magazines and eBooks.\n\n### Chat on [Discord](https://discord.gg/TdRpkDu)\n\n### Features\n\n- Browse libraries, series and books via a responsive web UI that works on desktop, tablets and phones\n- Organize your library with collections and read lists\n- Edit metadata for your series and books\n- Import embedded metadata automatically\n- Webreader with multiple reading modes\n- Manage multiple users, with per-library access control, age restrictions, and labels restrictions\n- Offers a REST API, many community tools and scripts can interact with Komga\n- Download book files, whole series, or read lists\n- Duplicate files detection\n- Duplicate pages detection and removal\n- Import books from outside your libraries directly into your series folder\n- Import ComicRack `cbl` read lists\n\n### Documentation\n\nHead over to our [website](https://komga.org) for more information.\n\n### Develop in Komga\n\nCheck the [development guidelines](./DEVELOPING.md).\n\n### Credits\n\nThe Komga icon is based on an icon made by [Freepik](https://www.freepik.com/home) from [Flaticon](https://www.flaticon.com).",
+ "website": "https://komga.org/",
+ "source": "https://github.com/gotson/komga",
+ "main_port": 2560,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "2560",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  komga:\n    image: ghcr.io/gotson/komga:1.29.2\n    container_name: komga\n    volumes:\n      - ${APP_DATA_DIR}/data/config:/config\n      - ${APP_DATA_DIR}/data/data:/data\n      - ${ROOT_FOLDER_HOST}/media:/media\n    environment:\n      - TZ=${TZ}\n    ports:\n      - ${APP_PORT}:25600\n    restart: unless-stopped\n"
+}

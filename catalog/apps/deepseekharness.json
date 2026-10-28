@@ -1,0 +1,38 @@
+{
+ "id": "deepseekharness",
+ "name": "DeepSeekHarness",
+ "version": "latest",
+ "category": "AI",
+ "tagline": "DeepSeek Harness “Everything is a Plugin“.",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons@main/png/deepseek.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "DeepSeek Harness (dsh) is an open-source agent harness developed by DeepSeek AI.",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/DeepSeekHarness/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/DeepSeekHarness/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/DeepSeekHarness/screenshot-3.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/DeepSeekHarness/screenshot-4.png"
+ ],
+ "website": "https://www.deepseek.com",
+ "main_port": 3080,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3080",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  dsh:\n    command: null\n    container_name: dsh-harness\n    entrypoint: null\n    image: ghcr.io/smanx/deepseek-harness:latest\n    labels:\n      icon: https://cdn.jsdelivr.net/gh/selfhst/icons@main/png/deepseek.png\n    networks:\n      - default\n    ports:\n      - mode: ingress\n        target: 3080\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}\n        target: /root/.dsh\n        bind:\n          create_host_path: true\n"
+}

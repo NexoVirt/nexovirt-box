@@ -1,0 +1,39 @@
+{
+ "id": "libredesk",
+ "name": "Libredesk",
+ "version": "61dc7cea8d46d40d75b90a9ea0e4276d7d3092388e36ab7578049784fb96b57e",
+ "category": "Other",
+ "tagline": "Open source, self-hosted customer support desk. Single binary app.",
+ "icon": "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps/apps/_example/logo.jpg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Open source, self-hosted customer support desk. Single binary app.",
+ "main_port": 9000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "9000",
+   "required": true
+  },
+  {
+   "key": "SECRET_LIBREDESK_SYSTEM_USER_PASSWORD",
+   "label": "Libredesk system user password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-libredesk application\nservices:\n  # Service name: big-bear-libredesk\n  # The `big-bear-libredesk` service definition\n  big-bear-libredesk:\n    # Name of the container\n    container_name: big-bear-libredesk\n    # Image to be used for the container\n    image: libredesk/libredesk:v0.7.4-alpha@sha256:61dc7cea8d46d40d75b90a9ea0e4276d7d3092388e36ab7578049784fb96b57e\n    # Container restart policy\n    restart: unless-stopped\n    # Environment variables\n    environment:\n      - LIBREDESK_SYSTEM_USER_PASSWORD=${SECRET_LIBREDESK_SYSTEM_USER_PASSWORD}\n    # Volumes to be mounted to the container\n    volumes:\n      # Mounting the local libredesk/uploads directory to /libredesk/uploads inside the container\n      - ${APP_DATA_DIR}/uploads:/libredesk/uploads:rw\n      # Mounting the local libredesk/config.toml directory to /libredesk/config.toml inside the container\n      - ${APP_DATA_DIR}/config:/libredesk/config:rw\n    # Ports mapping between host and container\n    ports:\n      # Mapping port 9000 of the host to port 9000 of the container\n      - \"${APP_PORT}:9000\"\n    command: [sh, -c, \"./libredesk --install --idempotent-install --yes --config /libredesk/config/config.toml \u0026\u0026 ./libredesk --upgrade --yes --config /libredesk/config/config.toml \u0026\u0026 ./libredesk --config /libredesk/config/config.toml\"]\n    # Dependencies\n    depends_on:\n      - big-bear-libredesk-db\n      - big-bear-libredesk-redis\n    # Networks\n    networks:\n      - big-bear-libredesk-network\n  # PostgreSQL database\n  big-bear-libredesk-db:\n    image: postgres:17-alpine@sha256:742f40ea20b9ff2ff31db5458d127452988a2164df9e17441e191f3b72252193\n    container_name: big-bear-libredesk-db\n    restart: unless-stopped\n    networks:\n      - big-bear-libredesk-network\n    ports:\n      - \"5432:5432\"\n    environment:\n      # Set these environment variables to configure the database, defaults to libredesk.\n      POSTGRES_USER: libredesk\n      POSTGRES_PASSWORD: libredesk\n      POSTGRES_DB: big_bear_libredesk\n    healthcheck:\n      test: [\"CMD-SHELL\", \"pg_isready -U libredesk\"]\n      interval: 10s\n      timeout: 5s\n      retries: 6\n    volumes:\n      - ${APP_DATA_DIR}/data/postgres:/var/lib/postgresql/data\n  # Redis\n  big-bear-libredesk-redis:\n    image: redis:7.4.6-alpine@sha256:7a7c6b5c49a6896d0a58ee0c6dc0dcabe14f30f0a2f7d2d1362d276fa2d43166\n    container_name: big-bear-libredesk-redis\n    restart: unless-stopped\n    ports:\n      - \"6379:6379\"\n    networks:\n      - big-bear-libredesk-network\n    volumes:\n      - ${APP_DATA_DIR}/data/redis:/data\nnetworks:\n  big-bear-libredesk-network:\n    driver: bridge\n"
+}

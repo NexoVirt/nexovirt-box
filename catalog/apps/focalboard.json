@@ -1,0 +1,30 @@
+{
+ "id": "focalboard",
+ "name": "Focalboard",
+ "version": "c935a2879dc7bcb8243a562afea21a30edbb6dbe029b53a9c0ae7ab4b3255c54",
+ "category": "Productivity",
+ "tagline": "Focalboard is an open source, self-hosted alternative to Trello, Notion, and Asana.",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/focalboard.png",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Focalboard is an open source, multilingual, self-hosted project management tool that's an alternative to Trello, Notion, and Asana.",
+ "main_port": 8000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8000",
+   "required": true
+  }
+ ],
+ "compose": "# Services used in the application\nservices:\n  # The `app` service for the Focalboard application\n  app:\n    # Name of the container\n    container_name: big-bear-focalboard\n    # Docker image to be used\n    image: mattermost/focalboard:7.11.4@sha256:c935a2879dc7bcb8243a562afea21a30edbb6dbe029b53a9c0ae7ab4b3255c54\n    # Restart policy for the service\n    restart: unless-stopped\n    # Port mappings for the service\n    ports:\n      - \"${APP_PORT}:8000\"\n    # Network mode for the service\n    network_mode: bridge\n    # Volumes for the service HOST -\u003e CONTAINER\n    volumes:\n      - ${APP_DATA_DIR}/data:/opt/focalboard/data\n"
+}

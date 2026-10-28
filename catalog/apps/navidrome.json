@@ -1,0 +1,33 @@
+{
+ "id": "navidrome",
+ "name": "Navidrome",
+ "version": "0.64.2",
+ "category": "Media",
+ "tagline": "A selfhosted music server",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/navidrome/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "Navidrome is an open source web-based music collection server and streamer. It gives you freedom to listen to your music collection from any browser or mobile device. It's like your personal Spotify!\n\n## Folder Info \n\n| Root Folder                                | Container Folder |\n|--------------------------------------------|------------------|\n| /runtipi/app-data/navidrome/navidrome/data | /data            |\n| /runtipi/media/data/music                  | /music           |",
+ "website": "https://www.navidrome.org/",
+ "source": "https://github.com/navidrome/navidrome/",
+ "main_port": 4533,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "4533",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  navidrome:\n    container_name: navidrome\n    image: deluan/navidrome:0.64.2\n    ports:\n      - ${APP_PORT}:4533\n    restart: unless-stopped\n    environment:\n      ND_SCANSCHEDULE: 1h\n      ND_LOGLEVEL: info\n      ND_SESSIONTIMEOUT: 24h\n      ND_BASEURL: ''\n    volumes:\n      - ${APP_DATA_DIR}/navidrome/data:/data\n      - ${ROOT_FOLDER_HOST}/media/data/music:/music:ro\n"
+}

@@ -1,0 +1,30 @@
+{
+ "id": "mumble-server",
+ "name": "Mumble Server",
+ "version": "42ea734f0a8962cde8c3cd5f0dc5536c9caf6131064093b9ba76ed133b104fc4",
+ "category": "Social",
+ "tagline": "Mumble Server",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/mumble.png",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Mumble is a free, open source, low latency, high quality voice chat application.",
+ "main_port": 64738,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "64738",
+   "required": true
+  }
+ ],
+ "compose": "# Service configurations\nservices:\n  # Main application service\n  app:\n    # Docker image to use\n    image: mumblevoip/mumble-server:v1.4.230-6@sha256:42ea734f0a8962cde8c3cd5f0dc5536c9caf6131064093b9ba76ed133b104fc4\n    # Name of the container\n    container_name: mumble-server\n    # Hostname for the container\n    hostname: mumble-server\n    # Restart policy\n    restart: on-failure\n    # Ports configuration\n    ports:\n      - \"${APP_PORT}:64738\" # TCP port mapping\n      - \"${APP_PORT}:64738/udp\" # UDP port mapping\n"
+}

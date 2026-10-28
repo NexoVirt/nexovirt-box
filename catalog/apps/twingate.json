@@ -1,0 +1,24 @@
+{
+ "id": "twingate",
+ "name": "Twingate",
+ "version": "1",
+ "category": "Networking",
+ "tagline": "Twingate Connector for CasaOS",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Twingate/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64",
+  "arm"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "It's a connector for Twingate\".",
+ "website": "https://www.twingate.com",
+ "main_port": 0,
+ "scheme": "http",
+ "questions": [],
+ "compose": "services:\n  twingate-connector:\n    image: twingate/connector:1\n    container_name: twingate-connector\n    command:\n      - /connectord\n    environment:\n      TWINGATE_NETWORK: \"\"\n      TWINGATE_ACCESS_TOKEN: \"\"\n      TWINGATE_REFRESH_TOKEN: \"\"\n      TWINGATE_LABEL_HOSTNAME: ${HOSTNAME}\n    restart: unless-stopped\n    sysctls:\n      net.ipv4.ping_group_range: \"0 2147483647\"\n    network_mode: default\n    privileged: false\n    cpu_shares: 90\n    deploy:\n      resources:\n        reservations:\n          memory: 500M # Modify as needed since the original command didn't specify memory reservation\n"
+}

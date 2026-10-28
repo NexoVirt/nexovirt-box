@@ -1,0 +1,22 @@
+{
+ "id": "docker-cron-restart-notifier",
+ "name": "Docker Cron Restart Notifier",
+ "version": "069bb0e4e92d0d8c1dbb91f39bd057fddd5d4ee830add2dae4f0fc3da3103c0b",
+ "category": "Developer",
+ "tagline": "Automatically restart specified Docker containers and send notifications to a Discord channel",
+ "icon": "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps/apps/docker-cron-restart-notifier/logo.png",
+ "architectures": [
+  "amd64"
+ ],
+ "docker_socket": true,
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "This Docker image is designed to automatically restart specified Docker containers and send notifications to a Discord channel upon each restart. It's particularly useful for maintaining long-running services, ensuring they're periodically refreshed and stakeholders are informed of these actions.",
+ "main_port": 0,
+ "scheme": "http",
+ "questions": [],
+ "compose": "# Service definitions for the big-bear-docker-cron-restart-notifier application\nservices:\n  # Service name: app\n  # The `app` service definition\n  app:\n    # Name of the container\n    container_name: big-bear-docker-cron-restart-notifier\n    # Image to be used for the container\n    image: deduard/tools:restart-notifier-latest@sha256:069bb0e4e92d0d8c1dbb91f39bd057fddd5d4ee830add2dae4f0fc3da3103c0b\n    # Container restart policy\n    restart: unless-stopped\n    # Environment variables\n    environment:\n      DISCORD_WEBHOOK_URL: \"\"\n      RESTART_CONTAINERS: \"app_1,app_2\"\n      RUN_ON_STARTUP: \"false\"\n      CRON_SCHEDULE: \"0 4 * * FRI\" # Every Friday at 4:00 AM\n    # Volumes to be mounted to the container\n    volumes:\n      # Mounting docker.sock to allow docker management via Homarr\n      - /var/run/docker.sock:/var/run/docker.sock\n"
+}

@@ -1,0 +1,39 @@
+{
+ "id": "umami",
+ "name": "Umami",
+ "version": "e69d1a7932e9dab0fc523edc7be1f3a53f3c261f57856fc2167ae74a8fc022e8",
+ "category": "Other",
+ "tagline": "Umami is a simple, fast, privacy-focused alternative to Google Analytics.",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/umami.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Umami is a simple, fast, privacy-focused alternative to Google Analytics.",
+ "main_port": 3000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3000",
+   "required": true
+  },
+  {
+   "key": "SECRET_APP_SECRET",
+   "label": "App secret",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "# List of services that this application uses\nservices:\n  # Main service for the Umami application\n  app:\n    image: ghcr.io/umami-software/umami:postgresql-latest@sha256:e69d1a7932e9dab0fc523edc7be1f3a53f3c261f57856fc2167ae74a8fc022e8 # Docker image for the Umami app\n    ports:\n      - \"${APP_PORT}:3000\" # Port mapping: host:container\n    environment: # Environment variables for the service\n      DATABASE_URL: postgresql://umami:umami@db:5432/umami\n      DATABASE_TYPE: postgresql\n      APP_SECRET: ${SECRET_APP_SECRET}\n    depends_on: # Dependency of this service\n      db:\n        condition: service_healthy\n    restart: always # Restart policy\n  # Database service for the Umami application\n  db:\n    image: postgres:15-alpine@sha256:3d0f7584ed7d04e27fa050d6683a74746608faf21f202be78460d679cc56461f # Docker image for the PostgreSQL database\n    environment: # Environment variables for the service\n      POSTGRES_DB: umami\n      POSTGRES_USER: umami\n      POSTGRES_PASSWORD: umami\n    volumes: # Volumes for data persistence\n      - ${APP_DATA_DIR}/pgdata:/var/lib/postgresql/data\n    restart: always # Restart policy\n    healthcheck: # Health check configuration\n      test: [\"CMD-SHELL\", \"pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}\"]\n      interval: 5s\n      timeout: 5s\n      retries: 5\n"
+}

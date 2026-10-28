@@ -1,0 +1,47 @@
+{
+ "id": "piwigo",
+ "name": "Piwigo",
+ "version": "ae48cf752e94920c06c49cbfd902266e3a7822c90c418b6090137509637b1106",
+ "category": "Media",
+ "tagline": "Piwigo",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/piwigo.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Piwigo is a photo gallery software for the web that comes with powerful features to publish and manage your collection of pictures.",
+ "main_port": 8080,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8080",
+   "required": true
+  },
+  {
+   "key": "SECRET_MYSQL_PASSWORD",
+   "label": "Mysql password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
+   "key": "SECRET_MYSQL_ROOT_PASSWORD",
+   "label": "Mysql root password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-piwigo application\nservices:\n  # Service name: big-bear-piwigo\n  # The `big-bear-piwigo` service definition\n  big-bear-piwigo:\n    # Name of the container\n    container_name: big-bear-piwigo\n    # Image to be used for the container\n    image: linuxserver/piwigo:16.4.0@sha256:ae48cf752e94920c06c49cbfd902266e3a7822c90c418b6090137509637b1106\n    # Container restart policy\n    restart: unless-stopped\n    # Environment variables\n    environment:\n      - PUID=1000 # User ID for the container\n      - PGID=1000 # Group ID for the container\n      - TZ=UTC # Timezone setting for the container\n    # Volumes to be mounted to the container\n    volumes:\n      - ${APP_DATA_DIR}/config:/config # Configuration files\n      - ${APP_DATA_DIR}/gallery:/gallery # Gallery files\n    # Ports mapping between host and container\n    ports:\n      - \"${APP_PORT}:80\" # Mapping port 8080 of the host to port 80 of the container\n    networks:\n      - big_bear_piwigo_network\n  big-bear-piwigo-db:\n    image: mariadb:10.6@sha256:114d40be36852d0a019afd8458f7e1cc63fd300403b115b1f32e31130d5f671b\n    container_name: big-bear-piwigo-db\n    environment:\n      - MYSQL_ROOT_PASSWORD=${SECRET_MYSQL_ROOT_PASSWORD} # Root password for MySQL\n      - MYSQL_DATABASE=piwigo # Database name\n      - MYSQL_USER=big_bear_piwigo # Database user\n      - MYSQL_PASSWORD=${SECRET_MYSQL_PASSWORD} # Database user password\n    volumes:\n      - ${APP_DATA_DIR}/mysql:/var/lib/mysql # Persist database data\n    restart: unless-stopped\n    networks:\n      - big_bear_piwigo_network\n# Network definition for the big-bear-piwigo application\nnetworks:\n  big_bear_piwigo_network:\n    driver: bridge # Defines the network driver to be used (bridge)\n"
+}

@@ -1,0 +1,40 @@
+{
+ "id": "librespeed",
+ "name": "LibreSpeed",
+ "version": "6.3.1",
+ "category": "Networking",
+ "tagline": "No Flash, No Java, No Websocket, No Garbage",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/librespeed/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## LibreSpeed\n\nNo Flash, No Java, No Websocket, No Garbage.\n\nThis is a very lightweight speed test implemented in Javascript, using XMLHttpRequest and Web Workers.\n\n## Compatibility\n\nAll modern browsers are supported: IE11, latest Edge, latest Chrome, latest Firefox, latest Safari.\nWorks with mobile versions too.\n\n## Features\n\n* Download\n* Upload\n* Ping\n* Jitter\n* IP Address, ISP, distance from server (optional)\n* Telemetry (optional)\n* Results sharing (optional)\n* Multiple Points of Test (optional)\n\n![Screenrecording of a running Speedtest](https://speedtest.fdossena.com/mpot_v6.gif)",
+ "source": "https://github.com/librespeed/speedtest",
+ "main_port": 8084,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8084",
+   "required": true
+  },
+  {
+   "key": "APP_PASSWORD",
+   "label": "Password",
+   "type": "password",
+   "required": true,
+   "min": 8,
+   "max": 50
+  }
+ ],
+ "compose": "services:\n  librespeed:\n    image: lscr.io/linuxserver/librespeed:6.3.1\n    container_name: librespeed\n    environment:\n      - PUID=1000\n      - PGID=1000\n      - TZ=${TZ}\n      - PASSWORD=${APP_PASSWORD}\n    volumes:\n      - ${APP_DATA_DIR}/data:/config\n    ports:\n      - ${APP_PORT}:80\n    restart: unless-stopped\n"
+}

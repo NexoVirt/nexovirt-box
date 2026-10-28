@@ -1,0 +1,30 @@
+{
+ "id": "eden",
+ "name": "Eden",
+ "version": "934072cb6050caeb9f2fd1b76ddfb9861e6d5065924836dd67641103e3bb1cac",
+ "category": "Home",
+ "tagline": "An experimental open-source emulator for the Nintendo Switch, built with performance and stability in mind.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/eden-logo.png",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Eden is an experimental open-source emulator for the Nintendo Switch, built with performance and stability in mind.",
+ "main_port": 3000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/eden:0.2.1@sha256:934072cb6050caeb9f2fd1b76ddfb9861e6d5065924836dd67641103e3bb1cac\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 3001\n        published: 3001\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

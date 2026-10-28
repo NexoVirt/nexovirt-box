@@ -1,0 +1,30 @@
+{
+ "id": "dolphin",
+ "name": "Dolphin",
+ "version": "2934f9f01b98669242408c97cfd927ccf308cab108c380f5d4b8dfded5eb5055",
+ "category": "Home",
+ "tagline": "Lets you play GameCube and Wii games with various graphical enhancements and other features are available to improve your game experience.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/dolphin-logo.png",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Dolphin Emulator lets you play GameCube and Wii games with various graphical enhancements and other features are available to improve your game experience.",
+ "main_port": 3000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/dolphin:version-2606a@sha256:2934f9f01b98669242408c97cfd927ccf308cab108c380f5d4b8dfded5eb5055\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 3001\n        published: 3001\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

@@ -1,0 +1,135 @@
+{
+ "id": "mastodon",
+ "name": "Mastodon",
+ "version": "4.7.3",
+ "category": "Social",
+ "tagline": "Your self-hosted, globally interconnected microblogging community",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/mastodon/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## Installation Notice\n\n- *Mastodon is a heavy app, and may take a bit longer to fully start up.*\n- Must be on Tipi Version **1.4.0** for the expose app to work!\n\n#### Local Domain Varibale \n- The local domain variable ca be the same as the exposed domain (Ex: social.example.com). But you could have the exposed domain as social.example.com and the username url as example.com.\n\n## Initial User Setup\n1. SSH into your Tipi Server\n2. Fill in your credentials (some_username,someone@example.org, some_very_good_password), then run the command: \n    ``` \n    sudo docker exec -it -w /app/www mastodon bin/tootctl accounts create some_username --email someone@example.org --confirmed --role Owner \n    ```\n\n\n---\nMastodon is a **free, open-source social network server** based on ActivityPub where users can follow friends and discover new ones. On Mastodon, users can publish anything they want: links, pictures, text, video. All Mastodon servers are interoperable as a federated network (users on one server can seamlessly communicate with users from another one, including non-Mastodon software that implements ActivityPub!)\n\nClick below to **learn more** in a video:\n\n [![Screenshot](https://camo.githubusercontent.com/d34a13f7f5e15d1ae46d5920f85973f19e1238adae8cbba5989e71b273179f37/68747470733a2f2f626c6f672e6a6f696e6d6173746f646f6e2e6f72672f323031382f30362f7768792d61637469766974797075622d69732d7468652d6675747572652f657a6769662d322d363066316230303430332e676966)](https://www.youtube.com/watch?v=IPSbNdBmWKE) [![Screenshot](https://camo.githubusercontent.com/d34a13f7f5e15d1ae46d5920f85973f19e1238adae8cbba5989e71b273179f37/68747470733a2f2f626c6f672e6a6f696e6d6173746f646f6e2e6f72672f323031382f30362f7768792d61637469766974797075622d69732d7468652d6675747572652f657a6769662d322d363066316230303430332e676966)](https://www.youtube.com/watch?v=IPSbNdBmWKE)[](https://www.youtube.com/watch?v=IPSbNdBmWKE)\n\n## Features\n\n[![](https://github.com/mastodon/mastodon/raw/main/app/javascript/images/elephant_ui_working.svg?raw=true)](https://github.com/mastodon/mastodon/blob/main/app/javascript/images/elephant_ui_working.svg?raw=true)\n\n### No vendor lock-in: Fully interoperable with any conforming platform\n\nIt doesn't have to be Mastodon; whatever implements ActivityPub is part of the social network! [Learn more](https://blog.joinmastodon.org/2018/06/why-activitypub-is-the-future/)\n\n### Real-time, chronological timeline updates\n\nUpdates of people you're following appear in real-time in the UI via WebSockets. There's a firehose view as well!\n\n### Media attachments like images and short videos\n\nUpload and view images and WebM/MP4 videos attached to the updates. Videos with no audio track are treated like GIFs; normal videos loop continuously!\n\n### Safety and moderation tools\n\nMastodon includes private posts, locked accounts, phrase filtering, muting, blocking and all sorts of other features, along with a reporting and moderation system. [Learn more](https://blog.joinmastodon.org/2018/07/cage-the-mastodon/)\n\n### OAuth2 and a straightforward REST API\n\nMastodon acts as an OAuth2 provider, so 3rd party apps can use the REST and Streaming APIs. This results in a rich app ecosystem with a lot of choices!",
+ "source": "https://github.com/mastodon/mastodon",
+ "main_port": 8210,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8210",
+   "required": true
+  },
+  {
+   "key": "MASTODON_REDIS_PASSWORD",
+   "label": "Mastodon Redis Password",
+   "type": "password",
+   "min": 32,
+   "max": 32,
+   "generate": true
+  },
+  {
+   "key": "MASTODON_POSTGRES_PASSWORD",
+   "label": "Mastodon Postgres Password",
+   "type": "password",
+   "min": 32,
+   "max": 32,
+   "generate": true
+  },
+  {
+   "key": "MASTODON_SECRET_KEY_BASE",
+   "label": "Mastodon Secret Key Base",
+   "type": "password",
+   "min": 64,
+   "max": 64,
+   "generate": true
+  },
+  {
+   "key": "MASTODON_OTP_SECRET",
+   "label": "Mastodon OTP Secret",
+   "type": "password",
+   "min": 64,
+   "max": 64,
+   "generate": true
+  },
+  {
+   "key": "MASTODON_SMTP_SERVER",
+   "label": "SMTP Host",
+   "type": "text",
+   "hint": "Your SMTP Server",
+   "placeholder": "smtp.example.com",
+   "required": true
+  },
+  {
+   "key": "MASTODON_SMTP_PORT",
+   "label": "SMTP Port",
+   "type": "text",
+   "hint": "Your SMTP Port",
+   "placeholder": "25",
+   "required": true
+  },
+  {
+   "key": "MASTODON_SMTP_LOGIN",
+   "label": "SMTP Username",
+   "type": "text",
+   "hint": "Your SMTP Server User/Username",
+   "placeholder": "noreply@example.com",
+   "required": true
+  },
+  {
+   "key": "MASTODON_SMTP_PASSWORD",
+   "label": "SMTP Password",
+   "type": "password",
+   "hint": "Your SMTP Server Password",
+   "required": true
+  },
+  {
+   "key": "MASTODON_SMTP_FROM_ADDRESS",
+   "label": "SMTP From Address",
+   "type": "text",
+   "hint": "Make sure the Format is like noreply@example.com",
+   "placeholder": "noreply@example.com",
+   "required": true
+  },
+  {
+   "key": "MASTODON_LOCAL_DOMAIN",
+   "label": "Mastodon Local domain",
+   "type": "text",
+   "hint": "Could be the same of the Exposed Domain. Ex: social.example.com",
+   "placeholder": "example.com",
+   "required": true
+  },
+  {
+   "key": "MASTODON_ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY",
+   "label": "Mastodon Active Record Encryption Deterministic Key",
+   "type": "password",
+   "min": 32,
+   "max": 32,
+   "generate": true
+  },
+  {
+   "key": "MASTODON_ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT",
+   "label": "Mastodon Active Record Encryption Key",
+   "type": "password",
+   "min": 32,
+   "max": 32,
+   "generate": true
+  },
+  {
+   "key": "MASTODON_ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY",
+   "label": "Mastodon Active Record Encryption Primary Key",
+   "type": "password",
+   "min": 32,
+   "max": 32,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  mastodon:\n    container_name: mastodon\n    image: lscr.io/linuxserver/mastodon:4.7.3\n    ports:\n      - '8209:80'\n      - ${APP_PORT}:443\n    volumes:\n      - ${APP_DATA_DIR}/data/mastodon-config:/config\n    environment:\n      - PUID=1000\n      - PGID=1000\n      - TZ=${TZ}\n      - LOCAL_DOMAIN=${MASTODON_LOCAL_DOMAIN}\n      - WEB_DOMAIN=${APP_DOMAIN}\n      - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY}\n      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY}\n      - REDIS_HOST=mastodon-redis\n      - REDIS_PASSWORD=${MASTODON_REDIS_PASSWORD}\n      - REDIS_PORT=6379\n      - DB_HOST=mastodon-db\n      - DB_USER=tipi\n      - DB_NAME=mastodon\n      - DB_PASS=${MASTODON_POSTGRES_PASSWORD}\n      - DB_PORT=5432\n      - ES_ENABLED=false\n      - SECRET_KEY_BASE=${MASTODON_SECRET_KEY_BASE}\n      - OTP_SECRET=${MASTODON_OTP_SECRET}\n      - SMTP_SERVER=${MASTODON_SMTP_SERVER}\n      - SMTP_PORT=${MASTODON_SMTP_PORT}\n      - SMTP_LOGIN=${MASTODON_SMTP_LOGIN}\n      - SMTP_PASSWORD=${MASTODON_SMTP_PASSWORD}\n      - SMTP_FROM_ADDRESS=${MASTODON_SMTP_FROM_ADDRESS}\n      - S3_ENABLED=false\n      - SIDEKIQ_ONLY=false\n      - SIDEKIQ_DEFAULT=false\n      - SIDEKIQ_THREADS=5\n      - ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY=${MASTODON_ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY}\n      - ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT=${MASTODON_ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT}\n      - ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY=${MASTODON_ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY}\n    restart: unless-stopped\n    depends_on:\n      mastodon-db:\n        condition: service_healthy\n      mastodon-redis:\n        condition: service_healthy\n  mastodon-db:\n    restart: always\n    container_name: mastodon-db\n    image: postgres:14-alpine\n    shm_size: 256mb\n    environment:\n      POSTGRES_PASSWORD: ${MASTODON_POSTGRES_PASSWORD}\n      POSTGRES_USER: tipi\n      POSTGRES_DB: mastodon\n      PG_DATA: /var/lib/postgresql/data\n      POSTGRES_HOST_AUTH_METHODL: trust\n    healthcheck:\n      test:\n        - CMD\n        - pg_isready\n        - '-U'\n        - tipi\n    volumes:\n      - ${APP_DATA_DIR}/data/postgres:/var/lib/postgresql/data\n  mastodon-redis:\n    restart: always\n    image: redis:7-alpine\n    command: redis-server --appendonly yes --replica-read-only no --requirepass \"${MASTODON_REDIS_PASSWORD}\"\n    container_name: mastodon-redis\n    healthcheck:\n      test:\n        - CMD\n        - redis-cli\n        - ping\n    volumes:\n      - ${APP_DATA_DIR}/data/redis:/data\n"
+}

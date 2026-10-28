@@ -1,0 +1,31 @@
+{
+ "id": "daapd",
+ "name": "Daapd",
+ "version": "c26717699965381d1ca009b60b4f6bb280c4b812b7693d2b4cd99686c2e1e02e",
+ "category": "Other",
+ "tagline": "(iTunes) media server with support for AirPlay devices, Apple Remote (and compatibles), Chromecast, MPD and internet radio.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/daapd-icon.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Visit homepage: https://hub.docker.com/r/linuxserver/daapd/",
+ "main_port": 80,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "80",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/daapd:28.10.20250118@sha256:c26717699965381d1ca009b60b4f6bb280c4b812b7693d2b4cd99686c2e1e02e\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n    ports:\n      - target: 80\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n      - type: bind\n        source: ${APP_DATA_DIR}/music\n        target: /music\n"
+}

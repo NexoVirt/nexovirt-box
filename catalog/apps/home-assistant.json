@@ -1,0 +1,33 @@
+{
+ "id": "home-assistant",
+ "name": "Home Assistant",
+ "version": "2026.10.4",
+ "category": "Automation",
+ "tagline": "Open source home automation that puts local control and privacy first",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/homeassistant-1/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Home Assistant\n\nOpen source home automation that puts local control and privacy first. Powered by a worldwide community of tinkerers and DIY enthusiasts. Perfect to run on a Raspberry Pi or a local server.\n\nCheck out [home-assistant.io](https://home-assistant.io) for a [demo](https://home-assistant.io/demo/), [tutorials](https://home-assistant.io/getting-started/automation/) and [documentation](https://home-assistant.io/docs/)\n\n## Configuration tips \n- **Matter Support in Docker:** Use the Matter Server app !\n- **HomeKit Support in Docker:** Install the MDNS app and use `host`network mode *(see below)*\n\n## Help\n- Device not detected on network ?\n\u003eYou may need to use Home Assistant to change the **network mode** of the container.\n\n### Set host network mode\nIn the `user-config` tab, edit `docker-compose.yaml` to have this :\n```yaml\nservices:\n  homeassistant-1:\n    networks: !reset []\n    network_mode: host\n```\n⚠️ This will bypass port/domain access defined in Runtipi, you will then need to access Home Assistant through port **8123** instead.",
+ "website": "https://www.home-assistant.io/",
+ "source": "https://github.com/home-assistant/core",
+ "main_port": 8209,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8209",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  homeassistant-1:\n    image: ghcr.io/home-assistant/home-assistant:2026.10.4\n    container_name: homeassistant-1\n    environment:\n      - TZ=${TZ}\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:8123\n    volumes:\n      - /etc/localtime:/etc/localtime:ro\n      - ${APP_DATA_DIR}/data/config:/config\n"
+}

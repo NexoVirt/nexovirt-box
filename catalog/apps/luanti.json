@@ -1,0 +1,31 @@
+{
+ "id": "luanti",
+ "name": "Luanti",
+ "version": "77932c3828dd5943cc46f8b03dcb1837ed184f809816518224c88c533da5f9f0",
+ "category": "Home",
+ "tagline": "(formerly Minetest) is an open source voxel game-creation platform with easy modding and game creation",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/minetest-icon.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Luanti (formerly Minetest) is an open source voxel game-creation platform with easy modding and game creation",
+ "main_port": 30000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "30000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/luanti:5.18.0@sha256:77932c3828dd5943cc46f8b03dcb1837ed184f809816518224c88c533da5f9f0\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n      CLI_ARGS: ''\n    ports:\n      - target: 30000\n        published: \"${APP_PORT}\"\n        protocol: udp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config/.minetest\n        target: /config/.minetest\n"
+}

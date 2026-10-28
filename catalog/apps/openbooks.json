@@ -1,0 +1,43 @@
+{
+ "id": "openbooks",
+ "name": "openbooks",
+ "version": "4.5.0",
+ "category": "Media",
+ "tagline": "Search and Download eBooks",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/openbooks/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# openbooks\n\nOpenbooks allows you to download ebooks from irc.irchighway.net quickly and easily.\n\n![openbooks screenshot](https://github.com/evan-buss/openbooks/raw/master/.github/home_v3.png)\n\n## Folder Info\n\n| Root Folder                                | Container Folder |\n|--------------------------------------------|------------------|\n| /runtipi/media/data/books/openbooks        | /books           |",
+ "website": "https://evan-buss.github.io/openbooks/",
+ "source": "https://github.com/evan-buss/openbooks",
+ "main_port": 8152,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8152",
+   "required": true
+  },
+  {
+   "key": "OPENBOOKS_IRC_USERNAME",
+   "label": "IRC Username",
+   "type": "text",
+   "hint": "Username used to connect to IRC server",
+   "placeholder": "sjdfksd",
+   "required": true,
+   "min": 5,
+   "max": 20
+  }
+ ],
+ "compose": "services:\n  openbooks:\n    container_name: openbooks\n    image: evanbuss/openbooks:4.5.0\n    command: \"./openbooks server --dir /books --port 80 --persist --name ${OPENBOOKS_IRC_USERNAME}\"\n    ports:\n      - ${APP_PORT}:80\n    volumes:\n      - ${ROOT_FOLDER_HOST}/media/data/books/:/books\n    environment:\n      - BASE_PATH=/openbooks/\n"
+}

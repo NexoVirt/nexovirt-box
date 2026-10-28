@@ -1,0 +1,31 @@
+{
+ "id": "rustdesk",
+ "name": "Rustdesk",
+ "version": "edaf38e89697031bfe1d65ffacdffacb8826dca780b1932f9264f8f289d303f5",
+ "category": "Home",
+ "tagline": "A full-featured open source remote control alternative for self-hosting and security with minimal configuration.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/rustdesk-logo.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "RustDesk is a full-featured open source remote control alternative for self-hosting and security with minimal configuration.",
+ "main_port": 3000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/rustdesk:1.5.0@sha256:edaf38e89697031bfe1d65ffacdffacb8826dca780b1932f9264f8f289d303f5\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 3001\n        published: 3001\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

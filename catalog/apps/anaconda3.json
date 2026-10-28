@@ -1,0 +1,36 @@
+{
+ "id": "anaconda3",
+ "name": "Anaconda3",
+ "version": "2024.10-1",
+ "category": "AI",
+ "tagline": "Your machine learning Env work with Jupyter Lab",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Anaconda3/icon.svg",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "Your machine learning Env work with Jupyter Lab",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Anaconda3/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Anaconda3/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Anaconda3/screenshot-3.png"
+ ],
+ "website": "https://www.anaconda.com",
+ "main_port": 8888,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8888",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  anaconda3:\n    container_name: anaconda3\n    image: continuumio/anaconda3:2024.10-1\n    network_mode: bridge\n    restart: unless-stopped\n    environment:\n      - LANG=C.UTF-8\n      - LC_ALL=C.UTF-8\n      - PATH=/opt/conda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\n    ports:\n      - target: 8888\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/notebooks\n        target: /opt/notebooks\n    command:\n      - /bin/bash\n      - -c\n      - conda install -c conda-forge jupyterlab -y --quiet \u0026\u0026 jupyter lab --notebook-dir=/opt/notebooks --ip='*' --port=8888 --no-browser --allow-root\n    labels:\n      icon: https://cdn.jsdelivr.net/gh/LisonEvf/CasaOS-AppStore@main/Apps/Anaconda3/icon.svg\n"
+}

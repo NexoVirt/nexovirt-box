@@ -1,0 +1,47 @@
+{
+ "id": "umami-analytics",
+ "name": "Umami Analytics",
+ "version": "3.4.1",
+ "category": "Utilities",
+ "tagline": "Umami is a simple, fast, privacy-focused alternative to Google Analytics.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/umami-analytics/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Umami\n\n## What is Umami?\n\nUmami is an open-source, privacy-focused web analytics tool that serves as an alternative to Google Analytics. It provides essential insights into website traffic, user behavior, and performance, all while prioritizing data privacy.\n\nUnlike many traditional analytics platforms, Umami does not collect or store personal data, avoiding the need for cookies, and is GDPR and PECR compliant.\n\nDesigned to be lightweight and easy to set up, Umami can be self-hosted, giving users full control over their data.\n\n## Getting Started\n\nA detailed getting started guide can be found at [umami.is/docs](https://umami.is/docs/).\n\n## Default credentials\n\nUsername: `admin`\nPassword: `umami`",
+ "website": "https://umami.is",
+ "source": "https://github.com/umami-software/umami",
+ "main_port": 8153,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8153",
+   "required": true
+  },
+  {
+   "key": "UMAMI_ANALYTICS_DB_PASSWORD",
+   "label": "Umami analytics database password",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "UMAMI_ANALYTICS_APP_SECRET",
+   "label": "Umami analytics app secret",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  umami-analytics:\n    container_name: umami-analytics\n    image: ghcr.io/umami-software/umami:3.4.1\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:3000\n    environment:\n      - DATABASE_URL=postgresql://umami:${UMAMI_ANALYTICS_DB_PASSWORD}@umami-analytics-db:5432/umami-analytics-db\n      - DATABASE_TYPE=postgresql\n      - APP_SECRET=${UMAMI_ANALYTICS_APP_SECRET}\n  umami-analytics-db:\n    container_name: umami-analytics-db\n    image: postgres:15-alpine\n    restart: unless-stopped\n    environment:\n      - POSTGRES_DB=umami-analytics-db\n      - POSTGRES_USER=umami\n      - POSTGRES_PASSWORD=${UMAMI_ANALYTICS_DB_PASSWORD}\n    volumes:\n      - ${APP_DATA_DIR}/data/db:/var/lib/postgresql/data\n"
+}

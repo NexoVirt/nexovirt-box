@@ -1,0 +1,22 @@
+{
+ "id": "syslog-ng",
+ "name": "Syslog-ng",
+ "version": "3ac726bdd58cf979ab9e97ea37f6c56d7acf1d23586f5f3b29c8834b4f9bf547",
+ "category": "Home",
+ "tagline": "Allows you to flexibly collect, parse, classify, rewrite and correlate logs from across your infrastructure and store or route them to log analysis tools.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/syslog-ng-logo.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "syslog-ng allows you to flexibly collect, parse, classify, rewrite and correlate logs from across your infrastructure and store or route them to log analysis tools.",
+ "main_port": 514,
+ "scheme": "http",
+ "questions": [],
+ "compose": "services:\n  app:\n    image: linuxserver/syslog-ng:4.11.0@sha256:3ac726bdd58cf979ab9e97ea37f6c56d7acf1d23586f5f3b29c8834b4f9bf547\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n      LOG_TO_STDOUT: ''\n    ports:\n      - target: 514\n        published: 5514\n        protocol: udp\n      - target: 601\n        published: 6601\n        protocol: tcp\n      - target: 6514\n        published: 6514\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n      - type: bind\n        source: /var/log\n        target: /var/log\n"
+}

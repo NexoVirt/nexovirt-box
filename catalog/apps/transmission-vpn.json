@@ -1,0 +1,180 @@
+{
+ "id": "transmission-vpn",
+ "name": "Transmission (VPN)",
+ "version": "5.5.2",
+ "category": "Utilities",
+ "tagline": "BitTorrent client with VPN support.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/transmission-vpn/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## Recommended VPN\n\n![https://airvpn.org/?referred_by=674291](https://airvpn.org/images/promotional/banner_641x91.gif)\n\n**This container is heavily tested using [AirVPN](https://airvpn.org/?referred_by=674291).**\n\n| VPN Provider               | Port Forwarding | Works ? |\n|----------------------------|-----------------|---------|\n| [AirVPN](https://airvpn.org/?referred_by=674291) | **Yes** | **Yes** |\n| [ProtonVPN](https://protonvpn.com/fr) | **Yes** | N.C. |\n| [NordVPN](https://ref.nordvpn.com/EQNOEHVwOCW)* | No | **Almost Yes** |\n\nPS: [VPN Providers with port forwarding are better for torrenting.](https://www.reddit.com/r/VPNTorrents/comments/p6h7em/answered_why_you_do_need_portforwarding_for/) (reddit.com)\n\n*[NordVPN, Get 3 months free here.](https://ref.nordvpn.com/EQNOEHVwOCW)\n\n## Features\n * Choose your Web UI !\n * Support many OpenVPN providers ([complete list](https://haugene.github.io/docker-transmission-openvpn/supported-providers/))\n * Works with traefik !\n * Pre-configured for Tipi.\n * Healthcheck\n * Highly configurable.\n\n## Documentation\n\nDon't hesitate to read related docs available here: https://haugene.github.io/docker-transmission-openvpn/\n\n## VPN Provider Settings\n### Custom\nFor AirVPN, grab your custom config from: https://airvpn.org/generator/. Drop it in `runtipi/app-data/transmission-vpn/data/custom/AirVPN_XX-XXXXXX_XXXX_UDP-443-Entry3.ovpn`\n\nDon't forget to requests ports here: https://airvpn.org/ports/\n\nFill Settings of Transmission VPN app with:\n- **OpenVPN \u003e Username**: Your AirVPN email.\n- **OpenVPN \u003e Password**: Your AirVPN password.\n- **OpenVPN \u003e Default Provider Config**: Name of your generated file in your custom folder (*without .ovpn extension*)\n- **OpenVPN \u003e Provider**: Custom Config.\n\n### Overriding with user-config\nYou can configure specific settings to your provider by creating a `docker-compose.yml` file in your `user-config` directory.\n| Directory               | File |\n|-------------------------------|------------------|\n| /runtipi/user-config/transmission-vpn/ | docker-compose.yml         |\n\nWith the following content by e.g. for NordVPN:\n```\nservices:\n  transmission-vpn:\n    environment:\n      - NORDVPN_COUNTRY=FR\n      - NORDVPN_CATEGORY=legacy_p2p # Servers optimized for P2P usage\n      - NORDVPN_PROTOCOL=tcp\n      - NORDVPN_SERVER=fr000.nordvpn.com\n```\nInstructions for NordVPN can be found here: https://haugene.github.io/docker-transmission-openvpn/provider-specific/\n\nFor other's supported providers: https://haugene.github.io/docker-transmission-openvpn/supported-providers/\n\n## Fast, easy, and free BitTorrent client\n\nDocker container running Transmission torrent client with WebUI over an OpenVPN tunnel\n\nTransmission is a fast, easy, and free BitTorrent client. It comes in several flavors:\n  * A native macOS GUI application\n  * GTK+ and Qt GUI applications for Linux, BSD, etc.\n  * A headless daemon for servers and routers\n  * A web UI for remote controlling any of the above\n\nVisit [https://transmissionbt.com/](https://transmissionbt.com/) for more information.\n\n## Folder Info\n\n| Root Folder                   | Container Folder |\n|-------------------------------|------------------|\n| /runtipi/app-data/transmission/data/config | /config          |\n| /runtipi/media/torrents                | /media/torrents       |",
+ "website": "https://haugene.github.io/docker-transmission-openvpn/",
+ "source": "https://github.com/haugene/docker-transmission-openvpn",
+ "main_port": 9091,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "9091",
+   "required": true
+  },
+  {
+   "key": "TRANSMISSION_PUID",
+   "label": "Container \u003e UserID (UID)",
+   "type": "number",
+   "placeholder": "1000"
+  },
+  {
+   "key": "TRANSMISSION_PGID",
+   "label": "Container \u003e GroupID (PGID)",
+   "type": "number",
+   "placeholder": "1000"
+  },
+  {
+   "key": "TRANSMISSION_CREATE_TUN_DEVICE",
+   "label": "Container \u003e Create TUN device",
+   "type": "boolean"
+  },
+  {
+   "key": "TRANSMISSION_OVPN_LOCAL_NETWORK",
+   "label": "OpenVPN \u003e Local Network",
+   "type": "text",
+   "placeholder": "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+  },
+  {
+   "key": "TRANSMISSION_OVPN_USERNAME",
+   "label": "OpenVPN \u003e Username",
+   "type": "text",
+   "required": true
+  },
+  {
+   "key": "TRANSMISSION_OVPN_PASSWORD",
+   "label": "OpenVPN \u003e Password",
+   "type": "password",
+   "required": true
+  },
+  {
+   "key": "TRANSMISSION_OVPN_CONFIG",
+   "label": "OpenVPN \u003e Default Provider Config",
+   "type": "text",
+   "placeholder": "france,italy,etc or AirVPN_XX-XXXXXX_XXX_UDP-443-Entry3",
+   "required": true
+  },
+  {
+   "key": "TRANSMISSION_OVPN_PROVIDER",
+   "label": "OpenVPN \u003e Provider",
+   "type": "select",
+   "required": true,
+   "options": [
+    "CUSTOM",
+    "ANONINE",
+    "ANONVPN",
+    "BLACKVPN",
+    "BTGUARD",
+    "CRYPTOSTORM",
+    "EXPRESSVPN",
+    "FASTESTVPN",
+    "FREEVPN",
+    "FROOT",
+    "FROSTVPN",
+    "GETFLIX",
+    "GHOSTPATH",
+    "GIGANEWS",
+    "HIDEME",
+    "HIDEMYASS",
+    "INTEGRITYVPN",
+    "IPVANISH",
+    "IRONSOCKET",
+    "IVACY",
+    "IVPN",
+    "MULLVAD",
+    "NORDVPN",
+    "OCTANEVPN",
+    "OVPN",
+    "PRIVADO",
+    "PIA",
+    "PRIVATEVPN",
+    "PROTONVPN",
+    "PROXPN",
+    "PUREVPN",
+    "RA4W",
+    "SAFERVPN",
+    "SLICKVPN",
+    "SLICKVPNCORE",
+    "SMARTDNSPROXY",
+    "SMARTVPN",
+    "SURFSHARK",
+    "TIGER",
+    "TORGUARD",
+    "TRUSTZONE",
+    "TUNNELBEAR",
+    "VPNAC",
+    "VPNAREA",
+    "VPNBOOK",
+    "VPNFACILE",
+    "VPNHT",
+    "VPNTUNNEL",
+    "VPNUNLIMITED",
+    "VYPRVPN",
+    "WINDSCRIBE",
+    "ZOOGVPN"
+   ]
+  },
+  {
+   "key": "TRANSMISSION_PEER_DNS",
+   "label": "OpenVPN \u003e Use VPN DNS",
+   "type": "boolean"
+  },
+  {
+   "key": "TRANSMISSION_WEBUI",
+   "label": "Transmission \u003e WebUI",
+   "type": "select",
+   "required": true,
+   "options": [
+    "combustion",
+    "kettu",
+    "transmission-web-control",
+    "flood-for-transmission",
+    "shift",
+    "transmissionic"
+   ]
+  },
+  {
+   "key": "TRANSMISSION_DHT_ENABLED",
+   "label": "Transmission \u003e Enable DHT",
+   "type": "boolean"
+  },
+  {
+   "key": "TRANSMISSION_LPD_ENABLED",
+   "label": "Transmission \u003e Enable LPD",
+   "type": "boolean"
+  },
+  {
+   "key": "TRANSMISSION_PEX_ENABLED",
+   "label": "Transmission \u003e Enable PEX",
+   "type": "boolean"
+  },
+  {
+   "key": "TRANSMISSION_BLOCKLIST_ENABLED",
+   "label": "Transmission \u003e Enable Blocklist",
+   "type": "boolean"
+  },
+  {
+   "key": "TRANSMISSION_BLOCKLIST_URL",
+   "label": "Transmission \u003e Blocklist URL",
+   "type": "text",
+   "placeholder": "http://list.iblocklist.com/?list=bt_level1\u0026fileformat=p2p\u0026archiveformat=gz"
+  }
+ ],
+ "compose": "services:\n  transmission-vpn:\n    image: haugene/transmission-openvpn:5.5.2\n    container_name: transmission-vpn\n    cap_add:\n      - NET_ADMIN\n    devices:\n      - /dev/net/tun\n    environment:\n      - PUID=${TRANSMISSION_PUID-1000}\n      - PGID=${TRANSMISSION_PGID-1000}\n      - TZ=${TZ-Europe/Paris}\n      - USER=${TRANSMISSION_USERNAME}\n      - PASS=${TRANSMISSION_PASSWORD}\n      - OPENVPN_PROVIDER=${TRANSMISSION_OVPN_PROVIDER-NORDVPN}\n      - OPENVPN_CONFIG=${TRANSMISSION_OVPN_CONFIG}\n      - OPENVPN_USERNAME=${TRANSMISSION_OVPN_USERNAME}\n      - OPENVPN_PASSWORD=${TRANSMISSION_OVPN_PASSWORD}\n      - OPENVPN_OPTS=--inactive 3600 --ping 10 --ping-exit 60 --pull-filter ignore ping\n      - LOCAL_NETWORK=${TRANSMISSION_OVPN_LOCAL_NETWORK-10.0.0.0/8,172.16.0.0/12,192.168.0.0/16}\n      - TRANSMISSION_WEB_UI=${TRANSMISSION_WEBUI}\n      - LOG_TO_STDOUT=true\n      - GLOBAL_APPLY_PERMISSIONS=false\n      - CREATE_TUN_DEVICE=${TRANSMISSION_CREATE_TUN_DEVICE-false}\n      - PEER_DNS=${TRANSMISSION_PEER_DNS-false}\n      - TRANSMISSION_DOWNLOAD_DIR=/media/torrents/complete\n      - TRANSMISSION_INCOMPLETE_DIR_ENABLED=true\n      - TRANSMISSION_INCOMPLETE_DIR=/media/torrents/incomplete\n      - TRANSMISSION_PREALLOCATION=1\n      - TRANSMISSION_DHT_ENABLED=${TRANSMISSION_DHT_ENABLED-false}\n      - TRANSMISSION_LPD_ENABLED=${TRANSMISSION_LPD_ENABLED-false}\n      - TRANSMISSION_PEX_ENABLED=${TRANSMISSION_PEX_ENABLED-false}\n      - TRANSMISSION_BLOCKLIST_ENABLED=${TRANSMISSION_BLOCKLIST_ENABLED-true}\n      - TRANSMISSION_BLOCKLIST_URL=${TRANSMISSION_BLOCKLIST_URL-http://list.iblocklist.com/?list=bt_level1\u0026fileformat=p2p\u0026archiveformat=gz}\n    volumes:\n      - ${APP_DATA_DIR}/data/config:/config\n      - ${APP_DATA_DIR}/data/custom:/etc/openvpn/custom\n      - ${ROOT_FOLDER_HOST}/media/torrents:/media/torrents\n    ports:\n      - ${APP_PORT}:9091\n    restart: unless-stopped\n    sysctls:\n      - net.ipv6.conf.all.disable_ipv6=0\n    logging:\n      driver: json-file\n      options:\n        max-size: 10m\n"
+}

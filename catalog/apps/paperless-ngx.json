@@ -1,0 +1,65 @@
+{
+ "id": "paperless-ngx",
+ "name": "Paperless-ngx",
+ "version": "3.3.4",
+ "category": "Utilities",
+ "tagline": "Document Management System (DMS)",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/paperless-ngx/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Paperless-ngx \nPaperless-ngx is a document management system that transforms your physical documents into a searchable online archive so you can keep, well, less paper.\n\n## ! IMPORTANT - PLEASE READ !\n- Please **be patient** during installation, it may take a few minutes to download and install all dependencies.\n\n- Please wait a few seconds after Tipi says that the installation was finished, because Paperless-ngx needs some time to start.\n\n- **Tika** is available in this App, however you need to decide if you want to use it or not. You may disable it because of performance reasons. \n  - Tika allows you to upload Office documents (MSOffice, LibreOffice, etc) and automatically creates PDF versions of these documents. \n  - If you disable Tika, you will not be able to upload these document types. \n  - See here for more Information about Tika: https://docs.paperless-ngx.com/configuration/#tika\n\n![Dashboard](https://github.com/paperless-ngx/paperless-ngx/raw/main/resources/logo/web/png/Black%20logo%20-%20no%20background.png#gh-light-mode-only)\n\n![Dashboard](https://raw.githubusercontent.com/paperless-ngx/paperless-ngx/main/docs/assets/screenshots/documents-smallcards.png#gh-light-mode-only)\n\n- Organize and index your scanned documents with tags, correspondents, types, and more.\n- Performs OCR on your documents, adds selectable text to image only documents and adds tags, correspondents and document types to your documents.\n- Supports PDF documents, images, plain text files, and Office documents (Word, Excel, Powerpoint, and LibreOffice equivalents).\n  - Office document support is optional and provided by Apache Tika (see [configuration](https://docs.paperless-ngx.com/configuration/#tika))\n- Paperless stores your documents plain on disk. Filenames and folders are managed by paperless and their format can be configured freely.\n- Single page application front end.\n  - Includes a dashboard that shows basic statistics and has document upload.\n  - Filtering by tags, correspondents, types, and more.\n  - Customizable views can be saved and displayed on the dashboard.\n- Full text search helps you find what you need.\n  - Auto completion suggests relevant words from your documents.\n  - Results are sorted by relevance to your search query.\n  - Highlighting shows you which parts of the document matched the query.\n  - Searching for similar documents (\"More like this\")\n- Email processing: Paperless adds documents from your email accounts.\n  - Configure multiple accounts and filters for each account.\n  - When adding documents from mail, paperless can move these mail to a new folder, mark them as read, flag them as important or delete them.\n- Machine learning powered document matching.\n  - Paperless-ngx learns from your documents and will be able to automatically assign tags, correspondents and types to documents once you've stored a few documents in paperless.\n- Optimized for multi core systems: Paperless-ngx consumes multiple documents in parallel.\n- The integrated sanity checker makes sure that your document archive is in good health.\n- [More screenshots are available in the documentation](https://docs.paperless-ngx.com/#screenshots).",
+ "website": "http://docs.paperless-ngx.com/",
+ "source": "https://github.com/paperless-ngx/paperless-ngx",
+ "main_port": 8012,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8012",
+   "required": true
+  },
+  {
+   "key": "PAPERLESS_ADMIN_USERNAME",
+   "label": "Administrator Username",
+   "type": "text",
+   "hint": "Username for the paperless-ngx Admin user",
+   "required": true,
+   "min": 5,
+   "max": 20
+  },
+  {
+   "key": "PAPERLESS_ADMIN_PASSWORD",
+   "label": "Administrator password",
+   "type": "password",
+   "hint": "Password for the paperless-ngx Admin user",
+   "required": true,
+   "min": 5,
+   "max": 64
+  },
+  {
+   "key": "PAPERLESS_TIKA_ENABLED",
+   "label": "Enable Tika",
+   "type": "boolean",
+   "hint": "allow parsing and converting 'Office' documents (such as '.doc', '.xlsx' and '.odt')"
+  },
+  {
+   "key": "PAPERLESS_SECRET_KEY",
+   "label": "App Secret Key",
+   "type": "password",
+   "min": 64,
+   "max": 64,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  paperless-ngx:\n    container_name: paperless-ngx\n    image: ghcr.io/paperless-ngx/paperless-ngx:3.3.4\n    restart: unless-stopped\n    depends_on:\n      - db\n      - broker\n    ports:\n      - ${APP_PORT}:8000\n    volumes:\n      - ${APP_DATA_DIR}/data/paperless_data:/usr/src/paperless/data\n      - ${APP_DATA_DIR}/data/paperless_media:/usr/src/paperless/media\n      - ${APP_DATA_DIR}/data/paperless_export:/usr/src/paperless/export\n      - ${APP_DATA_DIR}/data/paperless_consume:/usr/src/paperless/consume\n    environment:\n      PAPERLESS_REDIS: redis://broker:6379\n      PAPERLESS_DBHOST: db\n      PAPERLESS_ADMIN_USER: ${PAPERLESS_ADMIN_USERNAME}\n      PAPERLESS_ADMIN_PASSWORD: ${PAPERLESS_ADMIN_PASSWORD}\n      PAPERLESS_TIKA_ENABLED: ${PAPERLESS_TIKA_ENABLED}\n      PAPERLESS_TIKA_GOTENBERG_ENDPOINT: http://gotenberg:3000\n      PAPERLESS_TIKA_ENDPOINT: http://tika:9998\n      PAPERLESS_URL: ${APP_PROTOCOL:-http}://${APP_DOMAIN}\n      COMPOSE_PROJECT_NAME: paperless-ngx\n      PAPERLESS_CSRF_TRUSTED_ORIGINS: https://paperless-ngx.${LOCAL_DOMAIN},https://${APP_DOMAIN},http://${INTERNAL_IP}:${APP_PORT}\n  broker:\n    image: redis:7\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/data/redis:/data\n  db:\n    image: postgres:17\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/data/postgres:/var/lib/postgresql/data\n    environment:\n      POSTGRES_DB: paperless\n      POSTGRES_USER: paperless\n      POSTGRES_PASSWORD: paperless\n  gotenberg:\n    image: gotenberg/gotenberg:8.39\n    restart: unless-stopped\n    command:\n      - gotenberg\n      - '--chromium-disable-javascript=true'\n      - '--chromium-allow-list=file:///tmp/.*'\n  tika:\n    image: apache/tika:latest\n    restart: unless-stopped\n"
+}

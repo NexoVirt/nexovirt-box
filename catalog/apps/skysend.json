@@ -1,0 +1,31 @@
+{
+ "id": "skysend",
+ "name": "SkySend",
+ "version": "f2d71b93ba103be1dfad3ee1fa6aa7bcde8a4dc199d9f13ac18d78c3c93b1a91",
+ "category": "Other",
+ "tagline": "Encrypted file and note sharing",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons@main/png/skysend.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "SkySend is a self-hosted file and note sharing service. Files and notes are encrypted in the browser before they are stored, and the server keeps only encrypted blobs.",
+ "main_port": 23001,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "23001",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  skysend:\n    image: skyfay/skysend:v3.2.0@sha256:f2d71b93ba103be1dfad3ee1fa6aa7bcde8a4dc199d9f13ac18d78c3c93b1a91\n    container_name: skysend\n    restart: unless-stopped\n    ports:\n      - \"${APP_PORT}:3000\"\n    volumes:\n      - ${APP_DATA_DIR}/data:/data\n      - ${APP_DATA_DIR}/uploads:/uploads\n    environment:\n      BASE_URL: http://localhost:23001\n      DATA_DIR: /data\n      UPLOADS_DIR: /uploads\n"
+}

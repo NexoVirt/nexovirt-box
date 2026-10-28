@@ -1,0 +1,30 @@
+{
+ "id": "ci",
+ "name": "Ci",
+ "version": "f0c0d03f3a0da803d3a0a55c30ed722d4df25d37b12489c45149e99df8e0e491",
+ "category": "Other",
+ "tagline": "This container needs special attention. Please check https://hub. Docker. Com/r/linuxserver/ci for details.",
+ "icon": "https://cdn.jsdelivr.net/gh/WisdomSky/CasaOS-LinuxServer-AppStore@main/default-icon.svg",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "This container needs special attention. Please check https://hub.docker.com/r/linuxserver/ci for details.",
+ "main_port": 80,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "80",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/ci:b1ca9f98-ls65@sha256:f0c0d03f3a0da803d3a0a55c30ed722d4df25d37b12489c45149e99df8e0e491\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n    ports:\n      - target: 80\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

@@ -1,0 +1,31 @@
+{
+ "id": "continuwuity",
+ "name": "Continuwuity",
+ "version": "b5f5d7454a3e8dda041fc82084088409f2c34905ff51274955d52050203a87af",
+ "category": "Social",
+ "tagline": "Community Matrix homeserver",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons@main/png/continuwuity.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Continuwuity v26.7.2 is a community-driven Matrix homeserver and the continuation of conduwuit.",
+ "main_port": 20006,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "20006",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  continuwuity:\n    image: forgejo.ellis.link/continuwuation/continuwuity:v26.7.2@sha256:b5f5d7454a3e8dda041fc82084088409f2c34905ff51274955d52050203a87af\n    container_name: continuwuity\n    restart: unless-stopped\n    command: /sbin/conduwuit\n    ports:\n      - \"${APP_PORT}:8008\"\n    volumes:\n      - ${APP_DATA_DIR}/data:/var/lib/continuwuity\n    environment:\n      CONTINUWUITY_SERVER_NAME: matrix.localhost\n      CONTINUWUITY_DATABASE_PATH: /var/lib/continuwuity\n      CONTINUWUITY_ADDRESS: 0.0.0.0\n      CONTINUWUITY_PORT: \"8008\"\n      CONTINUWUITY_ALLOW_FEDERATION: \"false\"\n"
+}

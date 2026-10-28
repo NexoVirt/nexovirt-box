@@ -1,0 +1,32 @@
+{
+ "id": "nextgba",
+ "name": "NextGBA",
+ "version": "0.1.0",
+ "category": "Gaming",
+ "tagline": "Gameboy in your browser",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/nextgba/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# NextGBA - All you gameboy games in a browser window\n\nHave you ever wanted to play your favorite gameboy games in a self-hosted web app that can save the game state and can be accessed from anywhere on your network? **NextGBA** is your friend!\nIt emphasize a simple UI with all the features you could ever need. The game player is based on the very famous [EmulatorJS](https://emulatorjs.org/) project.\n\n![Preview](https://github.com/nicotsx/nextgba/raw/main/screenshots/main.png)\n![Upload](https://github.com/nicotsx/nextgba/raw/main/screenshots/upload.png)\n![Ingame](https://github.com/nicotsx/nextgba/raw/main/screenshots/ingame.png)",
+ "source": "https://github.com/nicotsx/nextgba",
+ "main_port": 8435,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8435",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  nextgba:\n    container_name: nextgba\n    image: ghcr.io/nicotsx/nextgba:v0.1.0\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:3000\n    environment:\n      - NODE_ENV=production\n    volumes:\n      - ${APP_DATA_DIR}/data/games:/data/games\n"
+}

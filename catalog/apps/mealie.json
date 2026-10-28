@@ -1,0 +1,38 @@
+{
+ "id": "mealie",
+ "name": "Mealie",
+ "version": "v3.29.0",
+ "category": "",
+ "tagline": "Mealie is a self-hosted recipe manager and meal planner.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/mealie-1/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "If you are migrating from Mealie v0.5.6 or earlier, please see the [migration guide](https://nightly.mealie.io/documentation/getting-started/migrating-to-mealie-v1/).\n\n## Mealie is a self-hosted recipe manager and meal planner.\n\nMealie is a self hosted recipe manager and meal planner with a RestAPI backend and a reactive frontend application built in Vue for a pleasant user experience for the whole family. Easily add recipes into your database by providing the url and Mealie will automatically import the relevant data or add a family recipe with the UI editor. Mealie also provides an API for interactions from 3rd party applications.\n\n[![Product Name Screen Shot](https://raw.githubusercontent.com/hay-kot/mealie/mealie-next/docs/docs/assets/img/home_screenshot.png)](https://docs.mealie.io/)",
+ "website": "https://docs.mealie.io/",
+ "source": "https://github.com/hay-kot/mealie",
+ "main_port": 8220,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8220",
+   "required": true
+  },
+  {
+   "key": "MEALIE_ALLOW_SIGNUP",
+   "label": "Allow user registration",
+   "type": "boolean"
+  }
+ ],
+ "compose": "services:\n  mealie-1:\n    container_name: mealie-1\n    image: ghcr.io/mealie-recipes/mealie:v3.29.0\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:9000\n    deploy:\n      resources:\n        limits:\n          memory: 1000M\n    environment:\n      ALLOW_SIGNUP: ${MEALIE_ALLOW_SIGNUP}\n      PUID: 1000\n      PGID: 1000\n      TZ: ${TZ}\n      MAX_WORKERS: 1\n      WEB_CONCURRENCY: 1\n      BASE_URL: ${APP_PROTOCOL:-http}://${APP_DOMAIN}\n    volumes:\n      - ${APP_DATA_DIR}/data:/app/data\n"
+}

@@ -1,0 +1,31 @@
+{
+ "id": "fail2ban",
+ "name": "Fail2ban",
+ "version": "6d04e983661436f0080675a5b8cbecf07e00126266edd12b5a8c1fa49c8ecec0",
+ "category": "Home",
+ "tagline": "A daemon to ban hosts that cause multiple authentication errors.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/fail2ban-logo.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Fail2ban is a daemon to ban hosts that cause multiple authentication errors.",
+ "main_port": 80,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "80",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/fail2ban:1.1.0@sha256:6d04e983661436f0080675a5b8cbecf07e00126266edd12b5a8c1fa49c8ecec0\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n      VERBOSITY: ''\n    ports:\n      - target: 80\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n      - type: bind\n        source: ${APP_DATA_DIR}/var/log:ro\n        target: /var/log:ro\n      - type: bind\n        source: ${APP_DATA_DIR}/remotelogs/airsonic:ro\n        target: /remotelogs/airsonic:ro\n      - type: bind\n        source: ${APP_DATA_DIR}/remotelogs/apache2:ro\n        target: /remotelogs/apache2:ro\n      - type: bind\n        source: ${APP_DATA_DIR}/remotelogs/authelia:ro\n        target: /remotelogs/authelia:ro\n      - type: bind\n        source: ${APP_DATA_DIR}/remotelogs/emby:ro\n        target: /remotelogs/emby:ro\n      - type: bind\n        source: ${APP_DATA_DIR}/remotelogs/filebrowser:ro\n        target: /remotelogs/filebrowser:ro\n      - type: bind\n        source: ${APP_DATA_DIR}/remotelogs/homeassistant:ro\n        target: /remotelogs/homeassistant:ro\n      - type: bind\n        source: ${APP_DATA_DIR}/remotelogs/lighttpd:ro\n        target: /remotelogs/lighttpd:ro\n      - type: bind\n        source: ${APP_DATA_DIR}/remotelogs/nextcloud:ro\n        target: /remotelogs/nextcloud:ro\n      - type: bind\n        source: ${APP_DATA_DIR}/remotelogs/nginx:ro\n        target: /remotelogs/nginx:ro\n      - type: bind\n        source: ${APP_DATA_DIR}/remotelogs/overseerr:ro\n        target: /remotelogs/overseerr:ro\n      - type: bind\n        source: ${APP_DATA_DIR}/remotelogs/unificontroller:ro\n        target: /remotelogs/unificontroller:ro\n      - type: bind\n        source: ${APP_DATA_DIR}/remotelogs/vaultwarden:ro\n        target: /remotelogs/vaultwarden:ro\n"
+}

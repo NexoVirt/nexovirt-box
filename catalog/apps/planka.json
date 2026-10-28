@@ -1,0 +1,71 @@
+{
+ "id": "planka",
+ "name": "Planka",
+ "version": "1.26.3",
+ "category": "Developer",
+ "tagline": "Free open source kanban board for workgroups.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/planka/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Planka\n#### Elegant open source project tracking\n\n![](https://raw.githubusercontent.com/plankanban/planka/master/demo.gif)\n\n[**Client demo**](https://plankanban.github.io/planka) (without server features).\n\n## Features\n\n- Create projects, boards, lists, cards, labels and tasks\n- Add card members, track time, set a due date, add attachments, write comments\n- Markdown support in a card description and comment\n- Filter by members and labels\n- Customize project background\n- Real-time updates\n- User notifications\n- Internationalization\n\n## Tech stack\n\n- React, Redux, Redux-Saga, Redux-ORM, Semantic UI React, react-beautiful-dnd\n- Sails.js, Knex.js\n- PostgreSQL\n\n## Username and Password\n\nAfter installing login with these credentials:\n\n- Username: demo@demo.demo\n- Password: demo",
+ "website": "https://docs.planka.cloud/",
+ "source": "https://github.com/plankanban/planka",
+ "main_port": 8016,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8016",
+   "required": true
+  },
+  {
+   "key": "PLANKA_ADMIN_EMAIL",
+   "label": "Admin email",
+   "type": "email",
+   "required": true,
+   "min": 3,
+   "max": 50
+  },
+  {
+   "key": "PLANKA_ADMIN_NAME",
+   "label": "Admin name",
+   "type": "text",
+   "required": true,
+   "min": 3,
+   "max": 50
+  },
+  {
+   "key": "PLANKA_ADMIN_USERNAME",
+   "label": "Admin username",
+   "type": "text",
+   "required": true,
+   "min": 3,
+   "max": 50
+  },
+  {
+   "key": "PLANKA_ADMIN_PASSWORD",
+   "label": "Admin password",
+   "type": "password",
+   "required": true,
+   "max": 50
+  },
+  {
+   "key": "PLANKA_SECRET_KEY",
+   "label": "Planka Secret Key",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  planka:\n    image: ghcr.io/plankanban/planka:1.26.3\n    container_name: planka\n    command: |\n      bash -c\n        \"for i in `seq 1 30`; do\n          ./start.sh \u0026\u0026\n          s=$$? \u0026\u0026 break || s=$$?;\n          echo \\\"Tried $$i times. Waiting 5 seconds...\\\";\n          sleep 5;\n        done; (exit $$s)\"\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/data/user-avatars:/app/public/user-avatars\n      - ${APP_DATA_DIR}/data/project-background-images:/app/public/project-background-images\n      - ${APP_DATA_DIR}/data/attachments:/app/private/attachments\n    ports:\n      - ${APP_PORT}:1337\n    environment:\n      - BASE_URL=${APP_PROTOCOL:-http}://${APP_DOMAIN}\n      - TRUST_PROXY=1\n      - DATABASE_URL=\"postgresql://postgres@postgres/planka\"\n      - SECRET_KEY=\"${PLANKA_SECRET_KEY}\"\n    depends_on:\n      - postgres\n  postgres:\n    image: postgres:14-alpine\n    container_name: planka-db\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/data/postgres:/var/lib/postgresql/data\n    environment:\n      POSTGRES_DB: planka\n      POSTGRES_HOST_AUTH_METHOD: trust\n"
+}

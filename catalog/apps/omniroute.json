@@ -1,0 +1,39 @@
+{
+ "id": "omniroute",
+ "name": "OmniRoute",
+ "version": "b08a12e876baa8a5ccadd1ebbe346fe7267dba3b1c9f4fd6bb02070fae41ab6c",
+ "category": "AI",
+ "tagline": "Self-hosted LLM router",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons@main/png/omniroute.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "OmniRoute is a self-hosted LLM router. The dashboard and an OpenAI-compatible endpoint on one port send requests to the provider accounts you connect, with Redis for rate limiting.",
+ "main_port": 20128,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "20128",
+   "required": true
+  },
+  {
+   "key": "SECRET_INITIAL_PASSWORD",
+   "label": "Initial password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  omniroute:\n    image: diegosouzapw/omniroute:3.8.52@sha256:b08a12e876baa8a5ccadd1ebbe346fe7267dba3b1c9f4fd6bb02070fae41ab6c\n    container_name: omniroute\n    restart: unless-stopped\n    stop_grace_period: 40s\n    environment:\n      DATA_DIR: /app/data\n      REDIS_URL: redis://redis:6379\n      REQUIRE_API_KEY: \"true\"\n      INITIAL_PASSWORD: ${SECRET_INITIAL_PASSWORD}\n      OMNIROUTE_MEMORY_MB: \"2048\"\n    ports:\n      - \"${APP_PORT}:20128\"\n      - \"20129:20129\"\n      - \"20132:20132\"\n    volumes:\n      - ${APP_DATA_DIR}/data:/app/data\n    depends_on:\n      redis:\n        condition: service_healthy\n    healthcheck:\n      test: [\"CMD\", \"node\", \"healthcheck.mjs\"]\n      interval: 30s\n      timeout: 5s\n      retries: 3\n      start_period: 20s\n  redis:\n    image: redis:8.6.5-alpine@sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9\n    container_name: omniroute-redis\n    restart: unless-stopped\n    command: [\"redis-server\", \"--save\", \"60\", \"1\", \"--loglevel\", \"warning\"]\n    volumes:\n      - ${APP_DATA_DIR}/redis:/data\n    healthcheck:\n      test: [\"CMD\", \"redis-cli\", \"ping\"]\n      interval: 10s\n      timeout: 5s\n      retries: 3\n"
+}

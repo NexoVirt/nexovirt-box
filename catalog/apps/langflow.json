@@ -1,0 +1,36 @@
+{
+ "id": "langflow",
+ "name": "Langflow",
+ "version": "1.9.3",
+ "category": "AI",
+ "tagline": "Open-source UI for building and debugging multi-agent and RAG applications",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/LangFlow/icon.svg",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "Langflow is a powerful, open-source UI designed specifically for building and debugging multi-agent and Retrieval-Augmented Generation (RAG) applications. It provides a visual, drag-and-drop interface that simplifies the process of creating complex AI workflows.\n\nThe system consists of two main components:\n- **Langflow**: The main application providing a visual interface for building AI workflows\n- **PostgreSQL**: A robust database system for storing application data and configurations\n\n**Key Features:**\n- Visual, drag-and-drop interface for building AI workflows\n- Support for multi-agent systems and RAG applications\n- Integrated debugging tools for testing and optimization\n- Persistent storage for workflows and configurations\n- Easy deployment with Docker containers\n\n**Learn More:**\n- [Langflow Official Website](https://www.langflow.org)\n- [Langflow GitHub Repository](https://github.com/langflow-ai/langflow)\n- [Documentation](https://docs.langflow.org)",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/LangFlow/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/LangFlow/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/LangFlow/screenshot-3.png"
+ ],
+ "website": "https://www.langflow.org",
+ "main_port": 17860,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "17860",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  langflow:\n    container_name: langflow\n    image: langflowai/langflow:1.9.3\n    user: \"0:0\"\n    ports:\n      - target: 7860\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    depends_on:\n      - langflow-postgres\n    networks:\n      - langflow-net\n    environment:\n      - LANGFLOW_DATABASE_URL=postgresql://langflow:langflow@langflow-postgres:5432/langflow\n      - LANGFLOW_CONFIG_DIR=/app/langflow\n    volumes:\n      - ${APP_DATA_DIR}/backend:/app/langflow\n  langflow-postgres:\n    container_name: langflow-postgress\n    image: postgres:16\n    environment:\n      - POSTGRES_USER=langflow\n      - POSTGRES_PASSWORD=langflow\n      - POSTGRES_DB=langflow\n    networks:\n      - langflow-net\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/postgres\n        target: /var/lib/postgresql/data\nnetworks:\n  langflow-net:\n    driver: bridge\n"
+}

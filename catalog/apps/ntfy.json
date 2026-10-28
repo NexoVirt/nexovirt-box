@@ -1,0 +1,33 @@
+{
+ "id": "ntfy",
+ "name": "Ntfy",
+ "version": "v2.34.0",
+ "category": "Utilities",
+ "tagline": "Ntfy, a simple server for sending and receiving notification messages.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/ntfy/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Ntfy: HTTP-Based Notification Service\n\nntfy (pronounced as 'notify') is a straightforward pub-sub notification service that operates over HTTP. It facilitates the seamless transmission of notifications to your phone or desktop through scripts from any machine, completely free of charge and without the requirement of registration. Furthermore, its open-source nature (as evidenced here) allows you the option to host your own instance.",
+ "website": "https://ntfy.sh/",
+ "source": "https://github.com/binwiederhier/ntfy",
+ "main_port": 8166,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8166",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  ntfy:\n    container_name: ntfy\n    image: binwiederhier/ntfy:v2.34.0\n    environment:\n      - NTFY_BASE_URL=${APP_PROTOCOL:-http}://${APP_DOMAIN}\n      - NTFY_UPSTREAM_BASE_URL=https://ntfy.sh\n    command: serve\n    volumes:\n      - ${APP_DATA_DIR}/data/cache:/var/cache/ntfy\n      - ${APP_DATA_DIR}/data/config:/etc/ntfy\n    ports:\n      - ${APP_PORT}:80\n"
+}

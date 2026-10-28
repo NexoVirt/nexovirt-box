@@ -1,0 +1,32 @@
+{
+ "id": "claude-code-container",
+ "name": "Claude Code Container",
+ "version": "5e5286cb37d44086d651a5363f05f43a692ce4d649d88fb1bd844579f45fa9e8",
+ "category": "AI",
+ "tagline": "",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons@main/png/claude.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "docker_socket": true,
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Claude Code Container 1.0.28 runs Anthropic Claude Code in a browser terminal and an MCP API.",
+ "main_port": 20040,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "20040",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  claude:\n    image: ghcr.io/worph/claude-code-container:1.0.28@sha256:a73863d23af0222037a0d51cef0c350bfd86825f693cc9bbf889a6484aad2f94\n    container_name: claude-code-app\n    restart: unless-stopped\n    ports:\n      - \"20041:9090\"\n    environment:\n      ANTHROPIC_API_KEY: \"\"\n      AUTH_PASSWORD: \"9c93e0aa-ebe4-4737-b222-d6445c64da29\"\n      MCP_ENABLED: \"true\"\n      CLAUDE_SESSION_TTL: \"1800\"\n    entrypoint:\n      - /bin/sh\n      - -c\n      - |\n        if [ -z \"$$AUTH_PASSWORD\" ] || [ \"$$AUTH_PASSWORD\" = \"9c93e0aa-ebe4-4737-b222-d6445c64da29\" ]; then\n          echo \"Replace AUTH_PASSWORD before start. An empty value opens the API, and the catalog value is public. This container mounts the Docker socket.\" \u003e\u00262\n          exit 1\n        fi\n        exec /init\n    volumes:\n      - ${APP_DATA_DIR}/workspace:/home/claude/workspace\n      - ${APP_DATA_DIR}/config:/home/claude/.claude\n      - /var/run/docker.sock:/var/run/docker.sock\n  caddy:\n    image: caddy:2.11.7@sha256:5e5286cb37d44086d651a5363f05f43a692ce4d649d88fb1bd844579f45fa9e8\n    container_name: claude-code-caddy\n    restart: unless-stopped\n    depends_on:\n      - claude\n    ports:\n      - \"${APP_PORT}:8080\"\n    networks:\n      default:\n        aliases:\n          - claude-code\n    configs:\n      - source: caddyfile\n        target: /etc/caddy/Caddyfile\nconfigs:\n  caddyfile:\n    content: |\n      :8080 {\n        handle /login* {\n          reverse_proxy claude:9090\n        }\n        handle /logout {\n          reverse_proxy claude:9090\n        }\n        handle {\n          forward_auth claude:9090 {\n            uri /auth\n            @unauthorized status 401\n            handle_response @unauthorized {\n              redir * /login\n            }\n          }\n          reverse_proxy claude:8080\n        }\n      }\n"
+}

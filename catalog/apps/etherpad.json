@@ -1,0 +1,45 @@
+{
+ "id": "etherpad",
+ "name": "Etherpad",
+ "version": "3.1.0",
+ "category": "Productivity",
+ "tagline": "Real-time collaborative document editor",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Etherpad/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "Etherpad is a real-time collaborative document editor where multiple people can edit the same pad simultaneously, with every change synchronized instantly and colour-coded per author.\nSelf-hosted, open source, and fully under your control, it is perfect for meeting notes, brainstorming, shared writing, and lightweight knowledge capture.\nIt ships with a built-in admin panel, a plugin ecosystem of 250+ add-ons, native DOCX/PDF/Markdown import \u0026 export, and multi-architecture container support (amd64 + arm64).\n\n**Main Features:**\n- Real-time collaborative editing with instant sync\n- Per-author colour coding for clear writing attribution\n- Built-in admin panel and a plugin ecosystem with 250+ add-ons\n- Native DOCX, PDF, and Markdown import \u0026 export\n- Open source, self-hosted deployment with amd64 and arm64 support\n\n**Learn More:**\n- [Etherpad Official Website](https://etherpad.org/)\n- [Etherpad GitHub](https://github.com/ether/etherpad)\n- [Etherpad Documentation](https://docs.etherpad.org/)",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Etherpad/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Etherpad/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Etherpad/screenshot-3.png"
+ ],
+ "website": "https://etherpad.org/",
+ "main_port": 9001,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "9001",
+   "required": true
+  },
+  {
+   "key": "SECRET_ADMIN_PASSWORD",
+   "label": "Admin password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  etherpad:\n    image: etherpad/etherpad:3.1.0\n    container_name: etherpad\n    deploy:\n      resources:\n        reservations:\n          memory: 256M\n    network_mode: bridge\n    restart: unless-stopped\n    ports:\n      - target: 9001\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/var\n        target: /opt/etherpad-lite/var\n    environment:\n      TITLE: Etherpad\n      DEFAULT_PAD_TEXT: \"Welcome to Etherpad on CasaOS!\\n\\nThis pad text is synchronized as you type, so that everyone viewing this page sees the same text. This allows you to collaborate seamlessly on documents!\\n\\nGet involved with Etherpad at https://etherpad.org\\n\"\n      ADMIN_PASSWORD: ${SECRET_ADMIN_PASSWORD}\n      AUTHENTICATION_METHOD: apikey\n      DB_TYPE: dirty\n      DB_FILENAME: /opt/etherpad-lite/var/dirty.db\n      TRUST_PROXY: \"true\"\n      SHOW_SETTINGS_IN_ADMIN_PAGE: \"true\"\n      REQUIRE_AUTHENTICATION: \"false\"\n      REQUIRE_AUTHORIZATION: \"false\"\n    healthcheck:\n      test: [\"CMD\", \"wget\", \"-q\", \"-O-\", \"http://localhost:9001/health\"]\n      interval: 30s\n      timeout: 10s\n      retries: 3\n      start_period: 30s\n"
+}

@@ -1,0 +1,33 @@
+{
+ "id": "wallos",
+ "name": "Wallos",
+ "version": "5.10.2",
+ "category": "Finance",
+ "tagline": "Open-Source Personal Subscription Tracker",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/wallos/metadata/logo.jpg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Wallos\n\nOpen-Source Personal Subscription Tracker\n\nWallos is a powerful, open-source, and self-hostable web application designed to empower you in managing your finances with ease. Say goodbye to complicated spreadsheets and expensive financial software – Wallos simplifies the process of tracking expenses and helps you gain better control over your financial life.",
+ "website": "https://wallosapp.com/",
+ "source": "https://github.com/ellite/Wallos",
+ "main_port": 8222,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8222",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  wallos:\n    image: bellamy/wallos:5.10.2\n    container_name: wallos\n    environment:\n      - TZ=${TZ}\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:80\n    volumes:\n      - /etc/localtime:/etc/localtime:ro\n      - ${APP_DATA_DIR}/data/db:/var/www/html/db\n      - ${APP_DATA_DIR}/data/logos:/var/www/html/images/uploads/logos\n"
+}

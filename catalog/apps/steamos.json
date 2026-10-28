@@ -1,0 +1,30 @@
+{
+ "id": "steamos",
+ "name": "Steamos",
+ "version": "04adf2c7af1c97c7cf9d8949aebeeaa8ccfc672e24e6bbebe72a95b06013f5af",
+ "category": "Other",
+ "tagline": "An Arch based Linux distribution made by Valve Software. This container is a vanilla Arch install with Steam repositories added for software support. This container will only work with modern AMD/Intel GPUs on a real Linux Host",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/steamos-logo.png",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "SteamOS is an Arch based Linux distribution made by Valve Software. This container is a vanilla Arch install with Steam repositories added for software support. This container will only work with modern AMD/Intel GPUs on a real Linux Host",
+ "main_port": 3000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/steamos:version-2024-12-20@sha256:04adf2c7af1c97c7cf9d8949aebeeaa8ccfc672e24e6bbebe72a95b06013f5af\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n      DRINODE: ''\n      HOST_IP: ''\n      STARTUP: ''\n      RESOLUTION: ''\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 3001\n        published: 3001\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n      - type: bind\n        source: /dev/input\n        target: /dev/input\n      - type: bind\n        source: /run/udev/data\n        target: /run/udev/data\n"
+}

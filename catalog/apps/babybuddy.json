@@ -1,0 +1,31 @@
+{
+ "id": "babybuddy",
+ "name": "Babybuddy",
+ "version": "3f244c1a3cd06696c2e8edb40f9fda71a837a77fee06f2f5c2f96ac99c135071",
+ "category": "Home",
+ "tagline": "A buddy for babies. Helps caregivers track sleep, feedings, diaper changes, tummy time and more to learn about and predict baby's needs without (as much) guess work.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/babybuddy-logo.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Babybuddy is a buddy for babies! Helps caregivers track sleep, feedings, diaper changes, tummy time and more to learn about and predict baby's needs without (as much) guess work.",
+ "main_port": 8000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/babybuddy:2.11.0@sha256:3f244c1a3cd06696c2e8edb40f9fda71a837a77fee06f2f5c2f96ac99c135071\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n      CSRF_TRUSTED_ORIGINS: ''\n    ports:\n      - target: 8000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

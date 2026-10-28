@@ -1,0 +1,30 @@
+{
+ "id": "digikam",
+ "name": "Digikam",
+ "version": "23f15c1d6877533648896787ec4de437618e6d516cefd93ef56dfb6eec9b7edc",
+ "category": "Home",
+ "tagline": "digiKam: Professional Photo Management with the Power of Open Source",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/digikam.png",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "digiKam: Professional Photo Management with the Power of Open Source",
+ "main_port": 3000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/digikam:9.1.0@sha256:23f15c1d6877533648896787ec4de437618e6d516cefd93ef56dfb6eec9b7edc\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 3001\n        published: 3001\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

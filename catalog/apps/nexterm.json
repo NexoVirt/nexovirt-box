@@ -1,0 +1,31 @@
+{
+ "id": "nexterm",
+ "name": "Nexterm",
+ "version": "def6f6a50b48c842d3fbe796ff8e7ce6b8fa54e2d92116a62742859c64f47d7e",
+ "category": "Other",
+ "tagline": "Nexterm",
+ "icon": "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps/apps/nexterm/logo.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "The open source server management software for SSH, VNC \u0026 RDP. This is in BETA.",
+ "main_port": 6989,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "6989",
+   "required": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-nexterm application\nservices:\n  # Service name: big-bear-nexterm\n  # The `big-bear-nexterm` service definition\n  big-bear-nexterm:\n    # Name of the container\n    container_name: big-bear-nexterm\n    # Image to be used for the container\n    image: nexterm/aio:1.2.2-BETA@sha256:def6f6a50b48c842d3fbe796ff8e7ce6b8fa54e2d92116a62742859c64f47d7e\n    # Container restart policy\n    restart: unless-stopped\n    # Environment variables for the big-bear-nexterm container\n    environment:\n      # REQUIRED: Replace with a strong random key before deploying\n      # Generate with: openssl rand -hex 32\n      - ENCRYPTION_KEY=\n    # Volumes to be mounted to the container\n    volumes:\n      # Mounting the local nexterm_data directory to /app/data inside the container\n      - ${APP_DATA_DIR}/data:/app/data\n    # Ports mapping between host and container\n    ports:\n      # Mapping port 6989 of the host to port 6989 of the container\n      - \"${APP_PORT}:6989\"\n"
+}

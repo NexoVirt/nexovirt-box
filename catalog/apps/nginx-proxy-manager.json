@@ -1,0 +1,38 @@
+{
+ "id": "nginx-proxy-manager",
+ "name": "Nginx Proxy Manager",
+ "version": "2.13.5",
+ "category": "Networking",
+ "tagline": "Managing Nginx proxy hosts with a simple, powerful interface.",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/NginxProxyManager/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64",
+  "arm"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "Nginx Proxy Manager is a simple, powerful tool to help you host multiple websites on a single server.",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/NginxProxyManager/screenshot-1.jpg",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/NginxProxyManager/screenshot-2.jpg",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/NginxProxyManager/screenshot-3.jpg"
+ ],
+ "website": "https://nginxproxymanager.com",
+ "main_port": 81,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "81",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  nginxproxymanager:\n    image: jc21/nginx-proxy-manager:2.13.5\n    deploy:\n      resources:\n        reservations:\n          memory: \"128M\"\n    network_mode: bridge\n    ports:\n      - target: 80\n        published: \"80\"\n        protocol: tcp\n      - target: 443\n        published: \"443\"\n        protocol: tcp\n      - target: 81\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/data\n        target: /data\n      - type: bind\n        source: ${APP_DATA_DIR}/etc/letsencrypt\n        target: /etc/letsencrypt\n    container_name: nginxproxymanager\n"
+}

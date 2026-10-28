@@ -1,0 +1,31 @@
+{
+ "id": "synclounge",
+ "name": "Synclounge",
+ "version": "abbb6bd411da3f16b64a93445f6451cd314a5d9d4fe026fab3491ff0fc9e6410",
+ "category": "Home",
+ "tagline": "A third party tool that allows you to watch Plex in sync with your friends/family, wherever you are.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/synclounge-banner.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Synclounge is a third party tool that allows you to watch Plex in sync with your friends/family, wherever you are.",
+ "main_port": 8088,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8088",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/synclounge:5.2.35@sha256:abbb6bd411da3f16b64a93445f6451cd314a5d9d4fe026fab3491ff0fc9e6410\n    restart: unless-stopped\n    environment:\n      AUTH_LIST: ''\n    ports:\n      - target: 8088\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

@@ -1,0 +1,66 @@
+{
+ "id": "semaphore",
+ "name": "Semaphore",
+ "version": "v2.19.17",
+ "category": "Developer",
+ "tagline": "Modern UI for Ansible, Terraform, OpenTofu, Bash, Pulumi.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/semaphore/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## Semaphore UI (formerly Ansible Semaphore)\n\nSemaphore is a modern UI for Ansible, Terraform/OpenTofu, Bash and Pulumi. It lets you easily run Ansible playbooks, get notifications about fails, control access to deployment system.\n\nIf your project has grown and deploying from the terminal is no longer for you then Semaphore UI is what you need.\n\n![responsive-ui-phone1](https://user-images.githubusercontent.com/914224/134777345-8789d9e4-ff0d-439c-b80e-ddc56b74fcee.png)\n\n\u003e Note 📝: If you want to use a path for repository in semaphore you can add your own repo in `runtipi/app-data/semaphore/data/repositories` and in semaphore use `/repositories/myrepo`",
+ "website": "https://semaphoreui.com",
+ "source": "https://github.com/semaphoreui/semaphore",
+ "main_port": 8526,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8526",
+   "required": true
+  },
+  {
+   "key": "SEMAPHORE_ADMIN_NAME",
+   "label": "Semaphore username",
+   "type": "text",
+   "required": true
+  },
+  {
+   "key": "SEMAPHORE_ADMIN_EMAIL",
+   "label": "Semaphore email",
+   "type": "text",
+   "required": true
+  },
+  {
+   "key": "SEMAPHORE_ADMIN_PASSWORD",
+   "label": "Semaphore password",
+   "type": "password",
+   "required": true,
+   "min": 8
+  },
+  {
+   "key": "SEMAPHORE_DB_PASSWORD",
+   "label": "Semaphore database password",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "SEMAPHORE_ACCESS_KEY_ENCRYPTION",
+   "label": "Semaphore access key encryption",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  semaphore:\n    container_name: semaphore\n    image: semaphoreui/semaphore:v2.19.17\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/data/repositories:/repositories\n    environment:\n      - SEMAPHORE_DB_USER=semaphore\n      - SEMAPHORE_DB_PASS=${SEMAPHORE_DB_PASSWORD}\n      - SEMAPHORE_DB_HOST=semaphore-db\n      - SEMAPHORE_DB_PORT=5432\n      - SEMAPHORE_DB_DIALECT=postgres\n      - SEMAPHORE_DB=semaphore\n      - SEMAPHORE_PLAYBOOK_PATH=/tmp/semaphore\n      - SEMAPHORE_ADMIN_PASSWORD=${SEMAPHORE_ADMIN_PASSWORD}\n      - SEMAPHORE_ADMIN_NAME=${SEMAPHORE_ADMIN_NAME}\n      - SEMAPHORE_ADMIN_EMAIL=${SEMAPHORE_ADMIN_EMAIL}\n      - SEMAPHORE_ADMIN=${SEMAPHORE_ADMIN_NAME}\n      - SEMAPHORE_ACCESS_KEY_ENCRYPTION=${SEMAPHORE_ACCESS_KEY_ENCRYPTION}\n      - SEMAPHORE_LDAP_ACTIVATED=no\n      - TZ=${TZ}\n    ports:\n      - ${APP_PORT}:3000\n  semaphore-db:\n    container_name: semaphore-db\n    image: postgres:14\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/data/db:/var/lib/postgresql/data\n    environment:\n      - POSTGRES_USER=semaphore\n      - POSTGRES_PASSWORD=${SEMAPHORE_DB_PASSWORD}\n      - POSTGRES_DB=semaphore\n"
+}

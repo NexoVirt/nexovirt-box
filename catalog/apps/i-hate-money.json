@@ -1,0 +1,47 @@
+{
+ "id": "i-hate-money",
+ "name": "I Hate Money",
+ "version": "009d1520552782765c8c41750262cc69410be7ac616f93a9f371556e472f23c6",
+ "category": "Finance",
+ "tagline": "A simple shared budget manager web application",
+ "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/ihatemoney.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "I hate money is a web application made to ease shared budget management. It keeps track of who bought what, when, and for whom; and helps to settle the bills.",
+ "main_port": 8001,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8001",
+   "required": true
+  },
+  {
+   "key": "SECRET_SECRET_KEY",
+   "label": "Secret key",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
+   "key": "SECRET_MYSQL_ROOT_PASSWORD",
+   "label": "Mysql root password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-ihatemoney application\nservices:\n  # Service name: big-bear-ihatemoney\n  # The `big-bear-ihatemoney` service definition\n  big-bear-ihatemoney:\n    # Name of the container\n    container_name: big-bear-ihatemoney\n    # Image to be used for the container\n    image: ihatemoney/ihatemoney:7.2.1@sha256:009d1520552782765c8c41750262cc69410be7ac616f93a9f371556e472f23c6\n    # Container restart policy\n    restart: unless-stopped\n    environment:\n      SECRET_KEY: ${SECRET_SECRET_KEY} # Sets the secret key environment variable for the application.\n      SQLALCHEMY_DATABASE_URI: mysql+pymysql://bigbear:${SECRET_MYSQL_ROOT_PASSWORD}@big-bear-ihatemoney-db/ihatemoney # Database connection string.\n      ACTIVATE_ADMIN_DASHBOARD: \"True\" # Enables the admin dashboard.\n      ADMIN_PASSWORD: \"\" # Sets the admin password. On the host run: docker run -it --rm --entrypoint ihatemoney ihatemoney/ihatemoney generate_password_hash\n      SESSION_COOKIE_SECURE: \"False\" # Disables secure session cookies for development.\n    # Ports mapping between host and container\n    ports:\n      # Mapping port 8001 of the host to port 8000 of the container\n      - \"${APP_PORT}:8000\"\n    networks:\n      - big_bear_ihatemoney_network # Connects the service to a network.\n  # Define a service named 'big-bear-ihatemoney-db' for the database.\n  big-bear-ihatemoney-db:\n    image: mariadb:10@sha256:be981e4113326ada8d6004174dd09eeaefc03094037f811182a52d4f2e737350 # Use MariaDB version 10 Docker image.\n    container_name: big-bear-ihatemoney-db # Custom container name.\n    environment:\n      MYSQL_ROOT_PASSWORD: ${SECRET_MYSQL_ROOT_PASSWORD} # Root password for MariaDB.\n      MYSQL_DATABASE: ihatemoney # Default database name.\n      MYSQL_USER: bigbear # Username for MariaDB.\n      MYSQL_PASSWORD: ${SECRET_MYSQL_ROOT_PASSWORD} # Password for the MariaDB user.\n    ports:\n      - \"3306:3306\" # Maps MySQL port 3306 inside the container to port 3306 on the host.\n    volumes:\n      - ${APP_DATA_DIR}/mysql:/var/lib/mysql # Maps a volume for data persistence.\n    networks:\n      - big_bear_ihatemoney_network # Connects the MySQL service to the network.\nnetworks:\n  big_bear_ihatemoney_network: # Define a network named 'big_bear_ihatemoney_network'.\n    driver: bridge # Use the bridge network driver.\n"
+}

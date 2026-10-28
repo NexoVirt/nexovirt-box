@@ -1,0 +1,24 @@
+{
+ "id": "anse",
+ "name": "Anse",
+ "version": "1.1.11",
+ "category": "AI",
+ "tagline": "Fully optimized UI for AI Chats.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/anse/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Anse - AI Chat \n[Anse](https://github.com/anse-app/anse) is a fully optimized UI for AI Chats. Supercharged experience for multiple models such as ChatGPT, DALL-E and Stable Diffusion.\n\n---\n\n![](https://user-images.githubusercontent.com/1998168/235366625-e615e68d-592c-4f18-9c9f-1e5cd1778557.png?raw=true)\n\n---\n\n## ⭐ Anse Features\n### 🚀 Powerful Plugin System\nPowered by Provider plugin , easy to extend AI platforms such as OpenAI, Replicate, and also supports custom model parameters.\n\n### 💬 Session Record Saving \nUse IndexDB to store local data, it will not be uploaded to the server, security issues are guaranteed.\n\n### 🎉 Multiple Session Modes \nProvides different conversations modes，support Single Conversation, Continuous Conversation, OpenAI Image Generation、Stable Diffusion and more.\n\n### 💎 Improved UI Experience \nWe have refactored the website UI for the previous version, optimized a lot of details, and also adapted to mobile end and dark mode.\n\n### 🌈 One-Click Deployment\nSupport one-click deployment, abandoned use environment variables, you can refer to our documentation to deploy the website to Vercel, Netlify, Docker, Node and other platforms.",
+ "website": "https://anse.app",
+ "source": "https://github.com/anse-app/anse",
+ "main_port": 0,
+ "scheme": "http",
+ "questions": [],
+ "compose": "services:\n  anse:\n    image: 'ddiu8081/anse:v1.1.11'\n    environment:\n      - 'PORT=8014'\n    x-runtipi:\n      internal_port: 8014\n      is_main: true\nx-runtipi:\n  schema_version: 2\n"
+}

@@ -1,0 +1,40 @@
+{
+ "id": "forgejo",
+ "name": "Forgejo",
+ "version": "17.0.1",
+ "category": "Developer",
+ "tagline": "Beyond coding. We forge. · Lightweight and performant · Guaranteed 100% Free Software",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/forgejo/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Forgejo Beyond coding. We forge. \n\nHi there! Tired of big platforms playing monopoly? Providing Git hosting for your project, friends, company or community? Forgejo (/for'd͡ʒe.jo/ inspired by forĝejo – the Esperanto word for forge) has you covered with its intuitive interface, light and easy hosting and a lot of builtin functionality.\n\nForgejo was [created in 2022](https://forgejo.org/2022-12-15-hello-forgejo/) because we think that the project should be owned by an independent community. If you second that, then Forgejo is for you! Our promise: Independent Free/Libre Software forever!",
+ "website": "https://forgejo.org/",
+ "source": "https://codeberg.org/forgejo/forgejo/",
+ "main_port": 8195,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8195",
+   "required": true
+  },
+  {
+   "key": "FORGEJO_DB_PASSWORD",
+   "label": "FORGEJO_DB_PASSWORD",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  forgejo:\n    image: codeberg.org/forgejo/forgejo:17.0.1\n    container_name: forgejo\n    environment:\n      - USER_UID=1000\n      - USER_GID=1000\n      - FORGEJO__database__DB_TYPE=postgres\n      - FORGEJO__database__HOST=forgejo-db:5432\n      - FORGEJO__database__NAME=forgejo\n      - FORGEJO__database__USER=forgejo\n      - FORGEJO__database__PASSWD=${FORGEJO_DB_PASSWORD}\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/data/forgejo:/data\n    ports:\n      - ${APP_PORT}:3000\n      - '222:22'\n    depends_on:\n      - forgejo-db\n  forgejo-db:\n    container_name: forgejo-db\n    image: postgres:14\n    restart: unless-stopped\n    environment:\n      - POSTGRES_USER=forgejo\n      - POSTGRES_PASSWORD=${FORGEJO_DB_PASSWORD}\n      - POSTGRES_DB=forgejo\n    volumes:\n      - ${APP_DATA_DIR}/data/postgres:/var/lib/postgresql/data\n"
+}

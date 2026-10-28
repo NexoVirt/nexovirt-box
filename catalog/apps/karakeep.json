@@ -1,0 +1,45 @@
+{
+ "id": "karakeep",
+ "name": "Karakeep",
+ "version": "0.33.2",
+ "category": "Productivity",
+ "tagline": "The Bookmark Everything App",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Karakeep/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "Karakeep is an open-source, self-hosted bookmark manager for links, notes, images, PDFs, and highlights, built to keep everything you want to save in one place.\nIt automatically fetches titles, descriptions, and previews, then helps you organize your library with AI tagging, full-text search, lists, and rule-based automation.\nWith browser extensions, mobile apps, RSS ingestion, and page archiving, Karakeep works well as both a read-later tool and a durable personal content archive.\n\n**Main Features:**\n- Save links, notes, images, PDFs, and text highlights in one library\n- Auto-fetch titles, descriptions, images, and archived pages for later reading\n- Use AI tagging, summarization, OCR, and full-text search to rediscover content quickly\n- Organize content with tags, collaborative lists, RSS feeds, and rule-based workflows\n- Access your collection through the web app, mobile apps, browser extensions, REST API, and CLI\n\n**Learn More:**\n- [Karakeep Official Website](https://karakeep.app/)\n- [Karakeep GitHub](https://github.com/karakeep-app/karakeep)\n- [Karakeep Documentation](https://docs.karakeep.app/)",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Karakeep/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Karakeep/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Karakeep/screenshot-3.png"
+ ],
+ "website": "https://karakeep.app/",
+ "main_port": 14592,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "14592",
+   "required": true
+  },
+  {
+   "key": "SECRET_NEXTAUTH_SECRET",
+   "label": "Nextauth secret",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  karakeep:\n    image: ghcr.io/karakeep-app/karakeep:0.33.2\n    container_name: karakeep\n    deploy:\n      resources:\n        reservations:\n          memory: 512M\n    restart: unless-stopped\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    networks:\n      - karakeep\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/data\n        target: /data\n    environment:\n      MEILI_ADDR: \"http://karakeep-meilisearch:7700\"\n      BROWSER_WEB_URL: \"http://karakeep-chrome:9222\"\n      DATA_DIR: /data\n      NEXTAUTH_URL: \"http://localhost:14592\"\n      NEXTAUTH_SECRET: ${SECRET_NEXTAUTH_SECRET}\n      MEILI_MASTER_KEY: ${SECRET_NEXTAUTH_SECRET}\n      OPENAI_API_KEY: \"\"\n  karakeep-chrome:\n    image: ghcr.io/karakeep-app/karakeep-chrome:release\n    container_name: karakeep-chrome\n    deploy:\n      resources:\n        reservations:\n          memory: 512M\n    restart: unless-stopped\n    init: true\n    networks:\n      - karakeep\n    command:\n      - --disable-gpu\n      - --disable-dev-shm-usage\n      - --hide-scrollbars\n      - --disable-blink-features=AutomationControlled\n      - --window-size=1440,900\n  karakeep-meilisearch:\n    image: getmeili/meilisearch:v1.41.0\n    container_name: karakeep-meilisearch\n    deploy:\n      resources:\n        reservations:\n          memory: 256M\n    restart: unless-stopped\n    networks:\n      - karakeep\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/meilisearch\n        target: /meili_data\n    environment:\n      MEILI_MASTER_KEY: ${SECRET_NEXTAUTH_SECRET}\n      MEILI_NO_ANALYTICS: \"true\"\nnetworks:\n  karakeep:\n    driver: bridge\n"
+}

@@ -1,0 +1,31 @@
+{
+ "id": "boinc",
+ "name": "Boinc",
+ "version": "8c81947b3f5771fa15fd47fd7c978e5c6121d516e2c1d3de039808bf9378006b",
+ "category": "Home",
+ "tagline": "A platform for high-throughput computing on a large scale (thousands or millions of computers). It can be used for volunteer computing (using consumer devices) or grid computing (using organizational resources). It supports virtualized, parallel, and GPU-based applications.",
+ "icon": "https://cdn.jsdelivr.net/gh/BOINC/boinc@master/doc/logo/boinc_logo_black.jpg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "BOINC is a platform for high-throughput computing on a large scale (thousands or millions of computers). It can be used for volunteer computing (using consumer devices) or grid computing (using organizational resources). It supports virtualized, parallel, and GPU-based applications.",
+ "main_port": 8080,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8080",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/boinc:18.04.1@sha256:8c81947b3f5771fa15fd47fd7c978e5c6121d516e2c1d3de039808bf9378006b\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n      PASSWORD: ''\n    ports:\n      - target: 8080\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 8181\n        published: 8181\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

@@ -1,0 +1,33 @@
+{
+ "id": "ollama-amd",
+ "name": "Ollama - AMD",
+ "version": "0.40.11",
+ "category": "AI",
+ "tagline": "LLMs inference server with OpenAI compatible API",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/ollama-amd/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## Usage\n\n⚠️ This app runs on port **11434**. Take this into account when configuring tools connecting to the app.\n\n### Use with a frontend\n\n- [LobeChat](https://github.com/lobehub/lobe-chat)\n- [LibreChat](https://github.com/danny-avila/LibreChat)\n- [OpenWebUI](https://github.com/open-webui/open-webui)\n- [And more ...](https://github.com/ollama/ollama)\n\n---\n\n### Try the REST API\n\nOllama has a REST API for running and managing models.\n\n**Generate a response**\n\n```sh\ncurl http://localhost:11434/api/generate -d '{\n  \"model\": \"llama3\",\n  \"prompt\":\"Why is the sky blue?\"\n}'\n```\n\n**Chat with a model**\n\n```sh\ncurl http://localhost:11434/api/chat -d '{\n  \"model\": \"llama3\",\n  \"messages\": [\n    { \"role\": \"user\", \"content\": \"why is the sky blue?\" }\n  ]\n}'\n```\n\n---\n\n## Compatible GPUs\n\nOllama supports the following AMD GPUs:\n| Family | Cards and accelerators |\n| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |\n| AMD Radeon RX | `7900 XTX` `7900 XT` `7900 GRE` `7800 XT` `7700 XT` `7600 XT` `7600` `6950 XT` `6900 XTX` `6900XT` `6800 XT` `6800` `Vega 64` `Vega 56` |\n| AMD Radeon PRO | `W7900` `W7800` `W7700` `W7600` `W7500` `W6900X` `W6800X Duo` `W6800X` `W6800` `V620` `V420` `V340` `V320` `Vega II Duo` `Vega II` `VII` `SSG` |\n| AMD Instinct | `MI300X` `MI300A` `MI300` `MI250X` `MI250` `MI210` `MI200` `MI100` `MI60` `MI50` |\n\n---\n\n## Model library\n\nOllama supports a list of models available on [ollama.com/library](https://ollama.com/library 'ollama model library')\n\nHere are some example models that can be downloaded:\n\n| Model              | Parameters | Size  | Download                       |\n| ------------------ | ---------- | ----- | ------------------------------ |\n| Llama 3            | 8B         | 4.7GB | `ollama run llama3`            |\n| Llama 3            | 70B        | 40GB  | `ollama run llama3:70b`        |\n| Phi-3              | 3,8B       | 2.3GB | `ollama run phi3`              |\n| Mistral            | 7B         | 4.1GB | `ollama run mistral`           |\n| Neural Chat        | 7B         | 4.1GB | `ollama run neural-chat`       |\n| Starling           | 7B         | 4.1GB | `ollama run starling-lm`       |\n| Code Llama         | 7B         | 3.8GB | `ollama run codellama`         |\n| Llama 2 Uncensored | 7B         | 3.8GB | `ollama run llama2-uncensored` |\n| LLaVA              | 7B         | 4.5GB | `ollama run llava`             |\n| Gemma              | 2B         | 1.4GB | `ollama run gemma:2b`          |\n| Gemma              | 7B         | 4.8GB | `ollama run gemma:7b`          |\n| Solar              | 10.7B      | 6.1GB | `ollama run solar`             |\n\n\u003e Note: You should have at least 8 GB of RAM available to run the 7B models, 16 GB to run the 13B models, and 32 GB to run the 33B models.",
+ "website": "https://ollama.com",
+ "source": "https://github.com/ollama/ollama",
+ "main_port": 11434,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "11434",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  ollama-amd:\n    image: ollama/ollama:0.40.11\n    restart: unless-stopped\n    container_name: ollama-amd\n    environment:\n      - PORT=11434\n    ports:\n      - ${APP_PORT}:11434\n    volumes:\n      - ${APP_DATA_DIR}/data/.ollama:/root/.ollama\n    devices:\n      - /dev/kfd\n      - /dev/dri\n"
+}

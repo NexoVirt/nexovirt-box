@@ -1,0 +1,70 @@
+{
+ "id": "ghost-production",
+ "name": "Ghost Production",
+ "version": "5.130.6",
+ "category": "Social",
+ "tagline": "Ghost - Turn your audience into a business.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/ghost/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Install Information\n\nAfter Ghost is installed, head over to https://yourdomain.com/ghost/ to finish setup and create the admin account!\n# A painless self-hosted Blog\n\nGhost is a powerful app for new-media creators to publish, share, and grow a business around their content. It comes with modern tools to build a website, publish content, send newsletters \u0026 offer paid subscriptions to members.\n\n![Screenshot](https://ghost.org/images/home/posts_hu3b21debb17401a2115316debd8fe8fa5_467056_2000x0_resize_q100_h2_box_3.webp)",
+ "website": "https://ghost.org",
+ "source": "https://github.com/TryGhost/Ghost",
+ "main_port": 8117,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8117",
+   "required": true
+  },
+  {
+   "key": "GHOST_DATABASE_PASSWORD",
+   "label": "Ghost Database password",
+   "type": "password",
+   "min": 20,
+   "generate": true
+  },
+  {
+   "key": "GHOST_MAIL_SERVICE",
+   "label": "Mail Service name",
+   "type": "text",
+   "hint": "The name of your mail service (ie. Google)"
+  },
+  {
+   "key": "GHOST_MAIL_HOST",
+   "label": "SMTP Host",
+   "type": "text",
+   "hint": "Your SMTP Server"
+  },
+  {
+   "key": "GHOST_MAIL_PORT",
+   "label": "SMTP Port",
+   "type": "text",
+   "hint": "Your SMTP Port"
+  },
+  {
+   "key": "GHOST_MAIL_USER",
+   "label": "SMTP Username",
+   "type": "text",
+   "hint": "Your SMTP Server User/Username"
+  },
+  {
+   "key": "GHOST_MAIL_PASSWORD",
+   "label": "SMTP Password",
+   "type": "text",
+   "hint": "Your SMTP Server Password"
+  }
+ ],
+ "compose": "services:\n  ghost:\n    image: ghost:5.130.6\n    container_name: ghost\n    depends_on:\n      - ghostdb\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:2368\n    environment:\n      database__client: mysql\n      database__connection__host: ghostdb\n      database__connection__user: tipi\n      database__connection__password: ${GHOST_DATABASE_PASSWORD}\n      database__connection__database: ghosttipi\n      url: ${APP_PROTOCOL:-http}://${APP_DOMAIN}\n      mail__transport: SMTP\n      mail__options__service: ${GHOST_MAIL_SERVICE}\n      mail__options__host: ${GHOST_MAIL_HOST}\n      mail__options__port: ${GHOST_MAIL_PORT}\n      mail__options__auth__user: ${GHOST_MAIL_USER}\n      mail__options__auth__pass: ${GHOST_MAIL_PASSWORD}\n    volumes:\n      - ${APP_DATA_DIR}/content:/var/lib/ghost/content\n  ghostdb:\n    container_name: ghostdb\n    image: mariadb:latest\n    environment:\n      MYSQL_ROOT_PASSWORD: ${GHOST_DATABASE_PASSWORD}\n      MYSQL_USER: tipi\n      MYSQL_PASSWORD: ${GHOST_DATABASE_PASSWORD}\n      MYSQL_DATABASE: ghosttipi\n    volumes:\n      - ${APP_DATA_DIR}/data/db:/var/lib/mysql\n"
+}

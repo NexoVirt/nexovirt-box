@@ -1,0 +1,73 @@
+{
+ "id": "mongo-express",
+ "name": "Mongo Express",
+ "version": "1.0.2",
+ "category": "Developer",
+ "tagline": "Web-based MongoDB admin interface, written with Node.js and Express",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/mongo-express/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## mongo-express\n\nA web-based MongoDB admin interface written with Node.js, Express, and Bootstrap3\n\n### Features\n- Connect to multiple databases\n- View/add/delete databases\n- View/add/rename/delete collections\n- View/add/update/delete documents\n- Preview audio/video/image assets inline in the collection view\n- Nested and/or large objects are collapsible for easy overview\n- Async on-demand loading of big document properties (\u003e100KB default) to keep collection view fast\n- GridFS support - add/get/delete incredibly large files\n- Use BSON data types in documents\n- Mobile / Responsive - Bootstrap 3 works passably on small screens when you're in a bind\n- Connect and authenticate to individual databases\n- Authenticate as admin to view all databases\n- Database blacklist/whitelist\n- Custom CA and CA validation disabling\n- Supports replica sets",
+ "website": "https://www.mongodb.com/",
+ "source": "https://github.com/mongo-express/mongo-express",
+ "main_port": 8087,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8087",
+   "required": true
+  },
+  {
+   "key": "ME_CONFIG_MONGODB_SERVERIP",
+   "label": "MongoDB Server IP Address",
+   "type": "text",
+   "required": true,
+   "min": 3,
+   "max": 50
+  },
+  {
+   "key": "ME_CONFIG_MONGODB_ADMINUSERNAME",
+   "label": "MongoDB Admin Username",
+   "type": "text",
+   "required": true,
+   "min": 3,
+   "max": 50
+  },
+  {
+   "key": "ME_CONFIG_MONGODB_ADMINPASSWORD",
+   "label": "MongoDB Admin Password",
+   "type": "password",
+   "required": true,
+   "min": 10,
+   "max": 50
+  },
+  {
+   "key": "ME_CONFIG_BASICAUTH_USERNAME",
+   "label": "Mongo Express Web Username",
+   "type": "text",
+   "required": true,
+   "min": 3,
+   "max": 50
+  },
+  {
+   "key": "ME_CONFIG_BASICAUTH_PASSWORD",
+   "label": "Mongo Express Web Password",
+   "type": "password",
+   "required": true,
+   "min": 10,
+   "max": 50
+  }
+ ],
+ "compose": "services:\n  mongo-express:\n    container_name: mongo-express\n    image: mongo-express:1.0.2\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:8081\n    environment:\n      - ME_CONFIG_MONGODB_SERVER=${ME_CONFIG_MONGODB_SERVERIP}\n      - ME_CONFIG_MONGODB_ENABLE_ADMIN=true\n      - ME_CONFIG_MONGODB_ADMINUSERNAME=${ME_CONFIG_MONGODB_ADMINUSERNAME}\n      - ME_CONFIG_MONGODB_ADMINPASSWORD=${ME_CONFIG_MONGODB_ADMINPASSWORD}\n      - ME_CONFIG_BASICAUTH_USERNAME=${ME_CONFIG_BASICAUTH_USERNAME}\n      - ME_CONFIG_BASICAUTH_PASSWORD=${ME_CONFIG_BASICAUTH_PASSWORD}\n"
+}

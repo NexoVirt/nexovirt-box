@@ -1,0 +1,39 @@
+{
+ "id": "domain-locker",
+ "name": "Domain Locker",
+ "version": "883716e301b7353327cc82d6bd8e4c5f5d2a93d7f8175e0c10e1d0855f5c4094",
+ "category": "Other",
+ "tagline": "Domain Locker",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/domain-locker.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "🌐 The all-in-one tool, for keeping track of your domain name portfolio. Got domain names? Get Domain Locker!",
+ "main_port": 8180,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8180",
+   "required": true
+  },
+  {
+   "key": "SECRET_POSTGRES_PASSWORD",
+   "label": "Postgres password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  postgres:\n    container_name: domain-locker-db\n    image: postgres:15-alpine@sha256:fe0737ba566a2c5b2a28f34433c0a423261900ec17b9bf7ad115e1aae7e57f1b\n    restart: unless-stopped\n    environment:\n      POSTGRES_DB: domain_locker\n      POSTGRES_USER: postgres\n      POSTGRES_PASSWORD: ${SECRET_POSTGRES_PASSWORD}\n    volumes:\n      - ${APP_DATA_DIR}/postgres_data:/var/lib/postgresql/data\n    healthcheck:\n      test: [\"CMD-SHELL\", \"pg_isready -U postgres -d domain_locker\"]\n      interval: 5s\n      timeout: 3s\n      retries: 10\n    networks:\n      - big_bear_domainlocker_network\n  app:\n    container_name: domain-locker-app\n    image: ghcr.io/lissy93/domain-locker:0.2.4@sha256:883716e301b7353327cc82d6bd8e4c5f5d2a93d7f8175e0c10e1d0855f5c4094\n    restart: unless-stopped\n    environment:\n      DL_ENV_TYPE: selfHosted\n      DL_PG_HOST: postgres\n      DL_PG_PORT: 5432\n      DL_PG_USER: postgres\n      DL_PG_PASSWORD: ${SECRET_POSTGRES_PASSWORD}\n      DL_PG_NAME: domain_locker\n    ports:\n      - \"${APP_PORT}:3000\"\n    depends_on:\n      postgres:\n        condition: service_healthy\n    healthcheck:\n      test: [\"CMD\", \"wget\", \"--spider\", \"-q\", \"http://localhost:3000/api/health\"]\n      interval: 15s\n      timeout: 3s\n      retries: 3\n      start_period: 30s\n    networks:\n      - big_bear_domainlocker_network\n  updater:\n    container_name: domain-locker-updater\n    image: alpine:3.24@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a\n    restart: unless-stopped\n    depends_on:\n      app:\n        condition: service_healthy\n    networks:\n      - big_bear_domainlocker_network\n    command:\n      - /bin/sh\n      - -c\n      - |\n        apk add --no-cache curl \u0026\u0026\n        echo '0 3 * * * /usr/bin/curl -f -X POST http://app:3000/api/domain-updater || echo \"ERROR: domain-updater failed at $(date)\" \u003e\u00262' \u003e /etc/crontabs/root \u0026\u0026\n        echo '0 4 * * * /usr/bin/curl -f -X POST http://app:3000/api/expiration-reminders || echo \"ERROR: expiration-reminders failed at $(date)\" \u003e\u00262' \u003e\u003e /etc/crontabs/root \u0026\u0026\n        echo '*/15 * * * * /usr/bin/curl -f -X POST http://app:3000/api/domain-monitor || echo \"ERROR: domain-monitor failed at $(date)\" \u003e\u00262' \u003e\u003e /etc/crontabs/root \u0026\u0026\n        echo '0 2 * * 0 /usr/bin/curl -f -X POST http://app:3000/api/cleanup-monitor-data || echo \"ERROR: cleanup-monitor-data failed at $(date)\" \u003e\u00262' \u003e\u003e /etc/crontabs/root \u0026\u0026\n        crond -f -L /dev/stdout\nnetworks:\n  big_bear_domainlocker_network:\n    driver: bridge\n"
+}

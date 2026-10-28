@@ -1,0 +1,46 @@
+{
+ "id": "openclaw",
+ "name": "OpenClaw",
+ "version": "latest",
+ "category": "AI",
+ "tagline": "OpenClaw is a personal AI assistant you run on your own devices. It answers you on the channels you already use.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/openclaw/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# OpenClaw\n\nOpenClaw is a personal AI assistant you run on your own devices. It answers you on the channels you already use (WhatsApp, Telegram, Slack, Discord, Google Chat, Signal, iMessage, BlueBubbles, IRC, Microsoft Teams, Matrix, Feishu, LINE, Mattermost, Nextcloud Talk, Nostr, Synology Chat, Tlon, Twitch, Zalo, Zalo Personal, WebChat).\n\nIt can speak and listen on macOS/iOS/Android, and can render a live Canvas you control. The Gateway is just the control plane — the product is the assistant.\n\nIf you want a personal, single-user assistant that feels local, fast, and always-on, this is it.\n\n## Features\n\n- **Multi-Channel Support:** Use your favorite chat app to interact with your assistant.\n- **Voice Capabilities:** Speak and listen to your assistant on mobile and desktop.\n- **Self-Hosted:** Full control over your data and privacy.\n- **Fast and Local:** Designed for speed and responsiveness.\n- **Dynamic Canvas:** Interactive visual rendering.\n\n## Getting Started\n\nOnce installed, access the OpenClaw Gateway at port 18789 to configure your providers and connect your chat channels.",
+ "website": "https://openclaw.ai",
+ "source": "https://github.com/openclaw/openclaw",
+ "main_port": 0,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "ANTHROPIC_API_KEY",
+   "label": "Anthropic API Key",
+   "type": "password"
+  },
+  {
+   "key": "OPENAI_API_KEY",
+   "label": "OpenAI API Key",
+   "type": "password"
+  },
+  {
+   "key": "GOOGLE_GENERATIVE_AI_API_KEY",
+   "label": "Google Gemini API Key",
+   "type": "password"
+  },
+  {
+   "key": "OLLAMA_HOST",
+   "label": "Ollama Host",
+   "type": "text",
+   "placeholder": "http://localhost:11434"
+  }
+ ],
+ "compose": "services:\n  openclaw:\n    image: 'ghcr.io/openclaw/openclaw:latest'\n    volumes:\n      - '${APP_DATA_DIR}/config:/home/node/.openclaw'\n      - '${APP_DATA_DIR}/workspace:/home/node/.openclaw/workspace'\n    environment:\n      - 'NODE_ENV=production'\n      - 'ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}'\n      - 'OPENAI_API_KEY=${OPENAI_API_KEY}'\n      # Maps Runtipi UI key (${GOOGLE_GENERATIVE_AI_API_KEY}) to OpenClaw primary (GEMINI_API_KEY) and fallback/plugin (GOOGLE_API_KEY) env vars\n      - 'GEMINI_API_KEY=${GOOGLE_GENERATIVE_AI_API_KEY}'\n      - 'GOOGLE_API_KEY=${GOOGLE_GENERATIVE_AI_API_KEY}'\n      - 'OLLAMA_HOST=${OLLAMA_HOST}'\n    x-runtipi:\n      internal_port: 18789\n      is_main: true\nx-runtipi:\n  schema_version: 2\n"
+}

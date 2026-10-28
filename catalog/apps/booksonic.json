@@ -1,0 +1,24 @@
+{
+ "id": "booksonic",
+ "name": "Booksonic",
+ "version": "2201.1.0",
+ "category": "Books",
+ "tagline": "The selfhosted audiobook server",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/booksonic/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "Booksonic Air is a server for hosting the audiobooks you own and reach them from wherever you are.\n\nCheck out [Booksonic App](https://github.com/popeen/Booksonic-App) for connecting to Booksonic servers.\n\u003cbr /\u003e\nOnce installed you can setup the following folders : /audiobooks, /podcasts\n\n# Folder Info\n\n| Root Folder                         | Container Folder |\n|-------------------------------------|------------------|\n| /runtipi/app-data/booksonic/config\t | /config          |\n| /runtipi/media/data/books/spoken    | /audiobooks      |\n| /runtipi/media/data/podcasts        | /podcasts        |",
+ "website": "https://booksonic.org/",
+ "source": "https://github.com/popeen/Booksonic-Air",
+ "main_port": 0,
+ "scheme": "http",
+ "questions": [],
+ "compose": "services:\n  booksonic:\n    image: 'lscr.io/linuxserver/booksonic-air:2201.1.0'\n    volumes:\n      - '${APP_DATA_DIR}/config:/config'\n      - '${ROOT_FOLDER_HOST}/media/data/books/spoken:/audiobooks'\n      - '${ROOT_FOLDER_HOST}/media/data/podcasts:/podcasts'\n    environment:\n      - 'PUID=1000'\n      - 'PGID=1000'\n      - 'TZ=${TZ}'\n      - 'CONTEXT_PATH=${APP_PROTOCOL:-http}://${APP_DOMAIN}'\n    x-runtipi:\n      internal_port: 4040\n      is_main: true\nx-runtipi:\n  schema_version: 2\n"
+}

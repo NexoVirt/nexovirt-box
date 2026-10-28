@@ -1,0 +1,48 @@
+{
+ "id": "hedgedoc",
+ "name": "HedgeDoc",
+ "version": "1.12.0",
+ "category": "Media",
+ "tagline": "A Collaborative Markdown and Note Taking App",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/hedgedoc/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "HedgeDoc lets you create real-time collaborative markdown notes.\n\n## Getting Started\n\n- ℹ️ Read all about HedgeDoc and the history of the project on [our website](https://hedgedoc.org)\n- 🧪 Try out HedgeDoc with the [demo instance][hedgedoc-demo]. Check out the [features page][hedgedoc-demo-features]!\n- 💽 Install HedgeDoc yourself using the [install guide](https://docs.hedgedoc.org/setup/getting-started/)\n- ❓ Questions? Join our [Matrix chat][matrix.org-url] or the [community forums][hedgedoc-community]\n- 💬 Stay up to date by subscribing to the [release feed][github-release-feed]\n\n## State of the project\n\nHedgeDoc 1.x is stable and used around the world, but the codebase has [grown over time](https://hedgedoc.org/history/),\nmaking it hard to add new features.  \nWe are currently working on HedgeDoc 2, a complete rewrite of HedgeDoc. Please note the following:\n\n- This branch contains the latest development code and does not implement all features yet.\n  **If you are looking for the 1.x source code, have a look at the [master branch](https://github.com/hedgedoc/hedgedoc/tree/master).**\n- The 1.x release is maintenance-only. We do not accept feature requests or PRs for this release anymore and may choose\n  to close non-critical bug reports, if the bug will be non-existent in 2.0.\n- HedgeDoc 2 will be split in two components. The backend and the frontend. Both are present in this repository.",
+ "website": "https://hedgedoc.org/",
+ "source": "https://github.com/hedgedoc/hedgedoc",
+ "main_port": 8142,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8142",
+   "required": true
+  },
+  {
+   "key": "HEDGEDOC_DB_PASSWORD",
+   "label": "HEDGEDOC_DB_PASSWORD",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "HEDGEDOC_ADDPORT",
+   "label": "Add port to URL",
+   "type": "text",
+   "hint": "Set as false if you are exposing app, otherwise set as true",
+   "placeholder": "false",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  hedgedoc:\n    container_name: hedgedoc\n    image: quay.io/hedgedoc/hedgedoc:1.12.0\n    environment:\n      - CMD_DB_URL=postgres://hedgedoc:${HEDGEDOC_DB_PASSWORD}@hedgedoc-db:5432/hedgedoc\n      - CMD_DOMAIN=${APP_DOMAIN}\n      - CMD_URL_ADDPORT=${HEDGEDOC_ADDPORT}\n    volumes:\n      - ${APP_DATA_DIR}/data/hedgedoc-uploads:/hedgedoc/public/uploads\n    ports:\n      - ${APP_PORT}:3000\n    restart: always\n    depends_on:\n      - hedgedoc-db\n  hedgedoc-db:\n    container_name: hedgedoc-db\n    image: postgres:13.4-alpine\n    restart: unless-stopped\n    environment:\n      - POSTGRES_USER=hedgedoc\n      - POSTGRES_PASSWORD=${HEDGEDOC_DB_PASSWORD}\n      - POSTGRES_DB=hedgedoc\n    volumes:\n      - ${APP_DATA_DIR}/data/postgres:/var/lib/postgresql/data\n"
+}

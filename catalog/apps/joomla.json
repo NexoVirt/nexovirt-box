@@ -1,0 +1,40 @@
+{
+ "id": "joomla",
+ "name": "Joomla",
+ "version": "6.2.0-apache",
+ "category": "Other",
+ "tagline": "Another Free And Open-source Cms",
+ "icon": "https://portainer-io-assets.sfo2.digitaloceanspaces.com/logos/joomla.png",
+ "architectures": [
+  "amd64",
+  "armv7",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Another free and open-source CMS",
+ "main_port": 48105,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "48105",
+   "required": true
+  },
+  {
+   "key": "SECRET_JOOMLA_DB_PASSWORD",
+   "label": "Joomla db password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: joomla:6.2.0-apache\n    environment:\n      JOOMLA_DB_HOST: joomladb\n      JOOMLA_DB_PASSWORD: ${SECRET_JOOMLA_DB_PASSWORD}\n    depends_on:\n      - joomladb\n    ports:\n      - target: 80\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/www\n        target: /var/www/html\n  joomladb:\n    image: mysql:9.7.2\n    restart: unless-stopped\n    environment:\n      MYSQL_ROOT_PASSWORD: ${SECRET_JOOMLA_DB_PASSWORD}\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/mysql\n        target: /var/lib/mysql\n"
+}

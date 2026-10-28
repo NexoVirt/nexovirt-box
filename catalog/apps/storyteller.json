@@ -1,0 +1,31 @@
+{
+ "id": "storyteller",
+ "name": "Storyteller",
+ "version": "876ca77416c1e262faf871ad9f4558339fc3d8858a3fac49610ec5cb69b14957",
+ "category": "Productivity",
+ "tagline": "Self-hosted ebook reading platform",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons@main/png/storyteller.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Storyteller is a self-hosted platform for ebook reading and library management. It supports multiple ebook formats including EPUB, PDF, and MOBI. Features include a modern web-based reader, library organization, metadata management, and multi-user support. Built with Django and includes optional Readium reader integration for enhanced reading experience.",
+ "main_port": 8015,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8015",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: registry.gitlab.com/storyteller-platform/storyteller:web-v2.6.0-experimental.14@sha256:876ca77416c1e262faf871ad9f4558339fc3d8858a3fac49610ec5cb69b14957\n    container_name: big-bear-storyteller\n    ports:\n      - \"${APP_PORT}:8001\"\n    volumes:\n      - ${APP_DATA_DIR}/data:/data\n    environment:\n      - STORYTELLER_SECRET_KEY=${STORYTELLER_SECRET_KEY}\n      - STORYTELLER_LOG_LEVEL=${STORYTELLER_LOG_LEVEL:-info}\n      - STORYTELLER_DATA_DIR=${STORYTELLER_DATA_DIR:-/data}\n      - TZ=${TZ:-UTC}\n    restart: unless-stopped\n    network_mode: bridge\n"
+}

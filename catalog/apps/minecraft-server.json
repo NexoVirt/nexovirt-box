@@ -1,0 +1,40 @@
+{
+ "id": "minecraft-server",
+ "name": "Minecraft Server",
+ "version": "latest",
+ "category": "Gaming",
+ "tagline": "Run a minecraft server",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/minecraft-server/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "Minecraft Server that will automatically download selected version at startup\n\nOnce you have installed the app, the server will be available on port 25565 (default Minecraft port).\n\nIn order to enter the server console run the following command on your server:\n\n```\ndocker exec -i mc rcon-cli\n```",
+ "website": "https://docker-minecraft-server.readthedocs.io/en/latest/",
+ "source": "https://github.com/itzg/docker-minecraft-server",
+ "main_port": 25565,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "25565",
+   "required": true
+  },
+  {
+   "key": "MC_VERSION",
+   "label": "Minecraft version",
+   "type": "text",
+   "hint": "The version of Minecraft to use, leave empty for latest",
+   "placeholder": "1.18.2"
+  }
+ ],
+ "compose": "services:\n  minecraft-server:\n    container_name: minecraft-server\n    image: itzg/minecraft-server:latest\n    ports:\n      - ${APP_PORT}:25565\n    environment:\n      EULA: \"TRUE\"\n      VERSION: ${MC_VERSION:-LATEST}\n    tty: true\n    stdin_open: true\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/data/minecraft-data:/data\n"
+}

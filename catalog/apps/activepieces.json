@@ -1,0 +1,53 @@
+{
+ "id": "activepieces",
+ "name": "Activepieces",
+ "version": "0.92.3",
+ "category": "Automation",
+ "tagline": "True zapier alternative.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/activepieces/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## Activepieces\n\nYour friendliest open source all-in-one automation tool, designed to be extensible through a type-safe pieces framework written in Typescript.\n\n## 🎨 Flow Builder\n\nUser-friendly Workflow Builder! Enjoy building fun and interactive flows with support for Branches, Loops, and Drag and Drop.\nbuild\n\n## 🔌 Pieces\n\nActivepieces integrates Google Sheets, OpenAI, Discord, and RSS, along with 80+ other integrations. \nThe list of supported integrations continues to grow rapidly, thanks to valuable contributions from the community.\nActivepieces is an open ecosystem, all piece source code is available in the repository, \nand they are versioned and published directly to npmjs.com upon contributions.",
+ "website": "https://www.activepieces.com/",
+ "source": "https://github.com/activepieces/activepieces",
+ "main_port": 0,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "AP_POSTGRES_PASSWORD",
+   "label": "Activepieces postgres password.",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "AP_API_KEY",
+   "label": "Activepieces api key.",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "AP_ENCRYPTION_KEY",
+   "label": "Activepieces encryption key.",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "AP_JWT_SECRET",
+   "label": "Activepieces jwt secret.",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  activepieces:\n    image: activepieces/activepieces:0.92.3\n    environment:\n      - AP_ENGINE_EXECUTABLE_PATH=dist/packages/engine/main.js\n      - AP_API_KEY=${AP_API_KEY}\n      - AP_ENCRYPTION_KEY=${AP_ENCRYPTION_KEY}\n      - AP_JWT_SECRET=${AP_JWT_SECRET}\n      - AP_ENVIRONMENT=prod\n      - AP_FRONTEND_URL=${APP_PROTOCOL:-http}://${APP_DOMAIN}\n      - AP_WEBHOOK_TIMEOUT_SECONDS=30\n      - AP_TRIGGER_DEFAULT_POLL_INTERVAL=5\n      - AP_POSTGRES_DATABASE=activepieces\n      - AP_POSTGRES_HOST=activepieces-postgres\n      - AP_POSTGRES_PORT=5432\n      - AP_POSTGRES_USERNAME=tipi\n      - AP_POSTGRES_PASSWORD=${AP_POSTGRES_PASSWORD}\n      - AP_EXECUTION_MODE=UNSANDBOXED\n      - AP_REDIS_HOST=activepieces-redis\n      - AP_REDIS_PORT=6379\n      - AP_SANDBOX_RUN_TIME_SECONDS=600\n      - AP_TELEMETRY_ENABLED=true\n      - AP_TEMPLATES_SOURCE_URL=https://cloud.activepieces.com/api/v1/flow-templates\n    depends_on:\n      activepieces-postgres:\n        condition: service_healthy\n      activepieces-redis:\n        condition: service_healthy\n    x-runtipi:\n      internal_port: 80\n      is_main: true\n  activepieces-postgres:\n    image: postgres:14\n    volumes:\n      - ${APP_DATA_DIR}/data/postgres:/var/lib/postgresql/data\n    environment:\n      - POSTGRES_DB=activepieces\n      - POSTGRES_PASSWORD=${AP_POSTGRES_PASSWORD}\n      - POSTGRES_USER=tipi\n    healthcheck:\n      test: pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB\n      interval: 30s\n      timeout: 30s\n      retries: 3\n  activepieces-redis:\n    image: redis:7\n    volumes:\n      - ${APP_DATA_DIR}/data/redis/:/data\n    healthcheck:\n      test: redis-cli ping\n      interval: 30s\n      timeout: 30s\n      retries: 3\nx-runtipi:\n  schema_version: 2\n"
+}

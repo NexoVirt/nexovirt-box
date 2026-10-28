@@ -1,0 +1,48 @@
+{
+ "id": "homebox",
+ "name": "HomeBox",
+ "version": "0.27.1",
+ "category": "Utilities",
+ "tagline": "Inventory and organization system.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/homebox/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# What is HomeBox\n\nHomebox is the inventory and organization system built for the Home User! With a focus on simplicity and ease of use, Homebox is the perfect solution for your home inventory, organization, and management needs. While developing this project, I've tried to keep the following principles in mind:\n\n- _Simple_ - Homebox is designed to be simple and easy to use. No complicated setup or configuration required. Use either a single docker container, or deploy yourself by compiling the binary for your platform of choice.\n- _Blazingly Fast_ - Homebox is written in Go, which makes it extremely fast and requires minimal resources to deploy. In general idle memory usage is less than 50MB for the whole container.\n- _Portable_ - Homebox is designed to be portable and run on anywhere. We use SQLite and an embedded Web UI to make it easy to deploy, use, and backup.\n\n\n## Quick Start\n\n[Configuration](https://homebox.sysadminsmedia.com/quick-start.html)\n\n\n\u003c!-- CONTRIBUTING --\u003e\n\n## Contributing\n\nContributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.\n\nIf you are not a coder, you can still contribute financially. Financial contributions help me prioritize working on this project over others and helps me know that there is a real demand for project development.\n\n## Credits\n\n- Original project by [@hay-kot](https://github.com/hay-kot)\n- Logo by [@lakotelman](https://github.com/lakotelman)",
+ "website": "https://homebox.sysadminsmedia.com/",
+ "source": "https://github.com/sysadminsmedia/homebox",
+ "main_port": 7745,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "7745",
+   "required": true
+  },
+  {
+   "key": "HBOX_OPTIONS_ALLOW_REGISTRATION",
+   "label": "Allow Users Registration",
+   "type": "text",
+   "hint": "true or false if you want to allow self registration.",
+   "placeholder": "false",
+   "required": true
+  },
+  {
+   "key": "HBOX_AUTH_API_KEY_PEPPER",
+   "label": "HBOX_AUTH_API_KEY_PEPPER",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  homebox:\n    image: ghcr.io/sysadminsmedia/homebox:0.27.1\n    container_name: homebox\n    restart: unless-stopped\n    environment:\n      - HBOX_LOG_LEVEL=info\n      - HBOX_LOG_FORMAT=text\n      - HBOX_WEB_MAX_UPLOAD_SIZE=10\n      - HBOX_OPTIONS_ALLOW_REGISTRATION=${HBOX_OPTIONS_ALLOW_REGISTRATION}\n      - HBOX_AUTH_API_KEY_PEPPER=${HBOX_AUTH_API_KEY_PEPPER}\n    volumes:\n      - ${APP_DATA_DIR}/data/homebox-data:/data/\n    ports:\n      - ${APP_PORT}:7745\n    user: '1000:1000'\n"
+}

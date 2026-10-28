@@ -1,0 +1,23 @@
+{
+ "id": "playit-agent",
+ "name": "Playit Agent",
+ "version": "latest",
+ "category": "Networking",
+ "tagline": "A free reverse proxy for tunneling services (not self-hosted).",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/playit-agent/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "",
+ "website": "https://playit.gg",
+ "main_port": 0,
+ "scheme": "http",
+ "questions": [],
+ "compose": "services:\n  playit-agent:\n    restart: unless-stopped\n    image: ghcr.io/mafen/playit-docker:latest\n    network_mode: bridge\n    container_name: playit-agent\n"
+}

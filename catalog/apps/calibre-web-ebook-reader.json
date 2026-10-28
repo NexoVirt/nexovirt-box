@@ -1,0 +1,23 @@
+{
+ "id": "calibre-web-ebook-reader",
+ "name": "Calibre-Web - EBook Reader",
+ "version": "0.6.27",
+ "category": "Books",
+ "tagline": "Calibre-web is a web app providing a clean interface for browsing, reading and downloading eBooks using an existing Calibre database.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/calibre-web/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "Calibre-Web is a web app providing a clean interface for browsing, reading and downloading eBooks using a valid Calibre database.\n\n#### On the initial setup screen :\n1. Enter `/calibre` as your calibre library location.\n2. Check box : *Separate Book Files from Library*\n3. Enter `/books` as book path.\n\n#### Default credentials :\n- **username**: admin\n- **password**: admin123",
+ "source": "https://github.com/janeczku/calibre-web",
+ "main_port": 0,
+ "scheme": "http",
+ "questions": [],
+ "compose": "services:\n  calibre-web:\n    image: 'lscr.io/linuxserver/calibre-web:0.6.27'\n    volumes:\n      - '${APP_DATA_DIR}/data/config:/config'\n      - '${APP_DATA_DIR}/data/calibre:/calibre'\n      - '${ROOT_FOLDER_HOST}/media/data/books:/books'\n    environment:\n      - 'PUID=1000'\n      - 'PGID=1000'\n      - 'TZ=${TZ}'\n    x-runtipi:\n      internal_port: 8083\n      is_main: true\nx-runtipi:\n  schema_version: 2\n"
+}

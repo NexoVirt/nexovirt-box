@@ -1,0 +1,39 @@
+{
+ "id": "jlesage-firefox",
+ "name": "Jlesage Firefox",
+ "version": "302aa068dcfa46a2d248771c998f67377383554df8940252caef42b99c13eb65",
+ "category": "Other",
+ "tagline": "This project implements a Docker container for Firefox.",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/firefox.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "The GUI of the application is accessed through a modern web browser (no installation or configuration needed on the client side) or via any VNC client.",
+ "main_port": 5800,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "5800",
+   "required": true
+  },
+  {
+   "key": "SECRET_VNC_PASSWORD",
+   "label": "Vnc password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  big-bear-jlesage-firefox:\n    container_name: big-bear-jlesage-firefox # Name of the Docker container\n    image: jlesage/firefox:v26.09.1@sha256:302aa068dcfa46a2d248771c998f67377383554df8940252caef42b99c13eb65 # Docker image for the Firefox browser\n    ports:\n      - \"${APP_PORT}:5800\" # Expose port 5800 for VNC access\n    environment:\n      - VNC_PASSWORD=${SECRET_VNC_PASSWORD} # Set the VNC password to 'casaos'\n      - FF_OPEN_URL=https://community.bigbeartechworld.com/ # Set the default URL to Big Bear Tech World\n    volumes:\n      - ${APP_DATA_DIR}/config:/config:rw # Mount the host directory to the container's Downloads directory\n"
+}

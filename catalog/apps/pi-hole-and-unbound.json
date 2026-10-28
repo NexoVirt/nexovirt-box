@@ -1,0 +1,39 @@
+{
+ "id": "pi-hole-and-unbound",
+ "name": "Pi-hole and Unbound",
+ "version": "ffa5aaea39e546ff18eac9fc9b16bdb69053c2168502d70c5bafa4af334b8634",
+ "category": "Networking",
+ "tagline": "Pi-hole and Unbound",
+ "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/pi-hole-unbound.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "This is a custom pihole and unbound setup.",
+ "main_port": 8080,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8080",
+   "required": true
+  },
+  {
+   "key": "SECRET_FTLCONF_WEBSERVER_API_PASSWORD",
+   "label": "Ftlconf webserver api password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-pihole-unbound application\nservices:\n  # Service name: app\n  # The `app` service definition\n  app:\n    # Name of the container\n    container_name: big-bear-pihole-unbound\n    # Image to be used for the container\n    image: bigbeartechworld/big-bear-pihole-unbound:2026.10.0@sha256:ffa5aaea39e546ff18eac9fc9b16bdb69053c2168502d70c5bafa4af334b8634\n    # Container restart policy\n    restart: unless-stopped\n    # Environment variables\n    environment:\n      TZ: \"America/Chicago\"\n      FTLCONF_webserver_api_password: ${SECRET_FTLCONF_WEBSERVER_API_PASSWORD}\n      FTLCONF_dns_upstreams: \"127.0.0.1#5353\" # Use Unbound IPs delimited by ; ex: 8.8.8.8;8.8.4.4\n    # Volumes to be mounted to the container\n    volumes:\n      # Mounting the local /DATA/AppData/$AppID/etc directory to /etc/pihole/ inside the container\n      - ${APP_DATA_DIR}/etc:/etc/pihole/\n      # Mounting the local /DATA/AppData/$AppID/dnsmasq.d directory to /etc/dnsmasq.d inside the container\n      - ${APP_DATA_DIR}/dnsmasq.d:/etc/dnsmasq.d/\n    # Ports mapping between host and container\n    ports:\n      - \"53:53/tcp\"\n      - \"53:53/udp\"\n      - \"67:67/udp\"\n      - \"${APP_PORT}:80/tcp\"\n      - \"10443:443/tcp\"\n    networks:\n      # Define the network for pihole-unbound\n      - pihole-unbound-network # Name of the network used by pihole-unbound\n# Define the networks section\nnetworks:\n  # Define the pihole-unbound-network\n  pihole-unbound-network:\n    # Set the network driver to bridge\n    driver: bridge\n"
+}

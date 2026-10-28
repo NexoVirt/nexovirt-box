@@ -1,0 +1,52 @@
+{
+ "id": "dailytxt",
+ "name": "DailyTxT",
+ "version": "2.6.4",
+ "category": "Utilities",
+ "tagline": "Encrypted Diary Web-App",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/dailytxt/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## First start\nMake sure to allow the registration on the first run to create the necessary accounts.Then you can disable registration and restart the app.\n\n# DailyTxT\n\nDailyTxT is an encrypted Diary/Journal WebApp with several [features](#features). It is written in [Svelte](https://svelte.dev/) and [Go](https://golang.org/) and meant to be run by [Docker](https://www.docker.com/) - supports AMD64 and ARM64.\n\n![DailyTxT Sreenshot](https://github.com/PhiTux/DailyTxT/raw/refs/heads/main/readme/combined_readme.png)\n\n## Features\n\n- **Encryption**: Everything you write is encrypted before it's written to the server's storage. Even the admin can't read your private stuff!\n- **File-Upload**: You can upload arbitrary files for each day (500 MB max each). They are stored encrypted on the server as well. Images are automatically recognized and added to the...\n- **Image Viewer**: View all images of a day in a gallery view and in full screen.\n- **Markdown**: You can write your entries in markdown and see a live preview.\n- **Tags**: You can add tags to your entries for better organization.\n- **Search**: You can search for any word, tag or filename in your entries.\n- **Custom Templates**: You can create and use custom templates for your entries.\n- **Read Mode**: A distraction-free mode for reading your entries of each month.\n- **Multi-Language**: DailyTxT is currently available in **\u003cins\u003eGerman and English\u003c/ins\u003e**. New languages can be added easily, see [TRANSLATION.md](TRANSLATION.md) for instructions.\n- **Export to HTML**: You can export your entries (including uploaded files) to HTML format.\n- **Mobile**: Responsive design for easy use on mobile screen. Additionally: allows installation as a PWA (Progressive Web App) to your Homescreen.\n- **Multi-User**: You can create multiple User Accounts. Each account uses its own encryption key.\n- **Admin Panel**: You can (among other things) manage users and open registration for 5 minutes.\n- **Statistics Panel**: Each user can see some statistics about his entries (among other things there is a GitHub-like statistic of your entry-distribution).\n- **Update Notification**: You will be notified about new docker images.\n\n\n## Usage Tips\n\n- You can swipe left/right in the calendar to change months.\n- You can swipe left/right in the date-area above the editor to switch between days.\n- Use Alt + Left/Right (or Ctrl + Option + Left/Right on Mac) to switch between days.\n- Drag'n'drop files into DailyTxT to upload them.\n- The editor saves automatically. Green border means everything is saved, orange border means unsaved changes.\n- You can change the order of files (and images!) by dragging them (at the left side) in the file list.\n- A yellow dot in the calendar means, that there are uploaded files for this day.\n- The orange button in the calendar can highlight the current day.\n\n\n## About encryption and data storage\n\n🔒 For encryption ChaCha20-Poly1305 is used.\n\nWhen a user logs in, a key is derived from his password with Argon2id, it is called the *derived key*. The *derived key* is stored in a http-only cookie and send on every API-call. This key is used to decrypt the user's *encryption key* (which is randomly generated when the user is created). The *encryption key* is used to encrypt/decrypt all data of this user (entries and uploaded files) and never leaves the server. \n\nWhen a user changes his password, the *encryption key* is decrypted with the old *derived key* and re-encrypted with a new *derived key* (derived from the new password).\n\nThere is no E2E-encryption used on client-side, because the search-functionality would not work then. All data would have to be sent to client-side for searching.\n\nThere are also backup-keys available which can be used as a password-replacement. When they are created, they store the *derived key* encrypted with a random *backup key*. These *backup keys* are shown to the user only once and are to be stored safely by him. When a user loses his password, he can use this *backup key* to decrypt the *derived key* and from that the *encryption key*.\n\nAll data is stored in json-files. No database is used, because the main goal is to guarantee highest portability and longterm availability of the data.\n\n\u003e 🗣️🌍 You want to add new languages? See [TRANSLATION.md](https://github.com/PhiTux/DailyTxT/blob/TRANSLATION.md) for instructions.\n\n\u003e ⁉️ You have questions, new feature requests or want to report bugs? Please open a new [issue](https://github.com/PhiTux/DailyTxT/issues).",
+ "source": "https://github.com/PhiTux/DailyTxT",
+ "main_port": 8156,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8156",
+   "required": true
+  },
+  {
+   "key": "DAILYTXT_SECRET_KEY",
+   "label": "DailyTXT Secret Key",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "DAILYTXT_ADMIN_PASSWORD",
+   "label": "Admin Password",
+   "type": "password"
+  },
+  {
+   "key": "DAILYTXT_ALLOW_REGISTRATION",
+   "label": "Allow User Registration",
+   "type": "boolean",
+   "hint": "Set it to true intially to create the first user.",
+   "placeholder": "true",
+   "default": "true"
+  }
+ ],
+ "compose": "services:\n  dailytxt:\n    image: phitux/dailytxt:2.6.4\n    container_name: dailytxt\n    restart: unless-stopped\n    environment:\n      - SECRET_KEY=${DAILYTXT_SECRET_KEY}\n      - ALLOW_REGISTRATION=${DAILYTXT_ALLOW_REGISTRATION}\n      - ADMIN_PASSWORD=${DAILYTXT_ADMIN_PASSWORD}\n      - DATA_INDENT=2\n      - LOGOUT_AFTER_DAYS=60\n    ports:\n      - ${APP_PORT}:80\n    volumes:\n      - ${APP_DATA_DIR}/data/dailytxt:/data/\n"
+}

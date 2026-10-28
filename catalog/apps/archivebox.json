@@ -1,0 +1,41 @@
+{
+ "id": "archivebox",
+ "name": "ArchiveBox",
+ "version": "0.9.77",
+ "category": "Media",
+ "tagline": "Open source self-hosted web archiving.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/archivebox/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# ArchiveBox\n\nArchiveBox is a powerful, self-hosted internet archiving solution to collect, save, and view websites offline.\n\n---\n\n![](https://github.com/ArchiveBox/ArchiveBox/assets/511499/90f1ce3c-75bb-401d-88ed-6297694b76ae?raw=true)\n\n---\n\nWithout active preservation effort, everything on the internet eventually disappears or degrades. Archive.org does a great job as a centralized service, but saved URLs have to be public, and they can't save every type of content.\n\nArchiveBox is an open source tool that lets organizations \u0026 individuals archive both public \u0026 private web content while retaining control over their data. It can be used to save copies of bookmarks, preserve evidence for legal cases, backup photos from FB/Insta/Flickr or media from YT/Soundcloud/etc., save research papers, and more...\n\n📥 **You can feed ArchiveBox URLs one at a time, or schedule regular imports** from your bookmarks or history, social media feeds or RSS, link-saving services like Pocket/Pinboard, our [Browser Extension](https://chromewebstore.google.com/detail/archivebox-exporter/habonpimjphpdnmcfkaockjnffodikoj), and more.  \n\n**It saves snapshots of the URLs you feed it in several redundant formats.**  \nIt also detects any content featured *inside* pages \u0026 extracts it out into a folder:\n\n- 🌐 **HTML**/**Any websites** ➡️ `original HTML+CSS+JS`, `singlefile HTML`, `screenshot PNG`, `PDF`, `WARC`, `title`, `article text`, `favicon`, `headers`, ...\n- 🎥 **Social Media**/**News** ➡️ `post content TXT`, `comments`, `title`, `author`, `images`, ...\n- 🎬 **YouTube**/**SoundCloud**/etc. ➡️ `MP3/MP4`s, `subtitles`, `metadata`, `thumbnail`, ...\n- 💾 **Github**/**Gitlab**/etc. links ➡️ `clone of GIT source code`, `README`, `images`, ...\n- ✨ *and more ...",
+ "website": "https://archivebox.io",
+ "source": "https://github.com/ArchiveBox/ArchiveBox",
+ "main_port": 0,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "ARCHIVEBOX_USERNAME",
+   "label": "ArchiveBox Username",
+   "type": "text",
+   "required": true,
+   "min": 3,
+   "max": 50
+  },
+  {
+   "key": "ARCHIVEBOX_PASSWORD",
+   "label": "ArchiveBox Password",
+   "type": "password",
+   "required": true,
+   "min": 12,
+   "max": 50
+  }
+ ],
+ "compose": "services:\n  archivebox:\n    image: archivebox/archivebox:0.9.77\n    command: server --quick-init 0.0.0.0:8015\n    volumes:\n      - ${APP_DATA_DIR}/data:/data\n    environment:\n      - PORT=8015\n      - PUBLIC_INDEX=${ARCHIVEBOX_PUBLIC_INDEX-true}\n      - PUBLIC_SNAPSHOTS=${ARCHIVEBOX_PUBLIC_SNAPSHOTS-true}\n      - PUBLIC_ADD_VIEW=${ARCHIVEBOX_PUBLIC_ADD_VIEW-false}\n      - ADMIN_USERNAME=${ARCHIVEBOX_USERNAME}\n      - ADMIN_PASSWORD=${ARCHIVEBOX_PASSWORD}\n      - PUID=1000\n      - PGID=1000\n      - SEARCH_BACKEND_ENGINE=${ARCHIVEBOX_SEARCH_BACKEND_ENGINE}\n      - SEARCH_BACKEND_HOST_NAME=${ARCHIVEBOX_SEARCH_BACKEND_HOST_NAME}\n      - SEARCH_BACKEND_PASSWORD=${ARCHIVEBOX_SEARCH_BACKEND_PASSWORD}\n      - MEDIA_MAX_SIZE=${ARCHIVEBOX_MEDIA_MAX_SIZE-750m}\n      - TIMEOUT=${ARCHIVEBOX_TIMEOUT-60}\n      - CHECK_SSL_VALIDITY=${ARCHIVEBOX_CHECK_SSL_VALIDITY-true}\n      - SAVE_ARCHIVE_DOT_ORG=${ARCHIVEBOX_SAVE_ARCHIVE_DOT_ORGE-true}\n    x-runtipi:\n      internal_port: 8015\n      is_main: true\nx-runtipi:\n  schema_version: 2\n"
+}

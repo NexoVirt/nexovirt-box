@@ -1,0 +1,32 @@
+{
+ "id": "lidarr-on-steroids",
+ "name": "Lidarr on Steroids",
+ "version": "1.5.2",
+ "category": "Media",
+ "tagline": "Lidarr with some muscles thanks to deemix",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/lidarr-deemix/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## Install Notice\n\n- To Finish the AutoConfig, Please login to your Deezer Account in the Deemix UI. After logging in, the container will run\n\n``` \n-   /music root folder if no other root folder is configured\n-   Delay profile allowing Deemix to be used by automatic search\n-   Deemix as an indexer\n-   Deemix as a download client\n-   Flac2Custom script connection if `FLAC2CUSTOM_ARGS` is set\n-   clean-downloads script connection to keep your downloads folder _clean_ after each imports\n```\n\n### Port Info\n\n| Exposed Service      | Local Port | Exposed Domain      |\n|----------------------|------------|---------------------|\n| Lidarr | IP:8186   | example.com         |\n| Deemix | IP:8167   | Not Exposed Via Domain|\n\n---\n\nThis repository bundles a modded version of Lidarr and Deemix into a docker image featuring :\n\n-   Native Deemix integration as an indexer and downloader for Lidarr\n-   Automatic Lidarr and Deemix configuration\n-   Automatic conversion from any format with ffmpeg\n-   Podman compatibility with rootless mode\n\nThis allows an easy deployment, with the advantage of having a direct control over Deemix indexing and downloader capacities into Lidarr :\n\n[![\"Lidarr indexers\"](https://github.com/youegraillot/lidarr-on-steroids/raw/main/.assets/lidarr-indexers.png \"Lidarr indexers\")](https://github.com/youegraillot/lidarr-on-steroids/raw/main/.assets/lidarr-indexers.png)",
+ "source": "https://github.com/youegraillot/lidarr-on-steroids",
+ "main_port": 8186,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8186",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  lidarr-deemix:\n    image: youegraillot/lidarr-on-steroids:1.5.2\n    container_name: lidarr-deemix\n    volumes:\n      - ${APP_DATA_DIR}/data/config:/config\n      - ${APP_DATA_DIR}/data/config-deemix:/config_deemix\n      - ${ROOT_FOLDER_HOST}/media/downloads/deemix:/downloads\n      - ${ROOT_FOLDER_HOST}/media/data/music:/music\n      - ${ROOT_FOLDER_HOST}/media/usenet/completed/:/downloads/completed\n      - ${ROOT_FOLDER_HOST}/media:/media\n    ports:\n      - ${APP_PORT}:8686 # Lidarr web UI\n      - 8187:6595 # Deemix web UI\n    restart: unless-stopped\n"
+}

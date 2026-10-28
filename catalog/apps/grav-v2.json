@@ -1,0 +1,33 @@
+{
+ "id": "grav-v2",
+ "name": "Grav V2",
+ "version": "2.2.14",
+ "category": "Social",
+ "tagline": "Fast, Simple, and Flexible, file-based Web-platform.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/grav-2/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "Grav is a **Fast**, **Simple**, and **Flexible**, file-based Web-platform. There is **Zero** installation required. Just extract the ZIP archive, and you are already up and running. It follows similar principles to other flat-file CMS platforms, but has a different design philosophy than most. Grav comes with a powerful **Package Management System** to allow for simple installation and upgrading of plugins and themes, as well as simple updating of Grav itself.\n\nThe underlying architecture of Grav is designed to use well-established and _best-in-class_ technologies to ensure that Grav is simple to use and easy to extend. Some of these key technologies include:\n\n- [Twig Templating](https://twig.symfony.com/): for powerful control of the user interface\n- [Markdown](https://en.wikipedia.org/wiki/Markdown): for easy content creation\n- [YAML](https://yaml.org): for simple configuration\n- [Parsedown](https://parsedown.org/): for fast Markdown and Markdown Extra support\n- [Doctrine Cache](https://www.doctrine-project.org/projects/doctrine-orm/en/latest/reference/caching.html): layer for performance\n- [Pimple Dependency Injection Container](https://github.com/silexphp/Pimple): for extensibility and maintainability\n- [Symfony Event Dispatcher](https://symfony.com/doc/current/components/event_dispatcher/introduction.html): for plugin event handling\n- [Symfony Console](https://symfony.com/doc/current/components/console/introduction.html): for CLI interface\n- [Gregwar Image Library](https://github.com/Gregwar/Image): for dynamic image manipulation\n\n# [](https://github.com/getgrav/grav//#documentation)Documentation\n\nThe full documentation can be found from [learn.getgrav.org](https://learn.getgrav.org).",
+ "website": "https://getgrav.org/",
+ "source": "https://github.com/getgrav/grav",
+ "main_port": 18161,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "18161",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  grav-2:\n    image: lscr.io/linuxserver/grav:2.2.14\n    ports:\n      - ${APP_PORT}:80\n    volumes:\n      - ${APP_DATA_DIR}/data/grav-comfig:/config\n    environment:\n      - PUID=1000\n      - PGID=1000\n      - TZ=${TZ}\n    x-runtipi:\n      internal_port: 80\n      is_main: true\nx-runtipi:\n  schema_version: 2\n"
+}

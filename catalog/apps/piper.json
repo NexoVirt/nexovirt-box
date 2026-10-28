@@ -1,0 +1,31 @@
+{
+ "id": "piper",
+ "name": "Piper",
+ "version": "26fc4838f1d693c21e24b011163555b86d2ec0d162d31efed8366501fcf86544",
+ "category": "Home",
+ "tagline": "A fast, local neural text to speech system that sounds great and is optimized for the Raspberry Pi 4. This container provides a Wyoming protocol server for Piper.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/piper-logo.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Piper is a fast, local neural text to speech system that sounds great and is optimized for the Raspberry Pi 4. This container provides a Wyoming protocol server for Piper.",
+ "main_port": 10200,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "10200",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/piper:2.5.2@sha256:26fc4838f1d693c21e24b011163555b86d2ec0d162d31efed8366501fcf86544\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n      PIPER_VOICE: ''\n      LOCAL_ONLY: ''\n      PIPER_LENGTH: ''\n      PIPER_NOISE: ''\n      PIPER_NOISEW: ''\n      PIPER_SPEAKER: ''\n      NO_STREAMING: ''\n    ports:\n      - target: 10200\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

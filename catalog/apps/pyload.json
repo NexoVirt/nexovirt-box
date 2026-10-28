@@ -1,0 +1,37 @@
+{
+ "id": "pyload",
+ "name": "PyLoad",
+ "version": "0.5.0",
+ "category": "Media",
+ "tagline": "Free Downloader Manager.",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/PyLoad/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "pyLoad is a Free and Open Source download manager written in Python and designed to be extremely lightweight, easily extensible and fully manageable via web.",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/PyLoad/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/PyLoad/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/PyLoad/screenshot-3.png"
+ ],
+ "website": "https://pyload.net",
+ "main_port": 8000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  pyload:\n    container_name: pyload\n    image: linuxserver/pyload-ng:0.5.0\n    deploy:\n      resources:\n        reservations:\n          memory: \"256M\"\n    environment:\n      PGID: $PGID\n      PUID: $PUID\n      TZ: $TZ\n    restart: unless-stopped\n    network_mode: bridge\n    privileged: false\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n      - type: bind\n        source: ${SHARED_DIR}/Downloads\n        target: /downloads\n    ports:\n      - target: 8000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 9666\n        published: \"9666\"\n        protocol: tcp\n"
+}

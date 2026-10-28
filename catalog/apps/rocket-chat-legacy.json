@@ -1,0 +1,30 @@
+{
+ "id": "rocket-chat-legacy",
+ "name": "Rocket.Chat (Legacy)",
+ "version": "b6cfd507cf913290045d380be2c14511c735acb840509d471fb2d7359a820031",
+ "category": "Social",
+ "tagline": "The communications platform that puts data protection first.",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/rocket-chat.png",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Rocket.Chat is an open-source fully customizable communications platform [...]",
+ "main_port": 3000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3000",
+   "required": true
+  }
+ ],
+ "compose": "# Service definitions\n# Defining the services required for the Rocket.Chat application.\nservices:\n  # Service: app\n  # This service is for the Rocket.Chat application itself.\n  app:\n    # Container name\n    # This names the Docker container for easy reference.\n    container_name: big-bear-rocket-chat\n    # Docker Image\n    # Specifies the Docker image to use for Rocket.Chat.\n    image: rocket.chat:6.13.1@sha256:b6cfd507cf913290045d380be2c14511c735acb840509d471fb2d7359a820031\n    # Restart Policy\n    # Determines how the container should be handled if it stops.\n    restart: unless-stopped\n    # Environment variables\n    # These variables are used by Rocket.Chat for its configuration.\n    environment:\n      MONGO_OPLOG_URL: mongodb://db:27017/local\n      ROOT_URL: http://localhost:3000\n    # Port Mappings\n    # Maps ports from the container to the host system.\n    ports:\n      - \"${APP_PORT}:3000\" # HostPort:ContainerPort\n    # Dependencies\n    # Specifies other services that this service depends on.\n    depends_on:\n      db:\n        condition: service_healthy\n    # Networks\n    # Assigns the app service to a network.\n    networks:\n      - rocketchat-net\n  # Service: db\n  # This service runs the MongoDB database used by Rocket.Chat.\n  db:\n    image: mongo:4.4.28@sha256:7a272834036ddc9c7379c2d646b6a6c23c985e28c280f1340b3f611c762f9d83\n    container_name: big-bear-rocketchat-db\n    volumes:\n      # Persistent storage for MongoDB\n      - ${APP_DATA_DIR}/db:/data/db\n    # Health Check\n    # Checks the health of the MongoDB service.\n    healthcheck:\n      test: [\"CMD\", \"mongo\", \"--eval\", \"db.stats()\"]\n      interval: 30s\n      timeout: 10s\n      retries: 3\n      start_period: 40s\n    # Networks\n    networks:\n      - rocketchat-net\n# Networks\n# Defines the network configurations used by the services.\nnetworks:\n  rocketchat-net:\n    driver: bridge\n"
+}

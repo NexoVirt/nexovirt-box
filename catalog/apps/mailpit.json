@@ -1,0 +1,31 @@
+{
+ "id": "mailpit",
+ "name": "Mailpit",
+ "version": "0790692be935ea4420d085694f7985b1f692ca6a8771ab0e0bd8ba75ac180498",
+ "category": "Developer",
+ "tagline": "Mailpit",
+ "icon": "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps/apps/mailpit/logo.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Mailpit is a multi-platform email testing tool \u0026 API for developers.",
+ "main_port": 8025,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8025",
+   "required": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-mailpit application\nservices:\n  # Service name: app\n  app:\n    image: axllent/mailpit:v1.32@sha256:0790692be935ea4420d085694f7985b1f692ca6a8771ab0e0bd8ba75ac180498 # Image for the app service\n    container_name: mailpit # Container name for the app service\n    restart: unless-stopped # Restart policy for the container\n    volumes: # Volumes to mount for the app service\n      - ${APP_DATA_DIR}/data:/data\n    environment: # Environment variables for the app service\n      - TZ=UTC\n    ports: # Ports to expose for the app service\n      - \"${APP_PORT}:8025\"\n      - \"1025:1025\"\n"
+}

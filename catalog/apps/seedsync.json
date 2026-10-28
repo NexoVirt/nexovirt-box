@@ -1,0 +1,47 @@
+{
+ "id": "seedsync",
+ "name": "SeedSync",
+ "version": "0.8.6",
+ "category": "Utilities",
+ "tagline": "SeedSync is a tool to sync the files on a remote Linux server.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/seedsync/metadata/logo.jpg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# SeedSync - Sync your seedbox. Fast.\n\nSeedSync is a tool to sync the files on a remote Linux server (like your seedbox, for example). It uses LFTP to transfer files fast!\n\n## Features\n\nBuilt on top of LFTP, the fastest file transfer program ever\nWeb UI - track and control your transfers from anywhere\nAutomatically extract your files after sync\nAuto-Queue - only sync the files you want based on pattern matching\nDelete local and remote files easily\nFully open source!\n\n## How it works\n\nInstall SeedSync on a local machine. SeedSync will connect to your remote server and sync files to the local machine as they become available.\n\nYou don't need to install anything on the remote server. All you need are the SSH credentials for the remote server.\n\nFAQ: https://ipsingh06.github.io/seedsync/faq/\n\n## Folder Info\n\n| Root Folder                           | Container Folder |\n|---------------------------------------|------------------|\n| /runtipi/app-data/seedsync/data/config| /config          |\n| /runtipi/media/torrents/complete      | /downloads       |",
+ "website": "https://ipsingh06.github.io/seedsync/",
+ "source": "https://github.com/ipsingh06/seedsync",
+ "main_port": 8800,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8800",
+   "required": true
+  },
+  {
+   "key": "SEEDSYNC_PUID",
+   "label": "UID",
+   "type": "number",
+   "hint": "Ensure any volume directories on the host are owned by the same user you specify",
+   "placeholder": "1000"
+  },
+  {
+   "key": "SEEDSYNC_PGID",
+   "label": "GUID",
+   "type": "number",
+   "hint": "Ensure any volume directories on the host are owned by the same group you specify",
+   "placeholder": "1000"
+  }
+ ],
+ "compose": "services:\n  seedsync:\n    container_name: seedsync\n    image: ipsingh06/seedsync:0.8.6\n    user: '${SEEDSYNC_PUID:-1000}:${SEEDSYNC_PGID:-1000}'\n    environment:\n      - TZ=${TZ}\n    volumes:\n      - ${APP_DATA_DIR}/data/config:/config\n      - ${ROOT_FOLDER_HOST}/media/torrents/complete:/downloads\n    ports:\n      - ${APP_PORT}:8800\n    restart: unless-stopped\n"
+}

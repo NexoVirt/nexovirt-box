@@ -1,0 +1,31 @@
+{
+ "id": "pydio-cells",
+ "name": "Pydio-cells",
+ "version": "231db913b99b3e1e277a31b8cb7c6738b31d1ebd03be2891bf5e517410377199",
+ "category": "Home",
+ "tagline": "The nextgen file sharing platform for organizations. It is a full rewrite of the Pydio project using the Go language following a micro-service architecture.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/pydio-cells-icon.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Pydio-cells is the nextgen file sharing platform for organizations. It is a full rewrite of the Pydio project using the Go language following a micro-service architecture.",
+ "main_port": 8080,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8080",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/pydio-cells:5.1.0@sha256:231db913b99b3e1e277a31b8cb7c6738b31d1ebd03be2891bf5e517410377199\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n      EXTERNALURL: ''\n      SERVER_IP: ''\n    ports:\n      - target: 8080\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

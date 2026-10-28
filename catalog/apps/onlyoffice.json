@@ -1,0 +1,31 @@
+{
+ "id": "onlyoffice",
+ "name": "OnlyOffice",
+ "version": "34b92f4a67bfd939bd6b75893e8217556e3b977f81e49472f7e28737b741ba1d",
+ "category": "Productivity",
+ "tagline": "OnlyOffice",
+ "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/onlyoffice.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Feature-rich web-based office suite with a vast range of collaborative capabilities",
+ "main_port": 7400,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "7400",
+   "required": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-onlyoffice application\nservices:\n  app:\n    image: onlyoffice/documentserver:9.1.0@sha256:34b92f4a67bfd939bd6b75893e8217556e3b977f81e49472f7e28737b741ba1d\n    container_name: documentserver\n    ports:\n      - \"${APP_PORT}:80\"\n    volumes:\n      - ${APP_DATA_DIR}/onlyoffice/logs:/var/log/onlyoffice\n      - ${APP_DATA_DIR}/onlyoffice/data:/var/www/onlyoffice/Data\n      - ${APP_DATA_DIR}/onlyoffice/lib:/var/lib/onlyoffice\n      - ${APP_DATA_DIR}/onlyoffice/rabbitmq:/var/lib/rabbitmq\n      - ${APP_DATA_DIR}/onlyoffice/redis:/var/lib/redis\n      - ${APP_DATA_DIR}/onlyoffice/db:/var/lib/postgresql\n"
+}

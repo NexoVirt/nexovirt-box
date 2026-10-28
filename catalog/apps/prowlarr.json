@@ -1,0 +1,33 @@
+{
+ "id": "prowlarr",
+ "name": "Prowlarr",
+ "version": "2.6.5",
+ "category": "Media",
+ "tagline": "A torrent/usenet indexer manager/proxy",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/prowlarr/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## A torrent/usenet indexer manager/proxy\n\nProwlarr is an indexer manager/proxy built on the popular *arr .net/reactjs base stack to integrate with your various PVR apps. Prowlarr supports management of both Torrent Trackers and Usenet Indexers. It integrates seamlessly with Lidarr, Mylar3, Radarr, Readarr, and Sonarr offering complete management of your indexers with no per app Indexer setup required (we do it all).\n\n### Major Features Include\n\n- Usenet support for 24 indexers natively, including Headphones VIP\n- Usenet support for any Newznab compatible indexer via \"Generic Newznab\"\n- Torrent support for over 500 trackers with more added all the time\n- Torrent support for any Torznab compatible tracker via \"Generic Torznab\"\n- Support for custom YML definitions via Cardigann that includes JSON and XML parsing\n- Indexer Sync to Lidarr/Mylar3/Radarr/Readarr/Sonarr, so no manual configuration of the other applications are required\n- Indexer history and statistics\n- Manual searching of Trackers \u0026 Indexers at a category level\n- Parameter based manual searching\n- Support for pushing multiple releases at once directly to your download clients from Prowlarr\n- Indexer health and status notifications\n- Per Indexer proxy support (SOCKS4, SOCKS5, HTTP, Flaresolverr)",
+ "website": "https://prowlarr.com/",
+ "source": "https://github.com/Prowlarr/Prowlarr/",
+ "main_port": 8109,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8109",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  prowlarr:\n    container_name: prowlarr\n    image: ghcr.io/linuxserver/prowlarr:2.6.5\n    environment:\n      - TZ=${TZ}\n    volumes:\n      - ${APP_DATA_DIR}/data/config:/config\n    ports:\n      - ${APP_PORT}:9696\n    restart: unless-stopped\n"
+}

@@ -1,0 +1,53 @@
+{
+ "id": "whisparr",
+ "name": "Whisparr",
+ "version": "latest",
+ "category": "Media",
+ "tagline": "Adult movie collection manager.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/whisparr/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## Whisparr\n\nWhisparr is an adult movie collection manager for Usenet and BitTorrent users. It can monitor multiple RSS feeds for new movies and will interface with clients and indexers to grab, sort, and rename them. It can also be configured to automatically upgrade the quality of existing files in the library when a better quality format becomes available.\nNote that only one type of a given movie is supported. If you want both an 4k version and 1080p version of a given movie you will need multiple instances.\n\n## Major Features Include\n\n* Adding new movies with lots of information, such as trailers, ratings, etc.\n* Support for major platforms: Windows, Linux, macOS, Raspberry Pi, etc.\n* Can watch for better quality of the movies you have and do an automatic upgrade. *e.g. from DVD to Blu-Ray*\n* Automatic failed download handling will try another release if one fails\n* Manual search so you can pick any release or to see why a release was not downloaded automatically\n* Full integration with SABnzbd and NZBGet\n* Automatically searching for releases as well as RSS Sync\n* Automatically importing downloaded movies\n* Recognizing Special Editions, Director's Cut, etc.\n* Identifying releases with hardcoded subs\n* Identifying releases with AKA movie names\n* SABnzbd, NZBGet, QBittorrent, Deluge, rTorrent, Transmission, uTorrent, and other download clients are supported and integrated\n* Full integration with Kodi and Plex (notifications, library updates)\n* Importing Metadata such as trailers or subtitles\n* Adding metadata such as posters and information for Kodi and others to use\n* Advanced customization for profiles, such that Whisparr will always download the copy you want\n* A beautiful UI\n\n## Folder Info\n\n| Root Folder                     | Container Folder |\n|---------------------------------|------------------|\n| /runtipi/app-data/whisparr/data | /config          |\n| /runtipi/media                  | /media           |",
+ "source": "https://github.com/Whisparr/Whisparr",
+ "main_port": 6969,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "6969",
+   "required": true
+  },
+  {
+   "key": "WHISPARR_PUID",
+   "label": "UID",
+   "type": "number",
+   "hint": "Ensure any volume directories on the host are owned by the same user you specify",
+   "placeholder": "1000"
+  },
+  {
+   "key": "WHISPARR_PGID",
+   "label": "GUID",
+   "type": "number",
+   "hint": "Ensure any volume directories on the host are owned by the same group you specify",
+   "placeholder": "1000"
+  },
+  {
+   "key": "WHISPARR_UMASK",
+   "label": "UMASK",
+   "type": "number",
+   "hint": "Ability to override the default umask settings for services started within the containers",
+   "placeholder": "002"
+  }
+ ],
+ "compose": "services:\n  whisparr:\n    container_name: whisparr\n    hostname: ${APP_ID}\n    image: ghcr.io/hotio/whisparr:latest\n    ports:\n      - \"${APP_PORT}:6969\"\n    environment:\n      - PUID=${WHISPARR_PUID-1000}\n      - PGID=${WHISPARR_PGID-1000}\n      - UMASK=${WHISPARR_UMASK-002}\n      - TZ=${TZ}\n    volumes:\n      - /etc/localtime:/etc/localtime:ro\n      - /etc/timezone:/etc/timezone:ro\n      - ${APP_DATA_DIR}/data:/config\n      - ${ROOT_FOLDER_HOST}/media:/media\n    healthcheck:\n      test: timeout 5s bash -c ':\u003e /dev/tcp/127.0.0.1/6969' || exit 1\n      interval: 10s\n      timeout: 5s\n      retries: 5\n      start_period: 30s\n    restart: unless-stopped\n"
+}

@@ -1,0 +1,31 @@
+{
+ "id": "pwndrop",
+ "name": "Pwndrop",
+ "version": "03d921e0ef70389f22ab74b32ccbd30017bfc9a536bca52f4d7bf8b6a4a63d92",
+ "category": "Home",
+ "tagline": "A self-deployable file hosting service for sending out red teaming payloads or securely sharing your private files over HTTP and WebDAV.",
+ "icon": "https://cdn.jsdelivr.net/gh/kgretzky/pwndrop@master/media/pwndrop-logo-512.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Pwndrop is a self-deployable file hosting service for sending out red teaming payloads or securely sharing your private files over HTTP and WebDAV.",
+ "main_port": 8080,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8080",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/pwndrop:1.0.1@sha256:03d921e0ef70389f22ab74b32ccbd30017bfc9a536bca52f4d7bf8b6a4a63d92\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n      SECRET_PATH: ''\n    ports:\n      - target: 8080\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

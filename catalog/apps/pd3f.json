@@ -1,0 +1,31 @@
+{
+ "id": "pd3f",
+ "name": "PD3F",
+ "version": "b4b85a83183192158993d069751b007758ee8c85c927b1a6f69020bd249097ef",
+ "category": "AI",
+ "tagline": "PD3F",
+ "icon": "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps/apps/pd3f/logo.jpg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "pd3f is a PDF text extraction pipeline that is self-hosted, local-first and Docker-based. It reconstructs the original continuous text with the help of machine learning.",
+ "main_port": 1616,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "1616",
+   "required": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-pd3f application\nservices:\n  # Service name: web\n  # The `web` service definition\n  web:\n    # Name of the container\n    container_name: big-bear-pd3f\n    # Image to be used for the container\n    image: pd3f/pd3f:latest@sha256:b4b85a83183192158993d069751b007758ee8c85c927b1a6f69020bd249097ef\n    # Container restart policy\n    restart: unless-stopped\n    # Volumes to be mounted to the container\n    volumes:\n      # Mounting the local /DATA/AppData/$AppID/uploads directory to /uploads/ inside the container\n      - ${APP_DATA_DIR}/uploads:/uploads/\n    # Ports mapping between host and container\n    ports:\n      # Mapping port 1616 of the host to port 5000 of the container\n      - \"${APP_PORT}:5000\"\n    command: [\"gunicorn\", \"app:app\", \"--bind=0.0.0.0:5000\"]\n    # Other services that this service depends on\n    depends_on:\n      - redis\n      - parsr\n      - worker\n      - ocr_worker\n    networks:\n      - big-bear-pd3f-network\n  # Service name: parsr\n  parsr:\n    image: axarev/parsr:v1.2.2@sha256:9b2b844474cd750aa026cc4bcbba55fb807f93cead9f0bec47f8ac1dc9e33280\n    networks:\n      - big-bear-pd3f-network\n    expose:\n      - 3001\n  # Service name: redis\n  redis:\n    image: redis:6.2.20-alpine@sha256:2185e741f4c1e7b0ea9ca1e163a3767c4270a73086b6bbea2049a7203212fb7f\n    networks:\n      - big-bear-pd3f-network\n    expose:\n      - 6379\n  # Service name: worker\n  worker:\n    image: pd3f/pd3f:latest@sha256:b4b85a83183192158993d069751b007758ee8c85c927b1a6f69020bd249097ef\n    depends_on:\n      - parsr\n      - redis\n    networks:\n      - big-bear-pd3f-network\n    volumes:\n      - ${APP_DATA_DIR}/cache:/root/.cache/\n      - ${APP_DATA_DIR}/to-ocr:/to-ocr/\n      - ${APP_DATA_DIR}/uploads:/uploads/\n    # delete results / files after one day\n    environment:\n      - KEEP_RESULTS_HOURS=24\n    command: [\"rq\", \"worker\", \"-u\", \"redis://redis:6379\", \"--results-ttl\", \"86400\"]\n  # Service name: ocr_worker\n  ocr_worker:\n    image: pd3f/pd3f-ocr:latest@sha256:81d869d87f95a5b07db7f9668223c41fc12d24721f95fc9d9f15bbeeb32c92c2\n    networks:\n      - big-bear-pd3f-network\n    volumes:\n      - ${APP_DATA_DIR}/to-ocr:/to-ocr/\n# Network definitions\nnetworks:\n  big-bear-pd3f-network:\n    name: big-bear-pd3f-network\n"
+}

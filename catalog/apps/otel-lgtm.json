@@ -1,0 +1,31 @@
+{
+ "id": "otel-lgtm",
+ "name": "OTEL LGTM",
+ "version": "75cdf892daffadf3763ef61c16a6d7f8586216fce0b40bba7874a0b053121084",
+ "category": "Developer",
+ "tagline": "OpenTelemetry Backend",
+ "icon": "https://images.weserv.nl/?url=https%3A%2F%2Fwww.gravatar.com%2Favatar%2F31cea69afa424609b2d83621b4d47f1d%3Fs%3D120%26r%3Dg%26d%3D404",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "An OpenTelemetry Backend in a Docker Image.",
+ "main_port": 3000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3000",
+   "required": true
+  }
+ ],
+ "compose": "# Service definitions for big-bear-otel-lgtm application\nservices:\n  # Service name: big-bear-otel-lgtm\n  # The `big-bear-otel-lgtm` service definition\n  big-bear-otel-lgtm:\n    # Name of the container\n    container_name: big-bear-otel-lgtm\n    # Image to be used for the container\n    image: grafana/otel-lgtm:0.38.0@sha256:75cdf892daffadf3763ef61c16a6d7f8586216fce0b40bba7874a0b053121084\n    # Container restart policy\n    restart: unless-stopped\n    # Volumes to be mounted to the container\n    volumes:\n      # Mounting the local otel-lgtm_data directory to /data inside the container\n      - ${APP_DATA_DIR}/data:/data\n    # Ports mapping between host and container\n    ports:\n      # Mapping port 3000 of the host to port 3000 of the container\n      - mode: ingress\n        target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      # Mapping port 4317 of the host to port 4317 of the container  \n      - mode: ingress\n        target: 4317\n        published: \"4317\"\n        protocol: tcp\n      # Mapping port 4318 of the host to port 4318 of the container  \n      - mode: ingress\n        target: 4318\n        published: \"4318\"\n        protocol: tcp\n    # Networks to be attached to the container\n    networks:\n      - big-bear-otel-lgtm\nnetworks:\n  big-bear-otel-lgtm:\n    driver: bridge\n"
+}

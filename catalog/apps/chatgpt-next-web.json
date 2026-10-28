@@ -1,0 +1,36 @@
+{
+ "id": "chatgpt-next-web",
+ "name": "ChatGPT Next Web",
+ "version": "v2.16.1",
+ "category": "AI",
+ "tagline": "A well-designed cross-platform ChatGPT UI.",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/ChatGPT-Next-Web/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "An intelligent chat application based on ChatGPT, supports fast deployment, Markdown, beautiful UI, fluid response, privacy and security, and allows customization of preset roles for quick creation, sharing, and debugging of personalized conversations.",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/ChatGPT-Next-Web/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/ChatGPT-Next-Web/screenshot-2.png"
+ ],
+ "website": "https://nextchat.club",
+ "main_port": 3000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  chatgpt-next-web:\n    environment:\n      PGID: $PGID\n      PUID: $PUID\n      TZ: $TZ\n      CODE: \"\"\n      PROXY_URL: \"\"\n      BASE_URL: \"https://api.openai.com\"\n    image: yidadaa/chatgpt-next-web:v2.16.1\n    deploy:\n      resources:\n        reservations:\n          memory: 64M\n    network_mode: bridge\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    restart: unless-stopped\n    container_name: chatgpt-next-web\n"
+}

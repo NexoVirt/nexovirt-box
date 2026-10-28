@@ -1,0 +1,69 @@
+{
+ "id": "bewcloud",
+ "name": "bewCloud",
+ "version": "v1.9.2",
+ "category": "Data",
+ "tagline": "The Simple Web Cloud Solution.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/bewcloud/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# bewCloud\n\nbewCloud is an open source web cloud solution and an alternative to Nextcloud and ownCloud. It aims at providing a robust, fast, efficient and modern user interface for backing up your files, a feed reader and taking notes.\n\n# FAQ\n\n## Where's Contacts/Calendar (CardDav/CalDav)?! Wasn't this supposed to be a core Nextcloud replacement?\n\n[Check this tag/release for more info and the code where/when that was being done](https://github.com/bewcloud/bewcloud/releases/tag/v0.0.1-self-made-carddav-caldav). Contacts/CardDav worked and Calendar/CalDav mostly worked as well at that point.\n\nThe developer's focus was to replace Nextcloud for them and their family ASAP, and it turns out it's not easy to do it all in a single, installable _thing_, so they focused on the Files UI, sync, and sharing, since [Radicale](https://radicale.org/v3.html) solved their other issues better than their own solution (and it's already _very_ efficient).\n\n## How does file sharing work?\n\n[Check this PR for advanced sharing with internal and external users, with read and write access that was being done and almost working](https://github.com/bewcloud/bewcloud/pull/4). The developer chose [symlinks](https://en.wikipedia.org/wiki/Symbolic_link), as they served their use case (having multiple data backups and trusting the people they provide accounts to, with the symlinks).\n\nYou can simply `ln -s /\u003cabsolute-path-to-data-files\u003e/\u003cowner-user-id\u003e/\u003cdirectory-to-share\u003e /\u003cabsolute-path-to-data-files\u003e/\u003cuser-id-to-share-with\u003e/` to create a shared directory between two users, and the same directory can have different names, now. The symlink needs to point to the container's directory, usually starting with `/app` if you didn't change the `Dockerfile`, otherwise the container will fail to load the linked directory.\n\n## How does it look?\n\n[Check the website](https://bewcloud.com) for screenshots or [the YouTube channel](https://www.youtube.com/@bewCloud) for 1-minute demos.",
+ "website": "https://bewcloud.com",
+ "source": "https://github.com/bewcloud/bewcloud",
+ "main_port": 0,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "ALLOW_SIGNUPS",
+   "label": "Allow new registrations",
+   "type": "boolean",
+   "hint": "Even if disabled, the first signup will work and become an admin.",
+   "default": "false"
+  },
+  {
+   "key": "ENABLE_EMAIL",
+   "label": "Enable email verification for new signups",
+   "type": "boolean",
+   "hint": "You'll need a Brevo API key for this. See below.",
+   "default": "false"
+  },
+  {
+   "key": "BREVO_API_KEY",
+   "label": "Brevo API key",
+   "type": "password",
+   "hint": "Used to send verification emails upon signup. More info at https://developers.brevo.com/docs/getting-started#using-your-api-key-to-authenticate."
+  },
+  {
+   "key": "DB_PASSWORD",
+   "label": "Database password",
+   "type": "password",
+   "min": 32,
+   "max": 32,
+   "generate": true
+  },
+  {
+   "key": "JWT_SECRET",
+   "label": "JWT secret",
+   "type": "password",
+   "min": 64,
+   "max": 64,
+   "generate": true
+  },
+  {
+   "key": "PASSWORD_SALT",
+   "label": "Password salt",
+   "type": "password",
+   "min": 32,
+   "max": 32,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  bewcloud:\n    image: 'ghcr.io/bewcloud/bewcloud:v1.9.2'\n    command: '-c \"deno run --allow-net --allow-read --allow-env migrate-db.ts \u0026\u0026 deno run --allow-all main.ts\"'\n    entrypoint: 'bash'\n    volumes:\n      - '${APP_DATA_DIR}/data/bewcloud:/app/data-files'\n    environment:\n      - 'PORT=8053'\n      - 'BASE_URL=${APP_PROTOCOL:-http}://${APP_DOMAIN}'\n      - 'POSTGRESQL_HOST=bewcloud-db'\n      - 'POSTGRESQL_USER=bewcloud'\n      - 'POSTGRESQL_PASSWORD=${DB_PASSWORD}'\n      - 'POSTGRESQL_DBNAME=bewcloud'\n      - 'POSTGRESQL_PORT=5432'\n      - 'JWT_SECRET=${JWT_SECRET}'\n      - 'PASSWORD_SALT=${PASSWORD_SALT}'\n      - 'BREVO_API_KEY=${BREVO_API_KEY}'\n      - 'CONFIG_ALLOW_SIGNUPS=${ALLOW_SIGNUPS}'\n      - 'CONFIG_ENABLED_APPS=news,notes,photos'\n      - 'CONFIG_FILES_ROOT_PATH=data-files'\n      - 'CONFIG_ENABLE_EMAILS=${ENABLE_EMAIL}'\n      - 'CONFIG_ALLOWED_COOKIE_DOMAINS=${INTERNAL_IP},bewcloud.${LOCAL_DOMAIN},${APP_HOST}'\n    x-runtipi:\n      internal_port: 8053\n      is_main: true\n  bewcloud-db:\n    image: 'postgres:15'\n    volumes:\n      - '${APP_DATA_DIR}/data/bewcloud/db:/var/lib/postgresql/data'\n    environment:\n      - 'POSTGRES_USER=bewcloud'\n      - 'POSTGRES_PASSWORD=${DB_PASSWORD}'\n      - 'POSTGRES_DB=bewcloud'\nx-runtipi:\n  schema_version: 2\n"
+}

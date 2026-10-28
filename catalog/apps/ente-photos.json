@@ -1,0 +1,47 @@
+{
+ "id": "ente-photos",
+ "name": "Ente Photos",
+ "version": "b59f681175405a769325ff542a6f4420e9cf8fbd5c538ea9812a75fcc004e056",
+ "category": "Media",
+ "tagline": "End-to-end encrypted photo storage",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/ente-photos.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Ente is a self-hosted, end-to-end encrypted platform to store, share, and rediscover your photos and videos across all your devices.",
+ "main_port": 3000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3000",
+   "required": true
+  },
+  {
+   "key": "SECRET_ENTE_DB_PASSWORD",
+   "label": "Ente db password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
+   "key": "SECRET_ENTE_JWT_SECRET",
+   "label": "Ente jwt secret",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  museum:\n    image: ghcr.io/ente/server:latest@sha256:4dba9930b25f6595d17cb28c41c299a6238b803f0244f9027703436fb4fa8aff\n    container_name: ente-museum\n    ports:\n      - \"8080:8080\"\n    depends_on:\n      postgres:\n        condition: service_healthy\n      minio:\n        condition: service_started\n      minio-init:\n        condition: service_completed_successfully\n    environment:\n      ENTE_DB_HOST: postgres\n      ENTE_DB_PORT: \"5432\"\n      ENTE_DB_NAME: ente_db\n      ENTE_DB_USER: pguser\n      ENTE_DB_PASSWORD: ${SECRET_ENTE_DB_PASSWORD}\n      ENTE_DB_SSLMODE: disable\n      ENTE_S3_ARE_LOCAL_BUCKETS: \"true\"\n      ENTE_S3_USE_PATH_STYLE_URLS: \"true\"\n      ENTE_S3_B2_EU_CEN_KEY: ente-minio-access\n      ENTE_S3_B2_EU_CEN_SECRET: change-me-minio-vH3pL8xC0zN5\n      ENTE_S3_B2_EU_CEN_ENDPOINT: localhost:3200\n      ENTE_S3_B2_EU_CEN_REGION: eu-central-2\n      ENTE_S3_B2_EU_CEN_BUCKET: b2-eu-cen\n      ENTE_KEY_ENCRYPTION: yvmG/RnzKrbCb9L3mgsmoxXr9H7i2Z4qlbT0mL3ln4w=\n      ENTE_KEY_HASH: KXYiG07wC7GIgvCSdg+WmyWdXDAn6XKYJtp/wkEU7x573+byBRAYtpTP0wwvi8i/4l37uicX1dVTUzwH3sLZyw==\n      ENTE_JWT_SECRET: ${SECRET_ENTE_JWT_SECRET}\n      ENTE_APPS_PUBLIC_ALBUMS: http://localhost:3002\n    restart: unless-stopped\n    networks:\n      - ente_network\n  socat:\n    image: alpine/socat@sha256:603174b77eebaba25ba8f8ebb15e1234d6600409554e95d6fb203fd106150287\n    container_name: ente-socat\n    network_mode: service:museum\n    depends_on:\n      - museum\n      - minio\n    command: TCP6-LISTEN:3200,fork,reuseaddr,ipv6only=0 TCP:minio:3200\n    restart: unless-stopped\n  web:\n    image: ghcr.io/ente/web:latest@sha256:b59f681175405a769325ff542a6f4420e9cf8fbd5c538ea9812a75fcc004e056\n    container_name: ente-web\n    ports:\n      - \"${APP_PORT}:3000\"\n      - \"3002:3002\"\n    depends_on:\n      - museum\n    environment:\n      ENTE_API_ORIGIN: http://localhost:8080\n    restart: unless-stopped\n    networks:\n      - ente_network\n  postgres:\n    image: postgres:15@sha256:bcab099bfaab33333a73a2ebe8c1d615c9f4c2402dd43452f989a36c6da9a5ba\n    container_name: ente-postgres\n    environment:\n      POSTGRES_USER: pguser\n      POSTGRES_PASSWORD: ${SECRET_ENTE_DB_PASSWORD}\n      POSTGRES_DB: ente_db\n    volumes:\n      - ${APP_DATA_DIR}/postgres_data:/var/lib/postgresql/data\n    healthcheck:\n      test: [\"CMD-SHELL\", \"pg_isready -U pguser -d ente_db\"]\n      interval: 10s\n      timeout: 5s\n      retries: 5\n      start_period: 40s\n    restart: unless-stopped\n    networks:\n      - ente_network\n  minio:\n    image: minio/minio@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e\n    container_name: ente-minio\n    ports:\n      - \"3200:3200\"\n    environment:\n      MINIO_ROOT_USER: ente-minio-access\n      MINIO_ROOT_PASSWORD: change-me-minio-vH3pL8xC0zN5\n    command: server /data --address \":3200\" --console-address \":3201\"\n    volumes:\n      - ${APP_DATA_DIR}/minio_data:/data\n    restart: unless-stopped\n    networks:\n      - ente_network\n  minio-init:\n    image: minio/mc@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727\n    container_name: ente-minio-init\n    depends_on:\n      - minio\n    entrypoint: \u003e\n      /bin/sh -c \" until mc alias set ente http://minio:3200 ente-minio-access change-me-minio-vH3pL8xC0zN5; do sleep 1; done; mc mb --ignore-existing ente/b2-eu-cen; mc mb --ignore-existing ente/wasabi-eu-central-2-v3; mc mb --ignore-existing ente/scw-eu-fr-v3; exit 0; \"\n\n    networks:\n      - ente_network\nnetworks:\n  ente_network:\n    driver: bridge\n"
+}

@@ -1,0 +1,98 @@
+{
+ "id": "outline",
+ "name": "Outline",
+ "version": "1.12.0",
+ "category": "Utilities",
+ "tagline": "A home for all your docs",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/outline/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## Outline\n_A fast, collaborative, knowledge base for your team built using React and Node.js._\n\u003cimg width=\"1640\" alt=\"screenshot\" src=\"https://user-images.githubusercontent.com/380914/110356468-26374600-7fef-11eb-9f6a-f2cc2c8c6590.png\"\u003e\n\nOutline is a full-featured knowledge base and is a great alternative to Notion, Obsidian and other similar apps.\n### Features\n- Easily host your documents\n- Modern UI\n- API \u0026 Integration support\n- Multiple components to choose from when editing documents\n- Markdown syntax\n\nLearn more at the official [website](https://getoutline.com)",
+ "website": "https://getoutline.com",
+ "source": "https://github.com/outline/outline",
+ "main_port": 8404,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8404",
+   "required": true
+  },
+  {
+   "key": "OUTLINE_SECRET_KEY",
+   "label": "Outline secret key",
+   "type": "password",
+   "min": 64,
+   "generate": true
+  },
+  {
+   "key": "OUTLINE_UTILS_SECRET",
+   "label": "Outline utils secret",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "OUTLINE_OIDC_CLID",
+   "label": "OIDC client ID",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "OUTLINE_OIDC_CLKEY",
+   "label": "OIDC client secret",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "OUTLINE_PG_PASSWORD",
+   "label": "Database password",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "OUTLINE_OIDC_SECRET",
+   "label": "OIDC secret",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "OUTLINE_USER",
+   "label": "Username",
+   "type": "text",
+   "required": true,
+   "min": 3,
+   "max": 50
+  },
+  {
+   "key": "OUTLINE_PASSWORD",
+   "label": "Password",
+   "type": "password",
+   "required": true,
+   "min": 12
+  },
+  {
+   "key": "SECRET_OIDC_TOKEN_URI",
+   "label": "Oidc token uri",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  outline:\n    container_name: outline\n    image: outlinewiki/outline:1.12.0\n    restart: unless-stopped\n    environment:\n      - DATABASE_URL=postgres://outline:${OUTLINE_PG_PASSWORD}@outline-postgres:5432/outline\n      - REDIS_URL=redis://outline-redis:6379\n      - SECRET_KEY=${OUTLINE_SECRET_KEY}\n      - UTILS_SECRET=${OUTLINE_UTILS_SECRET}\n      - URL=https://${APP_DOMAIN}\n      - FORCE_HTTPS=false\n      - FILE_STORAGE=local\n      - FILE_STORAGE_UPLOAD_MAX_SIZE=26214400\n      - PGSSLMODE=disable\n      - OIDC_CLIENT_ID=${OUTLINE_OIDC_CLID}\n      - OIDC_CLIENT_SECRET=${OUTLINE_OIDC_CLKEY}\n      - OIDC_AUTH_URI=https://${APP_DOMAIN}/uc/oauth/authorize/\n      - OIDC_TOKEN_URI=${SECRET_OIDC_TOKEN_URI}\n      - OIDC_USERINFO_URI=http://outline-oidc:8000/oauth/userinfo/\n      - OIDC_USERNAME_CLAIM=preferred_username\n      - OIDC_DISPLAY_NAME=OpenID\n      - OIDC_SCOPES=openid profile email\n    volumes:\n      - ${APP_DATA_DIR}/data/outline:/var/lib/outline/data\n    depends_on:\n      - outline-postgres\n      - outline-redis\n  outline-postgres:\n    container_name: outline-postgres\n    image: postgres:16-alpine\n    restart: unless-stopped\n    environment:\n      - POSTGRES_USER=outline\n      - POSTGRES_PASSWORD=${OUTLINE_PG_PASSWORD}\n      - POSTGRES_DB=outline\n    volumes:\n      - ${APP_DATA_DIR}/data/db:/var/lib/postgresql/data\n  outline-redis:\n    container_name: outline-redis\n    image: redis:7-alpine\n    restart: unless-stopped\n  outline-oidc:\n    container_name: outline-oidc\n    image: ghcr.io/sergi0g/oidc-provider:v0.2.0\n    restart: unless-stopped\n    environment:\n      - LANGUAGE_CODE=en-us\n      - TIME_ZONE=UTC\n      - FORCE_SCRIPT_NAME=/uc\n      - SECRET_KEY=${OUTLINE_OIDC_SECRET}\n      - DJANGO_SUPERUSER_PASSWORD=${OUTLINE_PASSWORD}\n      - DJANGO_SUPERUSER_USERNAME=${OUTLINE_USER}\n      - DJANGO_SUPERUSER_EMAIL=user@outline.localhost\n      - INITIAL_DATA=oidc-config.json\n      - DOMAIN=https://${APP_DOMAIN}\n    volumes:\n      - ${APP_DATA_DIR}/data/oidc-config.json:/app/oidc-config.json:ro\n      - ${APP_DATA_DIR}/data/uc/db:/app/db:z\n      - ${APP_DATA_DIR}/data/uc/static_root:/app/static_root:z\n  outline-nginx:\n    container_name: outline-reverse-proxy\n    image: nginx:alpine\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:80\n    volumes:\n      - ${APP_DATA_DIR}/data/nginx/:/etc/nginx/conf.d/:ro\n      - ${APP_DATA_DIR}/data/uc/static_root:/uc/static_root:ro\n    depends_on:\n      - outline\n      - outline-oidc\n"
+}

@@ -1,0 +1,32 @@
+{
+ "id": "whoami",
+ "name": "Whoami",
+ "version": "v1.12.0",
+ "category": "Utilities",
+ "tagline": "Tiny Go server that prints os information and HTTP request to output.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/whoami/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Whoami\n\nTiny Go webserver that prints OS information and HTTP request to output.\n\n## Usage\n\n### Paths\n\n#### `/[?wait=d]`\n\nReturns the whoami information (request and network information).\n\nThe optional `wait` query parameter can be provided to tell the server to wait before sending the response.\nThe duration is expected in Go's [`time.Duration`](https://golang.org/pkg/time/#ParseDuration) format (e.g. `/?wait=100ms` to wait 100 milliseconds).\n\nThe optional `env` query parameter can be set to `true` to add the environment variables to the response.\n\n#### `/api`\n\nReturns the whoami information (and some extra information) as JSON.\n\nThe optional `env` query parameter can be set to `true` to add the environment variables to the response.\n\n#### `/bench`\n\nAlways return the same response (`1`).\n\n#### `/data?size=n[\u0026unit=u]`\n\nCreates a response with a size `n`.\n\nThe unit of measure, if specified, accepts the following values: `KB`, `MB`, `GB`, `TB` (optional, default: bytes).\n\n#### `/echo`\n\nWebSocket echo.\n\n#### `/health`\n\nHeath check.\n\n- `GET`, `HEAD`, ...: returns a response with the status code defined by the `POST`\n- `POST`: changes the status code of the `GET` (`HEAD`, ...) response.",
+ "source": "https://github.com/traefik/whoami",
+ "main_port": 8382,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8382",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  whoami:\n    image: traefik/whoami:v1.12.0\n    container_name: whoami\n    ports:\n      - ${APP_PORT}:80\n"
+}

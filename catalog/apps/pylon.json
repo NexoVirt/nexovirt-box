@@ -1,0 +1,31 @@
+{
+ "id": "pylon",
+ "name": "Pylon",
+ "version": "5552a0c4b42f1e09a1146d2265c790fb2833128ec3ea9ebf1b0c634d40784e01",
+ "category": "Other",
+ "tagline": "A web based integrated development environment built with Node. Js as a backend and with a supercharged JavaScript/HTML5 frontend, licensed under GPL version 3. This project originates from Cloud9 v2 project.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/cloud9-logo.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Visit homepage: https://hub.docker.com/r/linuxserver/pylon/",
+ "main_port": 3131,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3131",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/pylon:2.10.0@sha256:5552a0c4b42f1e09a1146d2265c790fb2833128ec3ea9ebf1b0c634d40784e01\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n      GITURL: ''\n      PYUSER: ''\n      PYPASS: ''\n    ports:\n      - target: 3131\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n      - type: bind\n        source: ${APP_DATA_DIR}/code\n        target: /code\n"
+}

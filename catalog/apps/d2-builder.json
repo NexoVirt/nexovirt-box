@@ -1,0 +1,31 @@
+{
+ "id": "d2-builder",
+ "name": "D2-builder",
+ "version": "7f0d8cc53cb1ff88430a9dc30121f1350bafcd5c97f043b88d879ead04adbaf1",
+ "category": "Other",
+ "tagline": "This container needs special attention. Please check https://hub. Docker. Com/r/linuxserver/d2-builder for details.",
+ "icon": "https://cdn.jsdelivr.net/gh/WisdomSky/CasaOS-LinuxServer-AppStore@main/default-icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "This container needs special attention. Please check https://hub.docker.com/r/linuxserver/d2-builder for details.",
+ "main_port": 80,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "80",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/d2-builder:0.9.0@sha256:7f0d8cc53cb1ff88430a9dc30121f1350bafcd5c97f043b88d879ead04adbaf1\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n    ports:\n      - target: 80\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

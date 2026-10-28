@@ -1,0 +1,32 @@
+{
+ "id": "hestia-cp",
+ "name": "Hestia CP",
+ "version": "latest",
+ "category": "Other",
+ "tagline": "An open-source web hosting control panel that allows users to manage their websites, domains, email accounts, databases, and more. It provides a user-friendly interface for managing web hosting environments and simplifies various administrative tasks.",
+ "icon": "https://raw.githubusercontent.com/hestiacp/hestiacp/main/web/images/logo.png",
+ "architectures": [
+  "amd64",
+  "armv7",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Hestia Control Panel (HestiaCP) is an open-source web hosting control panel that allows users to manage their websites, domains, email accounts, databases, and more. It provides a user-friendly interface for managing web hosting environments and simplifies various administrative tasks.",
+ "main_port": 48112,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "48112",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: artsemkniazeu/hestiacp\n    restart: unless-stopped\n    environment:\n      TZ: $TZ\n    networks:\n      docnet:\n        ipv4_address: 10.1.1.0\n    ports:\n      - target: 8083\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /hestia\n      - type: bind\n        source: ${APP_DATA_DIR}/home\n        target: /home\n      - type: bind\n        source: ${APP_DATA_DIR}/backup\n        target: /backup\n    cap_add:\n      - NET_ADMIN\n      - NET_RAW\n      - SYS_NICE\n      - DAC_READ_SEARCH\nnetworks:\n  docnet:\n    name: docnet\n    driver: bridge\n    ipam:\n      config:\n        - subnet: 10.1.0.0/16\n          ip_range: 10.1.1.0/24\n          gateway: 10.1.0.1\n"
+}

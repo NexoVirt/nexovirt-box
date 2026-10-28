@@ -1,0 +1,37 @@
+{
+ "id": "jellyfin-nvidia-gpu",
+ "name": "Jellyfin(Nvidia GPU)",
+ "version": "10.10.6",
+ "category": "Media",
+ "tagline": "The personal Media System",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Jellyfin/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "Imagine having all your movies, TV shows, and music at your fingertips, ready on any device. Jellyfin transforms your media collection into a personalized entertainment hub, surpassing traditional photo albums. Your media is accessible anywhere and beautifully organized.\n\nJellyfin is free and open-source, offering high-quality streaming, detailed metadata, and personalized recommendations. Multiple users can have their own media libraries.\n\nDeploying Jellyfin on private cloud devices like Zima provides virtually unlimited storage, seamless streaming, and secure, multi-device access. It's perfect for NAS enthusiasts looking to enhance their home media setup.",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Jellyfin/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Jellyfin/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Jellyfin/screenshot-3.png"
+ ],
+ "website": "https://jellyfin.org/",
+ "main_port": 8097,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8097",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  jellyfin:\n    devices:\n      - /dev/dri:/dev/dri\n      - /dev/vcsm:/dev/vcsm\n      - /dev/vchiq:/dev/vchiq\n      - /dev/video10:/dev/video10\n      - /dev/video11:/dev/video11\n      - /dev/video12:/dev/video12\n    environment:\n      PGID: $PGID\n      PUID: $PUID\n      TZ: $TZ\n      CPU_FALLBACK: \"true\"\n      NVIDIA_VISIBLE_DEVICES: all\n    image: linuxserver/jellyfin:10.10.6\n    deploy:\n      resources:\n        reservations:\n          memory: \"256M\"\n          devices:\n            - driver: nvidia\n              count: all\n              capabilities: [gpu]\n    network_mode: bridge\n    ports:\n      - target: 8096\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 8920\n        published: \"8921\"\n        protocol: tcp\n      - target: 7359\n        published: \"7359\"\n        protocol: tcp\n      - target: 1900\n        published: \"1901\"\n        protocol: tcp\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n      - type: bind\n        source: ${SHARED_DIR}/Media\n        target: /Media\n      - type: bind\n        source: /opt/vc/lib\n        target: /opt/vc/lib\n    container_name: jellyfin\n"
+}

@@ -1,0 +1,60 @@
+{
+ "id": "nocodb",
+ "name": "NocoDB",
+ "version": "2026.10.0",
+ "category": "Utilities",
+ "tagline": "Open Source Airtable Alternative",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/nocodb/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# The Open Source Airtable Alternative\n\nTurns any MySQL, PostgreSQL, SQL Server, SQLite \u0026 MariaDB into a smart-spreadsheet.\n\n![demo](https://user-images.githubusercontent.com/35857179/194825053-3aa3373d-3e0f-4b42-b3f1-42928332054a.gif)",
+ "website": "https://nocodb.com/",
+ "source": "https://github.com/nocodb/nocodb",
+ "main_port": 8146,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8146",
+   "required": true
+  },
+  {
+   "key": "NOCODB_DB_PASSWORD",
+   "label": "NOCODB_DB_PASSWORD",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "NOCODB_JWT_SECRET",
+   "label": "NOCODB_JWT_SECRET",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "NOCODB_REDIS_PASSWORD",
+   "label": "REDIS_PASSWORD",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "NOCODB_TABLE_ROWS",
+   "label": "Choos the number of rows to display in a table.",
+   "type": "number",
+   "hint": "Leave empty for default 25"
+  }
+ ],
+ "compose": "services:\n  nocodb:\n    container_name: nocodb\n    depends_on:\n      nocodb-db:\n        condition: service_healthy\n    environment:\n      - NC_DB=pg://nocodb-db:5432?u=postgres\u0026p=${NOCODB_DB_PASSWORD}\u0026d=nocodb\n      - NC_PUBLIC_URL=${APP_PROTOCOL:-http}://${APP_DOMAIN}\n      - NC_AUTH_JWT_SECRET=${NOCODB_JWT_SECRET}\n      - NC_REDIS_URL=redis://default:${NOCODB_REDIS_PASSWORD}@nocodb-redis:6379\n      - DB_QUERY_LIMIT_DEFAULT=${NOCODB_TABLE_ROWS-25}\n    image: nocodb/nocodb:2026.10.0\n    ports:\n      - ${APP_PORT}:8080\n    restart: always\n    volumes:\n      - ${APP_DATA_DIR}/data/nocode-data:/usr/app/data\n  nocodb-db:\n    container_name: nocodb-db\n    environment:\n      POSTGRES_DB: nocodb\n      POSTGRES_PASSWORD: ${NOCODB_DB_PASSWORD}\n      POSTGRES_USER: postgres\n    healthcheck:\n      interval: 10s\n      retries: 10\n      test: pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\"\n      timeout: 2s\n    image: postgres:16\n    restart: always\n    volumes:\n      - ${APP_DATA_DIR}/data/postgres:/var/lib/postgresql/data\n  nocodb-redis:\n    image: redis:alpine\n    container_name: nocodb-redis\n    restart: unless-stopped\n    command: redis-server --requirepass ${NOCODB_REDIS_PASSWORD}\n    volumes:\n      - ${APP_DATA_DIR}/data/redis:/data\n    healthcheck:\n      test:\n        - CMD\n        - redis-cli\n        - ping\n      interval: 1s\n      timeout: 3s\n      retries: 30\n"
+}

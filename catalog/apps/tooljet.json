@@ -1,0 +1,56 @@
+{
+ "id": "tooljet",
+ "name": "Tooljet",
+ "version": "2.4.2",
+ "category": "Automation",
+ "tagline": "Alternative to retool to construct CRM dashboard",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/tooljet/metadata/logo.jpg",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## Installation Notes ##\n\nYou will need to enable the \"expose app\" option and configure a URL in Tipi to use Tooljet. This setting can be changed at a later date if an integration is identified that needs it.\n\n## Easily build internal tools. \n\nVisual app builder: 40+ built-in responsive widgets such as Tables, Charts, Lists, Forms, Progressbars, and more.\nToolJet Database: In-built no-code database.\nMulti-Page: Build an application with as many pages as you want.\nMultiplayer editing: multiple users can use the app builder at the same time.\n40+ data sources: connect to external databases, cloud storages and APIs.\nDesktop \u0026 mobile: layout widths can be customised to support different screens.\nSelf-host: (supports Docker, Kubernetes, Heroku, AWS EC2, Google Cloud Run, and more).\nCollaborate: add comments anywhere on the canvas and tag your team members.\nExtend with plugins: use our commandline tool to easily bootstrap new connectors.\nVersion control: every application have different versions with proper release cycle.\nRun JS \u0026 Python code: ability custom JavaScript \u0026 Python snippets\nGranular access control on group-level and app-level.\nLow-code: write JS code almost anywhere in the builder. For example, the color property of text can be set to status === 'success' ? 'green' : 'red'\nNo-code query editors: for all supported data sources.\nJoin and transform data: transform query results using just JavaScript/Python code.\nSecure: All the credentials are securely encrypted using aes-256-gcm.\nDoesn't store data: ToolJet acts only as a proxy and doesn't store any data.\nSSO: Supports multiple SSO providers\n\n![Screenshot](https://user-images.githubusercontent.com/7828962/211444352-4d6d2e4a-13c9-4980-9e16-4aed4af9811b.png)",
+ "website": "https://www.tooljet.com",
+ "source": "https://github.com/ToolJet/ToolJet",
+ "main_port": 9876,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "9876",
+   "required": true
+  },
+  {
+   "key": "DB_PASSWORD",
+   "label": "Database password",
+   "type": "password",
+   "min": 30,
+   "max": 30,
+   "generate": true
+  },
+  {
+   "key": "SECRET_KEY_BASE",
+   "label": "Secret key base",
+   "type": "password",
+   "min": 32,
+   "max": 32,
+   "generate": true
+  },
+  {
+   "key": "LOCKBOX_MASTER_KEY",
+   "label": "Lock master key",
+   "type": "password",
+   "min": 64,
+   "max": 64,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  tooljet:\n    container_name: tooljet\n    tty: true\n    stdin_open: true\n    image: tooljet/tooljet-client-ce:v2.4.2\n    restart: always\n    ports:\n      - ${APP_PORT}:80\n    depends_on:\n      - tooljet-server\n    environment:\n      - SERVER_HOST=tooljet-server\n    command: openresty -g \"daemon off;\"\n  tooljet-server:\n    container_name: tooljet-server\n    image: tooljet/tooljet-server-ce:v2.24.0\n    tty: true\n    stdin_open: true\n    restart: always\n    environment:\n      - SERVE_CLIENT=false\n      - SERVER_HOST=tooljet-server\n      - TOOLJET_HOST=https://${APP_DOMAIN}\n      - LOCKBOX_MASTER_KEY=${LOCKBOX_MASTER_KEY}\n      - SECRET_KEY_BASE=${SECRET_KEY_BASE}\n      - PG_DB=tooljet\n      - PG_USER=tooljet\n      - PG_HOST=db-tooljet\n      - PG_PASS=${DB_PASSWORD}\n      - CHECK_FOR_UPDATES=check_if_updates_are_available\n      - DEFAULT_FROM_EMAIL=hello@tooljet.io\n    command: npm run start:prod\n  db-tooljet:\n    container_name: db-tooljet\n    image: postgres:11\n    restart: on-failure\n    volumes:\n      - ${APP_DATA_DIR}/data/db:/var/lib/postgresql/data\n    environment:\n      - POSTGRES_USER=tooljet\n      - POSTGRES_PASSWORD=${DB_PASSWORD}\n      - POSTGRES_DB=tooljet\n      - PGDATA=/data/postgres\n"
+}

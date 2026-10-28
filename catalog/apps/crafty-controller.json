@@ -1,0 +1,31 @@
+{
+ "id": "crafty-controller",
+ "name": "Crafty Controller",
+ "version": "d2f61fcabb4756a63bc8538fb4f5e35ffddca3f1916a733c95a31c705c697742",
+ "category": "Media",
+ "tagline": "Crafty Controller",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/crafty-controller.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Crafty 4 is the next iteration of our Minecraft Server Wrapper / Controller / Launcher.",
+ "main_port": 8443,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8443",
+   "required": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-crafty application\nservices:\n  # Service name: big-bear-crafty\n  # The `big-bear-crafty` service definition\n  big-bear-crafty:\n    # Name of the container\n    container_name: big-bear-crafty\n    # Image to be used for the container\n    image: registry.gitlab.com/crafty-controller/crafty-4:4.10.4@sha256:d2f61fcabb4756a63bc8538fb4f5e35ffddca3f1916a733c95a31c705c697742\n    # Container restart policy\n    restart: unless-stopped\n    # Environment variables\n    environment:\n      - TZ=UTC\n    # Ports mapping between host and container HOST:CONTAINER\n    ports:\n      - \"${APP_PORT}:8443\" # Web UI\n      - 8123:8123\n      - 19132:19132/udp\n      - 25500-25600:25500-25600\n    # Volumes mapping between host and container\n    volumes:\n      - ${APP_DATA_DIR}/data/backups:/crafty/backups\n      - ${APP_DATA_DIR}/data/logs:/crafty/logs\n      - ${APP_DATA_DIR}/data/servers:/crafty/servers\n      - ${APP_DATA_DIR}/data/config:/crafty/app/config\n      - ${APP_DATA_DIR}/data/import:/crafty/import\n"
+}

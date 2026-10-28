@@ -1,0 +1,31 @@
+{
+ "id": "vlc",
+ "name": "Vlc",
+ "version": "47fa90ac456cc9485e28ec7bccbedc56cedaab87853237461374c12fb91c588c",
+ "category": "Home",
+ "tagline": "A free and open source cross-platform multimedia player and framework that delivers dependable performance across multiple devices.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/vlc-logo.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "VLC Media Player is a free and open source cross-platform multimedia player and framework that delivers dependable performance across multiple devices.",
+ "main_port": 3000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/vlc:3.0.24@sha256:47fa90ac456cc9485e28ec7bccbedc56cedaab87853237461374c12fb91c588c\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n      VLC_CLI: ''\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 3001\n        published: 3001\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

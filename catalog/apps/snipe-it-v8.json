@@ -1,0 +1,31 @@
+{
+ "id": "snipe-it-v8",
+ "name": "Snipe-IT v8",
+ "version": "eb6d78c1bdae46d15177b149fcc14d7cd795d9f6c17e53dc4d87e04da9653218",
+ "category": "Other",
+ "tagline": "Open source IT asset management",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/snipe-it.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Snipe-IT is a free, open source IT asset management system.",
+ "main_port": 8086,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8086",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: snipe/snipe-it:v8.8.3@sha256:eb6d78c1bdae46d15177b149fcc14d7cd795d9f6c17e53dc4d87e04da9653218\n    restart: unless-stopped\n    ports:\n      - \"${APP_PORT}:80\"\n    environment:\n      APP_ENV: production\n      APP_DEBUG: \"false\"\n      APP_KEY: $APP_KEY\n      APP_URL: $APP_URL\n      APP_TIMEZONE: UTC\n      APP_LOCALE: en-US\n      DB_CONNECTION: mariadb\n      DB_HOST: db\n      DB_PORT: 3306\n      DB_DATABASE: snipeit\n      DB_USERNAME: snipeit\n      DB_PASSWORD: $DB_PASSWORD\n    volumes:\n      - ${APP_DATA_DIR}/storage:/var/lib/snipeit\n    depends_on:\n      db:\n        condition: service_healthy\n        restart: true\n  db:\n    image: mariadb:11.4.7@sha256:39596f079862334be04f4231664862e55d4febe54309cc62f750f2297de85b06\n    restart: unless-stopped\n    environment:\n      MYSQL_DATABASE: snipeit\n      MYSQL_USER: snipeit\n      MYSQL_PASSWORD: $DB_PASSWORD\n      MYSQL_ROOT_PASSWORD: $MYSQL_ROOT_PASSWORD\n    volumes:\n      - ${APP_DATA_DIR}/db_data:/var/lib/mysql\n    healthcheck:\n      test: [\"CMD\", \"healthcheck.sh\", \"--connect\", \"--innodb_initialized\"]\n      interval: 5s\n      timeout: 1s\n      retries: 5\n"
+}

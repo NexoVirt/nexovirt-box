@@ -1,0 +1,37 @@
+{
+ "id": "hermes",
+ "name": "Hermes",
+ "version": "v2026.6.5",
+ "category": "AI",
+ "tagline": "A self-improving AI agent with memory, skills, messaging, and a web dashboard.",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Hermes/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "Hermes Agent is a self-improving AI agent from Nous Research, designed to be a long-running collaborator rather than a one-off chatbot.\nIts built-in learning loop combines persistent memory, cross-session recall, and reusable skills so it can keep context and improve recurring workflows over time.\nWith a unified gateway, rich toolsets, and a browser-based dashboard, Hermes fits research, automation, cross-platform communication, and ongoing operational work.\n\n**Main Features:**\n- Built-in learning loop with persistent memory, session search, and reusable skills\n- One gateway for CLI, Telegram, Discord, Slack, WhatsApp, Signal, and more\n- Tool-driven workflows with terminal access, web search, browser automation, file editing, and MCP integration\n- Automation and coordination with cron jobs, subagents, the web dashboard, and an OpenAI-compatible API\n\n**Learn More:**\n- [Hermes Agent Official Website](https://hermes-agent.nousresearch.com/)\n- [Hermes Agent GitHub](https://github.com/NousResearch/hermes-agent)\n- [Hermes Agent Documentation](https://hermes-agent.nousresearch.com/docs/)",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Hermes/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Hermes/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Hermes/screenshot-3.png"
+ ],
+ "website": "https://hermes-agent.nousresearch.com/",
+ "main_port": 9119,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "9119",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  hermes:\n    image: nousresearch/hermes-agent:v2026.6.5\n    container_name: hermes\n    deploy:\n      resources:\n        reservations:\n          memory: 1G\n    restart: unless-stopped\n    command:\n      - gateway\n      - run\n    ports:\n      - target: 8642\n        published: \"8642\"\n        protocol: tcp\n      - target: 9119\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/\n        target: /opt/data\n    environment:\n      HERMES_DASHBOARD: 1\n      HERMES_DASHBOARD_INSECURE: 1\n"
+}

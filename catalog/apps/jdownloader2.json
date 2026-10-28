@@ -1,0 +1,35 @@
+{
+ "id": "jdownloader2",
+ "name": "JDownloader2",
+ "version": "latest",
+ "category": "Media",
+ "tagline": "Free \u0026 open-source download management tool",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/JDownloader2/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "JDownloader is a free, open-source download management tool with a huge community that makes downloading as easy and fast as it should be. Users can start, stop or pause downloads, set bandwith limitations, auto-extract archives and much more. It's an easy-to-extend framework that can save hours of your valuable time every day!",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/JDownloader2/screenshot-1.jpg",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/JDownloader2/screenshot-2.jpg"
+ ],
+ "main_port": 5800,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "5800",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  jdownloader2:\n    image: jlesage/jdownloader-2:latest\n    restart: unless-stopped\n    environment:\n      - USER_ID=$PUID\n      - GROUP_ID=$PGID\n      - TZ=$TZ\n      - MYJDOWNLOADER_EMAIL=$MYJDOWNLOADER_EMAIL\n      - MYJDOWNLOADER_PASSWORD=$MYJDOWNLOADER_PASSWORD\n      - MYJDOWNLOADER_DEVICE_NAME=$MYJDOWNLOADER_DEVICE_NAME\n      - JDOWNLOADER_HEADLESS=$JDOWNLOADER_HEADLESS\n    ports:\n      - target: 5800\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 5900\n        published: \"5900\"\n        protocol: tcp\n      - target: 3129\n        published: \"3129\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n      - type: bind\n        source: ${SHARED_DIR}/Downloads\n        target: /output\n    container_name: jdownloader2\n"
+}

@@ -1,0 +1,37 @@
+{
+ "id": "hugo",
+ "name": "Hugo",
+ "version": "v0.161.1",
+ "category": "Developer",
+ "tagline": "The world's fastest framework for building websites",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Hugo/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "Hugo is a high-speed static site generation platform written in Go, optimized for speed and designed for flexibility. Advanced templating system and fast asset pipelines render a complete website in seconds, ideal for creating documentation sites, landing pages, and various project websites.\n\nCore features include optimized speed and a flexible framework. Concurrency in Go enables rapid rendering, supporting image processing (convert, resize, crop, rotate, adjust colors, apply filters, overlay text/images, extract EXIF data), JavaScript bundling (tree shaking, code splitting), Sass processing, and TailwindCSS support. Multilingual support and taxonomy system make it suitable for diverse sites like documentation, news, or events.\n\nIt includes an embedded web server for real-time previews of content, structure, and style changes during development. Frequent releases ensure ongoing feature enhancements, keeping it cutting-edge. With efficiency and flexibility at the core, the platform delivers a modern static site generation solution.\n\n**Key Features:**\n- High-speed rendering, generating sites in seconds\n- Fast asset pipelines: image processing, JavaScript bundling, Sass, and TailwindCSS support\n- Flexible framework with multilingual and taxonomy systems\n- Embedded web server for real-time development previews\n- Rich ecosystem of themes and plugins\n\n\n**Prerequisites for Using Hugo:**\n\n1. Open command line, navigate to `/DATA/AppData/hugo/project` directory\n\n```cd /DATA/AppData/hugo/project```\n\n2. Initialize the `project` directory as an empty Git repository\n\n```git init```\n\n3. Download the Ananke theme\n\n```git submodule add https://github.com/theNewDynamic/gohugo-theme-ananke.git themes/ananke```\n\n4. Specify the current theme\n\n```echo \"theme = 'ananke'\" \u003e\u003e hugo.toml```\n\n5. Restart Hugo\n\n\n**Learn More:**\n- [Hugo Official Website](https://gohugo.io/)\n- [Hugo GitHub](https://github.com/gohugoio/hugo)",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Hugo/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Hugo/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Hugo/screenshot-3.png"
+ ],
+ "website": "https://gohugo.io/",
+ "main_port": 1313,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "1313",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  hugo:\n    image: ghcr.io/gohugoio/hugo:v0.161.1\n    container_name: hugo\n    deploy:\n      resources:\n        reservations:\n          memory: 256M\n    restart: unless-stopped\n    user: \"0:0\"\n    ports:\n      - target: 1313\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/project\n        target: /project\n      - type: bind\n        source: ${APP_DATA_DIR}/cache\n        target: /cache\n    command: [\"server\", \"--bind=0.0.0.0\"]\n"
+}

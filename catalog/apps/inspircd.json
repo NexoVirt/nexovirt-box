@@ -1,0 +1,33 @@
+{
+ "id": "inspircd",
+ "name": "Inspircd",
+ "version": "4.12.1",
+ "category": "Social",
+ "tagline": "A modular C++ IRC server.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/inspircd/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## Inspircd\n\nInspIRCd is a modular C++ Internet Relay Chat (IRC) server for UNIX-like and Windows systems.\n\n### Supported Platforms\n\nInspIRCd is supported on the following platforms:\n\n- Most recent BSD variants using the Clang 5+ or GCC 7+ compilers and the GNU toolchains (Make, etc).\n\n- Most recent Linux distributions using the Clang 5+ or GCC 7+ compilers and the GNU toolchain.\n\n- The most recent three major releases of macOS using the AppleClang 10, Clang 5+, or GCC 7+ (*not* LLVM-GCC) compilers and the GNU toolchain.\n\n- Windows 10 build 17061 or newer using the MSVC 19.15+ (Visual Studio 15.8 2017) compiler and CMake 3.20 or newer.\n\nOther platforms and toolchains may also work but are not officially supported by the InspIRCd team. Generally speaking if you are using a reasonably modern UNIX-like system you should be able to build InspIRCd on it. If you can not and you wish to submit a patch we are happy to accept it as long as it is not extremely large.\n\nIf you encounter any bugs then [please file an issue](https://github.com/inspircd/inspircd/issues/new/choose).",
+ "website": "https://www.inspircd.org",
+ "source": "https://github.com/inspircd/inspircd",
+ "main_port": 6697,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "6697",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  inspircd:\n    container_name: inspircd\n    image: inspircd/inspircd-docker:4.12.1\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/data:/inspircd/conf\n    ports:\n      - ${APP_PORT}:6697\n"
+}

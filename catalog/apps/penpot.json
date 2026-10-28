@@ -1,0 +1,40 @@
+{
+ "id": "penpot",
+ "name": "Penpot",
+ "version": "latest",
+ "category": "Utilities",
+ "tagline": "Open-Source design \u0026 prototyping platform.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/penpot/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "\u003ch1 align=\"center\"\u003e\n  \u003cbr\u003e\n  \u003cimg src=\"https://penpot.app/images/readme/git-readme-header.png\" alt=\"PENPOT\"\u003e\n\u003c/h1\u003e\n\n🎇 **Penpot Fest exceeded all expectations - it was a complete success!** 🎇 Penpot Fest is our first Design event that brought designers and developers from the Open Source communities and beyond. Watch the replay of the talks on our [Youtube channel](https://www.youtube.com/playlist?list=PLgcCPfOv5v56-fghJo2dHNBqL9zlDTslh) or [Peertube channel](https://peertube.kaleidos.net/w/p/1tWgyJTt8sKbWwCEcBimZW)\n\nPenpot is the first **Open Source** design and prototyping platform meant for cross-domain teams. Non dependent on operating systems, Penpot is web based and works with open standards (SVG). Penpot invites designers all over the world to fall in love with open source while getting developers excited about the design process in return.\n\n![feature-readme](https://user-images.githubusercontent.com/1045247/189871786-0b44f7cf-3a0a-4445-a87b-9919ec398bf7.gif)\n\n## Why Penpot\n\nPenpot makes design and prototyping accessible to every team in the world.\n\n### For cross-domain teams\n\nWe have a clear focus on design and code teams and our capabilities reflect exactly that. The less hand-off mindset, the more fun for everyone.\n\n### Multiplatform\n\nBeing web based, Penpot is not dependent on operating systems or local installations, you will only need to run a modern browser.\n\n### Open Standards\n\nUsing SVG as no other design and prototyping tool does, Penpot files sport compatibility with most of the vectorial tools, are tech friendly and extremely easy to use on the web. We make sure you will always own your work.\n\n\u003cp align=\"center\"\u003e\n  \u003cimg src=\"https://penpot.app/images/readme/git-open.png\" alt=\"Open Source\" style=\"width: 65%;\"\u003e\n\u003c/p\u003e",
+ "website": "https://penpot.app",
+ "source": "https://github.com/penpot/penpot",
+ "main_port": 8645,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8645",
+   "required": true
+  },
+  {
+   "key": "PENPOT_POSTGRES_PASSWORD",
+   "label": "Penpot postgres password.",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  penpot:\n    image: penpotapp/frontend:latest\n    container_name: penpot\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:80\n    volumes:\n      - ${APP_DATA_DIR}/data/assets:/opt/data/assets\n    depends_on:\n      - penpot-backend\n      - penpot-exporter\n    environment:\n      - PENPOT_FLAGS=enable-registration enable-login-with-password\n  penpot-backend:\n    image: penpotapp/backend:latest\n    container_name: penpot-backend\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/data/assets:/opt/data/assets\n    depends_on:\n      - penpot-postgres\n      - penpot-redis\n    environment:\n      - PENPOT_FLAGS=enable-registration enable-login-with-password disable-email-verification\n      - PENPOT_PUBLIC_URI=${APP_PROTOCOL:-http}://${APP_DOMAIN}:${APP_PORT}\n      - PENPOT_DATABASE_URI=postgresql://penpot-postgres/penpot\n      - PENPOT_DATABASE_USERNAME=tipi\n      - PENPOT_DATABASE_PASSWORD=${PENPOT_POSTGRES_PASSWORD}\n      - PENPOT_REDIS_URI=redis://penpot-redis/0\n      - PENPOT_ASSETS_STORAGE_BACKEND=assets-fs\n      - PENPOT_STORAGE_ASSETS_FS_DIRECTORY=/opt/data/assets\n      - PENPOT_TELEMETRY_ENABLED=false\n  penpot-exporter:\n    image: penpotapp/exporter:latest\n    container_name: penpot-exporter\n    restart: unless-stopped\n    environment:\n      - PENPOT_PUBLIC_URI=http://penpot\n      - PENPOT_REDIS_URI=redis://penpot-redis/0\n  penpot-postgres:\n    image: postgres:14\n    restart: unless-stopped\n    container_name: penpot-postgres\n    stop_signal: SIGINT\n    volumes:\n      - ${APP_DATA_DIR}/data/postgres:/var/lib/postgresql/data\n    environment:\n      - POSTGRES_INITDB_ARGS=--data-checksums\n      - POSTGRES_DB=penpot\n      - POSTGRES_USER=tipi\n      - POSTGRES_PASSWORD=${PENPOT_POSTGRES_PASSWORD}\n  penpot-redis:\n    image: redis:7\n    container_name: penpot-redis\n    restart: unless-stopped\n"
+}

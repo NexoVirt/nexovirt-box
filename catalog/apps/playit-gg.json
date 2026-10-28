@@ -1,0 +1,21 @@
+{
+ "id": "playit-gg",
+ "name": "playit.gg",
+ "version": "d26d21c5fca76253dbc45715f1556cdc29945648a11e0f63b01fb6a1c9b4a96a",
+ "category": "Networking",
+ "tagline": "playit.gg is a global proxy that allows anyone to host a server without port forwarding. We use tunneling. Only the server needs to run the program, not every player!",
+ "icon": "https://images.weserv.nl/?url=https%3A%2F%2Fmedia.forgecdn.net%2Favatars%2F848%2F399%2F638248438568793075.png",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "playit.gg is a global proxy that allows anyone to host a server without port forwarding. We use tunneling. Only the server needs to run the program, not every player!",
+ "main_port": 0,
+ "scheme": "http",
+ "questions": [],
+ "compose": "# Service definitions for the big-bear-playitgg application\nservices:\n  # Service name: app\n  # The `app` service definition\n  app:\n    # Name of the container\n    container_name: playitgg\n    # Image to be used for the container\n    image: dysta/playitgg:1.2.0@sha256:d26d21c5fca76253dbc45715f1556cdc29945648a11e0f63b01fb6a1c9b4a96a\n    # Container restart policy\n    restart: unless-stopped\n    # Volumes to be mounted to the container\n    volumes:\n      # Mounting the local playitgg directory to /secrets inside the container\n      - ${APP_DATA_DIR}/secrets:/secrets\n"
+}

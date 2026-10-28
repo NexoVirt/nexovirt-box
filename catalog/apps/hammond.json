@@ -1,0 +1,32 @@
+{
+ "id": "hammond",
+ "name": "Hammond",
+ "version": "0.0.24",
+ "category": "Utilities",
+ "tagline": "Self hosted vehicle and expense management system. Like Clarkson, but better",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/hammond/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## About The Project\n\nHammond is a self hosted vehicle management system to track fuel and other expenses related to all of your vehicles. \nIt supports multiple users sharing multiple vehicles. \nIt is the logical successor to Clarkson which has not been updated for quite some time now. \nThis repo is again a fork of akhilrex's great [project](https://github.com/akhilrex/hammond).\n\n### Motivation and Developer Notes\n\nAs mentioned, this project is a fork of akhilrex's [project](https://github.com/akhilrex/hammond) which is no longer active. \nTo prevent the same from happeing to this project, we are seeking to add more maintainers/collaborators who have access to merge PRs.\n\nWe are trying our best to update with new features and feedback is very welcome.\n\nThe project is written using Go for the backend and Vuejs for the front end. \n\n### Built With\n\n- [Go](https://golang.org/)\n- [Go-Gin](https://github.com/gin-gonic/gin)\n- [GORM](https://github.com/go-gorm/gorm)\n- [SQLite](https://www.sqlite.org/index.html)\n- [VueJS](https://vuejs.org/)\n- [Vuex](https://vuex.vuejs.org/)\n- [Buefy](https://buefy.org/)\n\n#### Fresh setup\n\nYou will have to provide your name, email and password so that an admin user can be created for you.\n\nOnce done you will be taken to the login page.\n\nGo through the settings page once and change relevant settings before you start adding vehicles and expenses.\n\n## License\n\nDistributed under the GPL-3.0 License. See `LICENSE` for more information.\n\n## Roadmap\n\n- [ ] More reports\n- [ ] Vehicle specific reminders (servicing etc)\n- [ ] Native installer for Windows/Linux/MacOS\n\n## Contact\n\nProject Link: [https://github.com/AlfHou/hammond](https://github.com/AlfHou/hammond)\n\n[product-screenshot]: images/screenshot.jpg",
+ "source": "https://github.com/alfhou/hammond",
+ "main_port": 8185,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8185",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  hammond:\n    container_name: hammond\n    image: alfhou/hammond:v0.0.24\n    ports:\n      - ${APP_PORT}:3000\n    volumes:\n      - ${APP_DATA_DIR}/data/config:/config\n      - ${APP_DATA_DIR}/data/assets:/assets\n      - /etc/timezone:/etc/timezone:ro\n      - /etc/localtime:/etc/localtime:ro\n    environment:\n      - TZ=${TZ}\n    restart: unless-stopped\n    healthcheck:\n      test: wget --no-verbose --tries=1 --spider http://localhost:3000\n      interval: 10s\n      timeout: 5s\n      retries: 5\n      start_period: 30s\n"
+}

@@ -1,0 +1,33 @@
+{
+ "id": "memos",
+ "name": "Memos",
+ "version": "0.31.0",
+ "category": "Utilities",
+ "tagline": "Memo hub for knowledge management and collaboration.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/memos/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "##  An open-source, self-hosted memo hub for knowledge management and collaboration.\n\n- Open source and free forever;\n- Support for self-hosting with Docker in seconds;\n- Plain textarea first and support some useful markdown syntax;\n- Collaborate and share with your teammates;\n- RESTful API for self-service.\n\n\n![Screenshot](https://raw.githubusercontent.com/usememos/memos/main/resources/demo.webp)",
+ "website": "https://usememos.com/",
+ "source": "https://github.com/usememos/memos",
+ "main_port": 5230,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "5230",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  memos:\n    image: neosmemo/memos:0.31.0\n    container_name: memos\n    volumes:\n      - ${APP_DATA_DIR}/memos:/var/opt/memos\n    ports:\n      - ${APP_PORT}:5230\n    restart: unless-stopped\n"
+}

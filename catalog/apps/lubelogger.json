@@ -1,0 +1,165 @@
+{
+ "id": "lubelogger",
+ "name": "LubeLogger",
+ "version": "v1.7.4",
+ "category": "Utilities",
+ "tagline": "Vehicle Maintenance and Fuel Mileage Tracker.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/lubelogger/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "![image](https://github.com/hargata/lubelog/assets/155338622/545debcd-d80a-44da-b892-4c652ab0384a)\n\nSelf-Hosted, Open-Source, Web-Based Vehicle Maintenance and Fuel Mileage Tracker\n\nWebsite: https://lubelogger.com\n\n## Why\nBecause nobody should have to deal with a homemade spreadsheet or a shoebox full of receipts when it comes to vehicle maintenance.\n\n## Showcase\n[Promotional Brochure](https://lubelogger.com/brochure.pdf)\n\n[Screenshots](/docs/screenshots.md)\n\n## Demo\nTry it out before you download it! The live demo resets every 20 minutes.\n\n[Live Demo](https://demo.lubelogger.com) Login using username \"test\" and password \"1234\"\n\n### Need Help?\n[Documentation](https://docs.lubelogger.com/)\n\n[Troubleshooting Guide](https://docs.lubelogger.com/Troubleshooting)\n\n[Search Existing Issues](https://github.com/hargata/lubelog/issues)\n\n## Dependencies\n- [Bootstrap](https://github.com/twbs/bootstrap)\n- [LiteDB](https://github.com/mbdavid/litedb)\n- [Npgsql](https://github.com/npgsql/npgsql)\n- [Bootstrap-DatePicker](https://github.com/uxsolutions/bootstrap-datepicker)\n- [SweetAlert2](https://github.com/sweetalert2/sweetalert2)\n- [CsvHelper](https://github.com/JoshClose/CsvHelper)\n- [Chart.js](https://github.com/chartjs/Chart.js)\n- [Drawdown](https://github.com/adamvleggett/drawdown)\n- [MailKit](https://github.com/jstedfast/MailKit)\n\n## License\nMIT\n\n## Support\nSupport this project by [Subscribing on Patreon](https://patreon.com/LubeLogger) or [Making a Donation](https://buy.stripe.com/aEU9Egc8DdMc9bO144)",
+ "website": "https://lubelogger.com/",
+ "source": "https://github.com/hargata/lubelog",
+ "main_port": 8054,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8054",
+   "required": true
+  },
+  {
+   "key": "LUBELOGGER_LOCALE",
+   "label": "Locale and Language Settings",
+   "type": "text",
+   "hint": "Affect how numbers, currencies, and dates are formatted.",
+   "default": "en_US.UTF-8"
+  },
+  {
+   "key": "LUBELOGGER_ALLOWED_FILE_EXTENSIONS",
+   "label": "Allowed File Extensions",
+   "type": "text",
+   "hint": "Allowed file extensions for document uploads, use '*' to allow all file types.",
+   "default": "pdf"
+  },
+  {
+   "key": "LUBELOGGER_CUSTOM_LOGO_URL",
+   "label": "Custom Logo URL",
+   "type": "text",
+   "hint": "Custom Logo URL."
+  },
+  {
+   "key": "LUBELOGGER_MOTD",
+   "label": "Message of the Day",
+   "type": "text",
+   "hint": "Message of The Day displayed in Login page if configured."
+  },
+  {
+   "key": "LUBELOGGER_WEBHOOK_URL",
+   "label": "WebHook URL",
+   "type": "text",
+   "hint": "WebHook URL"
+  },
+  {
+   "key": "LUBELOGGER_EMAIL_SERVER",
+   "label": "Email \u003e Server",
+   "type": "text",
+   "hint": "Email SMTP settings used only for configuring multiple users(to send their registration token and forgot password tokens)."
+  },
+  {
+   "key": "LUBELOGGER_EMAIL_FROM",
+   "label": "Email \u003e From",
+   "type": "text"
+  },
+  {
+   "key": "LUBELOGGER_EMAIL_USE_SSL",
+   "label": "Email \u003e Use SSL ?",
+   "type": "boolean"
+  },
+  {
+   "key": "LUBELOGGER_EMAIL_PORT",
+   "label": "Email \u003e Port",
+   "type": "text",
+   "default": "587"
+  },
+  {
+   "key": "LUBELOGGER_EMAIL_USERNAME",
+   "label": "Email \u003e Username",
+   "type": "text"
+  },
+  {
+   "key": "LUBELOGGER_EMAIL_PASSWORD",
+   "label": "Email \u003e Password",
+   "type": "text"
+  },
+  {
+   "key": "LUBELOGGER_ENABLE_AUTH",
+   "label": "Auth \u003e Enable ?",
+   "type": "boolean",
+   "hint": "Allows users to configure whether if authentication is enabled via environment variable.",
+   "default": "false"
+  },
+  {
+   "key": "LUBELOGGER_USERNAME_HASH",
+   "label": "Auth \u003e Username Hash",
+   "type": "text",
+   "hint": "SHA256 Hash of the root username."
+  },
+  {
+   "key": "LUBELOGGER_PASSWORD_HASH",
+   "label": "Auth \u003e Password Hash",
+   "type": "text",
+   "hint": "SHA256 Hash of the root password."
+  },
+  {
+   "key": "LUBELOGGER_OPENID_NAME",
+   "label": "Auth \u003e OpenID \u003e Name",
+   "type": "text",
+   "hint": "Name of the OpenID Connect Provider"
+  },
+  {
+   "key": "LUBELOGGER_OPENID_CLIENT_ID",
+   "label": "Auth \u003e OpenID \u003e Client ID",
+   "type": "text",
+   "hint": "Client Id to Authenticate with the Provider"
+  },
+  {
+   "key": "LUBELOGGER_OPENID_CLIENT_SECRET",
+   "label": "Auth \u003e OpenID \u003e Client Secret",
+   "type": "text",
+   "hint": "Client Secret to Authenticate with the Provider"
+  },
+  {
+   "key": "LUBELOGGER_OPENID_AUTH_URL",
+   "label": "Auth \u003e OpenID \u003e Authorization URL",
+   "type": "text",
+   "hint": "Authorization URL to the Provider's Login Page"
+  },
+  {
+   "key": "LUBELOGGER_OPENID_TOKEN_URL",
+   "label": "Auth \u003e OpenID \u003e Token URL",
+   "type": "text",
+   "hint": "URL to retrieve user JWT from the Provider"
+  },
+  {
+   "key": "LUBELOGGER_OPENID_REDIRECT_URL",
+   "label": "Auth \u003e OpenID \u003e Redirect URL",
+   "type": "text",
+   "hint": "https://\u003cyourlubeloggerdomain.com\u003e/Login/RemoteAuth(must be HTTPS)"
+  },
+  {
+   "key": "LUBELOGGER_OPENID_SCOPE",
+   "label": "Auth \u003e OpenID \u003e Scope",
+   "type": "text",
+   "hint": "The scope for retrieving the user's email claim(usually it's just 'email')"
+  },
+  {
+   "key": "LUBELOGGER_OPENID_VALIDATE_STATE",
+   "label": "Auth \u003e OpenID \u003e Validate State",
+   "type": "boolean",
+   "hint": "true/false(default: false) - whether LubeLogger should validate state.",
+   "default": "false"
+  }
+ ],
+ "compose": "services:\n  lubelogger:\n    image: ghcr.io/hargata/lubelogger:v1.7.4\n    container_name: lubelogger\n    environment:\n      - TZ=${TZ}\n      - LOGGING__LOGLEVEL__DEFAULT=Error\n      - LC_ALL=${LUBELOGGER_LOCALE:-en_US.UTF-8}\n      - LANG=${LUBELOGGER_LOCALE:-en_US.UTF-8}\n      - POSTGRES_CONNECTION=Host=lubelogger-db:5432;Username=tipi;Password=tipi;Database=lubelogger;\n      - EnableAuth=${LUBELOGGER_ENABLE_AUTH:-false}\n      - UserNameHash=${LUBELOGGER_USERNAME_HASH}\n      - UserPasswordHash=${LUBELOGGER_PASSWORD_HASH}\n      - LUBELOGGER_ALLOWED_FILE_EXTENSIONS=${LUBELOGGER_ALLOWED_FILE_EXTENSIONS:-*}\n      - LUBELOGGER_LOGO_URL=${LUBELOGGER_CUSTOM_LOGO_URL}\n      - LUBELOGGER_MOTD=${LUBELOGGER_MOTD}\n      - LUBELOGGER_WEBHOOK=${LUBELOGGER_WEBHOOK_URL}\n      - MailConfig__EmailServer=${LUBELOGGER_EMAIL_SERVER}\n      - MailConfig__EmailFrom=${LUBELOGGER_EMAIL_FROM}\n      - MailConfig__UseSSL=${LUBELOGGER_EMAIL_USE_SSL:-false}\n      - MailConfig__Port=${LUBELOGGER_EMAIL_PORT:-587}\n      - MailConfig__Username=${LUBELOGGER_EMAIL_USERNAME}\n      - MailConfig__Password=${LUBELOGGER_EMAIL_PASSWORD}\n      - OpenIDConfig__Name=${LUBELOGGER_OPENID_NAME}\n      - OpenIDConfig__ClientId=${LUBELOGGER_OPENID_CLIENT_ID}\n      - OpenIDConfig__ClientSecret=${LUBELOGGER_OPENID_CLIENT_SECRET}\n      - OpenIDConfig__AuthURL=${LUBELOGGER_OPENID_AUTH_URL}\n      - OpenIDConfig__TokenURL=${LUBELOGGER_OPENID_TOKEN_URL}\n      - OpenIDConfig__RedirectURL=${LUBELOGGER_OPENID_REDIRECT_URL}\n      - OpenIDConfig__Scope=${LUBELOGGER_OPENID_SCOPE}\n      - OpenIDConfig__ValidateState=${LUBELOGGER_OPENID_VALIDATE_STATE:-false}\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:8080\n    volumes:\n      - /etc/localtime:/etc/localtime:ro\n      - ${APP_DATA_DIR}/data/config:/App/config\n      - ${APP_DATA_DIR}/data/data:/App/data\n      - ${APP_DATA_DIR}/data/documents:/App/wwwroot/documents\n      - ${APP_DATA_DIR}/data/images:/App/wwwroot/images\n      - ${APP_DATA_DIR}/data/log:/App/log\n      - ${APP_DATA_DIR}/data/keys:/root/.aspnet/DataProtection-Keys\n      - ${APP_DATA_DIR}/data/temp:/App/wwwroot/temp\n  lubelogger-db:\n    container_name: lubelogger-db\n    image: postgres:16.4-alpine\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/data/init/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh\n      - ${APP_DATA_DIR}/data/postgres:/var/lib/postgresql/data\n    environment:\n      TZ: ${TZ}\n      POSTGRES_DB: lubelogger\n      POSTGRES_USER: tipi\n      POSTGRES_PASSWORD: tipi\n    healthcheck:\n      test:\n        - CMD-SHELL\n        - pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB\n"
+}

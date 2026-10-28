@@ -1,0 +1,40 @@
+{
+ "id": "moneroblock",
+ "name": "Moneroblock",
+ "version": "0.1.2",
+ "category": "Utilities",
+ "tagline": "Decentralized and trustless Monero block explorer",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/moneroblock/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# MoneroBlock\n\nMoneroBlock is a trustless block explorer for the Monero payment network.\n\n## Running MoneroBlock\n\nOnce MoneroBlock is started open [127.0.0.1:31312](http://127.0.0.1:31312/) with your browser.\n\n### Running with a remote daemon\n\nSpecify your own node when installing MoneroBlock using the format `node.host.name:port`, i.e. `node.sethforprivacy.com:18089`.\n\n## Troubleshooting\n\nIf you have issues running this, please open an issue against the following repository:\n\nhttps://github.com/sethforprivacy/moneroblock-docker/issues\n\n## Donate\n\nIf you wish to support the MoneroBlock development please donate any amount:\n\nMonero: `892HHTyDg5mJm5eWJWZ8L1ZMYnnWExciQFFkpsgLh1DfVUXfUFj6z1X2jDD2ZRQLiwWYskeyNkrtpAHse4M3G29uBfiYgVL`\nWownero: `WW439rW1B6p4pA9oca1Aip6h2dneUCHTL9qdn5fstfkB1DzokvrU2hYGASDUcyfaa9gv5kXS82TUhRALMGJGFmBA26jAz3qM5ss`",
+ "source": "https://github.com/duggavo/MoneroBlock",
+ "main_port": 31312,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "31312",
+   "required": true
+  },
+  {
+   "key": "DAEMON_ADDRESS",
+   "label": "Monero Daemon",
+   "type": "text",
+   "hint": "Address in format node.host.name:port, i.e. node.sethforprivacy.com:18089",
+   "min": 10,
+   "max": 100
+  }
+ ],
+ "compose": "services:\n  moneroblock:\n    image: sethsimmons/moneroblock:v0.1.2\n    restart: unless-stopped\n    container_name: moneroblock\n    ports:\n      - ${APP_PORT}:31312\n    command:\n      - \"--daemon\"\n      - \"${DAEMON_ADDRESS:-node.sethforprivacy.com:18089}\"\n"
+}

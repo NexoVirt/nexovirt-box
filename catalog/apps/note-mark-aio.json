@@ -1,0 +1,39 @@
+{
+ "id": "note-mark-aio",
+ "name": "Note Mark AIO",
+ "version": "b8d6ff400af1e3a27ef8f2968308310b9816ad35d066dc83aab9bbdf73a51069",
+ "category": "Productivity",
+ "tagline": "Note Mark Aio",
+ "icon": "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps/apps/note-mark-aio/logo.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Note Mark Aio is a self-hosted note taking app that allows you to create, organize, and share notes. It's a fork of the popular note-mark app with a focus on simplicity and ease of use.",
+ "main_port": 8000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8000",
+   "required": true
+  },
+  {
+   "key": "SECRET_JWT_SECRET",
+   "label": "Jwt secret",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-homarr application\nservices:\n  # Service name: big-bear-note-mark-aio\n  # The `big-bear-note-mark-aio` service definition\n  big-bear-note-mark-aio:\n    # Name of the container\n    container_name: big-bear-note-mark-aio\n    # Image to be used for the container\n    image: ghcr.io/enchant97/note-mark-aio:0.19.4@sha256:b8d6ff400af1e3a27ef8f2968308310b9816ad35d066dc83aab9bbdf73a51069\n    # Container restart policy\n    restart: unless-stopped\n    environment:\n      - JWT_SECRET=${SECRET_JWT_SECRET}\n      - CORS_ORIGINS=\"http://example.com:8000\"\n    # Volumes to be mounted to the container\n    volumes:\n      # Mounting the local /config directory to /config inside the container\n      - ${APP_DATA_DIR}/data:/data\n    # Ports mapping between host and container\n    ports:\n      # Mapping port 8000 of the host to port 8000 of the container\n      - \"${APP_PORT}:8000\"\n    # Networks to be attached to the container\n    networks:\n      - big_bear_note_mark_aio_network\n# Network definitions for the big-bear-note-mark-aio application\nnetworks:\n  big_bear_note_mark_aio_network:\n    driver: bridge\n"
+}

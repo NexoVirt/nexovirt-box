@@ -1,0 +1,38 @@
+{
+ "id": "portracker",
+ "name": "Portracker",
+ "version": "11cbf74cc36a060e8046d4e23f20c134e04e3e3238baa1763e00c5fc8fe7c9c7",
+ "category": "Networking",
+ "tagline": "Real-time Port Monitoring Tool",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/portracker.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "docker_socket": true,
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "A self-hosted, real-time port monitoring and discovery tool that automatically discovers and maps network services across systems.",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps@main/apps/portracker/screenshots/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps@main/apps/portracker/screenshots/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps@main/apps/portracker/screenshots/screenshot-3.png",
+  "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps@main/apps/portracker/screenshots/screenshot-4.png"
+ ],
+ "main_port": 4999,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "4999",
+   "required": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-portracker application\nservices:\n  # Service name: big-bear-portracker\n  # The `big-bear-portracker` service definition\n  big-bear-portracker:\n    # Name of the container\n    container_name: big-bear-portracker\n    # Image to be used for the container\n    image: mostafawahied/portracker:1.3@sha256:11cbf74cc36a060e8046d4e23f20c134e04e3e3238baa1763e00c5fc8fe7c9c7\n    # Container restart policy\n    restart: unless-stopped\n    # Environment variables for service configuration\n    environment:\n      - PORT=4999\n      - DATABASE_PATH=/data/portracker.db\n      - TRUSTED_LOCAL_EMAIL=your@email.com\n      - CACHE_TIMEOUT_MS=30000\n      - DISABLE_CACHE=false\n      - INCLUDE_UDP=false\n      - DEBUG=false\n    # Volumes to be mounted to the container\n    volumes:\n      - ${APP_DATA_DIR}/data:/data\n      - /var/run/docker.sock:/var/run/docker.sock\n    # Ports mapping between host and container\n    ports:\n      # Mapping port 4999 of the host to port 4999 of the container\n      - \"${APP_PORT}:4999\"\n"
+}

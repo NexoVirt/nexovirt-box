@@ -1,0 +1,40 @@
+{
+ "id": "shlink",
+ "name": "Shlink",
+ "version": "5.1.8",
+ "category": "Utilities",
+ "tagline": "Shlink is a self-hosted URL shortener",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/shlink/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Shlink\n\nShlink is a fast self-hosted URL shortener that offers a RESTful API and a command line interface. Your shortened links are also safely manageable through [app.shlink.io](https://app.shlink.io) which is 100% browser based. Notable features include custom slugs, click tracking, and tag management. \n\nPlease note that the following advanced features are not activated through this Tipi App:\n* Multi-domain support\n* Geo-Localisation\n* RabbitMQ/Mercure real-time updates\n\nDuring the installation process, you will be prompted to specify the domain for your shortened URLs.\n\n## ℹ️ Required post installation step\nAfter installing Shlink in Tipi, you will have to generate a API Key before being able to use the service through the following command. \n```bash\ndocker exec -it shlink shlink api-key:generate\n```\n\nKeep your API Key secure, as it is essential for link administration. If you lose the key, rerun the command to generate a new one.\n\nIf you don't have access to the console of your Tipi server, consider using Portainer which is available on Tipi. Within Portainer, you would have to:\n* Select the local environment\n* Select the shlink container - not the shlink-db -\n* Click on Console within the \"Container Status\" panel\n* Execute a /bin/sh command\n* Within the newly opened terminal, enter `shlink api-key:generate`",
+ "website": "https://shlink.io/",
+ "source": "https://github.com/shlinkio/shlink",
+ "main_port": 8207,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8207",
+   "required": true
+  },
+  {
+   "key": "SHLINK_POSTGRES_PASSWORD",
+   "label": "Database password",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  shlink:\n    container_name: shlink\n    image: ghcr.io/shlinkio/shlink:5.1.8\n    environment:\n      - DEFAULT_DOMAIN=${APP_DOMAIN}\n      - IS_HTTPS_ENABLED=true\n      - DB_DRIVER=postgres\n      - DB_HOST=shlink-db\n      - DB_NAME=shlink\n      - DB_USER=shlink\n      - DB_PASSWORD=${SHLINK_POSTGRES_PASSWORD}\n    ports:\n      - ${APP_PORT}:8080\n    restart: unless-stopped\n    depends_on:\n      - shlink-db\n    volumes: []\n  shlink-db:\n    container_name: shlink-db\n    image: postgres:17.2-alpine\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/data/db:/var/lib/postgresql/data\n    environment:\n      - POSTGRES_PASSWORD=${SHLINK_POSTGRES_PASSWORD}\n      - POSTGRES_USER=shlink\n      - POSTGRES_DB=shlink\n"
+}

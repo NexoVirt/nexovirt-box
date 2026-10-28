@@ -1,0 +1,41 @@
+{
+ "id": "joplin-server",
+ "name": "Joplin Server",
+ "version": "3.7.3",
+ "category": "Utilities",
+ "tagline": "Note taking and to-do application with synchronisation",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/joplin/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## Note taking and to-do application with synchronisation\n\n- **username**: admin@localhost\n- **password**: admin\n\u003cbr /\u003e\n\nJoplin is a free, open source note taking and to-do application, which can handle a large number of notes organised into notebooks. The notes are searchable, can be copied, tagged and modified either from the applications directly or from your own text editor. The notes are in Markdown format.\n\nNotes exported from Evernote can be imported into Joplin, including the formatted content (which is converted to Markdown), resources (images, attachments, etc.) and complete metadata (geolocation, updated time, created time, etc.). Plain Markdown files can also be imported.\n\nThe notes can be securely synchronised using end-to-end encryption with various cloud services including Nextcloud, Dropbox, OneDrive and Joplin Cloud.\n\nFull text search is available on all platforms to quickly find the information you need. The app can be customised using plugins and themes, and you can also easily create your own.\n\nThe application is available for Windows, Linux, macOS, Android and iOS. A Web Clipper, to save web pages and screenshots from your browser, is also available for Firefox and Chrome.\n\n![Screenshot](https://raw.githubusercontent.com/laurent22/joplin/dev/Assets/WebsiteAssets/images/home-top-img.png)",
+ "website": "https://joplinapp.org",
+ "source": "https://github.com/laurent22/joplin",
+ "main_port": 8099,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8099",
+   "required": true
+  },
+  {
+   "key": "JOPLIN_DB_PASSWORD",
+   "label": "Joplin DB password",
+   "type": "password",
+   "min": 8,
+   "max": 50,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  joplin:\n    container_name: joplin\n    image: joplin/server:3.7.3\n    restart: unless-stopped\n    depends_on:\n      - db-joplin\n    ports:\n      - ${APP_PORT}:22300\n    environment:\n      - APP_PORT=22300\n      - APP_BASE_URL=${APP_PROTOCOL:-http}://${APP_DOMAIN}/\n      - DB_CLIENT=pg\n      - POSTGRES_PASSWORD=${JOPLIN_DB_PASSWORD}\n      - POSTGRES_USER=tipi\n      - POSTGRES_DATABASE=joplin\n      - POSTGRES_PORT=5432\n      - POSTGRES_HOST=db-joplin\n      - MAX_TIME_DRIFT=0\n  db-joplin:\n    container_name: db-joplin\n    image: postgres:14.2\n    volumes:\n      - ${APP_DATA_DIR}/data/postgres:/var/lib/postgresql/data\n    restart: unless-stopped\n    environment:\n      - POSTGRES_PASSWORD=${JOPLIN_DB_PASSWORD}\n      - POSTGRES_USER=tipi\n      - POSTGRES_DB=joplin\n"
+}

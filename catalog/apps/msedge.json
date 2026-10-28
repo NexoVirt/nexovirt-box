@@ -1,0 +1,30 @@
+{
+ "id": "msedge",
+ "name": "Msedge",
+ "version": "4e93ca32e16e3746347277fe2e39c7d8e11faab66e84cec5a777d9a63c7e80b1",
+ "category": "Home",
+ "tagline": "A cross-platform web browser developed by Microsoft and based on Chromium.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/edge-logo.png",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Microsoft Edge is a cross-platform web browser developed by Microsoft and based on Chromium.",
+ "main_port": 3000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/msedge:155.0.4283@sha256:4e93ca32e16e3746347277fe2e39c7d8e11faab66e84cec5a777d9a63c7e80b1\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n      EDGE_CLI: ''\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 3001\n        published: 3001\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

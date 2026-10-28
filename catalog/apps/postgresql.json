@@ -1,0 +1,33 @@
+{
+ "id": "postgresql",
+ "name": "PostgreSQL",
+ "version": "17.4",
+ "category": "Developer",
+ "tagline": "PostgreSQL is an advanced, enterprise-class, and open-source relational database system. PostgreSQL supports both SQL (relational) and JSON (non-relational) querying.",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/PostgreSQL/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "PostgreSQL is a powerful, open source object-relational database system with over 35 years of active development that has earned it a strong reputation for reliability, feature robustness, and performance.\n\nPostgreSQL is a highly stable database backed by more than 20 years of development by the open-source community.\n\nPostgreSQL is used as a primary database for many web applications as well as mobile and analytics applications.",
+ "website": "https://www.postgresql.org",
+ "main_port": 0,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "SECRET_POSTGRES_PASSWORD",
+   "label": "Postgres password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  postgresql:\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n      POSTGRES_USER: casaos\n      POSTGRES_PASSWORD: ${SECRET_POSTGRES_PASSWORD}\n      POSTGRES_DB: casaos\n    image: postgres:17.4\n    deploy:\n      resources:\n        reservations:\n          memory: \"2048M\"\n    restart: unless-stopped\n    ports:\n      - target: 5432\n        published: \"5432\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/data\n        target: /var/lib/postgresql/data\n    container_name: postgresql\n"
+}

@@ -1,0 +1,71 @@
+{
+ "id": "documenso",
+ "name": "Documenso",
+ "version": "41a69062febc915d1508b87be8c5bbe72ecd3c49232ddcd983490f5f7832f053",
+ "category": "Productivity",
+ "tagline": "Open source document signing",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons@main/png/documenso.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Documenso v2.19.0 is an open-source document signing platform backed by PostgreSQL.",
+ "main_port": 20030,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "20030",
+   "required": true
+  },
+  {
+   "key": "SECRET_NEXTAUTH_SECRET",
+   "label": "Nextauth secret",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
+   "key": "SECRET_NEXT_PRIVATE_ENCRYPTION_KEY",
+   "label": "Next private encryption key",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
+   "key": "SECRET_NEXT_PRIVATE_ENCRYPTION_SECONDARY_KEY",
+   "label": "Next private encryption secondary key",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
+   "key": "SECRET_NEXT_PRIVATE_SMTP_PASSWORD",
+   "label": "Next private smtp password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
+   "key": "SECRET_POSTGRES_PASSWORD",
+   "label": "Postgres password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  documenso:\n    image: documenso/documenso:v2.21.1@sha256:41a69062febc915d1508b87be8c5bbe72ecd3c49232ddcd983490f5f7832f053\n    container_name: documenso\n    restart: unless-stopped\n    depends_on:\n      documenso-db:\n        condition: service_healthy\n    ports:\n      - \"${APP_PORT}:3000\"\n    environment:\n      PORT: \"3000\"\n      NEXTAUTH_SECRET: ${SECRET_NEXTAUTH_SECRET}\n      NEXT_PRIVATE_ENCRYPTION_KEY: ${SECRET_NEXT_PRIVATE_ENCRYPTION_KEY}\n      NEXT_PRIVATE_ENCRYPTION_SECONDARY_KEY: ${SECRET_NEXT_PRIVATE_ENCRYPTION_SECONDARY_KEY}\n      NEXT_PUBLIC_WEBAPP_URL: http://localhost:20030\n      NEXT_PRIVATE_INTERNAL_WEBAPP_URL: http://localhost:3000\n      NEXT_PRIVATE_DATABASE_URL: postgresql://documenso:${SECRET_POSTGRES_PASSWORD}@documenso-db:5432/documenso\n      NEXT_PRIVATE_DIRECT_DATABASE_URL: postgresql://documenso:${SECRET_POSTGRES_PASSWORD}@documenso-db:5432/documenso\n      NEXT_PUBLIC_UPLOAD_TRANSPORT: database\n      NEXT_PRIVATE_SMTP_TRANSPORT: smtp-auth\n      NEXT_PRIVATE_SMTP_HOST: smtp.example.com\n      NEXT_PRIVATE_SMTP_PORT: \"587\"\n      NEXT_PRIVATE_SMTP_USERNAME: documenso-4RI74RoG\n      NEXT_PRIVATE_SMTP_PASSWORD: ${SECRET_NEXT_PRIVATE_SMTP_PASSWORD}\n      NEXT_PRIVATE_SMTP_FROM_NAME: Documenso\n      NEXT_PRIVATE_SMTP_FROM_ADDRESS: noreply@localhost\n  documenso-db:\n    image: postgres:15.19@sha256:724292da1f2e50bdccfc3302ce75bbba7f4a6076701b588cc795fcac65683550\n    container_name: documenso-db\n    restart: unless-stopped\n    environment:\n      POSTGRES_USER: documenso\n      POSTGRES_PASSWORD: ${SECRET_POSTGRES_PASSWORD}\n      POSTGRES_DB: documenso\n    volumes:\n      - ${APP_DATA_DIR}/database:/var/lib/postgresql/data\n    healthcheck:\n      test: [\"CMD-SHELL\", \"pg_isready -U documenso -d documenso\"]\n      interval: 10s\n      timeout: 5s\n      retries: 5\n"
+}

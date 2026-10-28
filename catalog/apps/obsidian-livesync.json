@@ -1,0 +1,56 @@
+{
+ "id": "obsidian-livesync",
+ "name": "Obsidian LiveSync",
+ "version": "3.5.3",
+ "category": "Utilities",
+ "tagline": "LiveSync couchdb backend for Obsidian",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/obsidian-livesync/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## Obsidian LiveSync\n\nSelf-hosted database for synchronizing Obsidian vaults.\n\n1. Install the **Self-hosted LiveSync** plugin from the [Obsidian Community Plugins](obsidian://show-plugin?id=obsidian-livesync) page.\n2. Connect to your server by entering the URL in the plugin settings using a domain name or IP address.\n3. If you are not exposing the app you have to use `http://\u003ctipi-ip\u003e:5984` as the URL.",
+ "source": "https://github.com/vrtmrz/self-hosted-livesync-server",
+ "main_port": 5984,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "5984",
+   "required": true
+  },
+  {
+   "key": "OBSIDIAN_LIVESYNC_USER",
+   "label": "CouchDB username",
+   "type": "text",
+   "required": true,
+   "min": 5
+  },
+  {
+   "key": "OBSIDIAN_LIVESYNC_PASSWORD",
+   "label": "CouchDB password",
+   "type": "password",
+   "required": true,
+   "min": 8,
+   "max": 50
+  },
+  {
+   "key": "CUSTOM_PORTOBSIDIAN_LIVESYNC_PORT",
+   "label": "CouchDB port",
+   "type": "number",
+   "hint": "Default is 5984",
+   "default": "5984",
+   "min": 1,
+   "max": 65535
+  }
+ ],
+ "compose": "services:\n  obsidian-livesync:\n    container_name: obsidian-livesync\n    image: couchdb:3.5.3\n    ports:\n      - ${OBSIDIAN_LIVESYNC_PORT:-${APP_PORT}}:5984\n    environment:\n      - COUCHDB_USER=${OBSIDIAN_LIVESYNC_USER}\n      - COUCHDB_PASSWORD=${OBSIDIAN_LIVESYNC_PASSWORD}\n    volumes:\n      - ${APP_DATA_DIR}/data/couchdb:/opt/couchdb/data\n      - ${APP_DATA_DIR}/data/local.ini:/opt/couchdb/etc/local.ini\n"
+}

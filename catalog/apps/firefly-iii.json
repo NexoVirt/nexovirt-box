@@ -1,0 +1,71 @@
+{
+ "id": "firefly-iii",
+ "name": "Firefly III",
+ "version": "version-6",
+ "category": "Finance",
+ "tagline": "Firefly III: a personal finances manager",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/firefly-iii/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "\"Firefly III\" is a (self-hosted) manager for your personal finances. It can help you keep track of your expenses and income, so you can spend less and save more. Firefly III supports the use of budgets, categories and tags. Using a bunch of external tools, you can import data. It also has many neat financial reports available.\n\nFirefly III should give you **insight** into and **control** over your finances. Money should be useful, not scary. You should be able to *see* where it is going, to *feel* your expenses and to... wow, I'm going overboard with this aren't I?\n\nBut you get the idea: this is your money. These are your expenses. Stop them from controlling you. I built this tool because I started to dislike money. Having money, not having money, paying bills with money, you get the idea. But no more. I want to feel \"safe\", whatever my balance is. And I hope this tool can help you. I know it helps me.\n\n![Firefly III on iMac](https://raw.githubusercontent.com/firefly-iii/firefly-iii/develop/.github/assets/img/imac-complete.png)\n\n### Purpose\n\nPersonal financial management is pretty difficult, and everybody has their own approach to it. Some people make budgets, other people limit their cashflow by throwing away their credit cards, others try to increase their current cashflow. There are tons of ways to save and earn money. Firefly III works on the principle that if you know where your money is going, you can stop it from going there.\n\nBy keeping track of your expenses and your income you can budget accordingly and save money. Stop living from paycheck to paycheck but give yourself the financial wiggle room you need.\n\nYou can read more about the purpose of Firefly III in the [documentation](https://docs.firefly-iii.org/).\n\n![Firefly III on iPad](https://raw.githubusercontent.com/firefly-iii/firefly-iii/develop/.github/assets/img/ipad-complete.png)\n\n## Need help?\n\nIf you need support using Firefly III or the associated tools, come find us!\n\n- [GitHub Discussions for questions and support](https://github.com/firefly-iii/firefly-iii/discussions/)\n- [Gitter.im for a good chat and a quick answer](https://gitter.im/firefly-iii/firefly-iii)\n- [GitHub Issues for bugs and issues](https://github.com/firefly-iii/firefly-iii/issues)\n- [Follow me around for news and updates on Twitter](https://twitter.com/Firefly_iii)",
+ "website": "https://www.firefly-iii.org/",
+ "source": "https://github.com/firefly-iii/firefly-iii",
+ "main_port": 8115,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8115",
+   "required": true
+  },
+  {
+   "key": "EMAIL",
+   "label": "Your email",
+   "type": "email",
+   "required": true
+  },
+  {
+   "key": "APP_KEY",
+   "label": "Random key",
+   "type": "password",
+   "min": 32,
+   "max": 32,
+   "generate": true
+  },
+  {
+   "key": "MYSQL_PASSWORD",
+   "label": "Database password",
+   "type": "password",
+   "min": 32,
+   "max": 32,
+   "generate": true
+  },
+  {
+   "key": "STATIC_CRON_TOKEN",
+   "label": "Random key",
+   "type": "password",
+   "min": 32,
+   "max": 32,
+   "generate": true
+  },
+  {
+   "key": "SECRET_MYSQL_RANDOM_ROOT_PASSWORD",
+   "label": "Mysql random root password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  firefly-iii:\n    image: fireflyiii/core:version-6\n    container_name: firefly-iii\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/data/uplodad:/var/www/html/storage/upload\n    ports:\n      - ${APP_PORT}:8080\n    depends_on:\n      - firefly-iii-db\n    environment:\n      - APP_ENV=local\n      - APP_DEBUG=false\n      - SITE_OWNER=${EMAIL}\n      - APP_KEY=${APP_KEY}\n      - STATIC_CRON_TOKEN=${STATIC_CRON_TOKEN}\n      - TZ=${TZ}\n      - TRUSTED_PROXIES=**\n      - DB_CONNECTION=mysql\n      - DB_HOST=firefly-iii-db\n      - DB_PORT=3306\n      - DB_DATABASE=firefly\n      - DB_USERNAME=firefly\n      - DB_PASSWORD=${MYSQL_PASSWORD}\n      - COOKIE_PATH=\"/\"\n      - COOKIE_DOMAIN=\n      - COOKIE_SECURE=false\n      - COOKIE_SAMESITE=lax\n      - APP_NAME=FireflyIII\n      - BROADCAST_DRIVER=log\n      - QUEUE_DRIVER=sync\n      - CACHE_PREFIX=firefly\n      - IS_HEROKU=false\n      - FIREFLY_III_LAYOUT=v1\n      - APP_URL=http://localhost:${APP_PORT}\n  firefly-iii-db:\n    container_name: firefly-iii-db\n    image: mariadb\n    hostname: fireflyiii-db\n    restart: unless-stopped\n    environment:\n      - MYSQL_RANDOM_ROOT_PASSWORD=${SECRET_MYSQL_RANDOM_ROOT_PASSWORD}\n      - MYSQL_USER=firefly\n      - MYSQL_PASSWORD=${MYSQL_PASSWORD}\n      - MYSQL_DATABASE=firefly\n    volumes:\n      - ${APP_DATA_DIR}/data/db:/var/lib/mysql\n  firefly-iii-cron:\n    container_name: firefly-iii-cron\n    image: alpine\n    command: sh -c \"echo \\\"0 3 * * * wget -qO- http://${APP_DOMAIN}/api/v1/cron/${STATIC_CRON_TOKEN}\\\" | crontab - \u0026\u0026 crond -f -L /dev/stdout\"\n"
+}

@@ -1,0 +1,65 @@
+{
+ "id": "onedev",
+ "name": "OneDev",
+ "version": "16.9.8",
+ "category": "Developer",
+ "tagline": "Self-hosted Git Server with Kanban and CI/CD",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/onedev/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "docker_socket": true,
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## Out-of-box Symbol Search and Navigation\n\nOf course IDE is good at doing this, but often we need to search in old commits (investigate issues in release versions etc), and switching commits in IDE can be troublesome and slow.\n\nIt works by analyzing source code with ANTLR, extracting symbols for storage incrementally, fast and space efficient. Now supports Java, JavaScript, C, C++, CSharp, Go, PHP, Python, CSS, SCSS, LESS and R. GitHub adds this feature several years ago, but seems that it only works for main branch, and GitLab has to configure CI job to generate and upload LSIF which is troublesome and can occupy considerable space if you do it for each commit.\n\nYou can also jump to symbol definition in diff while reviewing commits or pull requests.\n\n![searchsymbol](https://code.onedev.io/onedev/server/~files/main/doc/images/search-symbol.gif?raw=true)\n\n![jumpsymbol](https://code.onedev.io/onedev/server/~files/main/doc/images/symbol.gif?raw=true)\n\n## Code Search with Regular Expression\n\nYou may switch to any commit, and search code with regular expression. OneDev under the hood indexes the code with Lucene incrementally. At search time, literal tri-grams in the regular expression are extracted for a coarse search, followed by exact match in the result. This makes the regex search blazing fast, even for large repositories like Linux.\n\n![regex](https://code.onedev.io/onedev/server/~files/main/doc/images/regex-search.gif?raw=true)\n\n## Annotate Source/Diff with Static Analysis Result to Facilitate Code Review\n\nOf course this can be done by many third party applications at GitHub, however they display the result on their own applications, and this makes review activities such as adding comment over analysis result difficult. Not to mention that you need to pay for these services.\n\n![annotation](https://code.onedev.io/onedev/server/~files/main/doc/images/annotation.png?raw=true)\n\n## Customizable Issue State and Field, with Deep CI/CD Integration\n\nThe simple open/close state of GitHub/GitLab issues does not work well for many workflows. Considering issues submitted by customers:\n\n1. If developer closes issue upon committing the code, customer will be notified and may ask for the release fixing the issue.\n2. If developer closes the issue at release time, QA might be confused at what issues to test as they all remain open at test time.\n\nWith customizable issue states, we may address the issue with four states: open, committed, test ready and released:\n\n1. When code is committed, issue transits to committed state automatically\n2. When a test build is created and deployed, the issue transits to test ready state automatically. QA will be notified and can check issue detail to know which environment the test build is deployed into.\n3. When test passes, and a release build is created, customers submitting the issue will be notified and they can check issue detail to see which release contains the fix.\n\n![boards](https://code.onedev.io/onedev/server/~files/main/doc/images/boards.png?raw=true)\n\n![fixing-build](https://code.onedev.io/onedev/server/~files/main/doc/images/fixing-build.png?raw=true)\n\n## Service Desk to Create/Discuss Issues via Email\n\nService desk allows your users to submit tickets via email without the need to have a OneDev account. These tickets can then be created in desired projects, and assigned to appropriate members in your team. All further discussions over the tickets can take place completely in email, with discussion contents posted to ticket as comments. User will also get notifications when there are any ticket activities, for instance, when a relevant release is created or deployed\n\n![service-desk.png](https://code.onedev.io/onedev/server/~files/main/doc/images/service-desk.png?raw=true)\n\n## A powerful and Intuitive Query Language\n\nThanks to ANTLR again, OneDev ships sophisticated query languages for projects, commits, issues, builds, and pull requests, with intuitive auto-completions and hints. For instance, it enables our customers finding fixed issues between their running release and latest release, and enables us to find all commits submitted by someone touching specified modules, etc.\n\nQueries can be saved and subscribed, so that you won't miss anything interested.\n\n![query](https://code.onedev.io/onedev/server/~files/main/doc/images/query.gif?raw=true)\n\n## A Full-fledge CI/CD Engine without Writing Yaml\n\nOneDev ships with GUI to generate CI/CD Yaml. No need to google around for Yaml grammars. A one-liner docker command to start OneDev server and you have a local CI/CD runner automatically. Concerns about server capability to run massive jobs? Another one-liner to connect self-updating agent from any machine. Want auto-scale CI/CD farm? A helm one-liner to deploy OneDev into k8s cluster.\n\nBuild pipeline, matrix jobs, typed parameters, parameter chaining, step templates, build promotions… too many neat features to elaborate…\n\n![job-def](https://code.onedev.io/onedev/server/~files/main/doc/images/job-command.gif?raw=true)\n\n![run-job](https://code.onedev.io/onedev/server/~files/main/doc/images/build-option.gif?raw=true)\n\n![pipeline.gif](https://code.onedev.io/onedev/server/~files/main/doc/images/pipeline.gif?raw=true)\n\n## Flexible Pull Request Review Policy and Reviewer Suggestion\n\nSpecify pull request review policy based on author, branch, and changed files. OneDev can leverage git change history to suggest most appropriate reviewers for pull requests touching certain files.\n\n![review-policy](https://code.onedev.io/onedev/server/~files/main/doc/images/review-policy.gif?raw=true)\n\n## Lightweight Review without Pull Request\n\nComment on any part of code or diff to start a lightweight review without opening pull request. Review comments live through code modification and even file rename to serve as documentation.\n\nEach discussion is threaded so that you can easily know discussions with new comments/updates.\n\n![file-comment](https://code.onedev.io/onedev/server/~files/main/doc/images/file-comment.gif?raw=true)\n\n![thread-comments](https://code.onedev.io/onedev/server/~files/main/doc/images/threaded-comments.png?raw=true)\n\n## Command Palette to Access Features Quickly\n\nPress cmd/ctrl-k to bring up command palette from anywhere. Search projects, files, issues, pull requests, builds, and various settings and jump to them without leaving your keyboard\n\n![command-palette.gif](https://code.onedev.io/onedev/server/~files/main/doc/images/command-palette.gif?raw=true)\n\n## Write Markdown Pleasantly With a Smart Editor\n\nWhen embedding an image in a markdown file in GitHub/GitLab, you need to upload the image in a separate page, and then figure out the relative path to reference that image. With OneDev, you simply upload the image to desired folder in same editor, and the link will be generated automatically.\n\nOneDev tracks your cursor in edit window and scrolls the preview window as necessary so that you can always preview what you are typing.\n\n![markdown](https://code.onedev.io/onedev/server/~files/main/doc/images/markdown.gif?raw=true)\n\n## SLOC Trend By Language\n\nOneDev inspects git history of main branch to calculate trend of source lines of code by language efficiently.\n\n![stats](https://code.onedev.io/onedev/server/~files/main/doc/images/stats.png?raw=true)\n\n## Project Hierarchy to Facilitate Setting Inheritance\n\nOrganization is ideal for public service. However for self-hosted internal use, we feel that a hierarchical structure is more practical to organize projects. Child projects can inherit settings from parent project and can selectively override some of them if necessary. This reduces a lot of overhead to manage a lot of projects in the company.\n\n## Fast and Reliable with Moderate Resource Usage\n\nOneDev is carefully designed with performance in mind. With a 2 core 2GB box, you will get all features above for medium sized projects.\nIt has been intensively used for more than 5 years, with battle-proven reliability. Fixing bugs is our highest priority, and there is\nnormally few to no known bugs in the wild.\n\n---\n\n# Special Thanks\n\n![yourkit](https://www.yourkit.com/images/yklogo.png)\n\n[YourKit](https://yourkit.com) supports this project by providing a free open source license of their excellent Java profiler",
+ "website": "https://code.onedev.io/",
+ "source": "https://code.onedev.io/onedev/server",
+ "main_port": 6610,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "6610",
+   "required": true
+  },
+  {
+   "key": "ONEDEV_DB_PASSWORD",
+   "label": "DB_PASSWORD",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "ONEDEV_USERNAME",
+   "label": "Onedev username",
+   "type": "text",
+   "required": true,
+   "min": 3,
+   "max": 50
+  },
+  {
+   "key": "ONEDEV_EMAIL",
+   "label": "Onedev email",
+   "type": "email",
+   "required": true,
+   "min": 3,
+   "max": 50
+  },
+  {
+   "key": "ONEDEV_PASSWORD",
+   "label": "Onedev password",
+   "type": "password",
+   "required": true,
+   "min": 8,
+   "max": 50
+  }
+ ],
+ "compose": "services:\n  onedev:\n    image: 1dev/server:16.9.8\n    container_name: onedev\n    environment:\n      - hibernate_dialect=io.onedev.server.persistence.PostgreSQLDialect\n      - hibernate_connection_driver_class=org.postgresql.Driver\n      - hibernate_connection_url=jdbc:postgresql://onedev-db:5432/onedev\n      - hibernate_connection_username=tipi\n      - hibernate_connection_password=${ONEDEV_DB_PASSWORD}\n      - initial_user=${ONEDEV_USERNAME}\n      - initial_password=${ONEDEV_PASSWORD}\n      - initial_email=${ONEDEV_EMAIL}\n      - initial_server_url=${APP_DOMAIN}\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/data/onedev:/opt/onedev\n      - /var/run/docker.sock:/var/run/docker.sock\n    ports:\n      - ${APP_PORT}:6610\n      - '6611:6611'\n    depends_on:\n      - onedev-db\n  onedev-db:\n    container_name: onedev-db\n    image: postgres:14\n    restart: unless-stopped\n    environment:\n      - POSTGRES_USER=tipi\n      - POSTGRES_PASSWORD=${ONEDEV_DB_PASSWORD}\n      - POSTGRES_DB=onedev\n    volumes:\n      - ${APP_DATA_DIR}/data/postgres:/var/lib/postgresql/data\n"
+}

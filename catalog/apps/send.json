@@ -1,0 +1,31 @@
+{
+ "id": "send",
+ "name": "Send",
+ "version": "latest",
+ "category": "Utilities",
+ "tagline": "Simple, private file sharing. https://send.vis.ee/",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/send/metadata/logo.jpg",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "A fork of Mozilla's [Firefox Send][mozilla-send].\nMozilla discontinued Send, this fork is a community effort to keep the project\nup-to-date and alive.\n\n- Forked [at][fork-commit] Mozilla's last publicly hosted version\n- _Mozilla_ \u0026 _Firefox_ branding [is][remove-branding-pr] removed so you can legally self-host\n- Kept compatible with [`ffsend`][ffsend] (CLI for Send)\n- Dependencies have been updated\n- Mozilla's [changes][mozilla-patches] since the fork have been selectively [merged][mozilla-patches-pr]\n- Mozilla's experimental report feature, download tokens, trust warnings and FxA changes are not included\n\nFind an up-to-date Docker image here: [docs/docker.md](docs/docker.md)\n\nThe original project by Mozilla can be found [here][mozilla-send].\nPlease consider to [donate][donate] to allow me to keep working on this.\n\nThanks [Mozilla][mozilla] for building this amazing tool!\n\n[branch-mozilla-master]: https://gitlab.com/timvisee/send/-/tree/mozilla-master\n[branch-send-v3]: https://gitlab.com/timvisee/send/-/tree/send-v3\n[branch-send-v4]: https://gitlab.com/timvisee/send/-/tree/send-v4\n[donate]: https://timvisee.com/donate\n[ffsend]: https://github.com/timvisee/ffsend\n[fork-commit]: https://gitlab.com/timvisee/send/-/commit/3e9be676413a6e1baaf6a354c180e91899d10bec\n[mozilla-patches-pr]: https://gitlab.com/timvisee/send/-/merge_requests/3\n[mozilla-patches]: https://gitlab.com/timvisee/send/-/compare/3e9be676413a6e1baaf6a354c180e91899d10bec...mozilla-master\n[mozilla-send]: https://github.com/mozilla/send\n[mozilla]: https://mozilla.org/\n[remove-branding-pr]: https://gitlab.com/timvisee/send/-/merge_requests/2",
+ "source": "https://gitlab.com/timvisee/send",
+ "main_port": 8126,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8126",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  send:\n    image: registry.gitlab.com/timvisee/send:latest\n    container_name: send\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:1443\n    volumes:\n      - ${APP_DATA_DIR}/data/uploads:/uploads\n    environment:\n      - NODE_ENV=production\n      # Networking\n      - BASE_URL=${APP_PROTOCOL:-http}://${APP_DOMAIN}\n      # Redis\n      - REDIS_HOST=send-redis\n      # Storage Limit\n      - MAX_FILE_SIZE=2147483648\n      # Storage path\n      - FILE_DIR=/uploads\n    depends_on:\n      - send-redis\n  send-redis:\n    image: redis:alpine\n    container_name: send-redis\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/data/redis:/data\n    healthcheck:\n      test: [\"CMD\", \"redis-cli\", \"ping\"]\n      interval: 5s\n      timeout: 3s\n      retries: 30\n"
+}

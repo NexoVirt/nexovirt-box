@@ -1,0 +1,35 @@
+{
+ "id": "ddns-go",
+ "name": "ddns-go",
+ "version": "v6.17.1",
+ "category": "Networking",
+ "tagline": "Simple and easy to use DDNS",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Ddns-go/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "A simple and easy-to-use DDNS tool. Automatically updates domain name resolution to your public IP (supports Alibaba Cloud, Tencent Cloud, Dnspod, Cloudflare, Callback, Huawei Cloud, Baidu Cloud, Porkbun, GoDaddy, and Google Domain).\n\nDeploy DDNS-go on Zima, and you can bind the public IP of your Zima device to your domain name. This way, you can access your Zima device via the domain name while you are away.",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Ddns-go/screenshot-1.png"
+ ],
+ "main_port": 9876,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "9876",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  ddns-go:\n    image: jeessy/ddns-go:v6.17.1\n    network_mode: bridge\n    deploy:\n      resources:\n        reservations:\n          memory: \"32M\"\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /root\n    ports:\n      - target: 9876\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    container_name: ddns-go\n"
+}

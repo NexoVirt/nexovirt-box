@@ -1,0 +1,33 @@
+{
+ "id": "grafana",
+ "name": "Grafana",
+ "version": "13.0.2",
+ "category": "Data",
+ "tagline": "The open and composable observability and data visualization platform.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/grafana/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Grafana\n\nThe open-source platform for monitoring and observability\n\nGrafana allows you to query, visualize, alert on and understand your metrics no matter where they are stored. Create, explore, and share dashboards with your team and foster a data-driven culture:\n\n- **Visualizations:** Fast and flexible client side graphs with a multitude of options. Panel plugins offer many different ways to visualize metrics and logs.\n- **Dynamic Dashboards:** Create dynamic \u0026 reusable dashboards with template variables that appear as dropdowns at the top of the dashboard.\n- **Explore Metrics:** Explore your data through ad-hoc queries and dynamic drilldown. Split view and compare different time ranges, queries and data sources side by side.\n- **Explore Logs:** Experience the magic of switching from metrics to logs with preserved label filters. Quickly search through all your logs or streaming them live.\n- **Alerting:** Visually define alert rules for your most important metrics. Grafana will continuously evaluate and send notifications to systems like Slack, PagerDuty, VictorOps, OpsGenie.\n- **Mixed Data Sources:** Mix different data sources in the same graph! You can specify a data source on a per-query basis. This works for even custom datasources.\n\n## Default credentials\n\nThe default username is `admin` and the default password is `admin`.\n\n## Get started\n\n- [Get Grafana](https://grafana.com/get)\n- [Installation guides](https://grafana.com/docs/grafana/latest/setup-grafana/installation/)\n\nUnsure if Grafana is for you? Watch Grafana in action on [play.grafana.org](https://play.grafana.org/)!\n\n## Documentation\n\nThe Grafana documentation is available at [grafana.com/docs](https://grafana.com/docs/).\n\n## Get involved\n\n- Follow [@grafana on X (formerly Twitter)](https://x.com/grafana/).\n- Read and subscribe to the [Grafana blog](https://grafana.com/blog/).\n- If you have a specific question, check out our [discussion forums](https://community.grafana.com/).\n- For general discussions, join us on the [official Slack](https://slack.grafana.com) team.\n\nThis project is tested with [BrowserStack](https://www.browserstack.com/).",
+ "website": "https://grafana.com/",
+ "source": "https://github.com/grafana/grafana",
+ "main_port": 8160,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8160",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  grafana:\n    container_name: grafana\n    image: grafana/grafana-oss:13.0.2\n    ports:\n      - ${APP_PORT}:3000\n    volumes:\n      - ${APP_DATA_DIR}/data/grafana:/var/lib/grafana\n"
+}

@@ -1,0 +1,31 @@
+{
+ "id": "kicad",
+ "name": "Kicad",
+ "version": "37416bcb454cf6ff4e54032b3d6332cbb0276f4a0f51da3f316148fc80e18b34",
+ "category": "Home",
+ "tagline": "A Cross Platform and Open Source Electronics Design Automation Suite.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/kicad-logo.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "KiCad - A Cross Platform and Open Source Electronics Design Automation Suite.",
+ "main_port": 3000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/kicad:10.0.3@sha256:37416bcb454cf6ff4e54032b3d6332cbb0276f4a0f51da3f316148fc80e18b34\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 3001\n        published: 3001\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

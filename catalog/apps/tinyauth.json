@@ -1,0 +1,75 @@
+{
+ "id": "tinyauth",
+ "name": "Tinyauth",
+ "version": "v5.2.0",
+ "category": "Security",
+ "tagline": "The tiniest authentication and authorization server you have ever seen.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/tinyauth/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Tinyauth\n\nTinyauth is a simple authentication middleware that adds a simple login screen or OAuth with Google, Github and any provider to all of your docker apps. It supports all the popular proxies like Traefik, Nginx and Caddy.\n\n![Screenshot](https://github.com/steveiliop56/tinyauth/blob/main/assets/screenshot.png?raw=true)\n\n## Getting Started\n\nTo get started check out the Runtipi guide in the [documentation](https://tinyauth.app/docs/guides/runtipi.html).\n\n## Demo\n\nIf you are still not sure if tinyauth suits your needs you can try out the [demo](https://demo.tinyauth.app). The default username is `user` and the default password is `password`.\n\n## Documentation\n\nYou can find documentation and guides on all of the available configuration of tinyauth in the [website](https://tinyauth.app).\n\n## Discord\n\nTinyauth has a [discord](https://discord.gg/eHzVaCzRRd) server. Feel free to hop in to chat about self-hosting, homelabs and of course tinyauth. See you there!",
+ "website": "https://tinyauth.app",
+ "source": "https://github.com/tinyauthapp/tinyauth",
+ "main_port": 0,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "TINYAUTH_APP_URL",
+   "label": "App URL",
+   "type": "text",
+   "hint": "The URL Tinyauth will use to redirect you to the login screen and back, this needs to match with the local domain or the expose domain, e.g. 'https://tinyauth.example.com'.",
+   "required": true
+  },
+  {
+   "key": "TINYAUTH_USERS",
+   "label": "Users",
+   "type": "text",
+   "hint": "A comma separated list of users in the format username:hash (bcrypt hash), make sure to use double dollar signs ($$) in the bcrypt hash to escape them.",
+   "required": true
+  },
+  {
+   "key": "TINYAUTH_GITHUB_CLIENT_ID",
+   "label": "GitHub Client ID",
+   "type": "text",
+   "hint": "Fill this with your GitHub client ID if you want to enable GitHub login."
+  },
+  {
+   "key": "TINYAUTH_GITHUB_CLIENT_SECRET",
+   "label": "GitHub Client Secret",
+   "type": "password",
+   "hint": "Fill this with your GitHub client secret if you want to enable GitHub login."
+  },
+  {
+   "key": "TINYAUTH_GOOGLE_CLIENT_ID",
+   "label": "Google Client ID",
+   "type": "text",
+   "hint": "Fill this with your Google client ID if you want to enable Google login."
+  },
+  {
+   "key": "TINYAUTH_GOOGLE_CLIENT_SECRET",
+   "label": "Google Client Secret",
+   "type": "password",
+   "hint": "Fill this with your Google client secret if you want to enable Google login."
+  },
+  {
+   "key": "TINYAUTH_OAUTH_WHITELIST",
+   "label": "OAuth Whitelist",
+   "type": "text",
+   "hint": "A comma separated list of emails that are allowed to use the OAuth login, leave empty to allow all emails."
+  },
+  {
+   "key": "TINYAUTH_APP_TITLE",
+   "label": "Title",
+   "type": "text",
+   "hint": "Set a custom title for the login screen, e.g. 'My Homelab'."
+  }
+ ],
+ "compose": "services:\n  tinyauth:\n    container_name: tinyauth\n    image: ghcr.io/tinyauthapp/tinyauth:v5.2.0\n    restart: unless-stopped\n    environment:\n      - TINYAUTH_UI_TITLE=${TINYAUTH_APP_TITLE}\n      - TINYAUTH_APPURL=${TINYAUTH_APP_URL}\n      - TINYAUTH_AUTH_USERS=${TINYAUTH_USERS}\n      - TINYAUTH_OAUTH_PROVIDERS_GITHUB_CLIENTID=${TINYAUTH_GITHUB_CLIENT_ID}\n      - TINYAUTH_OAUTH_PROVIDERS_GITHUB_CLIENTSECRET=${TINYAUTH_GITHUB_CLIENT_SECRET}\n      - TINYAUTH_OAUTH_PROVIDERS_GOOGLE_CLIENTID=${TINYAUTH_GOOGLE_CLIENT_ID}\n      - TINYAUTH_OAUTH_PROVIDERS_GOOGLE_CLIENTSECRET=${TINYAUTH_GOOGLE_CLIENT_SECRET}\n      - TINYAUTH_OAUTH_WHITELIST=${TINYAUTH_OAUTH_WHITELIST}\n    volumes:\n      - ${APP_DATA_DIR}/data:/data\n"
+}

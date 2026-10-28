@@ -1,0 +1,31 @@
+{
+ "id": "melonds",
+ "name": "Melonds",
+ "version": "1b5a28a03910688f5a44236f1c5afe49ad29ff497ba55614e08e5e6d7a5a1e49",
+ "category": "Home",
+ "tagline": "Aims at providing fast and accurate Nintendo DS emulation.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/melonds-logo.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "melonDS aims at providing fast and accurate Nintendo DS emulation.",
+ "main_port": 3000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/melonds:1.1.20261229@sha256:1b5a28a03910688f5a44236f1c5afe49ad29ff497ba55614e08e5e6d7a5a1e49\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 3001\n        published: 3001\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

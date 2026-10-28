@@ -1,0 +1,39 @@
+{
+ "id": "ghost",
+ "name": "Ghost",
+ "version": "cd617a0901e659cda978b9063f449535d105f5f1a0340ffac415db2c42d22606",
+ "category": "Other",
+ "tagline": "Ghost is a free and open source blogging platform",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/ghost.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Ghost is a free and open source blogging platform written in JavaScript and distributed under the MIT License, designed to simplify the process of online publishing for individual bloggers as well as online publications.",
+ "main_port": 2368,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "2368",
+   "required": true
+  },
+  {
+   "key": "SECRET_DATABASE_CONNECTION_PASSWORD",
+   "label": "Database connection password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "# Services used in the application\nservices:\n  # The `app` service for the Ghost application\n  app:\n    # Name of the container\n    container_name: big-bear-ghost\n    # Docker image to be used\n    image: ghost:6.72.0-alpine@sha256:cd617a0901e659cda978b9063f449535d105f5f1a0340ffac415db2c42d22606\n    # Restart policy for the service\n    restart: on-failure\n    # Networks used by the service\n    networks:\n      - ghost-network\n    environment:\n      # Database configuration for Ghost (see Ghost documentation for more details)\n      database__client: mysql\n      database__connection__host: db\n      database__connection__user: ghost\n      database__connection__password: ${SECRET_DATABASE_CONNECTION_PASSWORD}\n      database__connection__database: ghost\n      # Base URL for the Ghost application\n      url: \"http://localhost:2368\"\n      # Note on NODE_ENV default value for this image\n      #NODE_ENV: development\n    # Volume mappings for persistent storage\n    volumes:\n      - ${APP_DATA_DIR}/content:/var/lib/ghost/content\n    # Port mappings for the service\n    ports:\n      - \"${APP_PORT}:2368\"\n    # Dependencies for the service\n    depends_on:\n      - db\n  # The `db` service for database (MySQL in this case)\n  db:\n    # Container name\n    container_name: big-bear-ghost-db\n    # Docker image to be used\n    image: mysql:8.0@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b\n    # Restart policy for the service\n    restart: on-failure\n    # Volume mappings for persistent storage\n    volumes:\n      - ${APP_DATA_DIR}/mysql:/var/lib/mysql\n    # MySQL environment variables\n    environment:\n      MYSQL_USER: \"ghost\"\n      MYSQL_DATABASE: \"ghost\"\n      MYSQL_PASSWORD: ${SECRET_DATABASE_CONNECTION_PASSWORD}\n      MYSQL_ROOT_PASSWORD: ${SECRET_DATABASE_CONNECTION_PASSWORD}\n    # Networks used by the service\n    networks:\n      - ghost-network\n# Networks used by the application\nnetworks:\n  # Define the network for AdGuard Home\n  ghost-network:\n    driver: bridge\n"
+}

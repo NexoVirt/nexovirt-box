@@ -1,0 +1,36 @@
+{
+ "id": "opodsync",
+ "name": "oPodSync",
+ "version": "latest",
+ "category": "Media",
+ "tagline": "Podcast synchronization service",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/oPodSync/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "oPodSync is a podcast synchronization service that allows users to sync their podcast subscriptions and listening progress across multiple devices. It provides a server-side solution for managing podcast data and ensures that users can seamlessly switch between their devices.\n\n**Key Features:**\n- Sync podcast subscriptions\n- Track listening progress across devices\n- Web-based management interface\n- Support for multiple podcast clients\n- Centralized data storage\n- Easy setup and configuration\n\n**Learn More:**\n- [oPodSync GitHub Repo](https://github.com/kd2org/oPodSync)",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/oPodSync/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/oPodSync/screenshot-2.png"
+ ],
+ "website": "https://fossil.kd2.org/opodsync/",
+ "main_port": 8086,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8086",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  opodsync:\n    image: ganeshlab/opodsync:latest\n    container_name: opodsync\n    deploy:\n      resources:\n        reservations:\n          memory: 512M\n    ports:\n      - target: 8080\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}\n        target: /var/www/server/data\n"
+}

@@ -1,0 +1,39 @@
+{
+ "id": "tasks-md",
+ "name": "Tasks.md",
+ "version": "3.3.0",
+ "category": "Developer",
+ "tagline": "A self-hosted, file based task management board.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/tasks-md/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# ✒️ Tasks.md\n\nA self-hosted file based task management board that supports Markdown syntax.\n\n![Demonstration](https://github.com/BaldissaraMatheus/Tasks.md/raw/main/public/demonstration.gif)\n\n## ⭐ Features\n\n- Create cards, lists and tags in a modern and responsive interface;\n- Write cards as Markdown files;\n- Easy to install with a single Docker image;\n- Light and dark themes synced with operating system settings;\n- Heavy customizable with 3 default color themes ([Adwaita](https://gnome.pages.gitlab.gnome.org/libadwaita/doc/main/named-colors.html), [Nord](https://www.nordtheme.com/) and [Catppuccin](https://github.com/catppuccin/catppuccin));\n- Support for subpath based reverse-proxy with an environment variable for base path;\n\n## 🎨 Customize\n\nAll CSS files are available in the public stylesheets directory, which can be mounted as a docker volume. It already comes with 3 color themes: [Adwaita](https://gnome.pages.gitlab.gnome.org/libadwaita/doc/main/named-colors.html), [Nord](https://www.nordtheme.com/) and [Catppuccin](https://github.com/catppuccin/catppuccin). To use them, open the file `/stylesheets/index.css` and change the second line to the path of the color theme you want, you can find them under `/stylesheets/color-themes`.",
+ "source": "https://github.com/BaldissaraMatheus/Tasks.md",
+ "main_port": 8157,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8157",
+   "required": true
+  },
+  {
+   "key": "TASKS_MD_TITLE",
+   "label": "Board Title",
+   "type": "text",
+   "placeholder": "My tasks board",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  tasks-md:\n    container_name: tasks-md\n    image: baldissaramatheus/tasks.md:3.3.0\n    ports:\n      - ${APP_PORT}:8080\n    volumes:\n      - ${APP_DATA_DIR}/data/files:/tasks/\n      - ${APP_DATA_DIR}/data/config:/config/\n      - ${APP_DATA_DIR}/data/stylesheets:/usr/share/nginx/html/stylesheets/\n    environment:\n      - TITLE=\"${TASKS_MD_TITLE}\"\n    restart: unless-stopped\n"
+}

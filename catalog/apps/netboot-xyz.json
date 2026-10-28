@@ -1,0 +1,33 @@
+{
+ "id": "netboot-xyz",
+ "name": "Netboot.xyz",
+ "version": "0.7.6",
+ "category": "Utilities",
+ "tagline": "Your favorite operating systems in one place.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/netbootxyz/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## netboot.xyz\n\nYour favorite operating systems in one place!\n\n![netboot.xyz menu](https://netboot.xyz/images/netboot.xyz.gif)",
+ "website": "https://netboot.xyz/",
+ "source": "https://github.com/netbootxyz/netboot.xyz",
+ "main_port": 8675,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8675",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  netbootxyz:\n    image: ghcr.io/netbootxyz/netbootxyz:0.7.6-nbxyz18\n    container_name: netbootxyz\n    volumes:\n      - ${APP_DATA_DIR}/data/config:/config\n      - ${APP_DATA_DIR}/data/assets:/assets\n    ports:\n      - ${APP_PORT}:3000\n      - 69:69/udp\n    restart: unless-stopped\n"
+}

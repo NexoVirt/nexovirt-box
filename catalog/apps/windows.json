@@ -1,0 +1,80 @@
+{
+ "id": "windows",
+ "name": "Windows",
+ "version": "6.06",
+ "category": "Utilities",
+ "tagline": "Full windows vm in your browser",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/windows/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "\u003ch1 align=\"center\"\u003eWindows\u003cbr /\u003e\n\u003cdiv align=\"center\"\u003e\n\u003ca href=\"https://github.com/dockur/windows\"\u003e\u003cimg src=\"https://github.com/dockur/windows/raw/master/.github/logo.png\" title=\"Logo\" style=\"max-width:100%;\" width=\"128\" /\u003e\u003c/a\u003e\n\u003c/div\u003e\n\u003cdiv align=\"center\"\u003e\n\n\u003c/div\u003e\u003c/h1\u003e\n\nWindows in a Docker container.\n\n## Features\n\n - ISO downloader\n - KVM acceleration\n - Web-based viewer\n\n## FAQ\n\n* ### How do I use it?\n\n  Very simple! These are the steps:\n  \n  - Start the container and connect to [port 8006](http://localhost:8006) using your web browser.\n\n  - Sit back and relax while the magic happens, the whole installation will be performed fully automatic.\n\n  - Once you see the desktop, your Windows installation is ready for use.\n  \n  Enjoy your brand new machine, and don't forget to star this repo!\n\n* ### How do I select the Windows version?\n\n  By default, Windows 11 will be installed. But you can change that in settings, in order to specify an alternative Windows version to be downloaded:\n\n  Select from the values below:\n  \n  | **Value**  | **Description**  | **Source**  | **Transfer**  | **Size**  |\n  |---|---|---|---|---|\n  | `win11`   | Windows 11 Pro         | Microsoft    | Fast    | 6.4 GB    |\n  | `win10`   | Windows 10 Pro         | Microsoft    | Fast    | 5.8 GB    |\n  | `ltsc10`  | Windows 10 LTSC        | Microsoft    | Fast    | 4.6 GB    |\n  | `win81`   | Windows 8.1 Pro        | Microsoft    | Fast    | 4.2 GB    |\n  | `win7`    | Windows 7 SP1          | Bob Pony     | Medium  | 3.0 GB    |\n  | `vista`   | Windows Vista SP2      | Bob Pony     | Medium  | 3.6 GB    |\n  | `winxp`   | Windows XP SP3         | Bob Pony     | Medium  | 0.6 GB    |\n  ||||||\n  | `2022`    | Windows Server 2022    | Microsoft    | Fast    | 4.7 GB    |\n  | `2019`    | Windows Server 2019    | Microsoft    | Fast    | 5.3 GB    |\n  | `2016`    | Windows Server 2016    | Microsoft    | Fast    | 6.5 GB    |\n  | `2012`    | Windows Server 2012 R2 | Microsoft    | Fast    | 4.3 GB    |\n  | `2008`    | Windows Server 2008 R2 | Microsoft    | Fast    | 3.0 GB    |\n  ||||||\n  | `core11`  | Tiny 11 Core           | Archive.org  | Slow    | 2.1 GB    |\n  | `tiny11`  | Tiny 11                | Archive.org  | Slow    | 3.8 GB    |\n  | `tiny10`  | Tiny 10                | Archive.org  | Slow    | 3.6 GB    |\n\n* ### How do I connect using RDP?\n\n  The web-viewer is mainly meant to be used during installation, as its picture quality is low, and it has no audio or clipboard for example.\n\n  So for a better experience you can connect using any Microsoft Remote Desktop client to the IP of the container, using the username `docker` and by leaving the password empty.\n\n  There is a good RDP client for [Android](https://play.google.com/store/apps/details?id=com.microsoft.rdc.androidx) available from the Play Store. One for [iOS](https://apps.apple.com/nl/app/microsoft-remote-desktop/id714464092?l=en-GB) is in the Apple Store. For Linux you can use [rdesktop](http://www.rdesktop.org/) and for Windows you don't need to install anything as it is already ships as part of the operating system.\n\n* ### How do I verify if my system supports KVM?\n\n  To verify if your system supports KVM, run the following commands:\n\n  ```bash\n  sudo apt install cpu-checker\n  sudo kvm-ok\n  ```\n\n  If you receive an error from `kvm-ok` indicating that KVM acceleration can't be used, check the virtualization settings in the BIOS.\n\n* ### Is this project legal?\n\n  Yes, this project contains only open-source code and does not distribute any copyrighted material. Any product keys found in the code are just generic placeholders provided by Microsoft for trial purposes. So under all applicable laws, this project would be considered legal.\n\n## Disclaimer\n\nThe product names, logos, brands, and other trademarks referred to within this project are the property of their respective trademark holders. This project is not affiliated, sponsored, or endorsed by Microsoft Corporation.",
+ "source": "https://github.com/dockur/windows/",
+ "main_port": 8006,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8006",
+   "required": true
+  },
+  {
+   "key": "WINDOWS_RAM_GB",
+   "label": "RAM",
+   "type": "number",
+   "hint": "RAM to asign to the VM (in gigabytes)",
+   "placeholder": "4",
+   "required": true
+  },
+  {
+   "key": "WINDOWS_CPU_CORES",
+   "label": "CPU Cores",
+   "type": "number",
+   "hint": "CPU cores to asign to the VM",
+   "placeholder": "4",
+   "required": true
+  },
+  {
+   "key": "WINDOWS_DISK_SIZE_GB",
+   "label": "Disk Size",
+   "type": "number",
+   "hint": "Disk size for the VM, it will be used dynamically (in gigabytes)",
+   "placeholder": "16",
+   "required": true
+  },
+  {
+   "key": "WINDOWS_VERSION",
+   "label": "Windows Version",
+   "type": "select",
+   "hint": "The windows version to use",
+   "required": true,
+   "options": [
+    "win10",
+    "win11",
+    "ltsc10",
+    "win81",
+    "win7",
+    "vista",
+    "winxp",
+    "2022",
+    "2019",
+    "2016",
+    "2012",
+    "2008",
+    "core11",
+    "tiny11",
+    "tiny10"
+   ]
+  }
+ ],
+ "compose": "services:\n  windows:\n    container_name: windows\n    image: dockurr/windows:6.06\n    restart: unless-stopped\n    devices:\n      - /dev/kvm\n    cap_add:\n      - NET_ADMIN\n    ports:\n      - ${APP_PORT}:8006\n      - 3389:3389/tcp\n      - 3389:3389/udp\n    stop_grace_period: 2m\n    environment:\n      - RAM_SIZE=${WINDOWS_RAM_GB}G\n      - CPU_CORE=${WINDOWS_CPU_CORES}\n      - DISK_SIZE=${WINDOWS_DISK_SIZE_GB}G\n      - VERSION=${WINDOWS_VERSION}\n    volumes:\n      - ${APP_DATA_DIR}/data/storage:/storage\n    sysctls:\n      - net.ipv4.ip_forward=1\n"
+}

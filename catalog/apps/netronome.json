@@ -1,0 +1,36 @@
+{
+ "id": "netronome",
+ "name": "Netronome",
+ "version": "v0.13.0",
+ "category": "Networking",
+ "tagline": "Monitor, analyze, and alert on network performance.",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Netronome/icon.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "Netronome is a complete network performance monitoring solution with speed tests, continuous packet-loss monitoring, distributed server agents, automated alerts, visualizations, and historical tracking.",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Netronome/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Netronome/screenshot-2.png"
+ ],
+ "website": "https://netrono.me",
+ "main_port": 7575,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "7575",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  netronome:\n    image: ghcr.io/autobrr/netronome:v0.13.0\n    container_name: netronome\n    restart: unless-stopped\n    entrypoint:\n      - /sbin/tini\n      - --\n      - /bin/sh\n      - -c\n    command:\n      - |-\n        config=/data/.config/netronome/config.toml\n        if [ ! -f \"$$config\" ]; then\n          netronome generate-config\n        fi\n        exec netronome serve\n    ports:\n      - target: 7575\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    environment:\n      TZ: $TZ\n      NETRONOME__HOST: 0.0.0.0\n      NETRONOME__PORT: 7575\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/data\n        target: /data\n    cap_add:\n      - NET_RAW\n"
+}

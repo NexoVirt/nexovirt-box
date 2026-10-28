@@ -1,0 +1,24 @@
+{
+ "id": "actual",
+ "name": "Actual",
+ "version": "26.10.0",
+ "category": "Finance",
+ "tagline": "Local-first OpenSource Budget tool",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/actual-budget/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Actual Budget\nActual is a local-first personal finance tool. It is 100% free and open-source, written in NodeJS, it has a synchronization element so that all your changes can move between devices without any heavy lifting.\n\n![screenshot](https://raw.githubusercontent.com/actualbudget/actual/master/demo.png)\n\n## Server included\nThis version includes the server and web client of Actual Budget, so you can synch through different browsers and devices. Please note that you have to sync manually within the app. Actual is a local first app, so all data is held locally in your browser context by default as long as you not tell Actual to sync it to the server.\n\n## Community Documentation\nMore information: https://actualbudget.github.io/docs/",
+ "website": "https://actualbudget.org/",
+ "source": "https://github.com/actualbudget/actual",
+ "main_port": 0,
+ "scheme": "http",
+ "questions": [],
+ "compose": "services:\n  actual-budget:\n    image: actualbudget/actual-server:26.10.0\n    volumes:\n      - ${APP_DATA_DIR}/data:/data\n    x-runtipi:\n      internal_port: 5006\n      is_main: true\nx-runtipi:\n  schema_version: 2\n"
+}

@@ -1,0 +1,31 @@
+{
+ "id": "ungoogled-chromium",
+ "name": "Ungoogled-chromium",
+ "version": "6eb82d737db6f4d80c00aa0841f8d142280a36625e6e0c3f9dd198ef5fd7d2ed",
+ "category": "Home",
+ "tagline": "Google Chromium, sans dependency on Google web services.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/ungoogled-chromium-logo.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Ungoogled Chromium is Google Chromium, sans dependency on Google web services.",
+ "main_port": 3000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/ungoogled-chromium:155.0.8059@sha256:6eb82d737db6f4d80c00aa0841f8d142280a36625e6e0c3f9dd198ef5fd7d2ed\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n      CHROME_CLI: ''\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 3001\n        published: 3001\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

@@ -1,0 +1,55 @@
+{
+ "id": "esp-home",
+ "name": "ESP Home",
+ "version": "2026.10.1",
+ "category": "Automation",
+ "tagline": "Control your ESP8266/ESP32.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/esphome/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# ESP Home\n\nESPHome is a system to control your microcontrollers by simple yet powerful configuration files and control them remotely through Home Automation systems.",
+ "website": "https://esphome.io/",
+ "source": "https://github.com/esphome/esphome",
+ "main_port": 6052,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "6052",
+   "required": true
+  },
+  {
+   "key": "ESPHOME_USERNAME",
+   "label": "Username",
+   "type": "text",
+   "hint": "Username of your ESP Home account",
+   "min": 14,
+   "max": 25
+  },
+  {
+   "key": "ESPHOME_PASSWORD",
+   "label": "Password",
+   "type": "password",
+   "hint": "Password of your ESP Home account",
+   "min": 14,
+   "max": 25
+  },
+  {
+   "key": "ESPHOME_PING",
+   "label": "Use ping for devices availability ? (default to mDNS)",
+   "type": "boolean",
+   "hint": "mDNS doesn't work across VLANs, use static IP for devices when disabling mDNS"
+  }
+ ],
+ "compose": "services:\n  esphome:\n    image: ghcr.io/esphome/esphome:2026.10.1\n    container_name: esphome\n    environment:\n      - TZ=${TZ}\n      - USERNAME=${ESPHOME_USERNAME:-''}\n      - PASSWORD=${ESPHOME_PASSWORD:-''}\n      - ESPHOME_DASHBOARD_USE_PING=${ESPHOME_PING:-'false'}\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:6052\n    volumes:\n      - /etc/localtime:/etc/localtime:ro\n      - ${APP_DATA_DIR}/data/config:/config\n"
+}

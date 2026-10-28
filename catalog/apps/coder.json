@@ -1,0 +1,41 @@
+{
+ "id": "coder",
+ "name": "Coder",
+ "version": "e8b2743529aea6a1e77bba764c8ec4a04dec65d27ca9caa0ec0b2dbcd3db0565",
+ "category": "Developer",
+ "tagline": "",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons@main/png/coder.png",
+ "architectures": [
+  "amd64",
+  "arm64",
+  "armv7"
+ ],
+ "docker_socket": true,
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Coder v2.36.7 is a self-hosted development-platform control plane with Postgres and a Docker socket for workspace templates.",
+ "main_port": 7080,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "7080",
+   "required": true
+  },
+  {
+   "key": "SECRET_POSTGRES_PASSWORD",
+   "label": "Postgres password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  coder:\n    image: ghcr.io/coder/coder:v2.36.7@sha256:e8b2743529aea6a1e77bba764c8ec4a04dec65d27ca9caa0ec0b2dbcd3db0565\n    container_name: coder\n    restart: unless-stopped\n    ports:\n      - \"${APP_PORT}:7080\"\n    environment:\n      CODER_PG_CONNECTION_URL: postgresql://coder:${SECRET_POSTGRES_PASSWORD}@database/coder?sslmode=disable\n      CODER_HTTP_ADDRESS: 0.0.0.0:7080\n      CODER_ACCESS_URL: http://localhost:7080\n    volumes:\n      - /var/run/docker.sock:/var/run/docker.sock\n      - ${APP_DATA_DIR}/home:/home/coder\n    depends_on:\n      database:\n        condition: service_healthy\n  database:\n    image: postgres:17@sha256:d74eeac9a635390a49bc21bd49fccd973de707e2a53a76ac49b552b8712ec46f\n    container_name: coder-postgres\n    restart: unless-stopped\n    environment:\n      POSTGRES_USER: coder\n      POSTGRES_PASSWORD: ${SECRET_POSTGRES_PASSWORD}\n      POSTGRES_DB: coder\n    volumes:\n      - ${APP_DATA_DIR}/postgres:/var/lib/postgresql/data\n    healthcheck:\n      test: [\"CMD-SHELL\", \"pg_isready -U coder -d coder\"]\n      interval: 5s\n      timeout: 5s\n      retries: 5\n"
+}

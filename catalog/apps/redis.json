@@ -1,0 +1,33 @@
+{
+ "id": "redis",
+ "name": "Redis",
+ "version": "8.8.3",
+ "category": "Other",
+ "tagline": "Redis is an open source (BSD licensed), in-memory data structure store, used as a database, cache, and message broker.",
+ "icon": "https://cdn4.iconfinder.com/data/icons/redis-2/1451/Untitled-2-512.png",
+ "architectures": [
+  "amd64",
+  "arm64",
+  "armv7",
+  "i386"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Redis is an open source (BSD licensed), in-memory data structure store used as a database, cache, message broker, and streaming engine. Redis provides data structures such as strings, hashes, lists, sets, sorted sets with range queries, bitmaps, hyperloglogs, geospatial indexes, and streams. Redis has built-in replication, Lua scripting, LRU eviction, transactions, and different levels of on-disk persistence, and provides high availability via Redis Sentinel and automatic partitioning with Redis Cluster.",
+ "main_port": 48110,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "48110",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: redis:8.8.3\n    restart: unless-stopped\n    ports:\n      - target: 6379\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/data\n        target: /data\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /usr/local/etc/redis\n"
+}

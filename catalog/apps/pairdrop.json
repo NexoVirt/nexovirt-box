@@ -1,0 +1,33 @@
+{
+ "id": "pairdrop",
+ "name": "PairDrop",
+ "version": "1.11.2",
+ "category": "Media",
+ "tagline": "Local file sharing in your browser. Inspired by Apple's AirDrop",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/pairdrop/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# PairDrop\n\nLocal file sharing in your browser. Inspired by Apple's AirDrop.  \n[**Explore »**](https://pairdrop.net)  \n  \n[Report Bug](https://github.com/schlagmichdoch/PairDrop/issues) · [Request Feature](https://github.com/schlagmichdoch/PairDrop/issues)\n\n## Features\n\n[PairDrop](https://pairdrop.net) is a sublime alternative to AirDrop that works on all platforms.\n\nSend images, documents or text via peer to peer connection to devices in the same local network/Wi-Fi or to paired devices. As it is web based, it runs on all devices.\n\nYou want to quickly send a file from your phone to your laptop?  \nYou want to share photos in original quality with friends that use a mixture of Android and iOS?  \nYou want to share private files peer to peer between Linux systems?  \nAirDrop is unreliable again?  \n_Send it with PairDrop!_\n\nDeveloped based on [Snapdrop](https://github.com/RobinLinus/snapdrop)\n\n\n## Screenshots\n\n[![Pairdrop Preview](https://github.com/schlagmichdoch/PairDrop/raw/master/docs/pairdrop_screenshot_mobile.gif)](https://github.com/schlagmichdoch/PairDrop/blob/master/docs/pairdrop_screenshot_mobile.gif)",
+ "website": "https://pairdrop.net/",
+ "source": "https://github.com/schlagmichdoch/PairDrop",
+ "main_port": 8182,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8182",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  pairdrop:\n    image: lscr.io/linuxserver/pairdrop:1.11.2\n    container_name: pairdrop\n    environment:\n      - PUID=1000\n      - PGID=1000\n      - TZ=${TZ}\n      - RATE_LIMIT=false]\n      - WS_FALLBACK=false\n    ports:\n      - ${APP_PORT}:3000\n"
+}

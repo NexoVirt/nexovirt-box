@@ -1,0 +1,32 @@
+{
+ "id": "jackett",
+ "name": "Jackett",
+ "version": "latest",
+ "category": "Media",
+ "tagline": "API Support for your favorite torrent trackers",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/jackett/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## API Support for your favorite torrent trackers\n\nJackett works as a proxy server: it translates queries from apps ([Sonarr](https://github.com/Sonarr/Sonarr), [Radarr](https://github.com/Radarr/Radarr), [SickRage](https://sickrage.github.io/), [CouchPotato](https://couchpota.to/), [Mylar3](https://github.com/mylar3/mylar3), [Lidarr](https://github.com/lidarr/lidarr), [DuckieTV](https://github.com/SchizoDuckie/DuckieTV), [qBittorrent](https://www.qbittorrent.org/), [Nefarious](https://github.com/lardbit/nefarious) etc.) into tracker-site-specific http queries, parses the html or json response, and then sends results back to the requesting software. This allows for getting recent uploads (like RSS) and performing searches. Jackett is a single repository of maintained indexer scraping \u0026 translation logic - removing the burden from other apps.\n\n![Screenshot](https://raw.githubusercontent.com/Jackett/Jackett/master/.github/jackett-screenshot1.png)\n\n## Folder Info\n\n| Root Folder                    | Container Folder |\n|--------------------------------|------------------|\n| /runtipi/app-data/jackett/data | /config          |\n| /runtipi/media/torrents        | /media/torrents  |",
+ "source": "https://github.com/Jackett/Jackett",
+ "main_port": 8097,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8097",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  jackett:\n    image: lscr.io/linuxserver/jackett:latest\n    container_name: jackett\n    environment:\n      - PUID=1000\n      - PGID=1000\n      - TZ=${TZ}\n      - AUTO_UPDATE=true\n    volumes:\n      - ${APP_DATA_DIR}/data:/config\n      - ${ROOT_FOLDER_HOST}/media/torrents:/media/torrents\n    ports:\n      - ${APP_PORT}:9117\n    restart: unless-stopped\n"
+}

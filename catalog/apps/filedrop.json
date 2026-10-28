@@ -1,0 +1,34 @@
+{
+ "id": "filedrop",
+ "name": "FileDrop",
+ "version": "1.0.1",
+ "category": "Productivity",
+ "tagline": "FileDrop is a free, open source file sharing service",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Filedrop/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "FileDrop is a self-hosted file sharing service that allows you to easily share files with family, friends, or colleagues. It's been designed to be easy to use and light on resources.",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Filedrop/screenshot-1.png"
+ ],
+ "main_port": 8000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  filedrop:\n    environment:\n      PGID: $PGID # Preset Group ID\n      PUID: $PUID # Preset User ID\n      TZ: $TZ\n    image: noecl/filedrop:1.0.1\n    deploy:\n      resources:\n        reservations:\n          memory: \"2048M\"\n    restart: unless-stopped\n    ports:\n      - target: 8000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/data\n        target: /var/file_drop_files\n    container_name: filedrop\n"
+}

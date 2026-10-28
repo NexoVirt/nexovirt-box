@@ -1,0 +1,30 @@
+{
+ "id": "tester",
+ "name": "Tester",
+ "version": "976ed6115060a646cf9e427b003d048d1a5aecfa4ded89b9bb7a2d5a5db9e839",
+ "category": "Other",
+ "tagline": "This internal tool is used as a desktop sandbox in our CI process to grab a screenshot of a hopefully functional endpoint",
+ "icon": "https://images.weserv.nl/?url=https%3A%2F%2Favatars3.githubusercontent.com%2Fu%2F12324908%3Fs%3D200%26v%3D4",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "This internal tool is used as a desktop sandbox in our CI process to grab a screenshot of a hopefully functional endpoint",
+ "main_port": 3000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/tester:version-66f677b0@sha256:976ed6115060a646cf9e427b003d048d1a5aecfa4ded89b9bb7a2d5a5db9e839\n    restart: unless-stopped\n    environment:\n      URL: ''\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n"
+}

@@ -1,0 +1,31 @@
+{
+ "id": "manyfold",
+ "name": "Manyfold",
+ "version": "5872d897cf181f9b5461bda49520ea32c0f2a0b75e485f6248673829a31d4d52",
+ "category": "Home",
+ "tagline": "An open source, self-hosted web application for managing a collection of 3D models, particularly focused on 3D printing.",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/manyfold.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Manyfold is an open source, self-hosted web application for managing a collection of 3D models, particularly focused on 3D printing.",
+ "main_port": 3214,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3214",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/manyfold:0.150.0@sha256:5872d897cf181f9b5461bda49520ea32c0f2a0b75e485f6248673829a31d4d52\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n      DATABASE_URL: ''\n      REDIS_URL: ''\n      SECRET_KEY_BASE: ''\n    ports:\n      - target: 3214\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n      - type: bind\n        source: ${APP_DATA_DIR}/libraries\n        target: /libraries\n"
+}

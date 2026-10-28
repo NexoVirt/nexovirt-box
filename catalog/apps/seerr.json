@@ -1,0 +1,33 @@
+{
+ "id": "seerr",
+ "name": "Seerr",
+ "version": "v3.5.1",
+ "category": "Media",
+ "tagline": "Managing requests for your media library",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/seerr/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "\u003cp align=\"center\"\u003e\n\u003cimg src=\"./public/logo_full.svg\" alt=\"Seerr\" style=\"margin: 20px 0;\"\u003e\n\u003c/p\u003e\n\u003cp align=\"center\"\u003e\n\n**Seerr** is a free and open source software application for managing requests for your media library. It integrates with the media server of your choice: [Jellyfin](https://jellyfin.org), [Plex](https://plex.tv), and [Emby](https://emby.media/). In addition, it integrates with your existing services, such as **[Sonarr](https://sonarr.tv/)**, **[Radarr](https://radarr.video/)**.\n\n## Current Features\n\n- Full Jellyfin/Emby/Plex integration including authentication with user import \u0026 management.\n- Support for **PostgreSQL** and **SQLite** databases.\n- Supports Movies, Shows and Mixed Libraries.\n- Ability to change email addresses for SMTP purposes.\n- Easy integration with your existing services. Currently, Seerr supports Sonarr and Radarr. More to come!\n- Jellyfin/Emby/Plex library scan, to keep track of the titles which are already available.\n- Customizable request system, which allows users to request individual seasons or movies in a friendly, easy-to-use interface.\n- Incredibly simple request management UI. Don't dig through the app to simply approve recent requests!\n- Granular permission system.\n- Support for various notification agents.\n- Mobile-friendly design, for when you need to approve requests on the go!\n- Support for watchlisting \u0026 blocklisting media.\n\nWith more features on the way! Check out our [issue tracker](https://raw.githubusercontent.com/seerr-team/seerr/issues) to see the features which have already been requested.\n\n## Getting Started\n\nCheck out our documentation for instructions on how to install and run Seerr:\n\nhttps://docs.seerr.dev/getting-started/\n\n## Preview\n\n\u003cimg src=\"https://raw.githubusercontent.com/seerr-team/seerr/develop/public/preview.jpg\" alt=\"Seerr application preview\" /\u003e\n\n## Migrating from Overseerr/Jellyseerr to Seerr\n\nRead our [release announcement](https://docs.seerr.dev/blog/seerr-release) to learn what Seerr means for Jellyseerr and Overseerr users.\n\nPlease follow our [migration guide](https://docs.seerr.dev/migration-guide) for detailed instructions on migrating from Overseerr or Jellyseerr.\n\n## Support\n\n- Check out the [Seerr Documentation](https://docs.seerr.dev) before asking for help. Your question might already be in the docs!\n- You can get support on [Discord](https://discord.gg/seerr).\n- You can ask questions in the Help category of our [GitHub Discussions](https://github.com/seerr-team/seerr/discussions).\n- Bug reports and feature requests can be submitted via [GitHub Issues](https://github.com/seerr-team/seerr/issues).\n\n## API Documentation\n\nYou can access the API documentation from your local Seerr install at http://localhost:5055/api-docs\n\n## Community\n\nYou can ask questions, share ideas, and more in [GitHub Discussions](https://github.com/seerr-team/seerr/discussions).\n\nIf you would like to chat with other members of our growing community, [join the Seerr Discord server](https://discord.gg/seerr)!\n\nOur [Code of Conduct](https://github.com/seerr-team/seerr/blob/develop/CODE_OF_CONDUCT.md) applies to all Seerr community channels.\n\n## Contributing\n\nYou can help improve Seerr too! Check out our [Contribution Guide](https://github.com/seerr-team/seerr/blob/develop/CONTRIBUTING.md) to get started.\n\n## Contributors ✨\n\n[![Contributors](https://opencollective.com/seerr/contributors.svg?width=890)](https://opencollective.com/seerr/#backers)\n\n[![Become a Backer](https://opencollective.com/seerr/backers.svg)](https://opencollective.com/seerr/#backers)\n[![Become a Sponsor](https://opencollective.com/seerr/sponsors.svg)](https://opencollective.com/seerr/#sponsors)",
+ "website": "https://docs.seerr.dev/",
+ "source": "https://github.com/seerr-team/seerr",
+ "main_port": 5055,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "5055",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  seerr:\n    container_name: seerr\n    image: ghcr.io/seerr-team/seerr:v3.5.1\n    ports:\n      - ${APP_PORT}:5055\n    volumes:\n      - ${APP_DATA_DIR}/data/config:/app/config\n    environment:\n      - LOG_LEVEL=debug\n      - TZ=${TZ}\n      - PORT=5055\n    restart: unless-stopped\n"
+}

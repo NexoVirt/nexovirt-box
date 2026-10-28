@@ -1,0 +1,75 @@
+{
+ "id": "romm",
+ "name": "RomM",
+ "version": "5.4.1",
+ "category": "Gaming",
+ "tagline": "Your beautiful, powerful, self-hosted rom manager.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/romm/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Overview\n\nRomM (ROM Manager) allows you to scan, enrich, and browse your game collection with a clean and responsive interface. With support for multiple platforms, various naming schemes, and custom tags, RomM is a must-have for anyone who plays on emulators.\n\n## Features\n\n- Scans your existing games library and enhances it with metadata from IGDB and MobyGames\n- Supports a large number of **platforms**\n- Play games directly from the browser using EmulatorJS\n- Share your library with friends while limiting access and permissions\n- Supports MAME, Nintendo Switch, and Sony Playstation naming schemes\n- Detects and groups **multifile games** (e.g. PS1 games with multiple CDs)\n- Can parse tags in filenames (e.g. (E), (USA), (rev v1), etc.)\n- View, upload, update, and delete games from any modern web browser\n\n## Folder Structure\n\nAs mentioned in the installation section, RomM requires a specific folder structure. The two supported structures are as follows:\n\n\u003ctable border=\"0\"\u003e\n \u003ctr\u003e\n    \u003cth style=\"text-align: center\"\u003e\u003cb\u003eStructure A (recommended)\u003c/b\u003e\u003c/tthd\u003e\n    \u003cth style=\"text-align: center\"\u003e\u003cb\u003eStructure B (fallback)\u003c/b\u003e\u003c/th\u003e\n \u003c/tr\u003e\n \u003ctr\u003e\n  \u003ctd\u003e\n    \u003ccode\u003elibrary/roms/gbc/rom_1.gbc\u003c/code\u003e\n  \u003c/td\u003e\n  \u003ctd\u003e\n    \u003ccode\u003elibrary/gbc/roms/rom_1.gbc\u003c/code\u003e\n  \u003c/td\u003e\n \u003c/tr\u003e\n \u003ctr\u003e\n    \u003ctd\u003e\n      \u003cpre\u003e\n        library/\n        ├─ roms/\n        │  ├─ gbc/\n        │  │  ├─ rom_1.gbc\n        │  │  ├─ rom_2.gbc\n        │  │\n        │  ├─ gba/\n        │  │  ├─ rom_1.gba\n        │  │  ├─ rom_2.gba\n        │  │\n        │  ├─ ps/\n        │     ├─ my_multifile_game/\n        │     │   ├─ my_game_cd1.iso\n        │     │   ├─ my_game_cd2.iso\n        │     │\n        │     ├─ rom_1.iso\n        ├─ bios/\n        │  ├─ gba/\n        │  │  ├─ gba_bios.bin\n        │  │\n        │  ├─ ps/\n        │     ├─ scph1001.bin\n        |     ├─ scph5501.bin\n        |     ├─ scph5502.bin\n      \u003c/pre\u003e\n    \u003c/td\u003e\n    \u003ctd\u003e\n      \u003cpre\u003e\n        library/\n        ├─ gbc/\n        │  ├─ roms/\n        │     ├─ rom_1.gbc\n        │     ├─ rom_2.gbc\n        │\n        ├─ gba/\n        │  ├─ roms/\n        │     ├─ rom_1.gba\n        │     ├─ rom_2.gba\n        |  ├─ bios/\n        |     ├─ gba_bios.bin\n        │\n        ├─ ps/\n        │  ├─ roms/\n        │     ├─ my_multifile_game/\n        │     │  ├─ my_game_cd1.iso\n        │     │  ├─ my_game_cd2.iso\n        │     │\n        │     ├─ rom_1.iso\n        |  ├─ bios/\n        |     ├─ scph1001.bin\n        |     ├─ scph5501.bin\n        |     ├─ scph5502.bin\n      \u003c/pre\u003e\n    \u003c/td\u003e\n \u003c/tr\u003e\n\u003c/table\u003e\n\n\u003e For folder naming conventions, review the Platform Supportplatform-support section. To override default system names in the folder structure (if your directories are named differently), see the Configuration File section.\n\n## Configuration File\n\nRomM's \"understanding\" of your library can be configured with a `config.yaml` file or through the `config` tab in the `Control Panel` under the `Settings` section. Refer to the example config.yml file for guidance on how to configure it and the example docker-compose.yml file on how to mount it into the container.\n\n## Scheduler\n\nThe scheduler allows you to schedule async tasks that run in the Redis container at regular intervals. Jobs can be run at a specific time in the future, after a time delta, or at recurring internals using cron notation. The wiki page on the scheduler has more information on which tasks are available and how to enable them.\n\n## Platform Support\n\nIf you adhere to the RomM folder structure, RomM supports all platforms listed on the Supported Platforms page. **The folder is case-sensitive and must be used exactly as it appears on the list.** When scanning your library, RomM will use the folder name to determine the platform and fetch the appropriate game information, metadata, and cover art.\n\nAdditionally, some of these platforms have custom icons available..",
+ "website": "https://romm.app",
+ "source": "https://github.com/rommapp/romm",
+ "main_port": 8178,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8178",
+   "required": true
+  },
+  {
+   "key": "ROMM_MYSQL_PASSWORD",
+   "label": "RomM MySQL Password",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "ROMM_MYSQL_ROOT_PASSWORD",
+   "label": "RomM MySQL Root Password",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "ROMM_AUTH_SECRET_KEY",
+   "label": "RomM Auth Secret Key",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "ROMM_IGDB_CLIENT_ID",
+   "label": "IGDB Client ID",
+   "type": "text"
+  },
+  {
+   "key": "ROMM_IGDB_CLIENT_SECRET",
+   "label": "IGDB Client Secret",
+   "type": "password"
+  },
+  {
+   "key": "ROMM_MOBYGAMES_API_KEY",
+   "label": "MobyGames API Key",
+   "type": "password"
+  },
+  {
+   "key": "ROMM_STEAMGRIDDB_API_KEY",
+   "label": "SteamGrid Database API Key",
+   "type": "password",
+   "hint": "SteamGrid Database API Key"
+  }
+ ],
+ "compose": "services:\n  romm:\n    image: ghcr.io/rommapp/romm:5.4.1\n    container_name: romm\n    environment:\n      - DB_HOST=romm-db\n      - DB_NAME=romm\n      - DB_USER=tipi\n      - DB_PASSWD=${ROMM_MYSQL_PASSWORD}\n      - ROMM_AUTH_SECRET_KEY=${ROMM_AUTH_SECRET_KEY}\n      - IGDB_CLIENT_ID=${ROMM_IGDB_CLIENT_ID}\n      - IGDB_CLIENT_SECRET=${ROMM_IGDB_CLIENT_SECRET}\n      - MOBYGAMES_API_KEY=${ROMM_MOBYGAMES_API_KEY}\n      - STEAMGRIDDB_API_KEY=${ROMM_STEAMGRIDDB_API_KEY}\n    restart: unless-stopped\n    volumes:\n      - ${ROOT_FOLDER_HOST}/media/data/roms:/romm/library\n      - ${APP_DATA_DIR}/data/redis:/redis-data\n      - ${APP_DATA_DIR}/data/romm-resources:/romm/resources\n      - ${APP_DATA_DIR}/data/config:/romm/config\n      - ${APP_DATA_DIR}/data/assets:/romm/assets\n    ports:\n      - ${APP_PORT}:8080\n    depends_on:\n      - romm-db\n  romm-db:\n    image: lscr.io/linuxserver/mariadb:11.4.5\n    container_name: romm-db\n    environment:\n      - MYSQL_ROOT_PASSWORD=${ROMM_MYSQL_ROOT_PASSWORD}\n      - MYSQL_DATABASE=romm\n      - MYSQL_USER=tipi\n      - MYSQL_PASSWORD=${ROMM_MYSQL_PASSWORD}\n    volumes:\n      - ${APP_DATA_DIR}/data/mysql/config:/config\n    restart: unless-stopped\n"
+}

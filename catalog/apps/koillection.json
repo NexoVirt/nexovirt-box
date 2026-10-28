@@ -1,0 +1,73 @@
+{
+ "id": "koillection",
+ "name": "Koillection",
+ "version": "1.8.5",
+ "category": "Utilities",
+ "tagline": "Koillection allow you to manage any kind of collections.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/koillection/metadata/logo.jpg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "Koillection is a self-hosted service allowing users to manage any kind of collections.",
+ "website": "https://koillection.github.io/",
+ "source": "https://github.com/benjaminjonard/koillection",
+ "main_port": 8050,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8050",
+   "required": true
+  },
+  {
+   "key": "KOILLECTION_DB_USER",
+   "label": "database user",
+   "type": "password",
+   "min": 15,
+   "max": 15,
+   "generate": true
+  },
+  {
+   "key": "KOILLECTION_DB_PASSWORD",
+   "label": "database password",
+   "type": "password",
+   "min": 30,
+   "max": 30,
+   "generate": true
+  },
+  {
+   "key": "SECRET_JWT_PUBLIC_KEY",
+   "label": "Jwt public key",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
+   "key": "SECRET_DB_PASSWORD",
+   "label": "Db password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
+   "key": "SECRET_JWT_SECRET_KEY",
+   "label": "Jwt secret key",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  koillection:\n    image: koillection/koillection:1.8.5\n    container_name: koillection\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:80\n    depends_on:\n      - koillection-db\n    volumes:\n      - ${APP_DATA_DIR}/data/uploads:/uploads\n    environment:\n      - APP_DEBUG=0\n      - APP_ENV=prod\n      - HTTPS_ENABLED={APP_EXPOSED}\n      - UPLOAD_MAX_FILESIZE=20M\n      - PHP_MEMORY_LIMIT=512M\n      - PHP_TZ=${TZ}\n      - CORS_ALLOW_ORIGIN=*\n      - JWT_SECRET_KEY=${SECRET_JWT_SECRET_KEY}\n      - JWT_PUBLIC_KEY=${SECRET_JWT_PUBLIC_KEY}\n      - DB_DRIVER=pdo_pgsql\n      - DB_NAME=koillection\n      - DB_HOST=koillection-db\n      - DB_PORT=5432\n      - DB_USER={KOILLECTION_DB_USER}\n      - DB_PASSWORD=${SECRET_DB_PASSWORD}\n      - DB_VERSION=15\n  koillection-db:\n    image: postgres:15\n    container_name: koillection-db\n    restart: unless-stopped\n    environment:\n      - POSTGRES_DB=koillection\n      - POSTGRES_USER={KOILLECTION_DB_USER}\n      - POSTGRES_PASSWORD=${SECRET_DB_PASSWORD}\n    volumes:\n      - ${APP_DATA_DIR}/data/volumes/postgresql:/var/lib/postgresql/data\n"
+}

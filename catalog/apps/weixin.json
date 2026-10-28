@@ -1,0 +1,31 @@
+{
+ "id": "weixin",
+ "name": "Weixin",
+ "version": "200f4b7ed2bb29c6d366e804b8cbea5f7030d7a20f38e11cfeb03e23a6ad79d5",
+ "category": "Home",
+ "tagline": "(WeChat) is an instant messaging, social media, and mobile payment app developed by Tencent.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/weixin-logo.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Weixin (WeChat) is an instant messaging, social media, and mobile payment app developed by Tencent.",
+ "main_port": 3000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/weixin:version-f1376de7@sha256:200f4b7ed2bb29c6d366e804b8cbea5f7030d7a20f38e11cfeb03e23a6ad79d5\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 3001\n        published: 3001\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

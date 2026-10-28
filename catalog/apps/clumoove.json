@@ -1,0 +1,60 @@
+{
+ "id": "clumoove",
+ "name": "Clumoove",
+ "version": "8fbdb27158f4cfaabccf5b7f5f5866686dc3fb5e01bd40997f080b4facd6385a",
+ "category": "Productivity",
+ "tagline": "Self-hosted cloud data migration \u0026 sync manager",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Clumoove/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "Clumoove is a modern, self-hosted cloud data migration and synchronization platform for files, calendars, and contacts.\n\nEasily connect, transfer, and synchronize data between cloud storage providers including Nextcloud, Google Drive, Dropbox, OneDrive, HiDrive, S3, WebDAV, SMB, SFTP, FTP, Immich, Seafile, Koofr, MEGA, and local storage.\n\nKey Features:\n- Zero-disk streaming transfers (no local temporary storage retention during migration)\n- Multi-threaded background migrations and cron-based synchronization schedules\n- Robust 3-way hash integrity verification \u0026 flexible conflict resolution\n- Integrated cloud file manager with multi-format previews and thumbnails\n- Multi-channel notification delivery (Gotify, ntfy, Telegram, Discord, Email)\n- Enterprise-grade security with AES-256-GCM encryption, TOTP 2FA, and audit logging",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Clumoove/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Clumoove/screenshot-2.png"
+ ],
+ "website": "https://clumoove.com",
+ "main_port": 8380,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8380",
+   "required": true
+  },
+  {
+   "key": "SECRET_ENCRYPTION_SECRET_KEY",
+   "label": "Encryption secret key",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
+   "key": "SECRET_JWT_SECRET_KEY",
+   "label": "Jwt secret key",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
+   "key": "SECRET_POSTGRES_PASSWORD",
+   "label": "Postgres password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  frontend:\n    image: ghcr.io/xxroxxerxx/clumoove-frontend:v0.19.0@sha256:8fbdb27158f4cfaabccf5b7f5f5866686dc3fb5e01bd40997f080b4facd6385a\n    container_name: clumoove-frontend\n    restart: unless-stopped\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    environment:\n      - CLUMOOVE_API_URL=\n    depends_on:\n      - api-backend\n    networks:\n      - clumoove-network\n  api-backend:\n    image: ghcr.io/xxroxxerxx/clumoove-api:v0.19.0@sha256:d5a30c51c5ac6684e6afc399ca5ab845338bc06ab14cc3873bdbd52e2d3478cf\n    container_name: clumoove-api\n    restart: unless-stopped\n    environment:\n      - DATABASE_URL=postgres://clumoove:${SECRET_POSTGRES_PASSWORD}@postgres-db:5432/cloud_migration_db?sslmode=disable\n      - REDIS_URL=redis://:clumoove_secure_redis_pass@redis-queue:6379\n      - PORT=8000\n      - ENCRYPTION_SECRET_KEY=${SECRET_ENCRYPTION_SECRET_KEY}\n      - JWT_SECRET_KEY=${SECRET_JWT_SECRET_KEY}\n      - TRUSTED_PROXY=1\n      - LOCAL_STORAGE_ROOT=/clumoove\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/storage\n        target: /clumoove\n    depends_on:\n      - postgres-db\n      - redis-queue\n    networks:\n      - clumoove-network\n  migration-worker:\n    image: ghcr.io/xxroxxerxx/clumoove-worker:v0.19.0@sha256:680ba9935621eb032b6abd5d0d25472eddd2738222f35778fce86914d6a47662\n    container_name: clumoove-worker\n    restart: unless-stopped\n    command: [\"/app/worker\"]\n    environment:\n      - DATABASE_URL=postgres://clumoove:${SECRET_POSTGRES_PASSWORD}@postgres-db:5432/cloud_migration_db?sslmode=disable\n      - REDIS_URL=redis://:clumoove_secure_redis_pass@redis-queue:6379\n      - ENCRYPTION_SECRET_KEY=${SECRET_ENCRYPTION_SECRET_KEY}\n      - LOCAL_STORAGE_ROOT=/clumoove\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/storage\n        target: /clumoove\n    depends_on:\n      - postgres-db\n      - redis-queue\n    networks:\n      - clumoove-network\n  postgres-db:\n    image: postgres:15-alpine@sha256:fe0737ba566a2c5b2a28f34433c0a423261900ec17b9bf7ad115e1aae7e57f1b\n    container_name: clumoove-postgres\n    restart: unless-stopped\n    command: [\"postgres\", \"-c\", \"max_connections=300\"]\n    environment:\n      POSTGRES_USER: clumoove\n      POSTGRES_PASSWORD: ${SECRET_POSTGRES_PASSWORD}\n      POSTGRES_DB: cloud_migration_db\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/postgres\n        target: /var/lib/postgresql/data\n    networks:\n      - clumoove-network\n  redis-queue:\n    image: redis:7-alpine@sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf\n    container_name: clumoove-redis\n    restart: unless-stopped\n    command: redis-server --appendonly yes --requirepass \"clumoove_secure_redis_pass\" --bind 0.0.0.0\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/redis\n        target: /data\n    networks:\n      - clumoove-network\nnetworks:\n  clumoove-network:\n    driver: bridge\n"
+}

@@ -1,0 +1,33 @@
+{
+ "id": "kiwix-server",
+ "name": "Kiwix Server",
+ "version": "3.7.0-2",
+ "category": "Media",
+ "tagline": "Kiwix Server is a web server for hosting .zim files",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/kiwix-serve/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Kiwix Server\n\nKiwix Server is a .zim compatible web server: it allows you to deliver .zim files over the HTTP protocol within your local network – be it a University or your own house. Simply start Kiwix-Serve on your machine, and your content will be available for anybody through their web browser. This allows you to view a website without having internet access.\n\n\n**Ensure that your there are .zim files in the `${APP_DATA_DIR}/data/zim` directory otherwise the server won't launch properly and will need to be restarted**\n\nFor doumentation see [the Kiwix wiki](https://wiki.kiwix.org/wiki/Kiwix-serve)\n\n## Features\n\n* Full text search engine\n* Search suggestions\n* Really small and efficient\n* Compatible with almost all browsers\n* Available on all platforms\n* Available as command line executable\n* Embedded in Kiwix UI\n* Able to deal with one ZIM file or XML library files\n* [RESTful API endpoint with OPDS (XML)](https://wiki.kiwix.org/wiki/OPDS)\n\n## What are ZIM files?\n\nThe ZIM file format is an open file format that stores wiki content for offline usage. The format is defined by the openZIM project, which also supports an Kiwix. The format is primarily used to store the contents of Wikipedia and other Wikimedia projects, including articles, full-text search indices and auxiliary files.\n\nDownload ZIM files from the [Kiwix library](https://library.kiwix.org/#lang=eng), or create your own (see [Zimit](https://www.youzim.it/))",
+ "website": "https://kiwix.org/",
+ "source": "https://github.com/kiwix/kiwix-tools/",
+ "main_port": 8169,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8169",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  kiwix-serve:\n    container_name: kiwix-serve\n    image: ghcr.io/kiwix/kiwix-serve:3.7.0-2\n    ports:\n      - ${APP_PORT}:8080\n    volumes:\n      - ${APP_DATA_DIR}/data/zim:/data\n    command: '*.zim'\n    restart: unless-stopped\n"
+}

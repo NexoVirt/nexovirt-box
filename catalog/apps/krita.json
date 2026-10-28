@@ -1,0 +1,30 @@
+{
+ "id": "krita",
+ "name": "Krita",
+ "version": "cb370716097e8648755c27a48fb5783c59ee9579f48c6dce9b412779593ff95a",
+ "category": "Home",
+ "tagline": "A professional FREE and open source painting program. It is made by artists that want to see affordable art tools for everyone.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/krita-logo.png",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Krita is a professional FREE and open source painting program. It is made by artists that want to see affordable art tools for everyone.",
+ "main_port": 3000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/krita:5.3.4@sha256:cb370716097e8648755c27a48fb5783c59ee9579f48c6dce9b412779593ff95a\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 3001\n        published: 3001\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

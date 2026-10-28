@@ -1,0 +1,31 @@
+{
+ "id": "rackpeek",
+ "name": "RackPeek",
+ "version": "139f88077fde2bed96acdd650573263a7dcfbf94dabec7bfca17e9b46f0941be",
+ "category": "Networking",
+ "tagline": "Document Your Home Lab",
+ "icon": "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps/apps/rackpeek/logo.jpg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "A webui and CLI tool to discover, manage, and document your home lab and small-scale IT infrastructure. Track hardware, services, networks, and their relationships using open, non-proprietary YAML.",
+ "main_port": 8095,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8095",
+   "required": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-rackpeek application\nservices:\n  # Service name: big-bear-rackpeek\n  # The `big-bear-rackpeek` service definition\n  big-bear-rackpeek:\n    # Name of the container\n    container_name: big-bear-rackpeek\n    # Image to be used for the container\n    image: aptacode/rackpeek:v2.1.0@sha256:139f88077fde2bed96acdd650573263a7dcfbf94dabec7bfca17e9b46f0941be\n    # Container restart policy\n    restart: unless-stopped\n    # Volumes to be mounted to the container\n    volumes:\n      - ${APP_DATA_DIR}/config:/app/config\n    # Ports mapping between host and container\n    ports:\n      # Mapping port 8095 of the host to port 8080 of the container\n      - \"${APP_PORT}:8080\"\n"
+}

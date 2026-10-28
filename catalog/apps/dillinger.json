@@ -1,0 +1,31 @@
+{
+ "id": "dillinger",
+ "name": "Dillinger",
+ "version": "58dc39f6cddee732241c78f89805bca608299471f66ec90a8028e10b2cadd1b4",
+ "category": "Other",
+ "tagline": "A cloud-enabled, mobile-ready, offline-storage, AngularJS powered HTML5 Markdown editor.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/dillinger.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Visit homepage: https://hub.docker.com/r/linuxserver/dillinger/",
+ "main_port": 8080,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8080",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/dillinger:3.39.1@sha256:58dc39f6cddee732241c78f89805bca608299471f66ec90a8028e10b2cadd1b4\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n    ports:\n      - target: 8080\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

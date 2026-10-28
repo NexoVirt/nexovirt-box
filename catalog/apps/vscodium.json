@@ -1,0 +1,31 @@
+{
+ "id": "vscodium",
+ "name": "Vscodium",
+ "version": "e5d0badb7b86b2c47e96e5a69d0589f2972479c5202536d98f52b2ff5634b720",
+ "category": "Home",
+ "tagline": "A community-driven, freely-licensed binary distribution of Microsoft’s editor VS Code.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/vscodium-icon.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "VSCodium is a community-driven, freely-licensed binary distribution of Microsoft’s editor VS Code.",
+ "main_port": 3000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/vscodium:1.140.06880@sha256:e5d0badb7b86b2c47e96e5a69d0589f2972479c5202536d98f52b2ff5634b720\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 3001\n        published: 3001\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

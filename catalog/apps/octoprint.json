@@ -1,0 +1,31 @@
+{
+ "id": "octoprint",
+ "name": "OctoPrint",
+ "version": "5ea0181e476597faa2800c991af4ce16903005f46b4c16666a4080ad606310bb",
+ "category": "Home",
+ "tagline": "OctoPrint",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/octoprint.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "OctoPrint is the snappy web interface for your 3D printer!",
+ "main_port": 1080,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "1080",
+   "required": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-octoprint application\nservices:\n  # Service name: app\n  # The `app` service definition\n  app:\n    # Name of the container\n    container_name: octoprint\n    # Image to be used for the container\n    image: octoprint/octoprint:1.11.8@sha256:5ea0181e476597faa2800c991af4ce16903005f46b4c16666a4080ad606310bb\n    # Container restart policy\n    restart: unless-stopped\n    # devices:\n    # use `python -m serial.tools.miniterm` to see what the name is of the printer, this requires pyserial\n    #  - /dev/ttyACM0:/dev/ttyACM0\n    #  - /dev/video0:/dev/video0\n    volumes:\n      - ${APP_DATA_DIR}/octoprint:/octoprint\n    # uncomment the lines below to ensure camera streaming is enabled when\n    # you add a video device\n    #environment:\n    #  - ENABLE_MJPG_STREAMER=true\n\n    # Ports mapping between host and container\n    ports:\n      # Mapping port 7575 of the host to port 7575 of the container\n      - \"${APP_PORT}:80\"\n"
+}

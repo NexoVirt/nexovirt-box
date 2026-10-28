@@ -1,0 +1,40 @@
+{
+ "id": "statping",
+ "name": "Statping",
+ "version": "v0.90.74",
+ "category": "Other",
+ "tagline": "An Easy To Use Status Page For Your Websites And Applications. Statping Will Automatically Fetch The Application And Render A Beautiful Status Page With Tons Of Features For You To Build An Even Better Status Page.",
+ "icon": "https://raw.githubusercontent.com/xneo1/portainer_templates/master/Images/statping.png",
+ "architectures": [
+  "amd64",
+  "armv7",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "An easy to use Status Page for your websites and applications. Statping will automatically fetch the application and render a beautiful status page with tons of features for you to build an even better status page.",
+ "main_port": 48107,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "48107",
+   "required": true
+  },
+  {
+   "key": "SECRET_DB_PASS",
+   "label": "Db pass",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: statping/statping:v0.90.74\n    restart: always\n    depends_on:\n      - db\n    environment:\n      VIRTUAL_PORT: 8080\n      DB_CONN: postgres\n      DB_HOST: db\n      DB_USER: bigbear\n      DB_PASS: ${SECRET_DB_PASS}\n      DB_DATABASE: casaos\n      NAME: ''\n      DESCRIPTION: ''\n    ports:\n      - target: 8080\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/app\n        target: /app\n  db:\n    image: postgres:18.6\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n      POSTGRES_USER: bigbear\n      POSTGRES_PASSWORD: ${SECRET_DB_PASS}\n      POSTGRES_DB: casaos\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/postgres/data\n        target: /var/lib/postgresql/data\n"
+}

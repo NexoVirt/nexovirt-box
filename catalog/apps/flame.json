@@ -1,0 +1,40 @@
+{
+ "id": "flame",
+ "name": "Flame",
+ "version": "9f88b17692a0e7393bfceec774dd556a8331032bfb737d7db282a2eedc6b74d1",
+ "category": "Other",
+ "tagline": "Flame is a self-hosted startpage for your server. Manage your apps and bookmarks effortlessly with built-in editors.",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/flame.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "docker_socket": true,
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Flame is a self-hosted startpage for your server. Its design is heavily inspired by SUI. Flame is user-friendly and easy to set up. With its built-in editors, users can quickly establish their own application hub without any file editing.",
+ "main_port": 5005,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "5005",
+   "required": true
+  },
+  {
+   "key": "SECRET_PASSWORD",
+   "label": "Password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "# List of services that this application uses\nservices:\n  # Main service for the Flame application\n  app:\n    # The Docker image to be used for the Flame application\n    image: pawelmalak/flame:multiarch2.3.1@sha256:9f88b17692a0e7393bfceec774dd556a8331032bfb737d7db282a2eedc6b74d1\n    # Environment variables that configure the application\n    environment:\n      # Specifies the password to be used by the Flame application\n      PASSWORD: ${SECRET_PASSWORD}\n    # Policy to determine how the service should be restarted if it stops\n    restart: unless-stopped\n    # Specifies the ports that the application should expose\n    ports:\n      # Maps the container's port (target) to the host's port (published)\n      - target: 5005\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    # Specifies the storage volumes that the application should use\n    volumes:\n      # Mounts the application data directory from the host system to the container\n      - ${APP_DATA_DIR}/data:/app/data\n      # Mounts the Docker socket from the host system to the container\n      - type: bind\n        source: /var/run/docker.sock\n        target: /var/run/docker.sock\n"
+}

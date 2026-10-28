@@ -1,0 +1,30 @@
+{
+ "id": "blade-of-agony",
+ "name": "Blade-of-agony",
+ "version": "5fbf2a71441ce3ced9d2a1f02c8ede1b20dcd80e6157773146bde1a381675f40",
+ "category": "Home",
+ "tagline": "A story-driven WWII shooter inspired by Wolfenstein and Doom.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/boa-logo.png",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Wolfenstein: Blade of Agony is a story-driven WWII shooter inspired by Wolfenstein and Doom.",
+ "main_port": 3000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/blade-of-agony:3.1.20261022@sha256:5fbf2a71441ce3ced9d2a1f02c8ede1b20dcd80e6157773146bde1a381675f40\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 3001\n        published: 3001\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

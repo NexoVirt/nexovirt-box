@@ -1,0 +1,48 @@
+{
+ "id": "dockpeek",
+ "name": "Dockpeek",
+ "version": "eb3f6ebf64a1775f22873e01cd25d2543da94a2743bbf7b005cf13e9bc171360",
+ "category": "Developer",
+ "tagline": "Docker Dashboard",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/dockpeek.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "docker_socket": true,
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "A lightweight, self-hosted Docker dashboard that provides quick access to all running containers and their exposed ports with one-click access to web apps.",
+ "main_port": 3420,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3420",
+   "required": true
+  },
+  {
+   "key": "SECRET_PASSWORD",
+   "label": "Password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
+   "key": "SECRET_SECRET_KEY",
+   "label": "Secret key",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-dockpeek application\nservices:\n  # Service name: big-bear-dockpeek\n  # The `big-bear-dockpeek` service definition\n  big-bear-dockpeek:\n    # Name of the container\n    container_name: big-bear-dockpeek\n    # Image to be used for the container\n    image: ghcr.io/dockpeek/dockpeek:v1.7.3@sha256:eb3f6ebf64a1775f22873e01cd25d2543da94a2743bbf7b005cf13e9bc171360\n    # Environment variables\n    environment:\n      # Secret key for the application (change this)\n      SECRET_KEY: ${SECRET_SECRET_KEY}\n      # Username for authentication (change this)\n      USERNAME: \"bigbear\"\n      # Password for authentication (change this)\n      PASSWORD: ${SECRET_PASSWORD}\n      # Docker host configuration\n      DOCKER_HOST: \"unix:///var/run/docker.sock\"\n    # Container restart policy\n    restart: unless-stopped\n    # Volumes to be mounted to the container\n    volumes:\n      - /var/run/docker.sock:/var/run/docker.sock\n    # Ports mapping between host and container\n    ports:\n      - \"${APP_PORT}:8000\"\n"
+}

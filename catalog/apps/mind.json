@@ -1,0 +1,33 @@
+{
+ "id": "mind",
+ "name": "Mind",
+ "version": "v1.5.1",
+ "category": "Utilities",
+ "tagline": "A simple self hosted reminder platform that uses push to send notifications to your device.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/mind/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# MIND Reminders\nA simple self hosted reminder platform that uses push to send notifications to your device. Set the reminder and forget about it! 📢\n\nMind is a simple self hosted application for creating reminders that get pushed to your device using the [Apprise](https://github.com/caronc/apprise) API. You can send messages to just about every platform, including scheduled emails!\n\n## Screenshots\n![mind-reminders-home](https://user-images.githubusercontent.com/57927413/213593220-495aeb86-2bf8-4c43-895d-c7cba38c3cee.png)\n\n![mind-reminders-add-notification-services](https://user-images.githubusercontent.com/57927413/212755314-1104531e-7feb-4e59-af1d-927576e47152.png)\n\n![mind-reminders-edit](https://user-images.githubusercontent.com/57927413/213594471-ecc99a72-cf0f-4570-8e78-92ffbf37e59d.png)\n\n![mind-reminders-settings](https://user-images.githubusercontent.com/57927413/212755327-b45da53c-72f7-480c-9a77-eaad28803fbb.png)\n\n## Core Features\n* Basic auth\n* Utilizes Apprise\n* Create, edit and delete reminders\n* Schedule reminders\n* Recurring reminders\n* Docker image\n* Mobile friendly\n\n## Planned Features\nYou can see our planned features in our [Project board](https://github.com/users/Casvt/projects/3).",
+ "website": "https://casvt.github.io/MIND/",
+ "source": "https://github.com/Casvt/MIND",
+ "main_port": 8143,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8143",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  mind:\n    container_name: mind\n    image: mrcas/mind:v1.5.1\n    volumes:\n      - ${APP_DATA_DIR}/data/mind-db:/app/db\n    environment:\n      - TZ=${TZ}\n    ports:\n      - ${APP_PORT}:8080\n"
+}

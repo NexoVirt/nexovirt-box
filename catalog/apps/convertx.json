@@ -1,0 +1,44 @@
+{
+ "id": "convertx",
+ "name": "ConvertX",
+ "version": "v0.17.0",
+ "category": "Productivity",
+ "tagline": "A versatile file conversion tool that supports multiple formats.",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/ConvertX/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "ConvertX is a self-hosted file conversion service that allows users to convert files between different formats through an intuitive web interface. It supports a wide range of file types including documents, images, videos, and audio files, making it a comprehensive solution for all your file conversion needs.\n\nThe service is designed with simplicity and ease of use in mind. Users can simply upload their files, select the desired output format, and let ConvertX handle the conversion process. The web interface provides a clean and user-friendly experience, with drag-and-drop support and batch conversion capabilities.\n\nConvertX runs entirely on your own infrastructure, ensuring that your files remain private and secure. There's no need to upload sensitive documents to third-party services, giving you full control over your data. The service is containerized for easy deployment and can be integrated into existing home server setups.\n\n**Key Features:**\n- Support for multiple file formats (documents, images, videos, audio)\n- Intuitive web interface with drag-and-drop support\n- Batch conversion capabilities\n- Self-hosted for privacy and security\n- Containerized for easy deployment\n- No file size limitations\n\n**Learn More:**\n- [ConvertX GitHub Repository](https://github.com/c4illin/convertx)",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/ConvertX/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/ConvertX/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/ConvertX/screenshot-3.png"
+ ],
+ "main_port": 3333,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3333",
+   "required": true
+  },
+  {
+   "key": "SECRET_JWT_SECRET",
+   "label": "Jwt secret",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  convertx:\n    image: c4illin/convertx:v0.17.0\n    container_name: convertx\n    restart: unless-stopped\n    deploy:\n      resources:\n        reservations:\n          memory: 500M\n    ports:\n      - \"${APP_PORT}:3000\"\n    environment:\n      - JWT_SECRET=${SECRET_JWT_SECRET}\n      - HTTP_ALLOWED=true\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/data\n        target: /app/data\n    network_mode: bridge\n"
+}

@@ -1,0 +1,38 @@
+{
+ "id": "stalwart-mail",
+ "name": "Stalwart Mail",
+ "version": "v0.16.27",
+ "category": "Media",
+ "tagline": "Open-source mail server solution with JMAP, IMAP4, and SMTP support",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/stalwart-mail/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## Stalwart Mail server\n\nStalwart is a scalable, secure and robust open-source mail server software designed for the 21st century.\n\n### Admin Password\n\nSee [Log in to the web interface](https://stalw.art/docs/install/docker#log-in-to-the-web-interface) to know how to get the admin password.\n\n### Screenshots\n\n\u003cimg src=\"https://github.com/stalwartlabs/mail-server/blob/main/img/screencast-setup.gif?raw=true\" alt=\"Stalwart Mail Server setup screencast\"\u003e\u003cbr\u003e\n\n### Features\n\n**Stalwart Mail Server** is an open-source mail server solution with JMAP, IMAP4, and SMTP support and a wide range of modern features. It is written in Rust and designed to be secure, fast, robust and scalable.\n\nKey features:\n\n- **JMAP** server:\n  - JMAP Core ([RFC 8620](https://datatracker.ietf.org/doc/html/rfc8620))\n  - JMAP Mail ([RFC 8621](https://datatracker.ietf.org/doc/html/rfc8621))\n  - JMAP for Sieve Scripts ([DRAFT-SIEVE-19](https://www.ietf.org/archive/id/draft-ietf-jmap-sieve-19.html))\n  - JMAP over WebSocket ([RFC 8887](https://datatracker.ietf.org/doc/html/rfc8887)), JMAP Blob Management ([RFC 9404](https://www.rfc-editor.org/rfc/rfc9404.html)) and JMAP for Quotas ([RFC 9425](https://www.rfc-editor.org/rfc/rfc9425.html)) extensions.\n- **IMAP4** server:\n  - IMAP4rev2 ([RFC 9051](https://datatracker.ietf.org/doc/html/rfc9051)) full compliance.\n  - IMAP4rev1 ([RFC 3501](https://datatracker.ietf.org/doc/html/rfc3501)) backwards compatible.\n  - ManageSieve ([RFC 5804](https://datatracker.ietf.org/doc/html/rfc5804)) server.\n  - Numerous [extensions](https://stalw.art/docs/development/rfcs#imap4-and-extensions) supported.\n- **SMTP** server:\n  - Built-in [DMARC](https://datatracker.ietf.org/doc/html/rfc7489), [DKIM](https://datatracker.ietf.org/doc/html/rfc6376), [SPF](https://datatracker.ietf.org/doc/html/rfc7208) and [ARC](https://datatracker.ietf.org/doc/html/rfc8617) support for message authentication.\n  - Strong transport security through [DANE](https://datatracker.ietf.org/doc/html/rfc6698), [MTA-STS](https://datatracker.ietf.org/doc/html/rfc8461) and [SMTP TLS](https://datatracker.ietf.org/doc/html/rfc8460) reporting.\n  - Inbound throttling and filtering with granular configuration rules, sieve scripting and milter integration.\n  - Distributed virtual queues with delayed delivery, priority delivery, quotas, routing rules and throttling support.\n  - Envelope rewriting and message modification.\n- **Spam and Phishing** filter:\n  - Comprehensive set of filtering **rules** on par with popular solutions.\n  - Statistical **spam classifier** with automatic training capabilities.\n  - DNS Blocklists (**DNSBLs**) checking of IP addresses, domains, and hashes.\n  - Collaborative digest-based spam filtering with **Pyzor**.\n  - **Phishing** protection against homographic URL attacks, sender spoofing and other techniques.\n  - Trusted **reply** tracking to recognize and prioritize genuine e-mail replies.\n  - Sender **reputation** monitoring by IP address, ASN, domain and email address.\n  - **Greylisting** to temporarily defer unknown senders.\n  - **Spam traps** to set up decoy email addresses that catch and analyze spam.\n- **Flexible and scalable**:\n  - Pluggable storage backends with **RocksDB**, **FoundationDB**, **PostgreSQL**, **mySQL**, **SQLite**, **S3-Compatible**, **Redis** and **ElasticSearch** support.\n  - Built-in, **LDAP** or **SQL** authentication backend support.\n  - Full-text search available in 17 languages.\n  - Disk quotas.\n  - Sieve scripting language with support for all [registered extensions](https://www.iana.org/assignments/sieve-extensions/sieve-extensions.xhtml).\n  - Email aliases, mailing lists, subaddressing and catch-all addresses support.\n  - Integration with **OpenTelemetry** to enable monitoring, tracing, and performance analysis.\n- **Web-based administration**:\n  - Account, domain, group and mailing list management.\n  - SMTP queue management for messages and outbound DMARC and TLS reports.\n  - Report visualization interface for received DMARC, TLS-RPT and Failure (ARF) reports.\n  - Configuration of every aspect of the mail server.\n  - Log viewer with search and filtering capabilities.\n  - Self-service portal for password reset and encryption-at-rest key management.\n- **Secure and robust**:\n  - Encryption at rest with **S/MIME** or **OpenPGP**.\n  - Automatic TLS certificate provisioning with [ACME](https://datatracker.ietf.org/doc/html/rfc8555).\n  - OAuth 2.0 [authorization code](https://www.rfc-editor.org/rfc/rfc8628) and [device authorization](https://www.rfc-editor.org/rfc/rfc8628) flows.\n  - Automated blocking of hosts that cause multiple authentication errors (aka **fail2ban**).\n  - Access Control Lists (ACLs).\n  - Rate limiting.\n  - Security audited (read the [report](https://stalw.art/blog/security-audit)).\n  - Memory safe (thanks to Rust).",
+ "website": "https://stalw.art",
+ "source": "https://github.com/stalwartlabs",
+ "main_port": 8677,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8677",
+   "required": true
+  },
+  {
+   "key": "NETWORK_INTERFACE",
+   "label": "Network Interface (default: 0.0.0.0)",
+   "type": "text"
+  }
+ ],
+ "compose": "services:\n  stalwart-mail:\n    image: ghcr.io/stalwartlabs/stalwart:v0.16.27\n    container_name: stalwart-mail\n    volumes:\n      - ${APP_DATA_DIR}/data:/opt/stalwart-mail\n    restart: unless-stopped\n    ports:\n      - ${NETWORK_INTERFACE:-0.0.0.0}:25:25/tcp\n      - ${NETWORK_INTERFACE:-0.0.0.0}:143:143/tcp\n      - ${NETWORK_INTERFACE:-0.0.0.0}:465:465/tcp\n      - ${NETWORK_INTERFACE:-0.0.0.0}:587:587/tcp\n      - ${NETWORK_INTERFACE:-0.0.0.0}:993:993/tcp\n      - ${NETWORK_INTERFACE:-0.0.0.0}:4190:4190/tcp\n      - ${APP_PORT}:8080\n"
+}

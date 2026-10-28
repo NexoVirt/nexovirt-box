@@ -1,0 +1,36 @@
+{
+ "id": "pocketbase",
+ "name": "PocketBase",
+ "version": "0.26.6",
+ "category": "Developer",
+ "tagline": "Open Source realtime backend in 1 file",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/PocketBase/icon.svg",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "PocketBase is an open-source backend solution that combines a real-time database, authentication, file storage, and an admin dashboard into a single, portable executable.",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/PocketBase/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/PocketBase/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/PocketBase/screenshot-3.png"
+ ],
+ "website": "https://pocketbase.io",
+ "main_port": 8090,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8090",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  pocketbase:\n    image: argonptg/pocketbase:0.26.6\n    deploy:\n      resources:\n        limits:\n          memory: 1024M\n    network_mode: bridge\n    ports:\n      - target: 8090\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    restart: always\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/pb_data\n        target: /pb_data\n    container_name: pocketbase\n"
+}

@@ -1,0 +1,32 @@
+{
+ "id": "nano-wallet",
+ "name": "Nano-wallet",
+ "version": "ad03cd3bcd43db7fd18bf15283c2c77550affc2650acd9c27d529e81bb6b703f",
+ "category": "Other",
+ "tagline": "A digital payment protocol designed to be accessible and lightweight, with a focus on removing inefficiencies present in other cryptocurrencies. With ultrafast transactions and zero fees on a secure, green and decentralized network, this makes Nano ideal for everyday transactions. This container is a simple nginx wrapper for the light wallet located here. You will need to pass a valid RPC host when accessing this container.",
+ "icon": "https://cdn.jsdelivr.net/gh/WisdomSky/CasaOS-LinuxServer-AppStore@main/default-icon.svg",
+ "architectures": [
+  "amd64",
+  "armv7",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Nano-wallet is a digital payment protocol designed to be accessible and lightweight, with a focus on removing inefficiencies present in other cryptocurrencies. With ultrafast transactions and zero fees on a secure, green and decentralized network, this makes Nano ideal for everyday transactions. This container is a simple nginx wrapper for the light wallet located here. You will need to pass a valid RPC host when accessing this container.",
+ "main_port": 80,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "80",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/nano-wallet:1.3.2@sha256:ad03cd3bcd43db7fd18bf15283c2c77550affc2650acd9c27d529e81bb6b703f\n    restart: unless-stopped\n    environment: {}\n    ports:\n      - target: 80\n        published: \"${APP_PORT}\"\n        protocol: tcp\n"
+}

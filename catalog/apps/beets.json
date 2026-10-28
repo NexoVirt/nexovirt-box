@@ -1,0 +1,31 @@
+{
+ "id": "beets",
+ "name": "Beets",
+ "version": "23568ef37bbb02c3806a5268616bf43817bad9c035c729d95e499fb65c32bf33",
+ "category": "Home",
+ "tagline": "A music library manager and not, for the most part, a music player. It does include a simple player plugin and an experimental Web-based player, but it generally leaves actual sound-reproduction to specialized tools.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/beets-icon.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Beets is a music library manager and not, for the most part, a music player. It does include a simple player plugin and an experimental Web-based player, but it generally leaves actual sound-reproduction to specialized tools.",
+ "main_port": 8337,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8337",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/beets:2.14.1@sha256:23568ef37bbb02c3806a5268616bf43817bad9c035c729d95e499fb65c32bf33\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n    ports:\n      - target: 8337\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n      - type: bind\n        source: ${APP_DATA_DIR}/music\n        target: /music\n      - type: bind\n        source: ${APP_DATA_DIR}/downloads\n        target: /downloads\n"
+}

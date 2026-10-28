@@ -1,0 +1,24 @@
+{
+ "id": "bazarr",
+ "name": "Bazarr",
+ "version": "1.6.2",
+ "category": "Media",
+ "tagline": "A companion application to Sonarr and Radarr that manages and downloads subtitles",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/bazarr/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Bazarr\n\nBazarr is a companion application to Sonarr and Radarr. It manages and downloads subtitles based on your requirements. You define your preferences by TV show or movie and Bazarr takes care of everything for you.\n\nBe aware that Bazarr doesn't scan disk to detect series and movies: It only takes care of the series and movies that are indexed in Sonarr and Radarr.\n\n## Major Features Include:\n\n- Support for major platforms: Windows, Linux, macOS, Raspberry Pi, etc.\n- Automatically add new series and episodes from Sonarr\n- Automatically add new movies from Radarr\n- Series or movies based configuration for subtitles languages\n- Scan your existing library for internal and external subtitles and download any missing\n- Keep history of what was downloaded from where and when\n- Manual search so you can download subtitles on demand\n- Upgrade subtitles previously downloaded when a better one is found\n- Ability to delete external subtitles from disk\n- Currently support 184 subtitles languages with support for forced/foreign subtitles (depending of providers)\n- And a beautiful UI based on Sonarr\n\n## Supported subtitles providers:\n\n- Addic7ed\n- Argenteam\n- Assrt\n- BetaSeries\n- BSplayer\n- Embedded Subtitles\n- Gestdown.info\n- GreekSubtitles\n- Hosszupuska\n- LegendasDivx\n- LegendasTV\n- Karagarga.in\n- Ktuvit (Get `hashed_password` using method described [here](https://github.com/XBMCil/service.subtitles.ktuvit))\n- Napiprojekt\n- Napisy24\n- Nekur\n- OpenSubtitles.org\n- Podnapisi\n- RegieLive\n- Sous-Titres.eu\n- Subdivx\n- subf2m.co\n- Subs.sab.bz\n- Subs4Free\n- Subs4Series\n- Subscene\n- Subscenter\n- Subsunacs.net\n- SubSynchro\n- Subtitrari-noi.ro\n- subtitri.id.lv\n- Subtitulamos.tv\n- Sucha\n- Supersubtitles\n- Titlovi\n- Titrari.ro\n- Titulky.com\n- TuSubtitulo\n- TVSubtitles\n- Wizdom\n- XSubs\n- Yavka.net\n- YIFY Subtitles\n- Zimuku",
+ "website": "https://www.bazarr.media/",
+ "source": "https://github.com/morpheus65535/bazarr",
+ "main_port": 0,
+ "scheme": "http",
+ "questions": [],
+ "compose": "services:\n  bazarr:\n    image: lscr.io/linuxserver/bazarr:1.6.2\n    volumes:\n      - /etc/localtime:/etc/localtime:ro\n      - ${APP_DATA_DIR}/data:/config\n      - ${ROOT_FOLDER_HOST}/media:/media\n    environment:\n      - PUID=1000\n      - PGID=1000\n      - TZ=${TZ}\n    x-runtipi:\n      internal_port: 6767\n      is_main: true\nx-runtipi:\n  schema_version: 2\n"
+}

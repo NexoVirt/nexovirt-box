@@ -1,0 +1,54 @@
+{
+ "id": "immich",
+ "name": "Immich",
+ "version": "v3.3.5",
+ "category": "Data",
+ "tagline": "Photo and video backup solution directly from your mobile phone.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/immich/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "##  High performance self-hosted photo and video backup solution. \n\nAn open source, high performance self-hosted backup solution for videos and photos on your mobile phone\n\n![Screenshot](https://raw.githubusercontent.com/immich-app/immich/main/design/immich-screenshots.png)",
+ "website": "https://www.immich.app/",
+ "source": "https://github.com/immich-app/immich",
+ "main_port": 8128,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8128",
+   "required": true
+  },
+  {
+   "key": "DB_PASSWORD",
+   "label": "DB_PASSWORD",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "JWT_SECRET",
+   "label": "JWT_SECRET",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "IMMICH_TYPESENSE_API_KEY",
+   "label": "IMMICH_TYPESENSE_API_KEY",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  immich:\n    container_name: immich\n    image: ghcr.io/immich-app/immich-server:v3.3.5\n    volumes:\n      - ${ROOT_FOLDER_HOST}/media/data/images/immich:/usr/src/app/upload\n    environment:\n      - NODE_ENV=production\n      - DB_HOSTNAME=immich-db\n      - DB_USERNAME=tipi\n      - DB_PASSWORD=${DB_PASSWORD}\n      - ENABLE_MAPBOX=false\n      - DB_DATABASE_NAME=immich\n      - REDIS_HOSTNAME=immich-redis\n      - JWT_SECRET=${JWT_SECRET}\n    depends_on:\n      - immich-redis\n      - immich-db\n    ports:\n      - ${APP_PORT}:2283\n    restart: unless-stopped\n  immich-machine-learning:\n    container_name: immich-machine-learning\n    image: ghcr.io/immich-app/immich-machine-learning:v3.3.5\n    volumes:\n      - ${ROOT_FOLDER_HOST}/media/data/images/immich:/usr/src/app/upload\n      - ${APP_DATA_DIR}/data/immich-ml-cache:/cache\n    environment:\n      - NODE_ENV=production\n      - DB_HOSTNAME=immich-db\n      - DB_USERNAME=tipi\n      - DB_PASSWORD=${DB_PASSWORD}\n      - DB_NAME=immich\n      - DB_DATABASE_NAME=immich\n    depends_on:\n      - immich-db\n    restart: unless-stopped\n  immich-redis:\n    container_name: immich-redis\n    image: redis:6.2\n    restart: unless-stopped\n    healthcheck:\n      test: redis-cli ping || exit 1\n  immich-db:\n    container_name: immich-db\n    image: ghcr.io/immich-app/postgres:14-vectorchord0.3.0-pgvectors0.2.0\n    environment:\n      POSTGRES_PASSWORD: ${DB_PASSWORD}\n      POSTGRES_USER: tipi\n      POSTGRES_DB: immich\n      PG_DATA: /var/lib/postgresql/data\n    volumes:\n      - ${APP_DATA_DIR}/data/db:/var/lib/postgresql/data\n    restart: unless-stopped\n"
+}

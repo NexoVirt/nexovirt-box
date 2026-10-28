@@ -1,0 +1,31 @@
+{
+ "id": "zotero",
+ "name": "Zotero",
+ "version": "d201c7dd666842c8b6d06dee127052d6feae815dbbb0feba448c1182053598f9",
+ "category": "Other",
+ "tagline": "Zotero",
+ "icon": "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps/apps/zotero/logo.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Zotero is a free, easy-to-use tool to help you collect, organize, annotate, cite, and share research.",
+ "main_port": 3000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3000",
+   "required": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-zotero application\nservices:\n  # Service name: big-bear-zotero\n  # The `big-bear-zotero` service definition\n  big-bear-zotero:\n    # Name of the container\n    container_name: big-bear-zotero\n    # Image to be used for the container\n    image: linuxserver/zotero:10.0.20260821@sha256:d201c7dd666842c8b6d06dee127052d6feae815dbbb0feba448c1182053598f9\n    # Container restart policy\n    restart: unless-stopped\n    # Environment variables for the container\n    environment:\n      - PUID=1000\n      - PGID=1000\n      - TZ=Etc/UTC\n    # Ports mapping between host and container\n    ports:\n      - \"${APP_PORT}:3000\"\n      - 3001:3001\n    security_opt:\n      - seccomp:unconfined #optional\n    shm_size: \"1gb\" #optional\n"
+}

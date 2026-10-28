@@ -1,0 +1,31 @@
+{
+ "id": "ubooquity",
+ "name": "Ubooquity",
+ "version": "e484ecb4aa66fd0bde885850f48c8818ee7c7cd9cdb8cd3b279a98b0fb6ec7e0",
+ "category": "Home",
+ "tagline": "A free, lightweight and easy-to-use home server for your comics and ebooks. Use it to access your files from anywhere, with a tablet, an e-reader, a phone or a computer.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/ubooquity-banner.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Ubooquity is a free, lightweight and easy-to-use home server for your comics and ebooks. Use it to access your files from anywhere, with a tablet, an e-reader, a phone or a computer.",
+ "main_port": 2202,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "2202",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/ubooquity:3.1.0@sha256:e484ecb4aa66fd0bde885850f48c8818ee7c7cd9cdb8cd3b279a98b0fb6ec7e0\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n      MAXMEM: ''\n    ports:\n      - target: 2202\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 2203\n        published: 2203\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n      - type: bind\n        source: ${APP_DATA_DIR}/books\n        target: /books\n      - type: bind\n        source: ${APP_DATA_DIR}/comics\n        target: /comics\n      - type: bind\n        source: ${APP_DATA_DIR}/files\n        target: /files\n"
+}

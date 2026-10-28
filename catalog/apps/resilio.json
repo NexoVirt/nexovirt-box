@@ -1,0 +1,32 @@
+{
+ "id": "resilio",
+ "name": "Resilio",
+ "version": "3.1.2",
+ "category": "Data",
+ "tagline": "Fast, reliable, and simple file sync and share solution.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/resilio-sync/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "[Resilio-sync](https://www.resilio.com/individuals/) (formerly BitTorrent Sync) uses the BitTorrent protocol to sync files and folders between all of your devices. There are both free and paid versions, this container supports both. There is an official sync image but we created this one as it supports user mapping to simplify permissions for volumes.\n\n[![resilio-sync](https://www.resilio.com/img/individual/freeproduct.jpg)](https://www.resilio.com/individuals/)",
+ "source": "https://github.com/bt-sync",
+ "main_port": 8113,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8113",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  resilio-sync:\n    image: lscr.io/linuxserver/resilio-sync:3.1.2\n    container_name: resilio-sync\n    environment:\n      - PUID=1000\n      - PGID=1000\n    volumes:\n      - ${APP_DATA_DIR}/data/config:/config\n      - ${APP_DATA_DIR}/data/downloads:/downloads\n      - ${APP_DATA_DIR}/data/sync:/sync\n    ports:\n      - ${APP_PORT}:8888\n      - '55555:55555'\n    restart: unless-stopped\n"
+}

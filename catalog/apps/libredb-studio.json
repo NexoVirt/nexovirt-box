@@ -1,0 +1,37 @@
+{
+ "id": "libredb-studio",
+ "name": "LibreDB Studio",
+ "version": "1.0.0",
+ "category": "Developer",
+ "tagline": "Open-source self-hosted SQL IDE.",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/LibreDBStudio/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "LibreDB Studio is an open-source (MIT), self-hosted SQL IDE. It provides a modern web-based interface to connect to forty-one database engines (PostgreSQL, MySQL, Oracle, Db2, SQL Server, MongoDB, Redis, ClickHouse, Cassandra, Elasticsearch, Prometheus, Apache Kafka, Neo4j, Qdrant, Milvus, InfluxDB, etcd and more), browse schemas, and write and run queries from any browser on your LAN. Some are read-only because their own SQL is. Druid, Elasticsearch and OpenSearch have no `UPDATE` and no `CREATE TABLE` at all. Several more are read-only by construction. Data is stored locally in a SQLite database, so everything stays under your control.",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/LibreDBStudio/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/LibreDBStudio/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/LibreDBStudio/screenshot-3.png"
+ ],
+ "website": "https://libredb.org",
+ "main_port": 3016,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3016",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  libredb-studio:\n    image: libredb/libredb-studio:1.0.0\n    container_name: libredb-studio\n    restart: unless-stopped\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    environment:\n      ADMIN_EMAIL: admin@libredb.org\n      ADMIN_PASSWORD: \"\"\n      JWT_SECRET: \"\"\n      STORAGE_PROVIDER: sqlite\n      STORAGE_SQLITE_PATH: /app/data/libredb-storage.db\n      AUTH_COOKIE_SECURE: \"false\"\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/data\n        target: /app/data\n    healthcheck:\n      test:\n        - CMD\n        - node\n        - -e\n        - \"require('http').get('http://127.0.0.1:3000/api/db/health',r=\u003eprocess.exit(r.statusCode===200?0:1)).on('error',()=\u003eprocess.exit(1))\"\n      interval: 30s\n      timeout: 5s\n      retries: 5\n      start_period: 40s\n    deploy:\n      resources:\n        reservations:\n          memory: 256M\n    network_mode: bridge\n    privileged: false\n"
+}

@@ -1,0 +1,33 @@
+{
+ "id": "node-red",
+ "name": "Node-RED",
+ "version": "5.0.9",
+ "category": "Automation",
+ "tagline": "Low-code programming for event-driven applications",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/nodered/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## Low-code programming for event-driven applications.\n\nNode-RED is a programming tool for wiring together hardware devices, APIs and online services in new and interesting ways.\nIt provides a browser-based editor that makes it easy to wire together flows using the wide range of nodes in the palette that can be deployed to its runtime in a single-click.\n\n![Screenshot](https://camo.githubusercontent.com/c7b6e0b937295c4d2c852130814050eb0caffac5b700ead6de21df6dbf83aa82/687474703a2f2f6e6f64657265642e6f72672f696d616765732f6e6f64652d7265642d73637265656e73686f742e706e67)",
+ "website": "https://nodered.org/",
+ "source": "https://github.com/node-red/node-red",
+ "main_port": 8111,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8111",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  nodered:\n    container_name: nodered\n    image: nodered/node-red:5.0.9\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:1880\n    volumes:\n      - ${APP_DATA_DIR}/data:/data\n"
+}

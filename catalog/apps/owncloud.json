@@ -1,0 +1,56 @@
+{
+ "id": "owncloud",
+ "name": "Owncloud",
+ "version": "11.0.1",
+ "category": "Data",
+ "tagline": "A personal cloud which runs on your own server.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/owncloud/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# ownCloud Core\n\n**[ownCloud](http://ownCloud.com) gives you freedom and control over your own data. A personal cloud which runs on your own server.**\n\n[![](https://github.com/owncloud/screenshots/raw/master/files/sidebar_1.png)](https://github.com/owncloud/screenshots/blob/master/files/sidebar_1.png)\n\n## [](https://github.com/owncloud/core/blob/master/README.md#why-is-this-so-awesome)Why Is This so Awesome?\n\n- 📁 **Access your Data** You can store your files, contacts, calendars and more on a server of your choosing.\n- 📦 **Sync your Data** You keep your files, contacts, calendars and more synchronized amongst your devices.\n- 🔄 **Share your Data** You share your data with others, and give them access to your latest photo galleries, your calendar or anything else you want them to see.\n- 🚀 **Expandable with dozens of Apps** ...like Calendar, Contacts, Mail or News.\n- ☁️ **All Benefits of the Cloud** ...on your own Server.\n- 🔒 **Encryption** You can encrypt data in transit with secure https connections. You can enable the encryption app to encrypt data on storage for improved security and privacy.\n- ...\n\n## [](https://github.com/owncloud/core/blob/master/README.md#installation-instructions)Installation Instructions\n\nFor installing ownCloud, see the official [ownCloud 10](https://doc.owncloud.com/server/latest/admin_manual/installation/) installation manual.\n\n## [](https://github.com/owncloud/core/blob/master/README.md#development-build-prerequisites)Development Build Prerequisites\n\nNote that when doing a local development build, you need to have **Composer v2** installed. If your OS provides a lower version than v2, you can install Composer v2 manually. As an example, which may be valid for other releases/distros too, see [How to install Composer on Ubuntu 22.04 | 20.04 LTS](https://www.how2shout.com/linux/how-to-install-composer-on-ubuntu-22-04-20-04-lts/).\n\nYou also must have installed `yarn` and `node` (v14 or higher).\n\n## [](https://github.com/owncloud/core/blob/master/README.md#contribution-guidelines)Contribution Guidelines\n\n[https://owncloud.com/contribute/](https://owncloud.com/contribute/)\n\n## [](https://github.com/owncloud/core/blob/master/README.md#support)Support\n\nLearn about the different ways you can get support for ownCloud: [https://owncloud.com/support/](https://owncloud.com/support/)\n\n## [](https://github.com/owncloud/core/blob/master/README.md#get-in-touch)Get in Touch\n\n- 📋 [Forum](https://central.owncloud.org)\n- #️⃣ [IRC channel](https://web.libera.chat/?channels=#owncloud)\n- 👥 [Facebook](https://facebook.com/ownclouders)\n- 🐣 [Twitter](https://twitter.com/ownCloud)\n\n## [](https://github.com/owncloud/core/blob/master/README.md#important-notice-on-translations)Important Notice on Translations\n\nPlease submit translations via Transifex: [https://explore.transifex.com/owncloud-org/](https://explore.transifex.com/owncloud-org/)\n\nSee the detailed information about [translations](https://doc.owncloud.com/server/latest/developer_manual/core/translation.html) here.",
+ "website": "https://owncloud.com/",
+ "source": "https://github.com/owncloud/core",
+ "main_port": 8151,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8151",
+   "required": true
+  },
+  {
+   "key": "OWNCLOUD_DB_PASSWORD",
+   "label": "OWNCLOUD_DB_PASSWORD",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "OWNCLOUD_USERNAME",
+   "label": "Owncloud username",
+   "type": "text",
+   "required": true,
+   "min": 3,
+   "max": 50
+  },
+  {
+   "key": "OWNCLOUD_PASSWORD",
+   "label": "Owncloud password",
+   "type": "password",
+   "required": true,
+   "min": 8,
+   "max": 50
+  }
+ ],
+ "compose": "services:\n  owncloud:\n    image: owncloud/server:11.0.1\n    container_name: owncloud\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:8080\n    depends_on:\n      - owncloud-db\n      - owncloud-redis\n    environment:\n      - OWNCLOUD_DOMAIN=${APP_DOMAIN}\n      - OWNCLOUD_TRUSTED_DOMAINS=${APP_DOMAIN}\n      - OWNCLOUD_DB_TYPE=mysql\n      - OWNCLOUD_DB_NAME=owncloud\n      - OWNCLOUD_DB_USERNAME=tipi\n      - OWNCLOUD_DB_PASSWORD=${OWNCLOUD_DB_PASSWORD}\n      - OWNCLOUD_DB_HOST=owncloud-db\n      - OWNCLOUD_ADMIN_USERNAME=${OWNCLOUD_USERNAME}\n      - OWNCLOUD_ADMIN_PASSWORD=${OWNCLOUD_PASSWORD}\n      - OWNCLOUD_MYSQL_UTF8MB4=true\n      - OWNCLOUD_REDIS_ENABLED=true\n      - OWNCLOUD_REDIS_HOST=owncloud-redis\n    healthcheck:\n      test:\n        - CMD\n        - /usr/bin/healthcheck\n      interval: 30s\n      timeout: 10s\n      retries: 5\n    volumes:\n      - ${APP_DATA_DIR}/data/owncloud:/mnt/data\n  owncloud-db:\n    image: mariadb:10.6\n    container_name: owncloud-db\n    restart: unless-stopped\n    environment:\n      - MYSQL_ROOT_PASSWORD=${OWNCLOUD_DB_PASSWORD}\n      - MYSQL_USER=tipi\n      - MYSQL_PASSWORD=${OWNCLOUD_DB_PASSWORD}\n      - MYSQL_DATABASE=owncloud\n    command:\n      - '--max-allowed-packet=128M'\n      - '--innodb-log-file-size=64M'\n    healthcheck:\n      test:\n        - CMD\n        - mysqladmin\n        - ping\n        - '-u'\n        - root\n        - '--password=${OWNCLOUD_DB_PASSWORD}'\n      interval: 10s\n      timeout: 5s\n      retries: 5\n    volumes:\n      - ${APP_DATA_DIR}/data/mysql:/var/lib/mysql\n  owncloud-redis:\n    image: redis:6\n    container_name: owncloud-redis\n    restart: unless-stopped\n    command:\n      - '--databases'\n      - '1'\n    healthcheck:\n      test:\n        - CMD\n        - redis-cli\n        - ping\n      interval: 10s\n      timeout: 5s\n      retries: 5\n    volumes:\n      - ${APP_DATA_DIR}/data/redis:/data\n"
+}

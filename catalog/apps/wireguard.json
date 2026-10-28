@@ -1,0 +1,45 @@
+{
+ "id": "wireguard",
+ "name": "Wireguard",
+ "version": "15.5.0",
+ "category": "Networking",
+ "tagline": "VPN server for your homeserver.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/wg-easy-1/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## Installation Guide\n#### If you want to restrict WebUI access with a password (you should):\n- Choose a password\n- Use https://bcrypt-generator.com/ to hash your password\n- Add an additional \"dollar sign\" (**$**) next to every existing one in your generated hash\n\nHere is an example with `runtipi` as password :\n| | |\n| --- | --- |\n| password | `runtipi` |\n| hash _(bcrypt)_ | `$2a$12$MSBcCEGpDyGQJlZo0R/i2e7Fvu6PnxjIRoWGS7cfuKFtjiGzuUTBy` |\n|\"cleaned\" hash | `$$2a$$12$$MSBcCEGpDyGQJlZo0R/i2e7Fvu6PnxjIRoWGS7cfuKFtjiGzuUTBy` |\n\n## The easiest way to run WireGuard VPN + Web-based Admin UI.\n\nYou have found the easiest way to install \u0026 manage WireGuard on any Linux host!\n\n* All-in-one: WireGuard + Web UI.\n* Easy installation, simple to use.\n* List, create, edit, delete, enable \u0026 disable clients.\n* Show a client's QR code.\n* Download a client's configuration file.\n* Statistics for which clients are connected.\n* Tx/Rx charts for each connected client.\n* Gravatar support.\n\n![Screenshot](https://raw.githubusercontent.com/WeeJeWel/wg-easy/master/assets/screenshot.png)",
+ "website": "https://wg-easy.github.io/wg-easy/latest/",
+ "source": "https://github.com/wg-easy/wg-easy",
+ "main_port": 8882,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8882",
+   "required": true
+  },
+  {
+   "key": "WIREGUARD_INSECURE",
+   "label": "Allow non-secured HTTP access",
+   "type": "boolean",
+   "hint": "Only activate if you need to access the dashboard through IP:PORT",
+   "default": "false"
+  },
+  {
+   "key": "WIREGUARD_DISABLE_IPV6",
+   "label": "Disable IPv6",
+   "type": "boolean"
+  }
+ ],
+ "compose": "services:\n  wg-easy-1:\n    container_name: wg-easy-1\n    image: ghcr.io/wg-easy/wg-easy:15.5.0\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/data:/etc/wireguard\n    ports:\n      - 51820:51820/udp\n      - ${APP_PORT}:51821/tcp\n    environment:\n      - INSECURE=${WIREGUARD_INSECURE}\n      - DISABLE_IPV6=${WIREGUARD_DISABLE_IPV6}\n    cap_add:\n      - NET_ADMIN\n      - SYS_MODULE\n    sysctls:\n      - net.ipv4.conf.all.src_valid_mark=1\n      - net.ipv4.ip_forward=1\n"
+}

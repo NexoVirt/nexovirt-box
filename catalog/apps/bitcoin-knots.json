@@ -1,0 +1,31 @@
+{
+ "id": "bitcoin-knots",
+ "name": "Bitcoin-knots",
+ "version": "c5f17ac3492af411bf83e2a62c1640be1b53b551570d3d39876c1b18bec82879",
+ "category": "Home",
+ "tagline": "Can be used as a desktop client for regular payments or as a full node server utility for merchants and other payment services.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/bitcoin-knots-logo.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Bitcoin Knots can be used as a desktop client for regular payments or as a full node server utility for merchants and other payment services.",
+ "main_port": 3000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/bitcoin-knots:version-29.4.knots20260508.1-noble1@sha256:c5f17ac3492af411bf83e2a62c1640be1b53b551570d3d39876c1b18bec82879\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 3001\n        published: 3001\n        protocol: tcp\n      - target: 8333\n        published: 8333\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

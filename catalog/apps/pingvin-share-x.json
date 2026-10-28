@@ -1,0 +1,33 @@
+{
+ "id": "pingvin-share-x",
+ "name": "Pingvin Share X",
+ "version": "2.1.0",
+ "category": "Data",
+ "tagline": "Self-hosted file sharing platform",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/pingvin-share/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# \u003cdiv align=\"center\"\u003e\u003cimg  src=\"https://user-images.githubusercontent.com/58886915/166198400-c2134044-1198-4647-a8b6-da9c4a204c68.svg\" width=\"40\"/\u003e \u003c/br\u003ePingvin Share\u003c/div\u003e\n\nPingvin Share is self-hosted file sharing platform and an alternative for WeTransfer.\n\n## ✨ Features\n\n- Share files using a link\n- Unlimited file size (restricted only by disk space)\n- Set an expiration date for shares\n- Secure shares with visitor limits and passwords\n- Email recipients\n- Integration with ClamAV for security scans\n\n## 🐧 Get to know Pingvin Share\n\n- [Demo](https://pingvin-share.dev.eliasschneider.com)\n- [Review by DB Tech](https://www.youtube.com/watch?v=rWwNeZCOPJA)\n\n\u003cimg src=\"https://user-images.githubusercontent.com/58886915/225038319-b2ef742c-3a74-4eb6-9689-4207a36842a4.png\" width=\"700\"/\u003e",
+ "website": "https://smp46.github.io/pingvin-share-x/introduction",
+ "source": "https://github.com/smp46/pingvin-share-x",
+ "main_port": 8654,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8654",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  pingvin-share:\n    container_name: pingvin-share\n    image: ghcr.io/smp46/pingvin-share-x:v2.1.0\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:3000\n    volumes:\n      - ${APP_DATA_DIR}/data:/opt/app/backend/data\n      - ${APP_DATA_DIR}/data/images:/opt/app/frontend/public/img\n"
+}

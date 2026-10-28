@@ -1,0 +1,33 @@
+{
+ "id": "nginx",
+ "name": "Nginx",
+ "version": "1.31.8",
+ "category": "Utilities",
+ "tagline": "Open-source simple and fast web server.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/nginx/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## Nginx \n\nA simple and lightweight web server to test that your tipi install works.",
+ "website": "https://www.nginx.com/",
+ "source": "https://github.com/nginx/nginx",
+ "main_port": 8754,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8754",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  nginx:\n    image: nginx:1.31.8\n    container_name: nginx\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:80\n"
+}

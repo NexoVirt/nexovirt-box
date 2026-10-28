@@ -1,0 +1,36 @@
+{
+ "id": "hermes-agent",
+ "name": "Hermes Agent",
+ "version": "fca358f12efd65bfaaca05884166f15c0e2788375ca30d77061ac1ebc96452b7",
+ "category": "AI",
+ "tagline": "",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Hermes/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Hermes Agent 0.21.3 is a self-hosted AI agent with a gateway API and an authenticated web dashboard.",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Hermes/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Hermes/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Hermes/screenshot-3.png"
+ ],
+ "main_port": 9119,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "9119",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  hermes:\n    image: nousresearch/hermes-agent:v2026.9.24@sha256:fca358f12efd65bfaaca05884166f15c0e2788375ca30d77061ac1ebc96452b7\n    container_name: hermes\n    restart: unless-stopped\n    command:\n      - gateway\n      - run\n    ports:\n      - \"${APP_PORT}:9119\"\n      - \"8642:8642\"\n    volumes:\n      - ${APP_DATA_DIR}/:/opt/data\n    environment:\n      HERMES_DASHBOARD: \"1\"\n      HERMES_DASHBOARD_BASIC_AUTH_USERNAME: zimaos\n      HERMES_DASHBOARD_BASIC_AUTH_PASSWORD: \"\"\n    deploy:\n      resources:\n        reservations:\n          memory: 1G\n"
+}

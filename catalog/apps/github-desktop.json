@@ -1,0 +1,31 @@
+{
+ "id": "github-desktop",
+ "name": "Github-desktop",
+ "version": "8651e12fa3c6418b3a6f1a745ec629e9923294c52a653a87d81983a4bbaeba07",
+ "category": "Home",
+ "tagline": "An open source Electron-based GitHub app. It is written in TypeScript and uses React.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/github-desktop-icon.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Github Desktop is an open source Electron-based GitHub app. It is written in TypeScript and uses React.",
+ "main_port": 3000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/github-desktop:3.4.13@sha256:8651e12fa3c6418b3a6f1a745ec629e9923294c52a653a87d81983a4bbaeba07\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 3001\n        published: 3001\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

@@ -1,0 +1,49 @@
+{
+ "id": "mongodb",
+ "name": "MongoDB",
+ "version": "7.0.45",
+ "category": "Developer",
+ "tagline": "MongoDB is an open-source NoSQL database",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/mongo/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## MongoDB\nMongoDB is an open-source document-oriented database that is designed to store a large scale of data and also allows you to work with that data very efficiently. It is categorized under the NoSQL (Not only SQL) database because the storage and retrieval of data in the MongoDB are not in the form of tables. \n\nThe MongoDB database is developed and managed by MongoDB.Inc under SSPL(Server Side Public License) and initially released in February 2009. It also provides official driver support for all the popular languages like C, C++, C#, and .Net, Go, Java, Node.js, Perl, PHP, Python, Motor, Ruby, Scala, Swift, Mongoid. So, that you can create an application using any of these languages. Nowadays there are so many companies that used MongoDB like Facebook, Nokia, eBay, Adobe, Google, etc. to store their large amount of data. \n\n### How it works ?\n\nNow, we will see how actually thing happens behind the scene. As we know that MongoDB is a database server and the data is stored in these databases. Or in other words, MongoDB environment gives you a server that you can start and then create multiple databases on it using MongoDB.   \nBecause of its NoSQL database, the data is stored in the collections and documents. Hence the database, collection, and documents are related to each other as shown below:   \n \n\n![mongodb-nosql-working](https://media.geeksforgeeks.org/wp-content/uploads/20200127193216/mongodb-nosql-working.jpg)\n\n- The MongoDB database contains collections just like the MYSQL database contains tables. You are allowed to create multiple databases and multiple collections.\n- Now inside of the collection we have documents. These documents contain the data we want to store in the MongoDB database and a single collection can contain multiple documents and you are schema-less means it is not necessary that one document is similar to another.\n- The documents are created using the fields. Fields are key-value pairs in the documents, it is just like columns in the relation database. The value of the fields can be of any BSON data types like double, string, boolean, etc.\n- The data stored in the MongoDB is in the format of BSON documents. Here, BSON stands for Binary representation of JSON documents. Or in other words, in the backend, the MongoDB server converts the JSON data into a binary form that is known as BSON and this BSON is stored and queried more efficiently.\n- In MongoDB documents, you are allowed to store nested data. This nesting of data allows you to create complex relations between data and store them in the same document which makes the working and fetching of data extremely efficient as compared to SQL. In SQL, you need to write complex joins to get the data from table 1 and table 2. The maximum size of the BSON document is 16MB.\n\n**NOTE:** In MongoDB server, you are allowed to run multiple databases. \n\nFor example, we have a database named GeeksforGeeks. Inside this database, we have two collections and in these collections we have two documents. And in these documents we store our data in the form of fields. As shown in the below image:   \n \n\n![](https://media.geeksforgeeks.org/wp-content/uploads/20200123222337/Untitled-Diagram-57.jpg)\n\n**How mongoDB is different from RDBMS ?**   \nSome major differences in between MongoDB and the RDBMS are as follows:   \n \n\n|MongoDB|RDBMS|\n|---|---|\n|It is a non-relational and document-oriented database.|It is a relational database.|\n|It is suitable for hierarchical data storage.|It is not suitable for hierarchical data storage.|\n|It has a dynamic schema.|It has a predefined schema.|\n|It centers around the CAP theorem (Consistency, Availability, and Partition tolerance).|It centers around ACID properties (Atomicity, Consistency, Isolation, and Durability).|\n|In terms of performance, it is much faster than RDBMS.|In terms of performance, it is slower than MongoDB.|\n|||\n\n### Features of MongoDB –\n\n- **Schema-less Database:** It is the great feature provided by the MongoDB. A Schema-less database means one collection can hold different types of documents in it. Or in other words, in the MongoDB database, a single collection can hold multiple documents and these documents may consist of the different numbers of fields, content, and size. It is not necessary that the one document is similar to another document like in the relational databases. Due to this cool feature, MongoDB provides great flexibility to databases.\n- **Document Oriented:** In MongoDB, all the data stored in the documents instead of tables like in RDBMS. In these documents, the data is stored in fields(key-value pair) instead of rows and columns which make the data much more flexible in comparison to RDBMS. And each document contains its unique object id.\n- **Indexing:** In MongoDB database, every field in the documents is indexed with primary and secondary indices this makes easier and takes less time to get or search data from the pool of the data. If the data is not indexed, then database search each document with the specified query which takes lots of time and not so efficient.\n- **Scalability:** MongoDB provides horizontal scalability with the help of sharding. Sharding means to distribute data on multiple servers, here a large amount of data is partitioned into data chunks using the shard key, and these data chunks are evenly distributed across shards that reside across many physical servers. It will also add new machines to a running database.\n- **Replication:** MongoDB provides high availability and redundancy with the help of replication, it creates multiple copies of the data and sends these copies to a different server so that if one server fails, then the data is retrieved from another server.\n- **Aggregation:** It allows to perform operations on the grouped data and get a single result or computed result. It is similar to the SQL GROUPBY clause. It provides three different aggregations i.e, aggregation pipeline, map-reduce function, and single-purpose aggregation methods\n- **High Performance:** The performance of MongoDB is very high and data persistence as compared to another database due to its features like scalability, indexing, replication, etc.\n\n**Advantages of MongoDB :**   \n \n\n- It is a schema-less NoSQL database. You need not to design the schema of the database when you are working with MongoDB.\n- It does not support join operation.\n- It provides great flexibility to the fields in the documents.\n- It contains heterogeneous data.\n- It provides high performance, availability, scalability.\n- It supports Geospatial efficiently.\n- It is a document oriented database and the data is stored in BSON documents.\n- It also supports multiple document ACID transition(string from MongoDB 4.0).\n- It does not require any SQL injection.\n- It is easily integrated with Big Data Hadoop\n\n**Disadvantages of MongoDB :**   \n \n\n- It uses high memory for data storage.\n- You are not allowed to store more than 16MB data in the documents.\n- The nesting of data in BSON is also limited you are not allowed to nest data more than 100 levels.\n\n### Learn MongoDB\n- Documentation - [https://docs.mongodb.com/manual/](https://docs.mongodb.com/manual/)\n- Developer Center - [https://www.mongodb.com/developer/](https://www.mongodb.com/developer/)\n- MongoDB University - [https://learn.mongodb.com](https://learn.mongodb.com/)",
+ "website": "https://www.mongodb.com/",
+ "source": "https://github.com/mongodb/mongo",
+ "main_port": 27017,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "27017",
+   "required": true
+  },
+  {
+   "key": "MONGO_INITDB_ROOT_USERNAME",
+   "label": "Admin Username",
+   "type": "text",
+   "required": true,
+   "min": 3,
+   "max": 50
+  },
+  {
+   "key": "MONGO_INITDB_ROOT_PASSWORD",
+   "label": "Admin Password",
+   "type": "password",
+   "required": true,
+   "min": 10,
+   "max": 50
+  }
+ ],
+ "compose": "services:\n  mongo:\n    container_name: mongo\n    image: mongo:7.0.45\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:27017\n    environment:\n      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}\n      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}\n"
+}

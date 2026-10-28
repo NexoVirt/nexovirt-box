@@ -1,0 +1,34 @@
+{
+ "id": "anythingllm",
+ "name": "AnythingLLM",
+ "version": "latest",
+ "category": "AI",
+ "tagline": "The all-in-one AI application.",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/AnythingLLM/icon.svg",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "AnythingLLM is the easiest to use, all-in-one AI application that can do RAG, AI Agents, and much more with no code or infrastructure headaches.",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/AnythingLLM/screenshot-1.gif"
+ ],
+ "website": "https://anythingllm.com",
+ "main_port": 3051,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3051",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  anythingllm:\n    image: mintplexlabs/anythingllm\n    container_name: anythingllm\n    ports:\n      - target: 3001\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    cap_add:\n      - SYS_ADMIN\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/storage\n        target: /app/server/storage\n    environment:\n      - STORAGE_DIR=/app/server/storage\n    restart: always\n    extra_hosts:\n      - \"host.docker.internal:host-gateway\"\n"
+}

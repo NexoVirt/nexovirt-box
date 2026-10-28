@@ -1,0 +1,33 @@
+{
+ "id": "deemix",
+ "name": "Deemix",
+ "version": "latest",
+ "category": "Media",
+ "tagline": "deemix is a barebone deezer downloader library built from the ashes of Deezloader Remix.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/deemix/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Folder Info \n\n| Root Folder                                 | Container Folder |\n|---------------------------------------------|------------------|\n| /runtipi/app-data/deemix/data/deemix-config | /config          |\n| /runtipi/media                              | /media           |\n| /runtipi/media/data/torrents/deemix         | /downloads       |\n| /runtipi/media/data/music                   | /music           |\n\ndeemix is a library that lets you download millions of songs, soundtracks, albums in high-quality mp3 and FLAC. Here you can find discussions about the apps that use the deemix library. Deemix is meant to replace Deezloader Remix.",
+ "website": "https://deemix.app/",
+ "source": "https://gitlab.com/Bockiii/deemix-docker",
+ "main_port": 6595,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "6595",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  deemix:\n    container_name: deemix\n    image: registry.gitlab.com/bockiii/deemix-docker:latest\n    ports:\n      - ${APP_PORT}:6595\n    volumes:\n      - ${APP_DATA_DIR}/data/deemix-config:/config\n      - ${ROOT_FOLDER_HOST}/media:/media\n      - ${ROOT_FOLDER_HOST}/media/data/torrents/deemix:/downloads\n      - ${ROOT_FOLDER_HOST}/media/data/music:/music\n    environment:\n      - PUID=1000\n      - PGID=1000\n      - UMASK_SET=022\n    restart: unless-stopped\n"
+}

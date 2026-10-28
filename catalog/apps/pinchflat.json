@@ -1,0 +1,48 @@
+{
+ "id": "pinchflat",
+ "name": "Pinchflat",
+ "version": "v2025.6.6",
+ "category": "Media",
+ "tagline": "Your next YouTube media manager",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/pinchflat/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Pinchflat\n\nYour next YouTube media manager\n\nPinchflat is a self-hosted app for downloading YouTube content built using yt-dlp. It's designed to be lightweight, self-contained, and easy to use. You set up rules for how to download content from YouTube channels or playlists and it'll do the rest, checking periodically for new content. It's perfect for people who want to download content for use in with a media center app (Plex, Jellyfin, Kodi) or for those who want to archive media!",
+ "source": "https://github.com/kieraneglin/pinchflat",
+ "main_port": 8945,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8945",
+   "required": true
+  },
+  {
+   "key": "PINCHFLAT_BASIC_AUTH_USERNAME",
+   "label": "Basic Auth Username",
+   "type": "text",
+   "hint": "if not set, no basic auth is used",
+   "placeholder": "admin",
+   "min": 3,
+   "max": 50
+  },
+  {
+   "key": "PINCHFLAT_BASIC_AUTH_PASSWORD",
+   "label": "Basic Auth Password",
+   "type": "password",
+   "hint": "if not set, no basic auth is used",
+   "placeholder": "password1234"
+  }
+ ],
+ "compose": "services:\n  pinchflat:\n    image: keglin/pinchflat:v2025.6.6\n    container_name: pinchflat\n    environment:\n      - BASIC_AUTH_USERNAME=${PINCHFLAT_BASIC_AUTH_USERNAME}\n      - BASIC_AUTH_PASSWORD=${PINCHFLAT_BASIC_AUTH_PASSWORD}\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:8945\n    volumes:\n      - /etc/localtime:/etc/localtime:ro\n      - ${APP_DATA_DIR}/data/config:/config\n      - ${APP_DATA_DIR}/data/downloads:/downloads\n"
+}

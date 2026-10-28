@@ -1,0 +1,31 @@
+{
+ "id": "altus",
+ "name": "Altus",
+ "version": "d25458c497a012bf22733f99bb7d54c0a08575f2760ac1adf4a4b152c74c3b43",
+ "category": "Home",
+ "tagline": "An Electron-based WhatsApp client with themes and multiple account support.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/altus-logo.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Altus is an Electron-based WhatsApp client with themes and multiple account support.",
+ "main_port": 3000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/altus:5.8.1@sha256:d25458c497a012bf22733f99bb7d54c0a08575f2760ac1adf4a4b152c74c3b43\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 3001\n        published: 3001\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

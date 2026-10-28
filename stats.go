@@ -18,13 +18,13 @@ import (
 )
 
 type Snapshot struct {
-	Time    int64     `json:"time"`
-	CPU     CPUStats  `json:"cpu"`
-	Memory  MemStats  `json:"memory"`
+	Time    int64      `json:"time"`
+	CPU     CPUStats   `json:"cpu"`
+	Memory  MemStats   `json:"memory"`
 	Load    [3]float64 `json:"load"`
-	Uptime  uint64    `json:"uptime"`
-	Network []NetRate `json:"network"`
-	Disks   []Disk    `json:"disks"`
+	Uptime  uint64     `json:"uptime"`
+	Network []NetRate  `json:"network"`
+	Disks   []Disk     `json:"disks"`
 }
 
 type CPUStats struct {

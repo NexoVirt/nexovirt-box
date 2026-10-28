@@ -1,0 +1,23 @@
+{
+ "id": "traefik-certs-dumper",
+ "name": "Traefik Certs Dumper",
+ "version": "1.6.1",
+ "category": "Utilities",
+ "tagline": "Dumps Let's Encrypt certificates of a specified domain which Traefik stores in acme.json.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/traefik-certs-dumper/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# traefik-certs-dumper\n\nDumps Let's Encrypt certificates of a specified domain to `.pem` and `.key` files which Traefik stores in `acme.json`.\n\nThis image uses:\n\n- a bash script that derivates from [mailu/traefik-certdumper](https://hub.docker.com/r/mailu/traefik-certdumper)\n- [ldez's traefik-certs-dumper](https://github.com/ldez/traefik-certs-dumper)\n\nSpecial thanks to them!\n\n## Help\n\nIf you need help using this image, have suggestions or want to report a problem, feel free to open an issue on GitHub!",
+ "source": "https://github.com/kereis/traefik-certs-dumper",
+ "main_port": 0,
+ "scheme": "http",
+ "questions": [],
+ "compose": "services:\n  traefik-certs-dumper:\n    container_name: traefik-certs-dumper\n    # user: root\n    image: humenius/traefik-certs-dumper:1.6.1-alpine\n    restart: unless-stopped\n    healthcheck:\n      test: [\"CMD\", \"/usr/bin/healthcheck\"]\n      interval: 30s\n      timeout: 10s\n      retries: 5\n    volumes:\n      - ${ROOT_FOLDER_HOST}/traefik/shared/acme.json:/traefik/acme.json:ro\n      - ${APP_DATA_DIR}/data/certs:/output:rw\n    environment:\n      - ACME_FILE_PATH=/traefik/acme.json\n"
+}

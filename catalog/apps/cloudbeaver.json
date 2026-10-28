@@ -1,0 +1,37 @@
+{
+ "id": "cloudbeaver",
+ "name": "CloudBeaver",
+ "version": "26.0.5",
+ "category": "Developer",
+ "tagline": "Cloud Database Manager.",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/CloudBeaver/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "CloudBeaver is a web-based database GUI tool which provides rich web interface. You can use it to manage PostgreSQL, MySQL, MariaDB, SQL Server, Oracle, DB2, Firebird, H2, Trino.",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/CloudBeaver/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/CloudBeaver/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/CloudBeaver/screenshot-3.png"
+ ],
+ "website": "https://dbeaver.com/download/cloudbeaver/",
+ "main_port": 8978,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8978",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  cloudbeaver:\n    container_name: cloudbeaver\n    deploy:\n      resources:\n        reservations:\n          memory: 256M\n    image: dbeaver/cloudbeaver:26.0.5\n    ports:\n      - target: 8978\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/workspace\n        target: /opt/cloudbeaver/workspace\n    network_mode: bridge\n    privileged: false\n"
+}

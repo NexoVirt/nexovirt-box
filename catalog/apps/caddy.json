@@ -1,0 +1,32 @@
+{
+ "id": "caddy",
+ "name": "Caddy",
+ "version": "2.11.7",
+ "category": "Other",
+ "tagline": "Caddy - The Ultimate Server With Automatic Https.",
+ "icon": "https://raw.githubusercontent.com/pi-hosted/pi-hosted/master/images/caddy.png",
+ "architectures": [
+  "amd64",
+  "armv7",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Caddy - The Ultimate Server with Automatic HTTPS.",
+ "main_port": 48100,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "48100",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: caddy:2.11.7\n    restart: unless-stopped\n    ports:\n      - target: 80\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 443\n        published: 48101\n        protocol: tcp\n      - target: 2019\n        published: 2019\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/data\n        target: /data\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n      - type: bind\n        source: ${APP_DATA_DIR}/caddyfile\n        target: /etc/caddy/caddyfile\n"
+}

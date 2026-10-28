@@ -1,0 +1,37 @@
+{
+ "id": "beaverhabittracker",
+ "name": "BeaverHabitTracker",
+ "version": "0.9.1",
+ "category": "Productivity",
+ "tagline": "A self-hosted, goal-free habit tracking tool.",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/BeaverHabitTracker/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "Beaver Habit Tracker is a self-hosted habit tracking tool designed for users who want to effortlessly monitor daily behaviors without the stress of goal-setting. Its intuitive Web interface offers a pressure-free tracking experience, ideal for those focused on behavior observation and personal growth.\n\nThe tool's core features include goal-free habit tracking and a minimalist interface. It allows users to log multiple habits easily, without focusing on streaks or targets, and provides simple visualizations to understand behavior patterns. Users can add daily notes to record specific activities or reflections, with a smooth, low-effort interface.\n\nIt uses a self-hosted approach, ensuring data privacy and full control, with a lightweight, efficient design requiring minimal server resources. Users can manually reorder habits for an optimized experience. The tool's stress-free observation and intuitive operation help users gradually improve habits, delivering a modern habit management solution.\n\n**Key Features:**\n- Goal-free habit tracking focused on awareness, not achievement\n- Clean, minimalist interface for effortless daily logging\n- Lightweight and efficient, requiring minimal server resources\n- Simple visualizations to understand behavior patterns\n- Daily notes for recording activities or reflections\n\n**Learn More:**\n- [Beaver Habit Tracker Official Website](https://beaverhabits.com/)\n- [Beaver Habit Tracker GitHub](https://github.com/daya0576/beaverhabits)",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/BeaverHabitTracker/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/BeaverHabitTracker/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/BeaverHabitTracker/screenshot-3.png"
+ ],
+ "website": "https://beaverhabits.com/",
+ "main_port": 15580,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "15580",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  beaverhabittracker:\n    image: daya0576/beaverhabits:0.9.1\n    container_name: beaverhabittracker\n    deploy:\n      resources:\n        limits:\n          memory: 128M\n        reservations:\n          memory: 128M\n    restart: unless-stopped\n    user: \"1000:1000\"\n    ports:\n      - target: 8080\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/\n        target: /app/.user\n    environment:\n      HABITS_STORAGE: USER_DISK\n      TRUSTED_LOCAL_EMAIL: your@email.com\n      INDEX_HABIT_DATE_COLUMNS: 5\n      ENABLE_IOS_STANDALONE: true\n"
+}

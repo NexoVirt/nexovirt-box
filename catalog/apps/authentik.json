@@ -1,0 +1,40 @@
+{
+ "id": "authentik",
+ "name": "Authentik",
+ "version": "2026.8.5",
+ "category": "Developer",
+ "tagline": "The authentication glue you need.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/authentik-1/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "docker_socket": true,
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## Install Information\n\n*Initial Install May take a bit to start up!*\n\nTo start the initial setup, navigate to https://\u003cyour server's IP or hostname\u003e:9443/if/flow/initial-setup/.\n\nThere you are prompted to set a password for the akadmin user (the default user).\n\n## What is authentik?\n\nauthentik is an open-source Identity Provider that emphasizes flexibility and versatility. It can be seamlessly integrated into existing environments to support new protocols. authentik is also a great solution for implementing sign-up, recovery, and other similar features in your application, saving you the hassle of dealing with them.\n\n## Docs\n\nVisit the [documentation](https://goauthentik.io/docs/) for more information\n\n## Screenshots\n\n| Light | Dark |\n| --- | --- |\n| [![](https://camo.githubusercontent.com/49bdfe06ba218e307e6eb171bf5c88e96b1302be81cdb9f9e33a39ba1e269479/68747470733a2f2f676f61757468656e74696b2e696f2f696d672f73637265656e5f617070735f6c696768742e6a7067)](https://camo.githubusercontent.com/49bdfe06ba218e307e6eb171bf5c88e96b1302be81cdb9f9e33a39ba1e269479/68747470733a2f2f676f61757468656e74696b2e696f2f696d672f73637265656e5f617070735f6c696768742e6a7067) | [![](https://camo.githubusercontent.com/32ed9376350e9bb727396ec149de406b2d7b150ea6770343d5ecb405aa0b51fe/68747470733a2f2f676f61757468656e74696b2e696f2f696d672f73637265656e5f617070735f6461726b2e6a7067)](https://camo.githubusercontent.com/32ed9376350e9bb727396ec149de406b2d7b150ea6770343d5ecb405aa0b51fe/68747470733a2f2f676f61757468656e74696b2e696f2f696d672f73637265656e5f617070735f6461726b2e6a7067) |\n| [![](https://camo.githubusercontent.com/52bf3c54e399ecffcdde04089f1939c23c21acf4f53beeb1fa3893573359fbae/68747470733a2f2f676f61757468656e74696b2e696f2f696d672f73637265656e5f61646d696e5f6c696768742e6a7067)](https://camo.githubusercontent.com/52bf3c54e399ecffcdde04089f1939c23c21acf4f53beeb1fa3893573359fbae/68747470733a2f2f676f61757468656e74696b2e696f2f696d672f73637265656e5f61646d696e5f6c696768742e6a7067) | [![](https://camo.githubusercontent.com/09a804e359f3950b2b8e2fcf59374de6669cad1aeb39efc064dfec880327024f/68747470733a2f2f676f61757468656e74696b2e696f2f696d672f73637265656e5f61646d696e5f6461726b2e6a7067)](https://camo.githubusercontent.com/09a804e359f3950b2b8e2fcf59374de6669cad1aeb39efc064dfec880327024f/68747470733a2f2f676f61757468656e74696b2e696f2f696d672f73637265656e5f61646d696e5f6461726b2e6a7067) |",
+ "website": "https://goauthentik.io/",
+ "source": "https://github.com/goauthentik/authentik",
+ "main_port": 0,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "AUTHENTIK_DB_PASSWORD",
+   "label": "AUTHENTIK_DB_PASSWORD",
+   "type": "password",
+   "min": 40,
+   "generate": true
+  },
+  {
+   "key": "AUTHENTIK_SECRET_KEY",
+   "label": "AUTHENTIK_SECRET_KEY",
+   "type": "password",
+   "min": 50,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  authentik-1:\n    image: ghcr.io/goauthentik/server:2026.8.5\n    command: server\n    ports:\n      - 9443:9443/tcp\n    volumes:\n      - ${APP_DATA_DIR}/data/authentik-media:/media\n      - ${APP_DATA_DIR}/data/authentik-custom-templates:/templates\n    environment:\n      - AUTHENTIK_POSTGRESQL__HOST=authentik-db\n      - AUTHENTIK_POSTGRESQL__USER=authentik\n      - AUTHENTIK_POSTGRESQL__NAME=authentik\n      - AUTHENTIK_POSTGRESQL__PASSWORD=${AUTHENTIK_DB_PASSWORD}\n      - AUTHENTIK_SECRET_KEY=${AUTHENTIK_SECRET_KEY}\n    depends_on:\n      - authentik-db\n    x-runtipi:\n      internal_port: 9000\n      is_main: true\n  authentik-worker:\n    image: ghcr.io/goauthentik/server:2026.8.5\n    command: worker\n    user: root\n    volumes:\n      - /var/run/docker.sock:/var/run/docker.sock\n      - ${APP_DATA_DIR}/data/authentik-media:/media\n      - ${APP_DATA_DIR}/data/authentik-certs:/certs\n      - ${APP_DATA_DIR}/data/authentik-custom-templates:/templates\n    environment:\n      - AUTHENTIK_POSTGRESQL__HOST=authentik-db\n      - AUTHENTIK_POSTGRESQL__USER=authentik\n      - AUTHENTIK_POSTGRESQL__NAME=authentik\n      - AUTHENTIK_POSTGRESQL__PASSWORD=${AUTHENTIK_DB_PASSWORD}\n      - AUTHENTIK_SECRET_KEY=${AUTHENTIK_SECRET_KEY}\n    depends_on:\n      - authentik-db\n  authentik-db:\n    image: postgres:18-alpine\n    volumes:\n      - ${APP_DATA_DIR}/data/postgres:/var/lib/postgresql\n    environment:\n      - POSTGRES_PASSWORD=${AUTHENTIK_DB_PASSWORD}\n      - POSTGRES_USER=authentik\n      - POSTGRES_DB=authentik\n    healthcheck:\n      test: pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}\n      interval: 30s\n      timeout: 5s\n      retries: 5\n      start_period: 20s\nx-runtipi:\n  schema_version: 2\n"
+}

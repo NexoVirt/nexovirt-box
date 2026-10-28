@@ -1,0 +1,32 @@
+{
+ "id": "jenkins-ci-cd",
+ "name": "Jenkins CI/CD",
+ "version": "lts-jdk17",
+ "category": "Developer",
+ "tagline": "Jenkins Continuous Integration and Delivery server.",
+ "icon": "https://icon.casaos.io/main/all/jenkins.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "A server for creating pipelines for Jenkins continuous integration and delivery.",
+ "website": "https://www.jenkins.io/",
+ "main_port": 8080,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8080",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  jenkins:\n    image: jenkins/jenkins:lts-jdk17\n    privileged: false\n    user: root\n    restart: always\n    network_mode: bridge\n    cpu_shares: 50\n    ports:\n      - target: 8080\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/data\n        target: /data\n      - type: bind\n        source: /var/lib/docker/volumes/b098c98b2c5dec792246dc33375853c05958ace7c144f4aa157326a6f6c0de4c/_data\n        target: /var/jenkins_home\n    container_name: Jenkins\n    hostname: Jenkins\n"
+}

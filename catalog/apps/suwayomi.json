@@ -1,0 +1,32 @@
+{
+ "id": "suwayomi",
+ "name": "Suwayomi",
+ "version": "v2.4.2435",
+ "category": "Books",
+ "tagline": "An open-source manga reader server with bundled Web UI",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/suwayomi/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# What is Suwayomi?\n\nA free and open-source manga reader server that runs extensions built for [Tachiyomi](https://tachiyomi.org/).\n\nSuwayomi is an independent Tachiyomi compatible software and is **not a Fork of** Tachiyomi.\n\nSuwayomi-Server is highly multi-platform. Any platform that runs Java and/or has a modern browser can run it, including Windows, Linux, macOS, Chrome OS, etc.\n\n## Here is a list of current features:\n\n- Adding repositories for manga sources\n- A library to save your mangas and categories to put them into\n- Searching and browsing installed sources\nAbility to download manga for offline reading\n- Backup and restore support powered by Tachiyomi-compatible Backups\n- Viewing latest updated chapters.",
+ "source": "https://github.com/Suwayomi/docker-tachidesk",
+ "main_port": 4567,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "4567",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  suwayomi:\n    image: ghcr.io/suwayomi/tachidesk:v2.4.2435\n    container_name: suwayomi\n    environment:\n      - TZ=${TZ}\n      - BIND_IP=0.0.0.0\n    volumes:\n      - ${APP_DATA_DIR}/data:/home/suwayomi/.local/share/Tachidesk\n    ports:\n      - ${APP_PORT}:4567\n    restart: unless-stopped\n"
+}

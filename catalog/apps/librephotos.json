@@ -1,0 +1,69 @@
+{
+ "id": "librephotos",
+ "name": "LibrePhotos",
+ "version": "2023w48",
+ "category": "Photography",
+ "tagline": "Complete photo management service",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/librephotos/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "- The [demo is available here](https://demo2.librephotos.com/). User is ```demo```, password is ```demo1234```.\n- You can watch development videos on [Niaz Faridani-Rad's channel](https://www.youtube.com/channel/UCZJ2pk2BPKxwbuCV9LWDR0w)\n- You can join our [Discord](https://discord.gg/xwRvtSDGWb).\n\n![](https://github.com/LibrePhotos/librephotos/blob/dev/screenshots/mockups_main_fhd.png?raw=true)\n\u003csub\u003eMockup designed by rawpixel.com / Freepik\u003c/sub\u003e\n\n## Installation\n\nStep-by-step installation instructions are available in our [documentation](https://docs.librephotos.com/1/)\n\n## Features\n\n  - Support for all types of photos including raw photos\n  - Support for videos\n  - Timeline view\n  - Scans pictures on the file system\n  - Multiuser support\n  - Generate albums based on events like \"Thursday in Berlin\"\n  - Face recognition / Face classification\n  - Reverse geocoding\n  - Object / Scene detection\n  - Semantic image search\n  - Search by metadata",
+ "website": "https://docs.librephotos.com/",
+ "source": "https://github.com/LibrePhotos/librephotos",
+ "main_port": 8132,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8132",
+   "required": true
+  },
+  {
+   "key": "LIBREPHOTOS_EMAIL",
+   "label": "LibrePhotos admin email",
+   "type": "email",
+   "required": true
+  },
+  {
+   "key": "LIBREPHOTOS_USERNAME",
+   "label": "LibrePhotos admin username",
+   "type": "text",
+   "required": true,
+   "min": 3,
+   "max": 50
+  },
+  {
+   "key": "LIBREPHOTOS_PASSWORD",
+   "label": "LibrePhotos admin password",
+   "type": "password",
+   "required": true,
+   "min": 8,
+   "max": 50
+  },
+  {
+   "key": "LIBREPHOTOS_DB_PASSWORD",
+   "label": "DB password",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "LIBREPHOTOS_SECRET_KEY",
+   "label": "Secret key",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  librephotos:\n    image: reallibrephotos/librephotos-proxy:2023w48\n    container_name: librephotos\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/data/scan:/data\n      - ${APP_DATA_DIR}/data/protected_media:/protected_media\n      - ${APP_DATA_DIR}/data/proxy/nginx.conf:/etc/nginx/nginx.conf:ro\n    ports:\n      - ${APP_PORT}:80\n    depends_on:\n      - librephotos-backend\n      - librephotos-frontend\n  librephotos-db:\n    image: postgres:14\n    container_name: librephotos-db\n    restart: unless-stopped\n    environment:\n      POSTGRES_PASSWORD: ${LIBREPHOTOS_DB_PASSWORD}\n      POSTGRES_USER: tipi\n      POSTGRES_DB: librephotos\n    volumes:\n      - ${APP_DATA_DIR}/data/db:/var/lib/postgresql/data\n    #Checking health of Postgres db\n    healthcheck:\n      test: [\"CMD-SHELL\", \"pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB\"]\n      interval: 5s\n      timeout: 5s\n      retries: 5\n  librephotos-frontend:\n    image: reallibrephotos/librephotos-frontend:2023w48\n    container_name: librephotos-frontend\n    restart: unless-stopped\n    depends_on:\n      - librephotos-backend\n  librephotos-backend:\n    image: reallibrephotos/librephotos:2023w48\n    container_name: librephotos-backend\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/data/scan:/data\n      - ${APP_DATA_DIR}/data/protected_media:/protected_media\n      - ${APP_DATA_DIR}/data/logs:/logs\n      - ${APP_DATA_DIR}/data/cache:/root/.cache\n    environment:\n      - SECRET_KEY=${LIBREPHOTOS_SECRET_KEY}\n      - BACKEND_HOST=librephotos-backend\n      - ADMIN_EMAIL=${LIBREPHOTOS_EMAIL}\n      - ADMIN_USERNAME=${LIBREPHOTOS_USERNAME}\n      - ADMIN_PASSWORD=${LIBREPHOTOS_PASSWORD}\n      - DB_BACKEND=postgresql\n      - DB_NAME=librephotos\n      - DB_USER=tipi\n      - DB_PASS=${LIBREPHOTOS_DB_PASSWORD}\n      - DB_HOST=librephotos-db\n      - DB_PORT=5432\n      - REDIS_HOST=librephotos-redis\n      - REDIS_PORT=6379\n      - ALLOW_UPLOAD=true\n      - DEBUG=0\n      - CSRF_TRUSTED_ORIGINS=${APP_PROTOCOL:-http}://${APP_DOMAIN},http://${INTERNAL_IP}:${APP_PORT}\n    # Wait for Postgres\n    depends_on:\n      librephotos-db:\n        condition: service_healthy\n  librephotos-redis:\n    image: redis:6\n    container_name: librephotos-redis\n    restart: unless-stopped\n"
+}

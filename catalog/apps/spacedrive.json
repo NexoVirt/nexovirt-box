@@ -1,0 +1,48 @@
+{
+ "id": "spacedrive",
+ "name": "Spacedrive",
+ "version": "0.4.2",
+ "category": "Utilities",
+ "tagline": "Cross-platform file explorer",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/spacedrive/metadata/logo.jpg",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Spacedrive\n\nSpacedrive is an open source cross-platform file manager, powered by a virtual distributed filesystem (VDFS) written in Rust.\n\nOrganize files across many devices in one place. From cloud services to offline hard drives, Spacedrive combines the storage capacity and processing power of your devices into one personal distributed cloud, that is both secure and intuitive to use.\n\nFor independent creatives, hoarders and those that want to own their digital footprint, Spacedrive provides a free file management experience like no other.\n\n---\n\n![Spacedrive Interface](https://github.com/spacedriveapp/spacedrive/raw/main/apps/landing/public/github.webp?raw=true)\n\n---\n\n\n## What is a VDFS?\n\nA VDFS (virtual distributed filesystem) is a filesystem designed to work across a variety of storage layers. With a uniform API to manipulate and access content across many devices, VDFS is not restricted to a single machine. It achieves this by maintaining a virtual index of all storage locations, synchronizing the database between clients in realtime. This implementation also uses CAS (Content-addressable storage) to uniquely identify files, while keeping record of logical file paths relative to the storage locations.\n\nThe first implementation of a VDFS can be found in this UC Berkeley paper by Haoyuan Li. This paper describes its use for cloud computing, however the underlying concepts can be translated to open consumer software.",
+ "website": "https://spacedrive.com/",
+ "source": "https://github.com/spacedriveapp/spacedrive",
+ "main_port": 9300,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "9300",
+   "required": true
+  },
+  {
+   "key": "SD_AUTH_USER",
+   "label": "Spacedrive Username",
+   "type": "text",
+   "required": true,
+   "min": 3,
+   "max": 50
+  },
+  {
+   "key": "SD_AUTH_PASSWORD",
+   "label": "Spacedrive Password",
+   "type": "password",
+   "required": true,
+   "min": 12,
+   "max": 50
+  }
+ ],
+ "compose": "services:\n  spacedrive:\n    container_name: spacedrive\n    image: ghcr.io/spacedriveapp/spacedrive/server:0.4.2\n    restart: unless-stopped\n    environment:\n      - SD_AUTH=${SD_AUTH_USER}:${SD_AUTH_PASSWORD}\n    ports:\n      - ${APP_PORT}:8080\n    volumes:\n      - ${APP_DATA_DIR}/data/spacedrive:/var/spacedrive\n"
+}

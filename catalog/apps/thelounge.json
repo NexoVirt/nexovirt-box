@@ -1,0 +1,31 @@
+{
+ "id": "thelounge",
+ "name": "Thelounge",
+ "version": "552981ad86026e1f5fde3e378a7c8ffee653794b1333a791a23a74f2d54e31fc",
+ "category": "Home",
+ "tagline": "(a fork of shoutIRC) is a web IRC client that you host on your own server.",
+ "icon": "https://cdn.jsdelivr.net/gh/thelounge/thelounge@master/client/public/img/logo-vertical-transparent-bg.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Thelounge (a fork of shoutIRC) is a web IRC client that you host on your own server.",
+ "main_port": 9000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "9000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/thelounge:4.5.2@sha256:552981ad86026e1f5fde3e378a7c8ffee653794b1333a791a23a74f2d54e31fc\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n    ports:\n      - target: 9000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

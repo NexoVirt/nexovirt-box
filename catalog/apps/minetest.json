@@ -1,0 +1,31 @@
+{
+ "id": "minetest",
+ "name": "Minetest",
+ "version": "781e50480e4027145d2c81f5cbf6632df40ef0a2b5781682cd149ce58bea305e",
+ "category": "Other",
+ "tagline": "(server) is a near-infinite-world block sandbox game and a game engine, inspired by InfiniMiner, Minecraft, and the like.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/beta-templates@master/lsiodev/img/minetest-icon.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Visit homepage: https://hub.docker.com/r/linuxserver/minetest/",
+ "main_port": 30000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "30000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/minetest:5.10.0@sha256:781e50480e4027145d2c81f5cbf6632df40ef0a2b5781682cd149ce58bea305e\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n      CLI_ARGS: ''\n    ports:\n      - target: 30000\n        published: \"${APP_PORT}\"\n        protocol: udp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config/.minetest\n        target: /config/.minetest\n"
+}

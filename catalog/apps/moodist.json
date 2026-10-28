@@ -1,0 +1,32 @@
+{
+ "id": "moodist",
+ "name": "Moodist",
+ "version": "v3.1.1",
+ "category": "Media",
+ "tagline": "Ambient sounds for focus and calm.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/moodist/metadata/logo.jpg",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Moodist\n\nAmbient sounds for focus and calm.\n\n## App Links\n\n\u003chttps://moodist.app/\u003e\n\n\u003chttps://github.com/remvze/moodist\u003e",
+ "website": "https://moodist.mvze.net/",
+ "source": "https://github.com/remvze/moodist",
+ "main_port": 8221,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8221",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  moodist:\n    image: ghcr.io/remvze/moodist:v3.1.1\n    container_name: moodist\n    restart: unless-stopped\n    volumes:\n      - /etc/localtime:/etc/localtime:ro\n    ports:\n      - ${APP_PORT}:8080\n"
+}

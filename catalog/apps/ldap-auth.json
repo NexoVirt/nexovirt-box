@@ -1,0 +1,31 @@
+{
+ "id": "ldap-auth",
+ "name": "Ldap-auth",
+ "version": "34961466dc4474a8058fe22586b8f9a79bfb23b4417dec69f166bbaa463d11f2",
+ "category": "Home",
+ "tagline": "Software is for authenticating users who request protected resources from servers proxied by nginx. It includes a daemon (ldap-auth) that communicates with an authentication server, and a webserver daemon that generates an authentication cookie based on the user’s credentials. The daemons are written in Python for use with a Lightweight Directory Access Protocol (LDAP) authentication server (OpenLDAP or Microsoft Windows Active Directory 2003 and 2012).",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/ldap-auth-logo.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Ldap-auth software is for authenticating users who request protected resources from servers proxied by nginx. It includes a daemon (ldap-auth) that communicates with an authentication server, and a webserver daemon that generates an authentication cookie based on the user’s credentials. The daemons are written in Python for use with a Lightweight Directory Access Protocol (LDAP) authentication server (OpenLDAP or Microsoft Windows Active Directory 2003 and 2012).",
+ "main_port": 8888,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8888",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/ldap-auth:3.4.8@sha256:34961466dc4474a8058fe22586b8f9a79bfb23b4417dec69f166bbaa463d11f2\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n      FERNETKEY: ''\n      CERTFILE: ''\n      KEYFILE: ''\n    ports:\n      - target: 8888\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 9000\n        published: 9000\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

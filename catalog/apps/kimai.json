@@ -1,0 +1,62 @@
+{
+ "id": "kimai",
+ "name": "Kimai",
+ "version": "fpm-2.19.1-prod",
+ "category": "Utilities",
+ "tagline": "Open source time-tracker",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/kimai/metadata/logo.jpg",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "\u003cp align=\"center\"\u003e\n    \u003cimg src=\"https://raw.githubusercontent.com/kimai/images/ceed673becba2526f1055552ca7c255374ca5bf8/repository-header.png\" alt=\"Kimai logo\"\u003e\n\u003c/p\u003e\n\nKimai is a professional grade time-tracking application, free and open-source. It handles use-cases of freelancers as well as companies with dozens or hundreds of users. Kimai was build to track your project times and ships with many advanced features, including but not limited to:\n\nJSON API, invoicing, data exports, multi-timer and punch-in punch-out mode, tagging, multi-user - multi-timezones - multi-language ([over 30 translations existing](https://hosted.weblate.org/projects/kimai/)!), authentication via SAML/LDAP/Database, two-factor authentication (2FA) with TOTP, customizable role and team permissions, responsive design, user/customer/project specific rates, advanced search \u0026 filtering, money and time budgets, advanced reporting, support for [plugins](https://www.kimai.org/store/) and so much more.",
+ "website": "https://www.kimai.org",
+ "source": "https://github.com/kimai/kimai",
+ "main_port": 8003,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8003",
+   "required": true
+  },
+  {
+   "key": "KIMAI_DATABASE_ROOT_PASSWORD",
+   "label": "KIMAI_DATABASE_ROOT_PASSWORD",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "KIMAI_DATABASE_PASSWORD",
+   "label": "KIMAI_DATABASE_PASSWORD",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "KIMAI_ADMINMAIL",
+   "label": "Admin email",
+   "type": "text",
+   "required": true,
+   "min": 3,
+   "max": 254
+  },
+  {
+   "key": "KIMAI_ADMINPASS",
+   "label": "Admin password",
+   "type": "password",
+   "required": true,
+   "min": 10,
+   "max": 128
+  }
+ ],
+ "compose": "services:\n  nginx:\n    container_name: kimai-proxy\n    image: tobybatch/nginx-fpm-reverse-proxy:latest\n    ports:\n      - ${APP_PORT}:80\n    volumes:\n      - ${APP_DATA_DIR}/data/public:/opt/kimai/public:ro\n    restart: unless-stopped\n    depends_on:\n      - kimai\n    healthcheck:\n      test: wget --spider http://kimai-proxy/health || exit 1\n      interval: 20s\n      start_period: 10s\n      timeout: 10s\n      retries: 3\n  kimai:\n    container_name: kimai\n    image: kimai/kimai2:fpm-2.19.1-prod\n    environment:\n      - ADMINMAIL=${KIMAI_ADMINMAIL}\n      - ADMINPASS=${KIMAI_ADMINPASS}\n      - \"DATABASE_URL=mysql://kimai:${KIMAI_DATABASE_PASSWORD}@kimai-sqldb/kimai?charset=utf8\u0026serverVersion=5.7\"\n      - TRUSTED_HOSTS=kimai-proxy,localhost,127.0.0.1\n    volumes:\n      - ${APP_DATA_DIR}/data/public:/opt/kimai/public\n      - ${APP_DATA_DIR}/data/var:/opt/kimai/var\n      # - ./ldap.conf:/etc/openldap/ldap.conf:z\n      # - ./ROOT-CA.pem:/etc/ssl/certs/ROOT-CA.pem:z\n    restart: unless-stopped\n  sqldb:\n    container_name: kimai-sqldb\n    image: mysql:5.7\n    environment:\n      - MYSQL_DATABASE=kimai\n      - MYSQL_USER=kimai\n      - MYSQL_PASSWORD=${KIMAI_DATABASE_PASSWORD}\n      - MYSQL_ROOT_PASSWORD=${KIMAI_DATABASE_ROOT_PASSWORD}\n    volumes:\n      - ${APP_DATA_DIR}/data/mysql:/var/lib/mysql\n    command: --default-storage-engine innodb\n    restart: unless-stopped\n    healthcheck:\n      test: mysqladmin -p$$MYSQL_ROOT_PASSWORD ping -h localhost\n      interval: 20s\n      start_period: 10s\n      timeout: 10s\n      retries: 3\n"
+}

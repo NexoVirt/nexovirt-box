@@ -1,0 +1,45 @@
+{
+ "id": "halo",
+ "name": "Halo",
+ "version": "2.27.1",
+ "category": "Social",
+ "tagline": "Halo - Open source website building tool.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/halo/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Open source website building tool\n\n[Halo](https://github.com/halo-dev/halo) is a powerful and easy-to-use open source website building tool, with rich themes and plugins to help you build the ideal site in your mind.\n\n## Links\n\n- Repository: \u003chttps://github.com/halo-dev/halo\u003e\n- Awesome Halo: \u003chttps://github.com/halo-sigs/awesome-halo\u003e\n- Homepage: \u003chttps://halo.run\u003e",
+ "website": "https://halo.run",
+ "source": "https://github.com/halo-dev/halo",
+ "main_port": 8092,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8092",
+   "required": true
+  },
+  {
+   "key": "HALO_DATABASE_PASSWORD",
+   "label": "Database password",
+   "type": "password",
+   "min": 20,
+   "generate": true
+  },
+  {
+   "key": "HALO_EXTERNAL_URL",
+   "label": "External url",
+   "type": "text"
+  }
+ ],
+ "compose": "services:\n  halo:\n    image: halohub/halo:2.27.1\n    container_name: halo\n    restart: unless-stopped\n    depends_on:\n      halodb:\n        condition: service_healthy\n    volumes:\n      - ${APP_DATA_DIR}:/root/.halo2\n    ports:\n      - ${APP_PORT}:8090\n    healthcheck:\n      test:\n        - CMD\n        - curl\n        - '-f'\n        - http://localhost:8090/actuator/health/readiness\n      interval: 30s\n      timeout: 5s\n      retries: 5\n      start_period: 30s\n    command:\n      - '--spring.r2dbc.url=r2dbc:pool:postgresql://halodb/halo'\n      - '--spring.r2dbc.username=halo'\n      - '--spring.r2dbc.password=${HALO_DATABASE_PASSWORD}'\n      - '--spring.sql.init.platform=postgresql'\n      - '--halo.external-url=${HALO_EXTERNAL_URL}'\n  halodb:\n    image: postgres:15.4\n    container_name: halodb\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/db:/var/lib/postgresql/data\n    healthcheck:\n      test:\n        - CMD\n        - pg_isready\n      interval: 10s\n      timeout: 5s\n      retries: 5\n    environment:\n      - POSTGRES_PASSWORD=${HALO_DATABASE_PASSWORD}\n      - POSTGRES_USER=halo\n      - POSTGRES_DB=halo\n      - PGUSER=halo\n"
+}

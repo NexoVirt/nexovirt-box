@@ -1,0 +1,32 @@
+{
+ "id": "glance",
+ "name": "Glance",
+ "version": "v0.8.7",
+ "category": "Utilities",
+ "tagline": "Super configurable dashboard",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/glance/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "\u003cp align=\"center\"\u003e\u003cem\u003eWhat if you could see everything at a...\u003c/em\u003e\u003c/p\u003e\n\u003ch1 align=\"center\"\u003eGlance\u003c/h1\u003e\n\n![example homepage](https://raw.githubusercontent.com/glanceapp/glance/main/docs/images/readme-main-image.png)\n\n### Features\n\n#### Various widgets\n\n- RSS feeds\n- Subreddit posts\n- Weather\n- Bookmarks\n- Latest YouTube videos from specific channels\n- Calendar\n- Stocks\n- iframe\n- Twitch channels \u0026 top games\n- GitHub releases\n- Repository overview\n- Site monitor\n\n#### Themeable\n\n![multiple color schemes example](https://raw.githubusercontent.com/glanceapp/glance/main/docs/images/themes-example.png)\n\n#### Optimized for mobile devices\n\n![mobile device previews](https://raw.githubusercontent.com/glanceapp/glance/main/docs/images/mobile-preview.png)\n\n#### Fast and lightweight\n\n- Minimal JS, no bloated frameworks\n- Very few dependencies\n- Single, easily distributed \u003c15mb binary and just as small docker container\n- All requests are parallelized, uncached pages usually load within ~1s (depending on internet speed and number of widgets)\n\n### Configuration\n\nCheckout the [configuration docs](docs/configuration.md) to learn more. A [preconfigured page](docs/configuration.md#preconfigured-page) is also available to get you started quickly.",
+ "source": "https://github.com/glanceapp/glance",
+ "main_port": 8568,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8568",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  glance:\n    image: glanceapp/glance:v0.8.7\n    restart: unless-stopped\n    container_name: glance\n    ports:\n      - ${APP_PORT}:8080\n    volumes:\n      - ${APP_DATA_DIR}/data/:/app/config/\n      - /etc/timezone:/etc/timezone:ro\n      - /etc/localtime:/etc/localtime:ro\n"
+}

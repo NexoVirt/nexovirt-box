@@ -1,0 +1,24 @@
+{
+ "id": "filebrowser-quantum",
+ "name": "FileBrowser Quantum",
+ "version": "2.0-stable",
+ "category": "Utilities",
+ "tagline": "Access your homeserver files from your browser",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/filebrowser-quantum/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "\u003cdiv align=\"center\"\u003e\n  \u003ch3\u003eFileBrowser Quantum\u003c/h3\u003e\n  \u003cimg width=\"800\" alt=\"FileBrowser Quantum file listing in dark mode\" src=\"https://filebrowserquantum.com/images/generated/listing/view-mode-normal-dark.jpg\"\u003e\n\u003c/div\u003e\nAn easy way to access and manage your files from the web . It has a modern responsive interface that has many advanced features to manage users, access, sharing, and file preview and editing.\n\n## First start\nDefault credentials are `admin:admin`.\nYou **should absolutely** change this password, you can also add new users from the settings.\n\n### Documentation\n\nSee the [Official Docs](https://filebrowserquantum.com/)",
+ "website": "https://filebrowserquantum.com",
+ "source": "https://github.com/gtsteffaniak/filebrowser",
+ "main_port": 0,
+ "scheme": "http",
+ "questions": [],
+ "compose": "x-runtipi:\n  schema_version: 2\nservices:\n  filebrowser-quantum:\n    image: gtstef/filebrowser:2.0-stable\n    volumes:\n      - ${ROOT_FOLDER_HOST}/media:/runtipi/media\n      - ${ROOT_FOLDER_HOST}/app-data:/runtipi/app-data\n      - ${ROOT_FOLDER_HOST}/user-config:/runtipi/user-config\n      - ${APP_DATA_DIR}/data:/home/filebrowser/data\n    x-runtipi:\n      internal_port: 80\n      is_main: true\n"
+}

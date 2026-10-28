@@ -1,0 +1,32 @@
+{
+ "id": "mariadb",
+ "name": "MariaDB",
+ "version": "11.4.8",
+ "category": "Developer",
+ "tagline": "MariaDB Server is one of the most popular database servers in the world. It's made by the original developers of MySQL and guaranteed to stay open source.",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/MariaDB/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "MariaDB Server is one of the most popular open source relational databases. It’s made by the original developers of MySQL and guaranteed to stay open source. It is part of most cloud offerings and the default in most Linux distributions.\n\nIt is built upon the values of performance, stability, and openness, and MariaDB Foundation ensures contributions will be accepted on technical merit. Recent new functionality includes advanced clustering with Galera Cluster 4, compatibility features with Oracle Database and Temporal Data Tables, allowing one to query the data as it stood at any point in the past.",
+ "website": "https://mariadb.org/",
+ "main_port": 0,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "SECRET_MYSQL_ROOT_PASSWORD",
+   "label": "Mysql root password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  mariadb:\n    image: linuxserver/mariadb:11.4.8\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n      MYSQL_ROOT_PASSWORD: ${SECRET_MYSQL_ROOT_PASSWORD}\n      MYSQL_DATABASE: 'casaos'\n      MYSQL_USER: 'casaos'\n      MYSQL_PASSWORD: ${SECRET_MYSQL_ROOT_PASSWORD}\n      REMOTE_SQL: ''\n    ports:\n      - target: 3306\n        published: \"3306\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n    container_name: mariadb\n"
+}

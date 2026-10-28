@@ -1,0 +1,31 @@
+{
+ "id": "unifi-controller",
+ "name": "Unifi-controller",
+ "version": "0ae315a3a45635e443899e30e86bd507c2c48922cb27f4bc7241777885f4650e",
+ "category": "Other",
+ "tagline": "The Unifi-controller software is a powerful, enterprise wireless software engine ideal for high-density client deployments requiring low latency and high uptime performance.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/unifi-controller-icon.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Visit homepage: https://hub.docker.com/r/linuxserver/unifi-controller/",
+ "main_port": 8443,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8443",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/unifi-controller:8.0.24@sha256:0ae315a3a45635e443899e30e86bd507c2c48922cb27f4bc7241777885f4650e\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n      MEM_LIMIT: ''\n      MEM_STARTUP: ''\n    ports:\n      - target: 8443\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 3478\n        published: 3478\n        protocol: udp\n      - target: 10001\n        published: 10001\n        protocol: udp\n      - target: 8080\n        published: 8080\n        protocol: tcp\n      - target: 1900\n        published: 1900\n        protocol: udp\n      - target: 8843\n        published: 8843\n        protocol: tcp\n      - target: 8880\n        published: 8880\n        protocol: tcp\n      - target: 6789\n        published: 6789\n        protocol: tcp\n      - target: 5514\n        published: 5514\n        protocol: udp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

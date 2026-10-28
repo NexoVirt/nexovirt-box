@@ -1,0 +1,39 @@
+{
+ "id": "odoo-v20",
+ "name": "Odoo v20",
+ "version": "d5e3a26baa044867c826dddc09058f10e2582706bf83c146ea04fea889720c76",
+ "category": "Finance",
+ "tagline": "Odoo 20 with PostgreSQL 16",
+ "icon": "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps/apps/odoo-v20/logo.jpg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Open-source business management software suite designed to streamline various aspects of business operations. With its modular structure, users can choose and integrate specific applications such as accounting, inventory, and sales. Odoo provides a user-friendly interface, scalability for businesses of all sizes, and is available in both community (free) and enterprise editions. Its integrated approach and customization options make it a popular choice for comprehensive ERP (Enterprise Resource Planning) solutions.",
+ "main_port": 8070,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8070",
+   "required": true
+  },
+  {
+   "key": "SECRET_PASSWORD",
+   "label": "Password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  big-bear-odoo-v20:\n    container_name: big-bear-odoo-v20\n    image: odoo:20@sha256:d5e3a26baa044867c826dddc09058f10e2582706bf83c146ea04fea889720c76\n    restart: unless-stopped\n    user: root\n    volumes:\n      - ${APP_DATA_DIR}/data/etc:/etc/odoo\n      - ${APP_DATA_DIR}/data/addons:/mnt/extra-addons\n      - ${APP_DATA_DIR}/data/filestore:/var/lib/odoo\n    ports:\n      - \"${APP_PORT}:8069\"\n    environment:\n      - HOST=big-bear-odoo-v20-db\n      - USER=odoo\n      - PASSWORD=${SECRET_PASSWORD}\n    networks:\n      - big-bear-odoo-v20-network\n  big-bear-odoo-v20-db:\n    container_name: big-bear-odoo-v20-db\n    image: postgres:16@sha256:be01cf82fc7dbba824acf0a82e150b4b360f3ff93c6631d7844af431e841a95c\n    user: root\n    environment:\n      - POSTGRES_USER=odoo\n      - POSTGRES_PASSWORD=${SECRET_PASSWORD}\n      - POSTGRES_DB=postgres\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/data/postgresql:/var/lib/postgresql/data\n    networks:\n      - big-bear-odoo-v20-network\nnetworks:\n  big-bear-odoo-v20-network:\n    driver: bridge\n"
+}

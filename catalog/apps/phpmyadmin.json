@@ -1,0 +1,39 @@
+{
+ "id": "phpmyadmin",
+ "name": "phpMyAdmin",
+ "version": "16d0f09c25a2dee07739af9dc11e72c1bf7fb776a449f6cc03ec00b33d0c6d9b",
+ "category": "Other",
+ "tagline": "phpMyAdmin",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/phpmyadmin.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "phpMyAdmin - A web interface for MySQL and MariaDB.",
+ "main_port": 8080,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8080",
+   "required": true
+  },
+  {
+   "key": "SECRET_PMA_PASSWORD",
+   "label": "Pma password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-phpmyadmin application\nservices:\n  # Service name: phpmyadmin\n  phpmyadmin:\n    # Docker image to be used for this service\n    image: phpmyadmin/phpmyadmin:5.2.3@sha256:16d0f09c25a2dee07739af9dc11e72c1bf7fb776a449f6cc03ec00b33d0c6d9b\n    # Name of the container once it's up and running\n    container_name: big-bear-phpmyadmin\n    # Environment variables passed to the service\n    environment:\n      # Host of the database server\n      PMA_HOST: \"[YOUR-CASAOS-IP]\"\n      # Port of the database server\n      PMA_PORT: \"3306\"\n      # Username to connect to the database\n      PMA_USER: \"bigbear\"\n      # Password to connect to the database\n      PMA_PASSWORD: ${SECRET_PMA_PASSWORD}\n    # Port mapping: map host's port 8080 to container's port 80\n    ports:\n      - \"${APP_PORT}:80\"\n"
+}

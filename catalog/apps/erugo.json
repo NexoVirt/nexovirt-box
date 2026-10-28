@@ -1,0 +1,31 @@
+{
+ "id": "erugo",
+ "name": "Erugo",
+ "version": "0d9d31365e180408baee86172694a420418a7e05badd158fe84eb873a9f77753",
+ "category": "Developer",
+ "tagline": "A powerful, self-hosted file-sharing platform built with PHP and Laravel with a Vue.js frontend.",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/erugo.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "A powerful, self-hosted file-sharing platform built with PHP and Laravel with a Vue.js frontend. It offers secure, customizable file-transfer capabilities through an elegant user interface, giving you complete control over your data while providing a seamless experience for both senders and recipients.",
+ "main_port": 9997,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "9997",
+   "required": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-erugo application\nservices:\n  # Service name: big-bear-erugo\n  # The `big-bear-erugo` service definition\n  big-bear-erugo:\n    # Name of the container\n    container_name: big-bear-erugo\n    # Image to be used for the container\n    image: wardy784/erugo:0.2.15@sha256:0d9d31365e180408baee86172694a420418a7e05badd158fe84eb873a9f77753\n    # Container restart policy\n    restart: unless-stopped\n    # Volumes to be mounted to the container\n    volumes:\n      # Mounting storage directory to allow erugo to save data\n      - ${APP_DATA_DIR}/storage:/var/www/html/storage\n    # Ports mapping between host and container\n    ports:\n      # Mapping port 9997 of the host to port 80 of the container\n      - \"${APP_PORT}:80\"\n"
+}

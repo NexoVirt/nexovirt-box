@@ -1,0 +1,30 @@
+{
+ "id": "citron",
+ "name": "Citron",
+ "version": "6d955bd6dce826c40f3ffdb793c4711826179cf411c2f72c4c27358413195ddb",
+ "category": "Other",
+ "tagline": "A feature rich Switch 1 emulator for homebrew.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/citron-logo.png",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Citron is a feature rich Switch 1 emulator for homebrew.",
+ "main_port": 3000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/citron:2026.02.1@sha256:6d955bd6dce826c40f3ffdb793c4711826179cf411c2f72c4c27358413195ddb\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 3001\n        published: 3001\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: /srv/lsio/citron/config\n        target: /config\n"
+}

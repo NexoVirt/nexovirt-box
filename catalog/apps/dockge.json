@@ -1,0 +1,34 @@
+{
+ "id": "dockge",
+ "name": "Dockge",
+ "version": "1.5.0",
+ "category": "Utilities",
+ "tagline": "Docker compose.yaml stack-oriented manager.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/dockge/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "docker_socket": true,
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Dockge\n\nA fancy, easy-to-use and reactive self-hosted docker compose.yaml stack-oriented manager.\n\n\u003cimg src=\"https://github.com/louislam/dockge/assets/1336778/26a583e1-ecb1-4a8d-aedf-76157d714ad7\" width=\"900\" alt=\"\" /\u003e\n\nView Video: https://youtu.be/AWAlOQeNpgU?t=48\n\n## ⭐ Features\n\n- Manage `compose.yaml`\n  - Create/Edit/Start/Stop/Restart/Delete\n  - Update Docker Images\n- Interactive Editor for `compose.yaml`\n- Interactive Web Terminal\n- Reactive\n   - Everything is just responsive. Progress (Pull/Up/Down) and terminal output are in real-time\n- Easy-to-use \u0026 fancy UI\n   - If you love Uptime Kuma's UI/UX, you will love this one too\n- Convert `docker run ...` commands into `compose.yaml`\n- File based structure\n   - Dockge won't kidnap your compose files, they are stored on your drive as usual. You can interact with them using normal `docker compose` commands",
+ "website": "https://dockge.kuma.pet/",
+ "source": "https://github.com/louislam/dockge",
+ "main_port": 8768,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8768",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  dockge:\n    image: louislam/dockge:1.5.0\n    container_name: dockge\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:5001\n    volumes:\n      - /var/run/docker.sock:/var/run/docker.sock\n      - ${APP_DATA_DIR}/data/app-data:/app/data\n      - ${APP_DATA_DIR}/data/stacks:${APP_DATA_DIR}/data/stacks\n    environment:\n      - DOCKGE_STACKS_DIR=${APP_DATA_DIR}/data/stacks\n"
+}

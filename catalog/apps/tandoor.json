@@ -1,0 +1,47 @@
+{
+ "id": "tandoor",
+ "name": "Tandoor",
+ "version": "2.7.2",
+ "category": "Data",
+ "tagline": "Recipe collection manager.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/tandoor/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Tandoor Recipes\n\nThe recipe manager that allows you to manage your ever growing collection of digital recipes.\n\n## Core Features\n- 🥗 **Manage your recipes** - Manage your ever growing recipe collection\n- 📆 **Plan** - multiple meals for each day\n- 🛒 **Shopping lists** - via the meal plan or straight from recipes\n- 📚 **Cookbooks** - collect recipes into books\n- 👪 **Share and collaborate** on recipes with friends and family\n\n## Made by and for power users\n\n- 🔍 Powerful \u0026 customizable **search** with fulltext support and [TrigramSimilarity](https://docs.djangoproject.com/en/3.0/ref/contrib/postgres/search/#trigram-similarity)\n- 🏷️ Create and search for **tags**, assign them in batch to all files matching certain filters\n- ↔️ Quickly merge and rename ingredients, tags and units \n- 📥️ **Import recipes** from thousands of websites supporting [ld+json or microdata](https://schema.org/Recipe)\n- ➗ Support for **fractions** or decimals\n- 🐳 Easy setup with **Docker** and included examples for **Kubernetes**, **Unraid** and **Synology**\n- 🎨 Customize your interface with **themes**\n- 📦 **Sync** files with Dropbox and Nextcloud\n  \n## All the must haves\n\n- 📱Optimized for use on **mobile** devices\n- 🌍 localized in many languages thanks to the awesome community\n- 📥️ **Import your collection** from many other [recipe managers](https://docs.tandoor.dev/features/import_export/)\n- ➕ Many more like recipe scaling, image compression, printing views and supermarkets\n\nThis application is meant for people with a collection of recipes they want to share with family and friends or simply\nstore them in a nicely organized way. A basic permission system exists but this application is not meant to be run as \na public page.\n\n## Docs\n\nDocumentation can be found [here](https://docs.tandoor.dev/).",
+ "website": "https://docs.tandoor.dev/",
+ "source": "https://github.com/TandoorRecipes/recipes",
+ "main_port": 8341,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8341",
+   "required": true
+  },
+  {
+   "key": "TANDOOR_SECRET_KEY",
+   "label": "Tandoor Secret Key",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "TANDOOR_POSTGRESS_PASSWORD",
+   "label": "Postgress Password",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  tandoor:\n    container_name: tandoor\n    image: ghcr.io/tandoorrecipes/recipes:2.7.2\n    volumes:\n      - ${APP_DATA_DIR}/data/staticfiles:/opt/recipes/staticfiles\n      - ${APP_DATA_DIR}/data/mediafiles:/opt/recipes/mediafiles\n    ports:\n      - ${APP_PORT}:80\n    environment:\n      - SECRET_KEY=${TANDOOR_SECRET_KEY}\n      - DB_ENGINE=django.db.backends.postgresql\n      - GUNICORN_MEDIA=1\n      - POSTGRES_HOST=tandoor-db\n      - POSTGRES_PORT=5432\n      - POSTGRES_USER=tandoor\n      - POSTGRES_PASSWORD=${TANDOOR_POSTGRESS_PASSWORD}\n      - POSTGRES_DB=tandoordb\n    restart: unless-stopped\n    healthcheck:\n      test: wget --no-verbose --tries=1 --spider http://localhost:80\n      interval: 10s\n      timeout: 5s\n      retries: 5\n      start_period: 30s\n    depends_on:\n      tandoor-db:\n        condition: service_healthy\n  tandoor-db:\n    image: postgres:15-alpine\n    container_name: tandoor-db\n    volumes:\n      - ${APP_DATA_DIR}/data/postgresql:/var/lib/postgresql/data\n    environment:\n      - POSTGRES_PORT=5432\n      - POSTGRES_USER=tandoor\n      - POSTGRES_PASSWORD=${TANDOOR_POSTGRESS_PASSWORD}\n      - POSTGRES_DB=tandoordb\n    restart: unless-stopped\n    healthcheck:\n      test:\n        - CMD-SHELL\n        - pg_isready\n        - '-U'\n        - $$POSTGRES_USER\n        - '-d'\n        - $$POSTGRES_DB\n      interval: 10s\n      timeout: 5s\n      retries: 5\n      start_period: 30s\n"
+}

@@ -1,0 +1,32 @@
+{
+ "id": "threadfin",
+ "name": "Threadfin",
+ "version": "1.2.37",
+ "category": "Media",
+ "tagline": "M3U proxy server",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Threadfin/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64",
+  "arm"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "Threadfin is a M3U proxy server for Plex, Emby, Jellyfin and any client and provider which supports the .TS and .M3U8 (HLS) streaming formats.",
+ "main_port": 34400,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "34400",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  threadfin:\n    image: fyb3roptik/threadfin:1.2.37\n    restart: unless-stopped\n    environment:\n      - THREADFIN_BRANCH=main\n      - THREADFIN_DEBUG=0\n    ports:\n      - target: 34400\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /home/threadfin/conf/data\n      - type: bind\n        source: ${APP_DATA_DIR}/backup\n        target: /home/threadfin/conf/backup\n    container_name: threadfin\n"
+}

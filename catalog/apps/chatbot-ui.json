@@ -1,0 +1,35 @@
+{
+ "id": "chatbot-ui",
+ "name": "Chatbot UI",
+ "version": "main",
+ "category": "AI",
+ "tagline": "Open source chat UI for AI models",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/ChatbotUI/icon.jpg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "Chatbot UI is an open source chat UI for AI models.",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/ChatbotUI/screenshot-1.jpg"
+ ],
+ "website": "https://www.chatbotui.com",
+ "main_port": 3080,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3080",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  chatbot-ui:\n    environment:\n      PGID: $PGID\n      PUID: $PUID\n      TZ: $TZ\n    image: ghcr.io/mckaywrigley/chatbot-ui:main\n    network_mode: bridge\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    restart: unless-stopped\n    container_name: chatbot-ui\n"
+}

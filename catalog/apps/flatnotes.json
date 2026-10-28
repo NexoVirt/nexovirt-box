@@ -1,0 +1,69 @@
+{
+ "id": "flatnotes",
+ "name": "flatnotes",
+ "version": "v5.5.5",
+ "category": "Utilities",
+ "tagline": "A self-hosted, database-less note taking web app",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/flatnotes/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "A self-hosted, database-less note taking web app that utilises a flat folder of markdown files for storage.\n\n\n## Design Principle\n\nflatnotes is designed to be a distraction free note taking app that puts your note content first. This means:\n\n* A clean and simple user interface.\n* No folders, notebooks or anything like that. Just all of your notes, backed by powerful search and tagging functionality.\n* Quick access to a full text search from anywhere in the app (keyboard shortcut \"/\").\n\nAnother key design principle is not to take your notes hostage. Your notes are just markdown files. There's no database, proprietary formatting, complicated folder structures or anything like that. You're free at any point to just move the files elsewhere and use another app.\n\nEqually, the only thing flatnotes caches is the search index and that's incrementally synced on every search (and when flatnotes first starts). This means that you're free to add, edit \u0026 delete the markdown files outside of flatnotes even whilst flatnotes is running.\n\nSee the [Environment Variables](https://github.com/Dullage/flatnotes/wiki/Environment-Variables) article in the wiki for a full list of configuration options.\n\n\n## Q\u0026A\n\n### Where is the database?\nThere is no database, only a single folder of markdown files (and the .flatnotes sub-folder).\n\n### What is the .flatnotes sub-folder for?\nThis stores a full text index of your note content allowing for rapid search times.\n\n### Can I delete the .flatnotes sub-folder?\nAs long as flatnotes isn't running, sure! It'll just get rebuilt then next time flatnotes is run.\n\n### Can I add, edit \u0026 delete the markdown files outside of flatnotes?\nYup. The only thing flatnotes caches is the search index and that's synced on every search (and when flatnotes first starts).\n\n### Can I perform advanced searches?\nYes! See the [Advanced Searching](https://github.com/Dullage/flatnotes/wiki/Advanced-Searching) wiki page.\n\n### How do I get my notes out of flatnotes?\nThey're just markdown files.  You're free to just move the files elsewhere and use another app.\n\n### Is there an API?\nYes. The docs are available at the `/docs` endpoint. See [demo.flatnotes.io/docs](https://demo.flatnotes.io/docs) as an example.\n\n### If there aren't any folders, how to I organise my notes?\nThe first option is to choose not to. This frees you from the burden of organisation. You can then rely on flatnotes' powerful search functionality to find the note you are looking for. \n\nAdditionally you are able to tag notes by using a hashtag anywhere in the note content e.g. #work. Tags are indexed separately from the rest of the content and so can be searched separately either by using the field prefix e.g. \"tags:work\" or using the hashtag shortcut e.g. \"#work\".\n\n### What types of authentication are supported?\nThere are 3 types:\n\n- None = No authentication, the site is open to anyone with access.\n- Password = The site is protected by a username and password.\n- TOTP = In addition to a username and password, the site is also protected by a time based one-time-password.\n\nSee the [Environment Variables](https://github.com/Dullage/flatnotes/wiki/Environment-Variables) article in the wiki for more information.\n\n\n## Roadmap\n\nI want to keep flatnotes as simple and distraction free as possible which means limiting new features. This said, I welcome feedback and suggestions.\n\nOne feature I do plan to implement is the ability to *share* a note. In the spirit of simple and database-less, the current plan is to generate temporary pre-signed URLs but this needs to be explored.\n\n\n## Sponsorship\n\nIf you find this project useful, please consider buying me a coffee. It would make my day.\n\n[![\"Buy Me A Coffee\"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/dullage)\n\n\n## Thanks\n\nA special thanks to 2 fantastic open source projects that make flatnotes possible.\n\n* [Whoosh](https://whoosh.readthedocs.io/en/latest/intro.html) - A fast, pure Python search engine library.\n* [TOAST UI Editor](https://ui.toast.com/tui-editor) - A GFM Markdown and WYSIWYG editor for the browser.",
+ "website": "https://demo.flatnotes.io/",
+ "source": "https://github.com/Dullage/flatnotes",
+ "main_port": 8137,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8137",
+   "required": true
+  },
+  {
+   "key": "FLATNOTES_AUTH_TYPE",
+   "label": "Flatnotes Auth Type",
+   "type": "text",
+   "hint": "Either `password` or `totp` for 2FA",
+   "placeholder": "password",
+   "required": true
+  },
+  {
+   "key": "FLATNOTES_USERNAME",
+   "label": "Flatnotes Username",
+   "type": "text",
+   "required": true,
+   "min": 2
+  },
+  {
+   "key": "FLATNOTES_PASSWORD",
+   "label": "Flatnotes Password",
+   "type": "text",
+   "required": true,
+   "min": 5
+  },
+  {
+   "key": "FLATNOTES_SECRET_KEY",
+   "label": "FLATNOTES_SECRET_KEY",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "FLATNOTES_TOTP_KEY",
+   "label": "FLATNOTES_TOTP_KEY",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  flatnotes:\n    container_name: flatnotes\n    image: dullage/flatnotes:v5.5.5\n    environment:\n      FLATNOTES_AUTH_TYPE: ${FLATNOTES_AUTH_TYPE}\n      FLATNOTES_USERNAME: ${FLATNOTES_USERNAME}\n      FLATNOTES_PASSWORD: ${FLATNOTES_PASSWORD}\n      FLATNOTES_SECRET_KEY: ${FLATNOTES_SECRET_KEY}\n      FLATNOTES_TOTP_KEY: ${FLATNOTES_TOTP_KEY}\n    volumes:\n      - ${APP_DATA_DIR}/data:/data\n    ports:\n      - ${APP_PORT}:8080\n    restart: unless-stopped\n"
+}

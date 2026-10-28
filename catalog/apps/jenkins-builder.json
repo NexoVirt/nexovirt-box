@@ -1,0 +1,31 @@
+{
+ "id": "jenkins-builder",
+ "name": "Jenkins-builder",
+ "version": "dd7cfe3b09302fafc36be18dd4e3030c6318a1f750324e420b16319d4d67d579",
+ "category": "Other",
+ "tagline": "This container needs special attention. Please check https://hub. Docker. Com/r/linuxserver/jenkins-builder for details.",
+ "icon": "https://cdn.jsdelivr.net/gh/WisdomSky/CasaOS-LinuxServer-AppStore@main/default-icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "This container needs special attention. Please check https://hub.docker.com/r/linuxserver/jenkins-builder for details.",
+ "main_port": 80,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "80",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/jenkins-builder:version-4f81ddbe@sha256:dd7cfe3b09302fafc36be18dd4e3030c6318a1f750324e420b16319d4d67d579\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n    ports:\n      - target: 80\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

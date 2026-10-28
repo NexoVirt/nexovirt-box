@@ -1,0 +1,49 @@
+{
+ "id": "transmission",
+ "name": "Transmission",
+ "version": "4.1.3",
+ "category": "Utilities",
+ "tagline": "Fast, easy, and free BitTorrent client",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/transmission/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## Fast, easy, and free BitTorrent client\n\nTransmission is a fast, easy, and free BitTorrent client. It comes in several flavors:\n  * A native macOS GUI application\n  * GTK+ and Qt GUI applications for Linux, BSD, etc.\n  * A headless daemon for servers and routers\n  * A web UI for remote controlling any of the above\n\nVisit [https://transmissionbt.com/](https://transmissionbt.com/) for more information.\n\n## First install notice\n\nWhen first installed the download path is set to a non-existent directory `/downloads`.\nTo set a correct path :\n  1. Access the Transmission WebUI\n  2. Click on the top-right menu bar\n  3. Select **Edit preferences**\n  4. In **Download to** enter `/media/torrents/complete`\n  5. In **Use temporary folder** enter `/media/torrents/incomplete`\n\nFeel free to adapt the settings to your convenience.\n\nIf you still encounter a `Permission denied (13)` error, make sure that user `1000` has access to the directory. If you work with another user, change the environment variables `PUID` \u0026 `PGID` accordingly through user-config.\n\n## Folder Info\n\n| Root Folder                   | Container Folder |\n|-------------------------------|------------------|\n| /runtipi/app-data/transmission/data/config | /config          |\n| /runtipi/media/torrents                | /media/torrents       |",
+ "website": "https://transmissionbt.com/",
+ "source": "https://github.com/transmission/transmission",
+ "main_port": 8089,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8089",
+   "required": true
+  },
+  {
+   "key": "TRANSMISSION_USERNAME",
+   "label": "Username",
+   "type": "text",
+   "required": true,
+   "min": 3,
+   "max": 50
+  },
+  {
+   "key": "TRANSMISSION_PASSWORD",
+   "label": "Password",
+   "type": "password",
+   "required": true,
+   "min": 3,
+   "max": 50
+  }
+ ],
+ "compose": "services:\n  transmission:\n    image: lscr.io/linuxserver/transmission:4.1.3\n    container_name: transmission\n    environment:\n      - PUID=1000\n      - PGID=1000\n      - TZ=${TZ}\n      - USER=${TRANSMISSION_USERNAME}\n      - PASS=${TRANSMISSION_PASSWORD}\n    volumes:\n      - ${APP_DATA_DIR}/data/config:/config\n      - ${ROOT_FOLDER_HOST}/media/torrents:/media/torrents\n    ports:\n      - ${APP_PORT}:9091\n      - '51413:51413'\n      - 51413:51413/udp\n    restart: unless-stopped\n"
+}

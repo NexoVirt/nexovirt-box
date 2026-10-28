@@ -1,0 +1,45 @@
+{
+ "id": "pdfding",
+ "name": "PdfDing",
+ "version": "v1.7.2",
+ "category": "Productivity",
+ "tagline": "Selfhosted PDF manager, viewer and editor",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/PdfDing/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "PdfDing is a selfhosted PDF manager, viewer and editor offering a seamless user experience on multiple devices. It's designed to be minimal, fast, and easy to set up using Docker.\n\nWith features like seamless browser-based PDF viewing that remembers your current position, multi-level tagging, starring and archiving functionalities, PDF editing with comments, highlighting and drawings, clean intuitive UI with dark mode, SSO support via OIDC, PDF sharing with external audience, markdown notes, and progress bars showing reading progress, PdfDing ensures an excellent PDF management experience.\n\nDeploying PdfDing on private cloud devices like Zima brings unmatched convenience with multi-device access, ensuring your PDF collection is always within reach and secure, no matter where you are.",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/PdfDing/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/PdfDing/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/PdfDing/screenshot-3.png"
+ ],
+ "website": "https://www.pdfding.com",
+ "main_port": 8000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8000",
+   "required": true
+  },
+  {
+   "key": "SECRET_SECRET_KEY",
+   "label": "Secret key",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  pdfding:\n    image: mrmn/pdfding:v1.7.2\n    deploy:\n      resources:\n        reservations:\n          memory: \"128M\"\n    network_mode: bridge\n    ports:\n      - target: 8000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/db\n        target: /home/nonroot/pdfding/db\n      - type: bind\n        source: ${APP_DATA_DIR}/media\n        target: /home/nonroot/pdfding/media\n    environment:\n      - HOST_NAME=*\n      - SECRET_KEY=${SECRET_SECRET_KEY}\n      - CSRF_COOKIE_SECURE=FALSE\n      - SESSION_COOKIE_SECURE=FALSE\n      - DEBUG=FALSE\n    container_name: pdfding\n"
+}

@@ -1,0 +1,46 @@
+{
+ "id": "wekan",
+ "name": "Wekan",
+ "version": "v12.65",
+ "category": "Developer",
+ "tagline": "Open-Source, customizable, and privacy-focused kanban",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/wekan/metadata/logo.jpg",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Wekan\n\nOpen-Source Kanban\n\nExperience efficient task management with WeKan - the Open-Source, customizable, and privacy-focused kanban\n\n## App Links\n\n\u003chttps://wekan.github.io/\u003e\n\n\u003chttps://github.com/wekan/wekan\u003e\n\n## Mail\n\nWekan requires a working email to register a user. This app is configured to use a google mail account with an app-password.\n\n\u003chttps://support.google.com/mail/answer/185833?hl=en\u003e\n\nFor the use with other email providers use a user-config and configure env via:\n\n\u003chttps://github.com/wekan/wekan/wiki/Troubleshooting-Mail\u003e",
+ "website": "https://wekan.fi/",
+ "source": "https://github.com/wekan/wekan",
+ "main_port": 8678,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8678",
+   "required": true
+  },
+  {
+   "key": "MAIL_ADDRESS",
+   "label": "Email Address",
+   "type": "email",
+   "required": true,
+   "min": 3,
+   "max": 50
+  },
+  {
+   "key": "MAIL_PASSWORD",
+   "label": "Email Password",
+   "type": "password",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  wekan:\n    image: ghcr.io/wekan/wekan:v12.65\n    container_name: wekan\n    environment:\n      - MONGO_URL=mongodb://wekan-db:27017/wekan\n      - ROOT_URL=https://${APP_DOMAIN}\n      - MAIL_URL=smtp://${MAIL_ADDRESS}:${MAIL_PASSWORD}@smtp.gmail.com:587\n      - MAIL_FROM=Wekan Notifications \u003cnoreply.wekan@${APP_DOMAIN}\u003e\n    restart: unless-stopped\n    volumes:\n      - /etc/localtime:/etc/localtime:ro\n      - ${APP_DATA_DIR}/data/wekan:/data\n    ports:\n      - ${APP_PORT}:8080\n    depends_on:\n      - wekan-db\n    networks:\n      - backend_network\n  wekan-db:\n    container_name: wekan-db\n    image: mongo:6\n    restart: unless-stopped\n    command: mongod --logpath /dev/null --oplogSize 128 --quiet\n    volumes:\n      - /etc/localtime:/etc/localtime:ro\n      - ${APP_DATA_DIR}/data/mongo:/data/db\n      - ${APP_DATA_DIR}/data/dump:/dump\n    networks:\n      - backend_network\nnetworks:\n  backend_network: null\n"
+}

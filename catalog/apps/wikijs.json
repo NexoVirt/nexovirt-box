@@ -1,0 +1,40 @@
+{
+ "id": "wikijs",
+ "name": "WikiJS",
+ "version": "2.5.317",
+ "category": "Media",
+ "tagline": "A modern and powerful wiki app built on Node.js",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/wikijs/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "[![Wiki.js](https://camo.githubusercontent.com/620ef2ce5831c2e1a03aaa55721d0eb9be6c5fb678a284a9dd5ad4976413974f/68747470733a2f2f7374617469632e7265717561726b732e696f2f6c6f676f2f77696b696a732d66756c6c2e737667)](https://camo.githubusercontent.com/620ef2ce5831c2e1a03aaa55721d0eb9be6c5fb678a284a9dd5ad4976413974f/68747470733a2f2f7374617469632e7265717561726b732e696f2f6c6f676f2f77696b696a732d66756c6c2e737667)\n\n##### [](https://github.com/requarks/wiki/blob/main/README.md#a-modern-lightweight-and-powerful-wiki-app-built-on-nodejs)A modern, lightweight and powerful wiki app built on NodeJS\n\n- **[Official Website](https://js.wiki/)**\n- **[Documentation](https://docs.requarks.io/)**\n- [Requirements](https://docs.requarks.io/install/requirements)\n- [Installation](https://docs.requarks.io/install)\n- [Demo](https://docs.requarks.io/demo)\n- [Changelog](https://github.com/requarks/wiki/releases)\n- [Feature Requests](https://feedback.js.wiki/wiki)\n- [Chat with us on Slack](https://wiki.requarks.io/slack)\n- [Translations](https://docs.requarks.io/dev/translations) _(We need your help!)_\n- [E2E Testing Results](https://dashboard.cypress.io/projects/r7qxah/runs)\n- [Special Thanks](https://github.com/requarks/wiki/blob/main/README.md#special-thanks)\n- [Contribute](https://github.com/requarks/wiki/blob/main/README.md#contributors)\n\n[Follow our Twitter feed](https://twitter.com/requarks) to learn about upcoming updates and new releases!\n\n## [](https://github.com/requarks/wiki/blob/main/README.md#donate)",
+ "website": "https://js.wiki/",
+ "source": "https://github.com/requarks/wiki",
+ "main_port": 8148,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8148",
+   "required": true
+  },
+  {
+   "key": "WIKI_JS_DB_PASS",
+   "label": "WIKI_JS_DB_PASS",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  wikijs:\n    container_name: wikijs\n    image: ghcr.io/requarks/wiki:2.5.317\n    depends_on:\n      - wikijs-db\n    environment:\n      DB_TYPE: postgres\n      DB_HOST: wikijs-db\n      DB_PORT: 5432\n      DB_USER: wikijs\n      DB_PASS: ${WIKI_JS_DB_PASS}\n      DB_NAME: wiki\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:3000\n  wikijs-db:\n    container_name: wikijs-db\n    image: postgres:11-alpine\n    environment:\n      POSTGRES_DB: wiki\n      POSTGRES_PASSWORD: ${WIKI_JS_DB_PASS}\n      POSTGRES_USER: wikijs\n    logging:\n      driver: none\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/data/postgres:/var/lib/postgresql/data\n"
+}

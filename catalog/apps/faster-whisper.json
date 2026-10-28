@@ -1,0 +1,21 @@
+{
+ "id": "faster-whisper",
+ "name": "Faster-whisper",
+ "version": "0c43f57b26aafb120d34d406e2cffe3d4e0dd0e986d2d8f656073294c6f77e36",
+ "category": "AI",
+ "tagline": "Faster-whisper",
+ "icon": "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps/apps/faster-whisper/logo.png",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Faster-whisper is a reimplementation of OpenAI's Whisper model using CTranslate2, which is a fast inference engine for Transformer models. This container provides a Wyoming protocol server for faster-whisper.",
+ "main_port": 7575,
+ "scheme": "http",
+ "questions": [],
+ "compose": "# Service definitions for the big-bear-faster-whisper application\nservices:\n  # Service name: big-bear-faster-whisper\n  # The `big-bear-faster-whisper` service definition\n  big-bear-faster-whisper:\n    # Name of the container\n    container_name: big-bear-faster-whisper\n    # Image to be used for the container\n    image: linuxserver/faster-whisper:3.8.1@sha256:0c43f57b26aafb120d34d406e2cffe3d4e0dd0e986d2d8f656073294c6f77e36\n    # Container restart policy\n    restart: unless-stopped\n    # Environment variables\n    environment:\n      - PUID=1000\n      - PGID=1000\n      - TZ=Etc/UTC\n      - WHISPER_MODEL=tiny-int8\n      - WHISPER_BEAM=1 #optional\n      - WHISPER_LANG=en #optional\n    # Volumes to be mounted to the container\n    volumes:\n      # Mounting the local faster-whisper_config directory to /config inside the container\n      - ${APP_DATA_DIR}/config:/config\n    # Ports mapping between host and container\n    ports:\n      # Mapping port 10300 of the host to port 10300 of the container\n      - \"10300:10300\"\n"
+}

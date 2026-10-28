@@ -1,0 +1,24 @@
+{
+ "id": "emqx-open-source",
+ "name": "EMQX Open Source",
+ "version": "6.3.2",
+ "category": "Utilities",
+ "tagline": "Scalable open-source MQTT broker.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/emqx/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# EMQX\n\nEMQX is the world's most scalable open-source [MQTT broker](https://www.emqx.com/en/blog/the-ultimate-guide-to-mqtt-broker-comparison) with a high performance that connects 100M+ IoT devices in 1 cluster, while maintaining 1M message per second throughput and sub-millisecond latency.\n\nEMQX supports multiple open standard protocols like MQTT, HTTP, QUIC, and WebSocket. It’s 100% compliant with MQTT 5.0 and 3.x standard, and secures bi-directional communication with MQTT over TLS/SSL and various authentication mechanisms.\n\nWith the built-in powerful SQL-based [rules engine](https://www.emqx.com/en/solutions/iot-rule-engine), EMQX can extract, filter, enrich and transform IoT data in real-time. In addition, it ensures high availability and horizontal scalability with a masterless distributed architecture, and provides ops-friendly user experience and great observability.\n\nEMQX boasts more than 20K+ enterprise users across 50+ countries and regions, connecting 100M+ IoT devices worldwide, and is trusted by over 400 customers in mission-critical scenarios of IoT, IIoT, connected vehicles, and more, including over 70 Fortune 500 companies like HPE, VMware, Verifone, SAIC Volkswagen, and Ericsson.\n\nFor more information, please visit [EMQX homepage](https://www.emqx.com/en).\n\n## Documentation\n\nThe EMQX documentation is available at [docs.emqx.com/en/emqx/latest](https://docs.emqx.com/en/emqx/latest/).\n\nThe EMQX Cloud documentation is available at [docs.emqx.com/en/cloud/latest](https://docs.emqx.com/en/cloud/latest/).\n\n## Contributing\n\nPlease see our [contributing guide](./CONTRIBUTING.md).\n\nFor more organised improvement proposals, you can send pull requests to [EIP](https://github.com/emqx/eip).\n\n## Resources\n\n- [MQTT client programming](https://www.emqx.com/en/blog/category/mqtt-programming)\n\n  A series of blogs to help developers get started quickly with MQTT in PHP, Node.js, Python, Golang, and other programming languages.\n\n- [MQTT SDKs](https://www.emqx.com/en/mqtt-client-sdk)\n\n  We have selected popular MQTT client SDKs in various programming languages and provided code examples to help you quickly understand the use of MQTT clients.\n\n- [MQTTX](https://mqttx.app/)\n\n  An elegant cross-platform MQTT 5.0 client tool that provides desktop, command line, and web to help you develop and debug MQTT services and applications faster.\n\n- [Internet of Vehicles](https://www.emqx.com/en/blog/category/internet-of-vehicles)\n\n  Build a reliable, efficient, and industry-specific IoV platform based on EMQ's practical experience, from theoretical knowledge such as protocol selection to practical operations like platform architecture design.\n\n## License\n\nSee [LICENSE](./LICENSE).",
+ "website": "https://www.emqx.com/",
+ "source": "https://github.com/emqx/emqx",
+ "main_port": 0,
+ "scheme": "http",
+ "questions": [],
+ "compose": "services:\n  emqx:\n    image: emqx/emqx:6.3.2\n    container_name: emqx\n    environment:\n      - TZ=${TZ}\n      - EMQX_NODE_NAME=emqx@emqx\n      - EMQX_CLUSTER__DISCOVERY_STRATEGY=static\n      - EMQX_CLUSTER__STATIC__SEEDS=[emqx@emqx,emqx@emqx-n2]\n    ports:\n      - '1883:1883'\n      - '8083:8083'\n      - '8084:8084'\n      - '8883:8883'\n      - '18083:18083'\n    healthcheck:\n      test:\n        - CMD\n        - /opt/emqx/bin/emqx\n        - ctl\n        - status\n      interval: 5s\n      timeout: 25s\n      retries: 5\n    volumes:\n      - ${APP_DATA_DIR}/data/n1:/opt/emqx/data\n    restart: unless-stopped\n  emqx-n2:\n    image: emqx/emqx:6.3.2\n    container_name: emqx-n2\n    environment:\n      - TZ=${TZ}\n      - EMQX_NODE_NAME=emqx@emqx-n2\n      - EMQX_CLUSTER__DISCOVERY_STRATEGY=static\n      - EMQX_CLUSTER__STATIC__SEEDS=[emqx@emqx,emqx@emqx-n2]\n    healthcheck:\n      test:\n        - CMD\n        - /opt/emqx/bin/emqx\n        - ctl\n        - status\n      interval: 5s\n      timeout: 25s\n      retries: 5\n    volumes:\n      - ${APP_DATA_DIR}/data/n2:/opt/emqx/data\n    restart: unless-stopped\n"
+}

@@ -1,0 +1,39 @@
+{
+ "id": "alist-sync",
+ "name": "Alist-Sync",
+ "version": "1.1.5",
+ "category": "Productivity",
+ "tagline": "An Alist storage synchronization tool based on the Web interface.",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Alist-Sync/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "Alist-Sync is a storage synchronization tool based on the Web interface. It can achieve data synchronization and mutual backup among multiple network disks, and also has practical functions such as multi-task management, scheduled synchronization and difference handling.",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Alist-Sync/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Alist-Sync/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Alist-Sync/screenshot-3.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Alist-Sync/screenshot-4.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Alist-Sync/screenshot-5.png"
+ ],
+ "main_port": 52441,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "52441",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  alist-sync:\n    image: xjxjin/alist-sync:1.1.5\n    container_name: alist-sync\n    restart: unless-stopped\n    ports:\n      - \"${APP_PORT}:52441\"\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/data\n        target: /app/data\n    environment:\n      - TZ=Asia/Shanghai\n"
+}

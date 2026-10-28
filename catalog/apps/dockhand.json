@@ -1,0 +1,32 @@
+{
+ "id": "dockhand",
+ "name": "Dockhand",
+ "version": "039fbb65899f5ecc1d63083736d94587306b35736bca666eca623416859ddaa5",
+ "category": "Developer",
+ "tagline": "Modern Docker management you will like",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/dockhand.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "docker_socket": true,
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Modern, efficient Docker management application providing real-time container management, Compose stack orchestration, and multi-environment support. Features include interactive terminal access, file browser, Git integration, and SSO via OIDC. All in a lightweight, secure and privacy-focused package.",
+ "main_port": 3003,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3003",
+   "required": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-dockhand application\nservices:\n  # Service name: app\n  # The main Dockhand application service\n  app:\n    # Name of the container\n    container_name: big-bear-dockhand\n    # Image to be used for the container\n    image: fnsys/dockhand:latest@sha256:039fbb65899f5ecc1d63083736d94587306b35736bca666eca623416859ddaa5\n    # Container restart policy\n    restart: unless-stopped\n    # Volumes to be mounted to the container\n    volumes:\n      - /var/run/docker.sock:/var/run/docker.sock # Docker socket access\n      - ${APP_DATA_DIR}/data:/app/data # Application data\n    # Ports mapping between host and container\n    ports:\n      - \"${APP_PORT}:3000\"\n"
+}

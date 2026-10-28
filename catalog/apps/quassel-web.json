@@ -1,0 +1,31 @@
+{
+ "id": "quassel-web",
+ "name": "Quassel-web",
+ "version": "15453e655257907853d02a41903c255f0fd4da8a759f13f73b2573dca2d981ba",
+ "category": "Other",
+ "tagline": "A web client for Quassel. Note that a Quassel-Core instance is required, we have a container available here.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/quassel-web-icon.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Visit homepage: https://hub.docker.com/r/linuxserver/quassel-web/",
+ "main_port": 64080,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "64080",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/quassel-web:version-019bfdc1@sha256:15453e655257907853d02a41903c255f0fd4da8a759f13f73b2573dca2d981ba\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n      QUASSEL_CORE: ''\n      QUASSEL_PORT: ''\n      QUASSEL_HTTPS: ''\n      URL_BASE: ''\n    ports:\n      - target: 64080\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 64443\n        published: 64443\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

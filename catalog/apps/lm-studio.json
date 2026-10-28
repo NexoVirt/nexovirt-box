@@ -1,0 +1,30 @@
+{
+ "id": "lm-studio",
+ "name": "Lm-studio",
+ "version": "29d2149a8046d54be16a9a3ae60568f63e6e886bed453d5884f8cfa93a3ac389",
+ "category": "Home",
+ "tagline": "Can run local AI models like gpt-oss, Llama, Gemma, Qwen, and DeepSeek privately on your computer.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/lmstudio-logo.png",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "LM Studio can run local AI models like gpt-oss, Llama, Gemma, Qwen, and DeepSeek privately on your computer.",
+ "main_port": 3000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/lm-studio:version-2026-09-12@sha256:29d2149a8046d54be16a9a3ae60568f63e6e886bed453d5884f8cfa93a3ac389\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n      - target: 3001\n        published: 3001\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

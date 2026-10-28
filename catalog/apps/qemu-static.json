@@ -1,0 +1,31 @@
+{
+ "id": "qemu-static",
+ "name": "Qemu-static",
+ "version": "85959e8657d2e2ec534febf9c34fb09198557191828d7c68361094803ce23e37",
+ "category": "Home",
+ "tagline": "This container needs special attention. Please check https://hub. Docker. Com/r/linuxserver/qemu-static for details.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/qemu-logo.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "This container needs special attention. Please check https://hub.docker.com/r/linuxserver/qemu-static for details.",
+ "main_port": 80,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "80",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/qemu-static:10.0.13@sha256:85959e8657d2e2ec534febf9c34fb09198557191828d7c68361094803ce23e37\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n    ports:\n      - target: 80\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

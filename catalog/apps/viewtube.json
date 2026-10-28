@@ -1,0 +1,33 @@
+{
+ "id": "viewtube",
+ "name": "ViewTube",
+ "version": "0.17.0",
+ "category": "Media",
+ "tagline": "The open source, privacy-conscious way to enjoy your favorite YouTube content.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/viewtube/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "ViewTube is an alternative YouTube frontend that lets you watch, search and discover YouTube videos without ads or tracking. It's built to be mobile and desktop friendly, with dark and light themes, and a touch-friendly video player with gestures. You can create an account separately from YouTube, read comments, watch playlists, subscribe to channels and receive push notifications for new uploads It's built using [Nuxt](https://nuxt.com/) and [Nest](https://nestjs.com/).\n\nYou can find the documentation at [viewtube.wiki](https://viewtube.wiki) \n\n**Warning! MongoDB version 4.4.18 will be used for arm64 devices like the raspberry pi!**\n\n## Features\n\n-   Watch videos without ads or tracking\n-   Built from the ground up to be mobile and desktop friendly\n-   Dark and light themes\n-   Touch friendly video player with gestures\n-   Supports loop, speed, autoplay and volume\n-   Create an account separately from Youtube\n-   Read comments\n-   Search for videos\n-   Watch playlists\n-   Subscribe to channels and see their latest uploads\n-   Receive push notifications for subscribed channels\n-   Integrated SponsorBlock support\n\n## Where does ViewTube get the data from?\n\nViewTube does not use the official Youtube API. It instead scrapes the data from the website using a combination of custom built tools and the following open source libraries.\n\n-   [node-ytdl-core](https://github.com/fent/node-ytdl-core)\n-   [node-ytsr](https://github.com/TimeForANinja/node-ytsr)\n-   [node-ytpl](https://github.com/TimeForANinja/node-ytpl)\n-   [yt-comment-scraper](https://github.com/FreeTubeApp/yt-comment-scraper)\n-   [yt-channel-info](https://github.com/FreeTubeApp/yt-channel-info)\n\n## Screenshots\n\n### Homepage\n\n[![Screenshot-Homepage](https://camo.githubusercontent.com/7ca1b34ee39d918f86a7043a3ffae08b574d5630975255eb8840536e7e169248/68747470733a2f2f692e6962622e636f2f476b35744b51372f6c78743179306d6b2e6a7067)](https://camo.githubusercontent.com/7ca1b34ee39d918f86a7043a3ffae08b574d5630975255eb8840536e7e169248/68747470733a2f2f692e6962622e636f2f476b35744b51372f6c78743179306d6b2e6a7067)\n\n### Video\n\n[![Screenshot-Video](https://camo.githubusercontent.com/07ecf2f4a9e61eb326d2125375f674020cbf97b1a998defdeb21fd8d1aa6f8f7/68747470733a2f2f692e6962622e636f2f52544c327633662f6732656a663777662e6a7067)](https://camo.githubusercontent.com/07ecf2f4a9e61eb326d2125375f674020cbf97b1a998defdeb21fd8d1aa6f8f7/68747470733a2f2f692e6962622e636f2f52544c327633662f6732656a663777662e6a7067)\n\n### Channel\n\n[![Screenshot-Channel](https://camo.githubusercontent.com/b50d3f852326d5436cc32507eb2ee48d036092ae1cba3bc61485a8a4661d0ffd/68747470733a2f2f692e6962622e636f2f68396d663179642f366a3435616f35722e6a7067)](https://camo.githubusercontent.com/b50d3f852326d5436cc32507eb2ee48d036092ae1cba3bc61485a8a4661d0ffd/68747470733a2f2f692e6962622e636f2f68396d663179642f366a3435616f35722e6a7067)",
+ "website": "https://viewtube.wiki/",
+ "source": "https://github.com/ViewTube/viewtube",
+ "main_port": 8180,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8180",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  viewtube:\n    restart: unless-stopped\n    container_name: viewtube\n    image: mauriceo/viewtube:0.17.0\n    depends_on:\n      - viewtube-mongodb\n      - viewtube-redis\n    volumes:\n      - ${APP_DATA_DIR}/data/viewtube:/data\n    environment:\n      - VIEWTUBE_DATABASE_HOST=viewtube-mongodb\n      - VIEWTUBE_REDIS_HOST=viewtube-redis\n      - VIEWTUBE_SECURE=true\n      - VIEWTUBE_CORS_ORIGIN=${APP_PROTOCOL:-http}://${APP_DOMAIN}\n      # - VIEWTUBE_YOUTUBE_COOKIE=\n      # - VIEWTUBE_YOUTUBE_IDENTIFIER=\n    ports:\n      - ${APP_PORT}:8066\n  viewtube-mongodb:\n    container_name: viewtube-mongodb\n    restart: unless-stopped\n    image: mongo:5\n    volumes:\n      - ${APP_DATA_DIR}/data/db:/data/db\n  viewtube-redis:\n    container_name: viewtube-redis\n    restart: unless-stopped\n    image: redis:7\n    volumes:\n      - ${APP_DATA_DIR}/data/redis:/data\n"
+}

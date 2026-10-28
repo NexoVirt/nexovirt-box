@@ -1,0 +1,34 @@
+{
+ "id": "send-visee",
+ "name": "Send Visee",
+ "version": "b950a557f0f4eb7d2114a9126aea5df984ffe868385a3fb6b327d9f770bec0ae",
+ "category": "Social",
+ "tagline": "A fork of Mozilla's Firefox Send.",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/send-visee.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "A fork of Mozilla's Firefox Send. Mozilla discontinued Send, this fork is a community effort to keep the project up-to-date and alive.",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps@main/apps/send-visee/screenshots/screenshot-1.png"
+ ],
+ "main_port": 1443,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "1443",
+   "required": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-send application\nservices:\n  # Service name: big-bear-send-visee\n  # The `big-bear-send-visee` service definition\n  big-bear-send-visee:\n    # Name of the container (Docker does not have to generate a random name)\n    container_name: big-bear-send-visee\n    # Image to be used for the container\n    image: registry.gitlab.com/timvisee/send:v3.4.27@sha256:b950a557f0f4eb7d2114a9126aea5df984ffe868385a3fb6b327d9f770bec0ae\n    # Container restart policy\n    restart: unless-stopped\n    # Environment variables for the container\n    environment:\n      - NODE_ENV=production\n      # Networking\n      - BASE_URL=http://${APP_DOMAIN}\n      # Redis\n      - REDIS_HOST=big-bear-send-visee-redis\n      # Storage Limit\n      - MAX_FILE_SIZE=2147483648\n      # Storage path\n      - FILE_DIR=/uploads\n    # Volumes to be mounted to the container\n    volumes:\n      # Storage volume\n      - ${APP_DATA_DIR}/uploads:/uploads\n    # Ports mapping between host and container\n    ports:\n      # Mapping port 1443 of the host to port 1443 of the container\n      - \"${APP_PORT}:1443\"\n    networks:\n      - big_bear_send_visee_network\n  big-bear-send-visee-redis:\n    # Name of the container (Docker does not have to generate a random name)\n    container_name: big-bear-send-visee-redis\n    # Image to be used for the container\n    image: redis:8.2.2-alpine@sha256:1c78f5e7512cc8b22b0edc95c20e7abd9e1fd832e5dfd5c3c6b59ce82fb238d0\n    # Container restart policy\n    restart: unless-stopped\n    # Volumes to be mounted to the container\n    volumes:\n      - ${APP_DATA_DIR}/redis:/data\n    # Health check\n    healthcheck:\n      test: [\"CMD\", \"redis-cli\", \"ping\"]\n      interval: 5s\n      timeout: 3s\n      retries: 30\n    # Networks to be used for the container\n    networks:\n      - big_bear_send_visee_network\n# Networks to be used for the containers\nnetworks:\n  big_bear_send_visee_network:\n    # Driver to be used for the network\n    driver: bridge\n"
+}

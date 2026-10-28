@@ -1,0 +1,40 @@
+{
+ "id": "medusa",
+ "name": "Medusa",
+ "version": "master",
+ "category": "Media",
+ "tagline": "",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Medusa/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64",
+  "arm"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "Automatic Video Library Manager for TV Shows. It watches for new episodes of your favorite shows, and when they are posted it does its magic.",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Medusa/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Medusa/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Medusa/screenshot-3.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Medusa/screenshot-4.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Medusa/screenshot-5.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Medusa/screenshot-6.png"
+ ],
+ "main_port": 8081,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8081",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  medusa:\n    container_name: medusa\n    deploy:\n      resources:\n        limits:\n          memory: 7848M\n    environment:\n      - TZ= $TZ\n    image: pymedusa/medusa:master\n    ports:\n      - target: 8081\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}\n        target: /config\n      - type: bind\n        source: ${APP_DATA_DIR}/Downloads/Television\n        target: /downloads\n      - type: bind\n        source: ${APP_DATA_DIR}/Media/Television\n        target: /tv\n    network_mode: bridge\n    privileged: false\n"
+}

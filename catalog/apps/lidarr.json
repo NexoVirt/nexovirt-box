@@ -1,0 +1,32 @@
+{
+ "id": "lidarr",
+ "name": "Lidarr",
+ "version": "3.1.6",
+ "category": "Media",
+ "tagline": "Looks and smells like Sonarr but made for music.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/lidarr/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## Looks and smells like Sonarr but made for music. \n\nLidarr is a music collection manager for Usenet and BitTorrent users. It can monitor multiple RSS feeds for new tracks from your favorite artists and will grab, sort and rename them. It can also be configured to automatically upgrade the quality of files already downloaded when a better quality format becomes available.\n\n### Major Features Include\n\n- Support for major platforms: Windows, Linux, macOS, Raspberry Pi, etc.\n- Automatically detects new tracks.\n- Can scan your existing library and download any missing tracks.\n- Can watch for better quality of the tracks you already have and do an automatic upgrade.\n- Automatic failed download handling will try another release if one fails\n- Manual search so you can pick any release or to see why a release was not downloaded automatically\n- Fully configurable track renaming\n- Full integration with SABnzbd and NZBGet\n- Full integration with Kodi, Plex (notification, library update, metadata)\n- Full support for specials and multi-album releases\n- And a beautiful UI\n\n## Folder Info\n\n| Root Folder                   | Container Folder |\n|-------------------------------|------------------|\n| /runtipi/app-data/lidarr/data | /config          |\n| /runtipi/media                | /media           |",
+ "source": "https://github.com/Lidarr/Lidarr",
+ "main_port": 8131,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8131",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  lidarr:\n    image: ghcr.io/linuxserver/lidarr:3.1.6\n    container_name: lidarr\n    environment:\n      - PUID=1000\n      - PGID=1000\n      - TZ=${TZ}\n    volumes:\n      - /etc/localtime:/etc/localtime:ro\n      - ${APP_DATA_DIR}/data:/config\n      - ${ROOT_FOLDER_HOST}/media:/media\n    ports:\n      - ${APP_PORT}:8686\n    restart: unless-stopped\n"
+}

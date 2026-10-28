@@ -1,0 +1,39 @@
+{
+ "id": "atuin-server",
+ "name": "Atuin Server",
+ "version": "18.24.2",
+ "category": "Utilities",
+ "tagline": "Magical Shell History",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/atuin/metadata/logo.jpg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Atuin Server\n\nOnce installed, [configure your client](https://docs.atuin.sh/self-hosting/usage/) to use `\u003cyour-tipi-ip\u003e:8888` as sync address.\n\n## Making your shell magical\n\nSync, search and backup shell history with Atuin\n\n[Atuin](https://atuin.sh) is an open-source Terminal User Interface (TUI) for your shell history.\n\n![Atuin TUI screenshot](https://atuin.sh/_astro/cargo-prefix.322ce063_Z3NFdB.avif)\n\n## Features\n\n1. Shell History Sync\n    - Sync your shell history to all of your machines, wherever they are\n2. End-to-end Encryption \n    - All data is encrypted, and can only be read by you\n3. Efficient Search\n    - Search decades of shell history, and recall it in an instant. Atuin offers configurable full text or fuzzy search, filterable by host, directory, etc.\n4. Data Import\n    - Bring your existing history with you - Atuin supports importing from a wide variety of formats\n5. Store Extra Context\n    - Atuin stores extra context with your commands - working directory, exit code, and more!\n\n## Self-hosted sync server\n\nAtuin.sh offers a free, fully-encrypted option for storing your synced shell history as well as an option to self-host a sync server of your own. This is an easy-to-use package for the Atuin sync server component; the user interface is the TUI, which can be installed using many typical package-management tools, e.g.\n\n- `brew install atuin`\n- `apt install atuin`\n\nor via `bash \u003c(curl --proto '=https' --tlsv1.2 -sSf https://setup.atuin.sh)`.",
+ "website": "https://atuin.sh",
+ "source": "https://github.com/atuinsh/atuin",
+ "main_port": 0,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "ATUIN_DB_PASSWORD",
+   "label": "Atuin DB Password",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "ATUIN_ALLOW_REGISTRATION",
+   "label": "Allow User Registrastion",
+   "type": "boolean",
+   "hint": "Set it to true intially to create the first user",
+   "default": "true"
+  }
+ ],
+ "compose": "services:\n  atuin:\n    image: ghcr.io/atuinsh/atuin:18.24.2\n    command: start\n    volumes:\n      - ${APP_DATA_DIR}/data/config:/config\n    environment:\n      - ATUIN_PORT=8888\n      - ATUIN_HOST=0.0.0.0\n      - ATUIN_OPEN_REGISTRATION=${ATUIN_ALLOW_REGISTRATION}\n      - ATUIN_DB_URI=postgres://atuin:${ATUIN_DB_PASSWORD}@atuin-db/atuin\n    x-runtipi:\n      internal_port: 8888\n      is_main: true\n  atuin-db:\n    image: postgres:14\n    volumes:\n      - ${APP_DATA_DIR}/data/postgres:/var/lib/postgresql/data/\n    environment:\n      - POSTGRES_USER=atuin\n      - POSTGRES_PASSWORD=${ATUIN_DB_PASSWORD}\n      - POSTGRES_DB=atuin\nx-runtipi:\n  schema_version: 2\n"
+}

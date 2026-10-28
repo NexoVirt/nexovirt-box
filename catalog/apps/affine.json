@@ -1,0 +1,51 @@
+{
+ "id": "affine",
+ "name": "AFFiNE",
+ "version": "stable",
+ "category": "Utilities",
+ "tagline": "AFFiNE is a workspace with fully merged docs, whiteboards and databases.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/affine/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## AFFiNE\n\n[AFFiNE](https://affine.pro) is an open-source, all-in-one workspace and an operating system for all the building blocks that assemble your knowledge base and much more -- wiki, knowledge management, presentation and digital assets. It's a better alternative to Notion and Miro.\n\n![](https://cdn.affine.pro/Github_hero_image1.png)\n\n### Features\n\n**A true canvas for blocks in any form. Docs and whiteboard are now fully merged.**\n\n- Many editor apps claim to be a canvas for productivity, but AFFiNE is one of the very few which allows you to put any building block on an edgeless canvas -- rich text, sticky notes, any embedded web pages, multi-view databases, linked pages, shapes and even slides. We have it all.\n\n**Multimodal AI partner ready to kick in any work**\n\n- Write up professional work report? Turn an outline into expressive and presentable slides? Summary an article into a well-structured mindmap? Sorting your job plan and backlog for tasks? Or... draw and code prototype apps and web pages directly all with one prompt? With you, AFFiNE AI pushes your creativity to the edge of your imagination.\n\n**Local-first \u0026 Real-time collaborative**\n\n- We love the idea of local-first that you always own your data on your disk, in spite of the cloud. Furthermore, AFFiNE supports real-time sync and collaborations on web and cross-platform clients.\n\n**Self-host \u0026 Shape your own AFFiNE**\n\n- You have the freedom to manage, self-host, fork and build your own AFFiNE. Plugin community and third-party blocks are coming soon. More tractions on [Blocksuite](https://blocksuite.io). Check there to learn how to [self-host AFFiNE](https://docs.affine.pro/docs/self-host-affine).",
+ "website": "https://affine.pro",
+ "source": "https://github.com/toeverything/affine",
+ "main_port": 0,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "AFFINE_ADMIN_EMAIL",
+   "label": "Admin Email",
+   "type": "text",
+   "required": true
+  },
+  {
+   "key": "AFFINE_ADMIN_PASSWORD",
+   "label": "Admin Password",
+   "type": "password",
+   "required": true,
+   "min": 8,
+   "max": 128
+  },
+  {
+   "key": "AFFINE_TELEMETRY_ENABLE",
+   "label": "Enable affine telemetry?",
+   "type": "boolean"
+  },
+  {
+   "key": "AFFINE_POSTGRES_PASSWORD",
+   "label": "Affine postgres password",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  affine:\n    image: 'ghcr.io/toeverything/affine:stable'\n    command:\n      - 'sh'\n      - '-c'\n      - 'node ./scripts/self-host-predeploy \u0026\u0026 node ./dist/main.js'\n    volumes:\n      - '${APP_DATA_DIR}/data/config:/root/.affine/config'\n      - '${APP_DATA_DIR}/data/storage:/root/.affine/storage'\n    environment:\n      - 'AFFINE_CONFIG_PATH=/root/.affine/config'\n      - 'REDIS_SERVER_HOST=affine-redis'\n      - 'DATABASE_URL=postgres://tipi:${AFFINE_POSTGRES_PASSWORD}@affine-postgres:5432/affine'\n      - 'NODE_ENV=production'\n      - 'AFFINE_ADMIN_EMAIL=${AFFINE_ADMIN_EMAIL}'\n      - 'AFFINE_ADMIN_PASSWORD=${AFFINE_ADMIN_PASSWORD}'\n      - 'TELEMETRY_ENABLE=${AFFINE_TELEMETRY_ENABLE}'\n    depends_on:\n      affine-redis:\n        condition: 'service_healthy'\n      affine-postgres:\n        condition: 'service_healthy'\n    logging:\n      driver: 'json-file'\n      options:\n        max-size: '1000m'\n    x-runtipi:\n      internal_port: 3010\n      is_main: true\n  affine-redis:\n    image: 'redis'\n    volumes:\n      - '${APP_DATA_DIR}/data/redis:/data'\n    healthcheck:\n      test: 'redis-cli --raw incr ping'\n      interval: '10s'\n      timeout: '5s'\n      retries: 5\n  affine-postgres:\n    image: 'postgres:16'\n    volumes:\n      - '${APP_DATA_DIR}/data/postgres:/var/lib/postgresql/data'\n    environment:\n      - 'POSTGRES_USER=tipi'\n      - 'POSTGRES_PASSWORD=${AFFINE_POSTGRES_PASSWORD}'\n      - 'POSTGRES_DB=affine'\n    healthcheck:\n      test: 'pg_isready -d postgres://tipi:${AFFINE_POSTGRES_PASSWORD}@affine-postgres:5432/affine'\n      interval: '10s'\n      timeout: '5s'\n      retries: 5\nx-runtipi:\n  schema_version: 2\n"
+}

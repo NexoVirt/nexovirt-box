@@ -1,0 +1,33 @@
+{
+ "id": "emulatorjs",
+ "name": "Emulatorjs",
+ "version": "1.9.2",
+ "category": "Gaming",
+ "tagline": "Self-hosted Javascript emulation for various system.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/emulatorjs/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "Self-hosted **Javascript** emulation for various system.\n\nThe admin panel is accessible on port 8165.\n\n### [](https://github.com/EmulatorJS/EmulatorJS#extensions)Extensions\n\n**[GameLibrary](https://github.com/Ramaerel/emulatorjs-GameLibrary)**\n\n# [](https://github.com/EmulatorJS/EmulatorJS#supported-systems)Supported Systems\n\n### [](https://github.com/EmulatorJS/EmulatorJS#nintendo)Nintendo\n\n**[Game Boy Advance](https://github.com/EmulatorJS/EmulatorJS/blob/main/docs/Systems/Nintendo%20Game%20Boy%20Advance.md)**   |  **[Famicom / NES](https://github.com/EmulatorJS/EmulatorJS/blob/main/docs/Systems/NES-Famicom.md)**   |  **[Virtual Boy](https://github.com/EmulatorJS/EmulatorJS/blob/main/docs/Systems/Virtual%20Boy.md)**\n\n**[Game Boy](https://github.com/EmulatorJS/EmulatorJS/blob/main/docs/Systems/Nintendo%20Game%20Boy.md)**   |  **[SNES](https://github.com/EmulatorJS/EmulatorJS/blob/main/docs/Systems/SNES.md)**   |  **[DS](https://github.com/EmulatorJS/EmulatorJS/blob/main/docs/Systems/Nintendo%20DS.md)**   |  **[64](https://github.com/EmulatorJS/EmulatorJS/blob/main/docs/Systems/Nintendo%2064.md)**\n\n### [](https://github.com/EmulatorJS/EmulatorJS#sega)Sega\n\n**[Master System](https://github.com/EmulatorJS/EmulatorJS/blob/main/docs/Systems/Sega%20Master%20System.md)**   |  **[Mega Drive](https://github.com/EmulatorJS/EmulatorJS/blob/main/docs/Systems/Sega%20Mega%20Drive.md)**   |  **[Game Gear](https://github.com/EmulatorJS/EmulatorJS/blob/main/docs/Systems/Sega%20Game%20Gear.md)**\n\n**[Saturn](https://github.com/EmulatorJS/EmulatorJS/blob/main/docs/Systems/Sega%20Saturn.md)**   |  **[32X](https://github.com/EmulatorJS/EmulatorJS/blob/main/docs/Systems/Sega%2032X.md)**   |  **[CD](https://github.com/EmulatorJS/EmulatorJS/blob/main/docs/Systems/Sega%20CD.md)**\n\n### [](https://github.com/EmulatorJS/EmulatorJS#atari)Atari\n\n**[2600](https://github.com/EmulatorJS/EmulatorJS/blob/main/docs/Systems/Atari%202600.md)**   |  **[5200](https://github.com/EmulatorJS/EmulatorJS/blob/main/docs/Systems/Atari%205200.md)**   |  **[7800](https://github.com/EmulatorJS/EmulatorJS/blob/main/docs/Systems/Atari%207800.md)**   |  **[Lynx](https://github.com/EmulatorJS/EmulatorJS/blob/main/docs/Systems/Atari%20Lynx.md)**   |  **[Jaguar](https://github.com/EmulatorJS/EmulatorJS/blob/main/docs/Systems/Atari%20Jaguar.md)**\n\n### [](https://github.com/EmulatorJS/EmulatorJS#other)Other\n\n**[TurboGrafs 16 PC Engine](https://github.com/EmulatorJS/EmulatorJS/blob/main/docs/Systems/TurboGrafs%2016-PC%20Engine.md)**   |  **[WanderSwan Color](https://github.com/EmulatorJS/EmulatorJS/blob/main/docs/Systems/WanderSwan-Color.md)**   |  **[Neo Geo Poket](https://github.com/EmulatorJS/EmulatorJS/blob/main/docs/Systems/Neo%20Geo%20Poket.md)**\n\n**[PlayStation](https://github.com/EmulatorJS/EmulatorJS/blob/main/docs/Systems/PlayStation.md)**   |  **[Arcade](https://github.com/EmulatorJS/EmulatorJS/blob/main/docs/Systems/Arcade.md)**   |  **[MSX](https://github.com/EmulatorJS/EmulatorJS/blob/main/docs/Systems/MSX.md)**   |  **[3DO](https://github.com/EmulatorJS/EmulatorJS/blob/main/docs/Systems/3DO.md)**   |  **[MAME 2003](https://github.com/EmulatorJS/EmulatorJS/blob/main/docs/Systems/MAME%202003.md)**",
+ "website": "https://emulatorjs.org/",
+ "source": "https://github.com/EmulatorJS/EmulatorJS",
+ "main_port": 8164,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8164",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  emulatorjs:\n    container_name: emulatorjs\n    image: lscr.io/linuxserver/emulatorjs:1.9.2\n    ports:\n      - ${APP_PORT}:80\n      - 8165:3000\n    volumes:\n      - ${APP_DATA_DIR}/data/emulatorjs-config:/config\n      - ${APP_DATA_DIR}/data/emulatorjs:/data\n    environment:\n      - TZ=${TZ}\n    restart: unless-stopped\n"
+}

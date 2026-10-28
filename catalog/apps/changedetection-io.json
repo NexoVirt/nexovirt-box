@@ -1,0 +1,31 @@
+{
+ "id": "changedetection-io",
+ "name": "Changedetection.io",
+ "version": "902d7df0205f5c92b6f18b3f56a99e24d451ec5803cd2b231bb292b77e074424",
+ "category": "Home",
+ "tagline": "Provides free, open-source web page monitoring, notification and change detection.",
+ "icon": "https://cdn.jsdelivr.net/gh/linuxserver/docker-templates@master/linuxserver.io/img/changedetection-icon.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Changedetection.io provides free, open-source web page monitoring, notification and change detection.",
+ "main_port": 5000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "5000",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: linuxserver/changedetection.io:0.60.9@sha256:902d7df0205f5c92b6f18b3f56a99e24d451ec5803cd2b231bb292b77e074424\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n      BASE_URL: ''\n      PLAYWRIGHT_DRIVER_URL: ''\n    ports:\n      - target: 5000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

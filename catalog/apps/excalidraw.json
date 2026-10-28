@@ -1,0 +1,32 @@
+{
+ "id": "excalidraw",
+ "name": "Excalidraw",
+ "version": "latest",
+ "category": "Utilities",
+ "tagline": "Online whiteboard collaboration made easy",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/excalidraw/metadata/logo.jpg",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "[![Excalidraw](https://camo.githubusercontent.com/4f7c4e56a82975f240dcad5358027bb3be228eac43e420b9e3eb6726925002ac/68747470733a2f2f657863616c69647261772e6e7963332e63646e2e6469676974616c6f6365616e7370616365732e636f6d2f676974687562253246457863616c69647261775f4769746875625f636f7665722e706e67)](https://excalidraw.com/)\n\n#### [](https://github.com/excalidraw/excalidraw?ref=noted#--excalidraw-editor---blog---documentation---excalidraw)[Excalidraw Editor](https://excalidraw.com) | [Blog](https://blog.excalidraw.com) | [Documentation](https://docs.excalidraw.com) | [Excalidraw+](https://plus.excalidraw.com)\n\n## [](https://github.com/excalidraw/excalidraw?ref=noted#----an-open-source-virtual-hand-drawn-style-whiteboard-----collaborative-and-end-to-end-encrypted-----)An open source virtual hand-drawn style whiteboard.  \nCollaborative and end-to-end encrypted.  \n\nCreate beautiful hand-drawn like diagrams, wireframes, or whatever you like.\n\n## [](https://github.com/excalidraw/excalidraw?ref=noted#features)Features\n\nThe Excalidraw editor (npm package) supports:\n\n-   💯 Free \u0026 open-source.\n-   🎨 Infinite, canvas-based whiteboard.\n-   ✍️ Hand-drawn like style.\n-   🌓 Dark mode.\n-   🏗️ Customizable.\n-   📷 Image support.\n-   😀 Shape libraries support.\n-   👅 Localization (i18n) support.\n-   🖼️ Export to PNG, SVG \u0026 clipboard.\n-   💾 Open format - export drawings as an `.excalidraw` json file.\n-   ⚒️ Wide range of tools - rectangle, circle, diamond, arrow, line, free-draw, eraser...\n-   ➡️ Arrow-binding \u0026 labeled arrows.\n-   🔙 Undo / Redo.\n-   🔍 Zoom and panning support.",
+ "website": "https://excalidraw.com/",
+ "source": "https://github.com/excalidraw/excalidraw",
+ "main_port": 8172,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8172",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  excalidraw:\n    container_name: excalidraw\n    image: excalidraw/excalidraw:latest\n    ports:\n      - ${APP_PORT}:80\n    restart: unless-stopped\n"
+}

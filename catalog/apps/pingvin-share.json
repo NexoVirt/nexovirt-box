@@ -1,0 +1,37 @@
+{
+ "id": "pingvin-share",
+ "name": "Pingvin-Share",
+ "version": "latest",
+ "category": "Productivity",
+ "tagline": "Self-hosted file sharing with a modern web interface",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Pingvin-Share/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "Pingvin-Share is a self-hosted file sharing application compatible with Nextcloud apps, offering a modern and intuitive web interface. It enables users to securely store, organize, and share files without relying on external cloud services. The application supports multiple authentication methods and provides features such as share links, user accounts, and a responsive interface.\n\n**Key features:**\n- Modern, responsive web interface\n- User accounts with a permission system\n- Secure share links for files\n- Drag-and-drop file upload\n- Password-protected shares\n- Multiple authentication methods\n- Docker-based deployment for easy installation\n\n**Learn more:**\n- [Pingvin-Share GitHub](https://github.com/stonith404/pingvin-share)",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Pingvin-Share/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Pingvin-Share/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Pingvin-Share/screenshot-3.png"
+ ],
+ "website": "https://stonith404.github.io/pingvin-share/",
+ "main_port": 3410,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3410",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  pingvin-share:\n    image: stonith404/pingvin-share\n    restart: unless-stopped\n    ports:\n      - target: 3000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    environment:\n      TRUST_PROXY: false\n    deploy:\n      resources:\n        reservations:\n          memory: 256M\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/data\n        target: /opt/app/backend/data\n      - type: bind\n        source: ${APP_DATA_DIR}/images\n        target: /opt/app/frontend/public/img\n"
+}

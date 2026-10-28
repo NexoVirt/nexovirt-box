@@ -1,0 +1,52 @@
+{
+ "id": "haven",
+ "name": "Haven",
+ "version": "latest",
+ "category": "Social",
+ "tagline": "Self-hostable private blogging.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/haven/metadata/logo.jpg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "[Haven](https://havenweb.org) is a private blog application built with Ruby on Rails. Write what you want, create accounts for people you want to share with, keep up with each other using built-in RSS.\n\nTry out a live demo at https://havenweb.org/demo.html\n\nThe following are some motivating philosophies:\n\n* Open-source. MIT License\n* Privacy-first.  This is for sharing with friends and family, not commercial endevors.  If you want a blog for your company, you probably want to use WordPress or Ghost instead.\n* Easy to use.  Built-in web interface for managing users, customizing the blog, and writing/editing posts with markdown and live-preview.\n* Low-bandwidth friendly.  Images get downscaled to reduce page load times.  No javascript frameworks.  No ads or trackers.\n* Customizable.  Add custom CSS or fonts.\n* No spam. There is no self-signup for users so there is no place for unauthorized users to impact your life.\n* Media support for images, videos, and audio.\n* Private RSS feeds for your friends to follow you.\n* Build-in RSS reader to follow your favorite blogs.",
+ "website": "https://havenweb.org",
+ "source": "https://github.com/havenweb/haven",
+ "main_port": 8130,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8130",
+   "required": true
+  },
+  {
+   "key": "HAVEN_USER_EMAIL",
+   "label": "Haven Email",
+   "type": "text",
+   "required": true
+  },
+  {
+   "key": "HAVEN_USER_PASSWORD",
+   "label": "Haven Password",
+   "type": "password",
+   "required": true
+  },
+  {
+   "key": "HAVEN_DB_PASSWORD",
+   "label": "Haven DB password",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  haven:\n    image: ghcr.io/havenweb/haven:latest\n    container_name: haven\n    depends_on:\n      - haven-db\n    ports:\n      - ${APP_PORT}:3000\n    volumes:\n      - ${APP_DATA_DIR}/data/storage:/storage\n    environment:\n      - RAILS_ENV=production\n      - HAVEN_DB_HOST=haven-db\n      - HAVEN_DB_NAME=haven\n      - HAVEN_DB_ROLE=haven\n      - HAVEN_DB_PASSWORD=${HAVEN_DB_PASSWORD}\n      - HAVEN_USER_EMAIL=${HAVEN_USER_EMAIL}\n      - HAVEN_USER_PASS=${HAVEN_USER_PASSWORD}\n  haven-db:\n    image: postgres:13.2-alpine\n    container_name: haven-db\n    command: [\"postgres\", \"-c\", \"max_connections=1000\", \"-c\", \"synchronous_commit=off\", \"-c\", \"fsync=off\", \"-c\", \"full_page_writes=off\", \"-c\", \"max_wal_size=4GB\", \"-c\", \"checkpoint_timeout=30min\", \"-c\", \"wal_level=logical\"]\n    environment:\n      POSTGRES_HOST_AUTH_METHOD: trust\n      POSTGRES_USER: haven\n    volumes:\n      - ${APP_DATA_DIR}/data/db:/var/lib/postgresql/data\n"
+}

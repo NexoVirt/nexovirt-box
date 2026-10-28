@@ -1,0 +1,33 @@
+{
+ "id": "sabnzbd",
+ "name": "SABnzbd",
+ "version": "5.1.3",
+ "category": "Media",
+ "tagline": "Sabnzbd makes Usenet as simple and streamlined as possible by automating everything we can",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/sabnzbd/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# SABnzbd - The automated Usenet download tool\n\nSABnzbd is an Open Source Binary Newsreader written in Python.\n\nIt's totally free, easy to use, and works practically everywhere. SABnzbd makes Usenet as simple and streamlined as possible by automating everything we can. All you have to do is add an `.nzb`. SABnzbd takes over from there, where it will be automatically downloaded, verified, repaired, extracted and filed away with zero human interaction. SABnzbd offers an easy setup wizard and has self-analysis tools to verify your setup.\n\nIf you want to know more you can head over to our website: [https://sabnzbd.org](https://sabnzbd.org).\n\n## Folder Info\n\n| Root Folder                           | Container Folder |\n|---------------------------------------|------------------|\n| /runtipi/app-data/sabnzbd/data/config | /config          |\n| /runtipi/media/usenet                 | /media/usenet    |",
+ "website": "https://sabnzbd.org/",
+ "source": "https://github.com/sabnzbd/sabnzbd",
+ "main_port": 8168,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8168",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  sabnzbd:\n    image: lscr.io/linuxserver/sabnzbd:5.1.3\n    container_name: sabnzbd\n    ports:\n      - ${APP_PORT}:8080\n    volumes:\n      - ${APP_DATA_DIR}/data/config:/config\n      - ${ROOT_FOLDER_HOST}/media/usenet:/media/usenet\n    environment:\n      - PUID=1000\n      - PGID=1000\n      - TZ=${TZ}\n    restart: unless-stopped\n"
+}

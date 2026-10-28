@@ -23,7 +23,7 @@ func newTestApp(t *testing.T) (*App, http.Handler, string) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { store.db.Close() })
-	app := &App{store: store, limiter: newLimiter(store, 5, time.Minute), sampler: newSampler(time.Second), helper: &helperClient{socket: filepath.Join(dir, "none.sock")}}
+	app := &App{store: store, limiter: newLimiter(store, 5, time.Minute), sampler: newSampler(time.Second), helper: &helperClient{socket: filepath.Join(dir, "none.sock")}, catalog: newCatalogStore(dir, ""), jobs: newJobs()}
 	if err := app.ensureSetupToken(dir); err != nil {
 		t.Fatal(err)
 	}

@@ -1,0 +1,36 @@
+{
+ "id": "downtify",
+ "name": "Downtify",
+ "version": "2.7.0",
+ "category": "Media",
+ "tagline": "Download Spotify music with album art and metadata",
+ "icon": "https://raw.githubusercontent.com/henriquesebastiao/downtify/refs/heads/main/assets/casaos-icon.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "With Downtify you can download Spotify musics containing album art, track names, album title and other metadata about the songs. Just copy the Spotify link, whether it's a single song, an album, etc. As soon as your downloads are complete you will be notified!",
+ "screenshots": [
+  "https://raw.githubusercontent.com/henriquesebastiao/downtify/refs/heads/main/assets/screenshot-1.png",
+  "https://raw.githubusercontent.com/henriquesebastiao/downtify/refs/heads/main/assets/screenshot-2.png"
+ ],
+ "website": "https://downtify.henriquesebastiao.com",
+ "main_port": 8582,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8582",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  downtify:\n    environment:\n      PGID: $PGID\n      PUID: $PUID\n      TZ: $TZ\n    image: ghcr.io/henriquesebastiao/downtify:2.7.0\n    deploy:\n      resources:\n        reservations:\n          memory: \"2048M\"\n    ports:\n      - target: 8000\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: ${SHARED_DIR}/Downloads/downtify\n        target: /downloads\n      - type: bind\n        source: ${APP_DATA_DIR}/data\n        target: /data\n    container_name: downtify\n"
+}

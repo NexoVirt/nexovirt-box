@@ -1,0 +1,33 @@
+{
+ "id": "draw-io",
+ "name": "Draw.io",
+ "version": "32.6.1",
+ "category": "Utilities",
+ "tagline": "Diagramming and whiteboarding app.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/drawio/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## Draw.io\n\ndraw.io, this project, is a configurable diagramming/whiteboarding visualization application. draw.io is jointly owned and developed by JGraph Ltd and draw.io AG.\n\nAs well as running this project, we run a production-grade deployment of the diagramming interface at [https://app.diagrams.net](https://app.diagrams.net).",
+ "website": "https://www.drawio.com/",
+ "source": "https://github.com/jgraph/drawio",
+ "main_port": 8734,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8734",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  drawio:\n    image: jgraph/drawio:32.6.1\n    ports:\n      - ${APP_PORT}:8080\n    container_name: drawio\n    tty: true\n    stdin_open: true\n"
+}

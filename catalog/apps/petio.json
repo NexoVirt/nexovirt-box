@@ -1,0 +1,37 @@
+{
+ "id": "petio",
+ "name": "Petio",
+ "version": "1c5a9276a844f4284601cbe332905864950545ebdeaad74bacb9097ea4f4b333",
+ "category": "Media",
+ "tagline": "A third party companion app available to Plex server owners to allow their users to request, review and discover content.",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Petio/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "Petio is a third party companion app available to Plex server owners to allow their users to request, review and discover content. The app is built to appear instantly familiar and intuitive to even the most tech-agnostic users. Petio will help you manage requests from your users, connect to other third party apps such as Sonarr and Radarr, notify users when content is available and track request progress. Petio also allows users to discover media both on and off your server, quickly and easily find related content and review to leave their opinion for other users.\n\nPetio is an ongoing, forever free, always evolving project currently in alpha prototype stage and now available!",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Petio/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Petio/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Petio/screenshot-3.png"
+ ],
+ "website": "https://petio.tv",
+ "main_port": 7777,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "7777",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  petio:\n    image: ghcr.io/petio-team/petio@sha256:1c5a9276a844f4284601cbe332905864950545ebdeaad74bacb9097ea4f4b333\n    restart: unless-stopped\n    networks:\n      - petio-network\n    depends_on:\n      - mongo\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n    ports:\n      - target: 7777\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /app/api/config\n      - type: bind\n        source: ${APP_DATA_DIR}/logs\n        target: /app/logs\n    container_name: petio-petio\n  mongo:\n    image: mongo:4.4.22\n    restart: unless-stopped\n    hostname: mongo\n    networks:\n      - petio-network\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n    container_name: petio-mongo\nnetworks:\n  petio-network:\n    driver: bridge\n"
+}

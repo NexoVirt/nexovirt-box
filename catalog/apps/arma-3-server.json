@@ -1,0 +1,21 @@
+{
+ "id": "arma-3-server",
+ "name": "Arma 3 Server",
+ "version": "951fb164243d35d815259a9ddd2f9ce7b5375d366c665ee7c78e752717fde815",
+ "category": "Other",
+ "tagline": "Arma 3 Dedicated Server",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/steam.png",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Arma 3 Dedicated Server. Updates to the latest version every time it is restarted. Supports mission configs mods and headless clients.",
+ "main_port": 2302,
+ "scheme": "http",
+ "questions": [],
+ "compose": "services:\n  app:\n    image: ghcr.io/brettmayson/arma3server/arma3server:latest@sha256:951fb164243d35d815259a9ddd2f9ce7b5375d366c665ee7c78e752717fde815\n    container_name: arma3-server\n    ports:\n      - \"2302-2306:2302-2306/udp\"\n    volumes:\n      - ${APP_DATA_DIR}/mpmissions:/arma3/mpmissions\n      - ${APP_DATA_DIR}/configs:/arma3/configs\n      - ${APP_DATA_DIR}/mods:/arma3/mods\n      - ${APP_DATA_DIR}/servermods:/arma3/servermods\n      - ${APP_DATA_DIR}/addons:/arma3/addons\n      - ${APP_DATA_DIR}/steamcmd:/steamcmd\n    environment:\n      - STEAM_USER=${STEAM_USER:-}\n      - STEAM_PASSWORD=${STEAM_PASSWORD:-}\n      - PORT=2302\n      - ARMA_CONFIG=main.cfg\n      - ARMA_PROFILE=main\n      - ARMA_WORLD=empty\n      - ARMA_LIMITFPS=100\n      - ARMA_BINARY=./arma3server_x64\n      - ARMA_PARAMS=\n      - TZ=UTC\n    restart: unless-stopped\n"
+}

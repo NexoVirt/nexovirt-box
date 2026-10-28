@@ -1,0 +1,44 @@
+{
+ "id": "guacamole",
+ "name": "Guacamole",
+ "version": "1.6.0",
+ "category": "Utilities",
+ "tagline": "Clientless remote desktop gateway",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/guacamole/metadata/logo.jpg",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## Guacamole\n\nApache Guacamole is a clientless remote desktop gateway. It supports standard protocols like VNC, RDP, and SSH.\n\nWe call it clientless because no plugins or client software are required.\n\nThanks to HTML5, once Guacamole is installed on a server, all you need to access your desktops is a web browser.\n\n### Access your computers from anywhere\n\nBecause the Guacamole client is an HTML5 web application, use of your computers is not tied to any one device or location. As long as you have access to a web browser, you have access to your machines.\n\n### Keep your desktop in the cloud\n\nDesktops accessed through Guacamole need not physically exist. With both Guacamole and a desktop operating system hosted in the cloud, you can combine the convenience of Guacamole with the resilience and flexibility of cloud computing.\n\n### Free and open source\n\nApache Guacamole is and will always be free and open source software. It is licensed under the Apache License, Version 2.0, and is actively maintained by a community of developers that use Guacamole to access their own development environments.\n\nWe feel this sets us apart from other remote desktop solutions, and gives us a distinct advantage.\n\n### Built on a well-documented API\n\nApache Guacamole is built on its own stack of core APIs which are thoroughly documented, including basic tutorials and conceptual overviews in the online manual. These APIs allow Guacamole to be tightly integrated into other applications, whether they be open source or proprietary.\n\n### Community and commercially supported\n\nCommunity support for Apache Guacamole is available through the project's public mailing lists. Dedicated commercial support is also available through third party companies.",
+ "website": "https://guacamole.apache.org",
+ "source": "https://github.com/apache/guacamole-server",
+ "main_port": 8854,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8854",
+   "required": true
+  },
+  {
+   "key": "GUACAMOLE_DB_PASSWORD",
+   "label": "Guacamole postgres password",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "GUACAMOLE_TOTP_ENABLED",
+   "label": "Enable TOTP",
+   "type": "boolean"
+  }
+ ],
+ "compose": "services:\n  guacamole:\n    container_name: guacamole\n    image: guacamole/guacamole:1.6.0\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:8080\n    environment:\n      - TOTP_ENABLED=${GUACAMOLE_TOTP_ENABLED}\n      - POSTGRESQL_DATABASE=guacamole\n      - POSTGRESQL_USER=guacamole\n      - POSTGRESQL_PASSWORD=${GUACAMOLE_DB_PASSWORD}\n      - GUACD_HOSTNAME=guacamole-guacd\n      - POSTGRESQL_HOSTNAME=guacamole-db\n  guacamole-guacd:\n    container_name: guacamole-guacd\n    image: guacamole/guacd:1.6.0\n    restart: unless-stopped\n  guacamole-db:\n    container_name: guacamole-db\n    image: postgres:14\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/data/db:/var/lib/postgresql/data\n      - ${APP_DATA_DIR}/data/init/sql:/config/sql\n      - ${APP_DATA_DIR}/data/init/init-guacamole.sh:/docker-entrypoint-initdb.d/init-guacamole.sh\n    environment:\n      - POSTGRES_DB=guacamole\n      - POSTGRES_USER=guacamole\n      - POSTGRES_PASSWORD=${GUACAMOLE_DB_PASSWORD}\n"
+}

@@ -1,0 +1,36 @@
+{
+ "id": "virtual-machine-manager",
+ "name": "Virtual Machine Manager",
+ "version": "latest",
+ "category": "Developer",
+ "tagline": "A GTK Broadway web UI for libvirt and virt-manager.",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/VirtualMachineManager/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "A GTK Broadway web UI for libvirt and virt-manager, to run virtual machines using QEMU/KVM.",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/VirtualMachineManager/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/VirtualMachineManager/screenshot-2.png"
+ ],
+ "website": "https://virt-manager.org",
+ "main_port": 8185,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8185",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  virt-manager:\n    restart: always\n    devices:\n      - /dev/kvm:/dev/kvm\n    environment:\n      DARK_MODE: \"false\"\n      HOSTS: \"['qemu:///system']\"\n    image: mber5/virt-manager:latest\n    network_mode: bridge\n    ports:\n      - target: 80\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: /var/run/libvirt/libvirt-sock\n        target: /var/run/libvirt/libvirt-sock\n      - type: bind\n        source: /var/lib/libvirt\n        target: /var/lib/libvirt\n      - type: bind\n        source: ${SHARED_DIR}/Downloads\n        target: ${SHARED_DIR}/Downloads\n    container_name: virt-manager\n"
+}

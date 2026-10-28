@@ -1,0 +1,36 @@
+{
+ "id": "cantinarr",
+ "name": "Cantinarr",
+ "version": "4d061d80aa66f691b2071b43dafd93b604607effa3138862078a341f973e55d4",
+ "category": "Media",
+ "tagline": "Media requests and server management in one app",
+ "icon": "https://raw.githubusercontent.com/windoze95/cantinarr/main/app/web/icons/Icon-512.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Cantinarr brings media requests and server management into one app. Household members browse and request movies, shows, books, and music, follow downloads, and get notified when content is ready. Admins manage Radarr, Sonarr, Chaptarr, Lidarr, and download clients, review approvals, and investigate stuck downloads from a phone or browser. Connect the services you use after setup. AI is optional: an assistant can help with library questions and requests, while the repair agent investigates persistent download problems and proposes actions for an administrator to review. Cantinarr also offers MCP tools for authorized clients. Service credentials stay server-side and are encrypted at rest.",
+ "screenshots": [
+  "https://raw.githubusercontent.com/windoze95/cantinarr-unraid/main/screenshots/01-discover.jpg",
+  "https://raw.githubusercontent.com/windoze95/cantinarr-unraid/main/screenshots/05-phone-discover.jpg",
+  "https://raw.githubusercontent.com/windoze95/cantinarr-unraid/main/screenshots/04-request.png"
+ ],
+ "main_port": 8585,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8585",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  app:\n    image: ghcr.io/windoze95/cantinarr:1.0.0@sha256:4d061d80aa66f691b2071b43dafd93b604607effa3138862078a341f973e55d4\n    container_name: big-bear-cantinarr\n    restart: unless-stopped\n    ports:\n      - \"${APP_PORT}:8585\"\n    environment:\n      CANTINARR_PUSH_GATEWAY_URL: https://push.cantinarr.com\n      CANTINARR_ARR_CALLBACK_URL: \"\"\n    volumes:\n      - ${APP_DATA_DIR}/config:/config\n    healthcheck:\n      test: [\"CMD\", \"wget\", \"--no-verbose\", \"--tries=1\", \"--spider\", \"http://127.0.0.1:8585/api/health\"]\n      interval: 30s\n      timeout: 5s\n      retries: 5\n      start_period: 15s\n    networks:\n      - big_bear_cantinarr_network\nnetworks:\n  big_bear_cantinarr_network:\n    driver: bridge\n"
+}

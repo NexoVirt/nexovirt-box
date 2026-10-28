@@ -1,0 +1,66 @@
+{
+ "id": "speedtest-tracker",
+ "name": "Speedtest Tracker",
+ "version": "1.15.1",
+ "category": "Utilities",
+ "tagline": "Internet performance tracking application.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/speedtest-tracker/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Speedtest Tracker\n\nSpeedtest Tracker is a self-hosted internet performance monitoring application that runs regular tests against Ookla's Speedtest service and stores the results over time. It helps you build a history of your connection quality so you can detect slowdowns, outages, or periods where your ISP is not delivering the expected speeds.\n\n## About\n\n![Speedtest Tracker Dashboard](https://F3367574858-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2Fvtb3s6TB12XY9iIx8YyJ%2Fuploads%2Fgit-blob-2896fa80b8d3f90cc8c4c495b8b9793af5f62244%2Fimage%20(2).png?alt=media\u0026width=768\u0026dpr=4\u0026quality=100\u0026sign=d549885e\u0026sv=1)\n\nA self-hosted app to check your internet speed using Ookla's Speedtest service and track its history. Built using Laravel and the Speedtest CLI.\n\n\nOfficial documentation is available here: [https://docs.speedtest-tracker.dev/](https://docs.speedtest-tracker.dev/)\n\n## Configuration\n\n### Authentication\n\nDuring the first start of the application, a default admin account is created.\n\n| Username | Password |\n| --- | --- |\n| `admin@example.com` | `password` |\n\nThese default credentials should be changed after the first login.\n\n***\n\n### SPEEDTEST_APP_KEY\n\nThis is the Laravel application key used by Speedtest Tracker to encrypt and decrypt sensitive data such as sessions and other internal application data. It is required for the application to start correctly. If the key is missing, malformed, or has the wrong length, the app may fail with a `500` error such as `Unsupported cipher or incorrect key length`.\n\n**Important:** this value must be a valid Base64 application key prefixed with `base64:`. Do not use a custom string, do not shorten it, and do not force a fixed character count.\n\nGenerate it with one of these commands:\n\n```bash\necho \"base64:$(openssl rand -base64 32 2\u003e/dev/null)\"\n```\n\nExample:\n\n```text\nbase64:5gExIXkD//VXbU/8wZ8xcF2uTHnvrDd6QTrTDZPWDdQ=\n```\n\n***\n\n\n### SPEEDTEST_SCHEDULE\n\nThis field defines how often Speedtest Tracker runs tests. It uses standard cron syntax. The default value `30 * * * *` runs a test once every hour at minute 30.\n\nExamples:\n- `*/30 * * * *` = every 30 minutes\n- `0 * * * *` = every hour\n- `0 */6 * * *` = every 6 hours\n\nA helpful reference is [Crontab Guru](https://crontab.guru).\n\n***\n\n### SPEEDTEST_SERVERS\n\nThis optional field allows you to force one or more specific Speedtest server IDs, separated by commas. If left empty, Speedtest Tracker will automatically select a server.\n\nTo find server IDs, you can use either of these official/public endpoints:\n\n1. Open [https://www.speedtest.net/api/js/servers](https://www.speedtest.net/api/js/servers) to browse the server list referenced in the Speedtest Tracker documentation.\n2. Or open [https://www.speedtest.net/speedtest-servers-static.php](https://www.speedtest.net/speedtest-servers-static.php), which exposes a public XML list of servers and their attributes including `id`.\n3. Search for a server near your location or preferred provider.\n4. Copy the server `id` value.\n5. Enter one or more IDs separated by commas, for example: `1234,5678,9012`.",
+ "website": "https://docs.speedtest-tracker.dev/",
+ "source": "https://github.com/alexjustesen/speedtest-tracker",
+ "main_port": 8211,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8211",
+   "required": true
+  },
+  {
+   "key": "SPEEDTEST_TRACKER_DB_PASSWORD",
+   "label": "SPEEDTEST_TRACKER_DB_PASSWORD",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "SPEEDTEST_APP_KEY",
+   "label": "Application Key",
+   "type": "text",
+   "hint": "Generate an app key at https://speedtest-tracker.dev/",
+   "required": true,
+   "min": 51,
+   "max": 51
+  },
+  {
+   "key": "SPEEDTEST_SCHEDULE",
+   "label": "Speedtest Schedule (cron format)",
+   "type": "text",
+   "hint": "https://crontab.guru is a good resource",
+   "default": "30 * * * *",
+   "min": 9,
+   "max": 100
+  },
+  {
+   "key": "SPEEDTEST_SERVERS",
+   "label": "Speedtest Servers (comma-separated IDs)",
+   "type": "text",
+   "hint": "Convenient-to-you speedtest servers may be found at https://speedtest.net/speedtest-servers-static.php",
+   "min": 6,
+   "max": 100
+  }
+ ],
+ "compose": "services:\n  speedtest-tracker:\n    image: lscr.io/linuxserver/speedtest-tracker:1.15.1\n    container_name: speedtest-tracker\n    environment:\n      - PUID=1000\n      - PGID=1000\n      - DB_CONNECTION=pgsql\n      - DB_HOST=speedtest-tracker-db\n      - DB_PORT=5432\n      - DB_DATABASE=speedtest-tracker\n      - DB_USERNAME=tipi\n      - DB_PASSWORD=${SPEEDTEST_TRACKER_DB_PASSWORD}\n      - SPEEDTEST_SCHEDULE=${SPEEDTEST_SCHEDULE:-'30 * * * *'}\n      - SPEEDTEST_SERVERS=${SPEEDTEST_SERVERS:-''}\n      - TZ=${TZ}\n      - APP_TIMEZONE=${TZ}\n      - DISPLAY_TIMEZONE=${TZ}\n      - APP_KEY=${SPEEDTEST_APP_KEY}\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/data/speedtest-tracker/config:/config\n    ports:\n      - ${APP_PORT}:80\n      - '8212:443'\n    depends_on:\n      - speedtest-tracker-db\n  speedtest-tracker-db:\n    container_name: speedtest-tracker-db\n    image: postgres:15\n    restart: unless-stopped\n    environment:\n      - POSTGRES_USER=tipi\n      - POSTGRES_PASSWORD=${SPEEDTEST_TRACKER_DB_PASSWORD}\n      - POSTGRES_DB=speedtest-tracker\n    volumes:\n      - ${APP_DATA_DIR}/data/postgres:/var/lib/postgresql/data\n"
+}

@@ -1,0 +1,32 @@
+{
+ "id": "planning-poker",
+ "name": "Planning Poker",
+ "version": "1.2.1",
+ "category": "Developer",
+ "tagline": "Online planning poker for scrum master.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/planning-poker/metadata/logo.jpg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "This application is intended as a simplified and self-hostable alternative to\n[Planning Poker Online](https://planningpokeronline.com/).\n\nIt features:\n\n* Multiple deck types: Fibonacci, modified Fibonacci, T-Shirt sizes, powers of 2 and trust vote (0 to 5)\n* Spectator mode\n* Responsive layout\n* Vote summary\n* Translations _(English, French, German, Italian and Polish. [Contributions welcome!](#im-a-user-and-want-to-contribute-translations))_\n\nIt does not have fancy features like issues management, Jira integration or timers.",
+ "source": "https://github.com/axeleroy/self-host-planning-poker",
+ "main_port": 8880,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8880",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  planning-poker:\n    image: axeleroy/self-host-planning-poker:1.2.1\n    container_name: planning-poker\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:8000\n    volumes:\n      - ${APP_DATA_DIR}/data:/data\n    healthcheck:\n      test: wget --no-verbose --tries=1 --spider http://127.0.0.1:8000\n      interval: 10s\n      timeout: 5s\n      retries: 5\n      start_period: 30s\n"
+}

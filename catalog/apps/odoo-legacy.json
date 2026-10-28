@@ -1,0 +1,39 @@
+{
+ "id": "odoo-legacy",
+ "name": "Odoo (Legacy)",
+ "version": "dd9013e669caaa23d26765dc55814655eaeecca7cfc2c265dbabae913bce22fd",
+ "category": "Finance",
+ "tagline": "Open-source business management software with modular applications for streamlined operations.",
+ "icon": "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps/apps/odoo/logo.jpg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Open-source business management software suite designed to streamline various aspects of business operations. With its modular structure, users can choose and integrate specific applications such as accounting, inventory, and sales. Odoo provides a user-friendly interface, scalability for businesses of all sizes, and is available in both community (free) and enterprise editions. Its integrated approach and customization options make it a popular choice for comprehensive ERP (Enterprise Resource Planning) solutions.",
+ "main_port": 8069,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8069",
+   "required": true
+  },
+  {
+   "key": "SECRET_PASSWORD",
+   "label": "Password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-odoo application\nservices:\n  # Service name: big-bear-odoo\n  # This section defines the main Odoo service\n  big-bear-odoo:\n    # Name of the container\n    container_name: big-bear-odoo # Specifies the container instance name for identification\n    # Image to be used for the container\n    image: odoo:19@sha256:dd9013e669caaa23d26765dc55814655eaeecca7cfc2c265dbabae913bce22fd # Docker image for Odoo version 17\n    # Container restart policy\n    restart: unless-stopped # Restart policy to ensure service recovery\n    # User to run the container as\n    user: root # Specifies running the container as root\n    # Volumes to be mounted to the container\n    volumes:\n      - ${APP_DATA_DIR}/data/etc:/etc/odoo # Mounts Odoo configuration files\n      - ${APP_DATA_DIR}/data/addons:/mnt/extra-addons # Mounts additional Odoo addons\n    # Ports mapping between host and container\n    ports:\n      - \"${APP_PORT}:8069\" # Exposes port 8069 on host and container for web access\n    # Environment variables\n    environment:\n      - HOST=big-bear-odoo-db # Database host\n      - USER=odoo # Database username\n      - PASSWORD=${SECRET_PASSWORD} # Database password\n    # Networks to be attached to the container\n    networks:\n      - big_bear_odoo_network # Specifies network attachment for internal communication\n  # Database service for Odoo\n  big-bear-odoo-db:\n    container_name: big-bear-odoo-db # Database container name\n    image: postgres:15@sha256:bcab099bfaab33333a73a2ebe8c1d615c9f4c2402dd43452f989a36c6da9a5ba # PostgreSQL version 15 Docker image\n    user: root # Runs as root user\n    environment:\n      - POSTGRES_USER=odoo # Database user\n      - POSTGRES_PASSWORD=${SECRET_PASSWORD} # Database password\n      - POSTGRES_DB=postgres # Database name\n    restart: unless-stopped # Restart policy for the database\n    volumes:\n      - ${APP_DATA_DIR}/data/postgresql:/var/lib/postgresql/data # Mounts PostgreSQL data directory\n    networks:\n      - big_bear_odoo_network # Attached network for internal communication\n# Network definition for the big-bear-odoo application\nnetworks:\n  big_bear_odoo_network:\n    driver: bridge # Specifies network driver as bridge\n"
+}

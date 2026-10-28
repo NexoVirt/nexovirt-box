@@ -1,0 +1,111 @@
+{
+ "id": "rallly",
+ "name": "Rallly",
+ "version": "4.16.3",
+ "category": "Utilities",
+ "tagline": "Scheduling and collaboration tool",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/rallly/metadata/logo.jpg",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "\u003cdiv align=\"center\"\u003e\n  \n\u003cimg src=\"https://raw.githubusercontent.com/lukevella/rallly/d36c363f60ffdbc7679bf0ae5c6cd74a48a79b47/assets/images/logo-color.svg\" width=\"200px\" alt=\"Rallly\" /\u003e\n\n\u003c/div\u003e\n\u003cbr /\u003e\n\n\u003cimg src=\"https://raw.githubusercontent.com/lukevella/rallly/main/assets/images/splash.png\" alt=\"Rallly\" /\u003e\n\n## Description\nSchedule group meetings with friends, colleagues and teams. Create meeting polls to find the best date and time to organize an event based on your participants' availability. Save time and avoid back-and-forth emails.\n\nBuilt with [Next.js](https://github.com/vercel/next.js/), [Prisma](https://github.com/prisma/prisma), [tRPC](https://github.com/trpc/trpc) \u0026 [TailwindCSS](https://github.com/tailwindlabs/tailwindcss)\n\n## Runtipi configuration variables\n\n| Label           | Tipi ENV name           | Type     | Description                                                                                                                                      | Required |\n|-----------------|-------------------------|----------|--------------------------------------------------------------------------------------------------------------------------------------------------|----------|\n| NoReply Email   | RALLLY_NOREPLY_EMAIL    | email    | The email address that will be used to send emails. If not set, SUPPORT_EMAIL will be used instead.                                              | NO       |\n| Support Email   | RALLLY_SUPPORT_EMAIL    | email    | The email of whoever is managing this instance in case a user needs support.                                                                     | YES      |\n| Allowed Emails  | RALLLY_ALLOWED_EMAILS   | text     | Comma separated list of email addresses that are allowed to register and login. You can use wildcard syntax to match a range of email addresses. | NO       |\n| SMTP Host       | RALLLY_SMTP_HOST        | text     | The host address of your SMTP server                                                                                                             | YES      |\n| SMTP Port       | RALLLY_SMTP_PORT        | number   | The port of your SMTP server                                                                                                                     | YES      |\n| SMTP Secure     | RALLLY_SMTP_SECURE      | boolean  | Set to \"true\" if SSL is enabled for your SMTP connection                                                                                         | NO        |\n| SMTP Enable TLS | RALLLY_SMTP_TLS_ENABLED | boolean  | Enable TLS for your SMTP connection                                                                                                              | NO        |\n| SMTP User       | RALLLY_SMTP_USER        | text     | The username (if auth is enabled on your SMTP server)                                                                                            | NO       |\n| SMTP Password   | RALLLY_SMTP_PWD         | password | The password (if auth is enabled on your SMTP server)                                                                                            | NO       |",
+ "website": "https://rallly.co",
+ "source": "https://github.com/lukevella/rallly",
+ "main_port": 8208,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8208",
+   "required": true
+  },
+  {
+   "key": "RALLLY_DB_PASSWORD",
+   "label": "Database Password",
+   "type": "password",
+   "min": 32,
+   "max": 32,
+   "generate": true
+  },
+  {
+   "key": "RALLLY_SECRET_KEY",
+   "label": "Secret key for User session",
+   "type": "password",
+   "min": 32,
+   "max": 32,
+   "generate": true
+  },
+  {
+   "key": "RALLLY_NOREPLY_EMAIL",
+   "label": "NoReply Email",
+   "type": "email",
+   "min": 3,
+   "max": 50
+  },
+  {
+   "key": "RALLLY_SUPPORT_EMAIL",
+   "label": "Support Email",
+   "type": "email",
+   "required": true,
+   "min": 3,
+   "max": 50
+  },
+  {
+   "key": "RALLLY_ALLOWED_EMAILS",
+   "label": "Allowed Emails",
+   "type": "text",
+   "hint": "Comma separated list of email addresses that are allowed to register and login. You can use wildcard syntax to match a range of email addresses.",
+   "min": 3,
+   "max": 250
+  },
+  {
+   "key": "RALLLY_SMTP_HOST",
+   "label": "SMTP Host",
+   "type": "text",
+   "required": true,
+   "min": 3,
+   "max": 50
+  },
+  {
+   "key": "RALLLY_SMTP_PORT",
+   "label": "SMTP Port",
+   "type": "number",
+   "required": true,
+   "min": 3,
+   "max": 6
+  },
+  {
+   "key": "RALLLY_SMTP_SECURE",
+   "label": "SMTP Secure",
+   "type": "boolean"
+  },
+  {
+   "key": "RALLLY_SMTP_TLS_ENABLED",
+   "label": "SMTP Enable TLS",
+   "type": "boolean"
+  },
+  {
+   "key": "RALLLY_SMTP_USER",
+   "label": "SMTP User",
+   "type": "text",
+   "min": 3,
+   "max": 50
+  },
+  {
+   "key": "RALLLY_SMTP_PWD",
+   "label": "SMTP Password",
+   "type": "password",
+   "min": 3,
+   "max": 50
+  }
+ ],
+ "compose": "services:\n  rallly:\n    container_name: rallly\n    image: lukevella/rallly:4.16.3\n    restart: always\n    depends_on:\n      rallly_db:\n        condition: service_healthy\n    ports:\n      - ${APP_PORT}:3000\n    environment:\n      - DATABASE_URL=postgres://tipi:${RALLLY_DB_PASSWORD}@rallly_db:5432/rallly\n      - SECRET_PASSWORD=${RALLLY_SECRET_KEY}\n      - NEXT_PUBLIC_BASE_URL=${APP_PROTOCOL:-http}://${APP_DOMAIN}\n      - NOREPLY_EMAIL=${RALLLY_NOREPLY_EMAIL}\n      - SUPPORT_EMAIL=${RALLLY_SUPPORT_EMAIL}\n      - SMTP_HOST=${RALLLY_SMTP_HOST}\n      - SMTP_PORT=${RALLLY_SMTP_PORT}\n      - SMTP_SECURE=${RALLLY_SMTP_SECURE}\n      - SMTP_USER=${RALLLY_SMTP_USER}\n      - SMTP_PWD=${RALLLY_SMTP_PWD}\n      - SMTP_TLS_ENABLED=${RALLLY_SMTP_TLS_ENABLED}\n      - ALLOWED_EMAILS=${RALLLY_ALLOWED_EMAILS}\n  rallly_db:\n    container_name: rallly_db\n    image: postgres:14\n    restart: always\n    volumes:\n      - ${APP_DATA_DIR}/data/db:/var/lib/postgresql/data\n    environment:\n      - POSTGRES_PASSWORD=${RALLLY_DB_PASSWORD}\n      - POSTGRES_DB=rallly\n      - POSTGRES_USER=tipi\n    healthcheck:\n      test:\n        - CMD-SHELL\n        - pg_isready -U tipi\n      interval: 5s\n      timeout: 5s\n      retries: 5\n"
+}

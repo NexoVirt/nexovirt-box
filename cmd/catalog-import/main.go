@@ -1,0 +1,713 @@
+// catalog-import builds Box's signed app catalog from local checkouts of the Runtipi,
+// CasaOS and BigBear app stores. It runs offline on the build machine, never on a Box.
+//
+//	go run ./cmd/catalog-import -runtipi ../stores/runtipi-appstore -casaos ../stores/CasaOS-AppStore \
+//	    -bigbear ../stores/big-bear-casaos -out catalog -key keys/catalog-dev.key
+package main
+
+import (
+	"bytes"
+	"crypto/ed25519"
+	"encoding/base64"
+	"encoding/json"
+	"flag"
+	"fmt"
+	"log"
+	"os"
+	"path/filepath"
+	"regexp"
+	"sort"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/nexovirt/box/internal/catalog"
+	"gopkg.in/yaml.v3"
+)
+
+var stores = map[string]catalog.Attribution{
+	"runtipi": {Store: "Runtipi App Store", URL: "https://github.com/runtipi/runtipi-appstore", License: "GPL-3.0"},
+	"casaos":  {Store: "CasaOS App Store", URL: "https://github.com/IceWhaleTech/CasaOS-AppStore", License: "Apache-2.0"},
+	"bigbear": {Store: "BigBearCasaOS", URL: "https://github.com/bigbeartechworld/big-bear-casaos", License: "MIT"},
+}
+
+type stats struct {
+	imported, duplicate, privileged, broken map[string]int
+}
+
+func main() {
+	runtipi := flag.String("runtipi", "", "checkout of runtipi/runtipi-appstore")
+	casaos := flag.String("casaos", "", "checkout of IceWhaleTech/CasaOS-AppStore")
+	bigbear := flag.String("bigbear", "", "checkout of bigbeartechworld/big-bear-casaos")
+	out := flag.String("out", "catalog", "output directory")
+	keyPath := flag.String("key", "keys/catalog-dev.key", "base64 Ed25519 seed")
+	allowPriv := flag.Bool("allow-privileged", false, "also import apps that need privileged mode or the host network")
+	flag.Parse()
+
+	st := stats{map[string]int{}, map[string]int{}, map[string]int{}, map[string]int{}}
+	var apps []*catalog.App
+	seen := map[string]bool{}
+	add := func(store string, a *catalog.App, err error) {
+		if err != nil {
+			if err == errPrivileged {
+				st.privileged[store]++
+			} else {
+				st.broken[store]++
+				log.Printf("%s: %v", store, err)
+			}
+			return
+		}
+		if a == nil {
+			return
+		}
+		k := normName(a.Name)
+		if seen[k] {
+			st.duplicate[store]++
+			return
+		}
+		seen[k] = true
+		a.Attribution = stores[store]
+		apps = append(apps, a)
+		st.imported[store]++
+	}
+
+	if *runtipi != "" {
+		dirs, _ := filepath.Glob(filepath.Join(*runtipi, "apps", "*"))
+		sort.Strings(dirs)
+		for _, d := range dirs {
+			a, err := importRuntipi(d, *allowPriv)
+			add("runtipi", a, err)
+		}
+	}
+	for _, s := range []struct{ store, root string }{{"casaos", *casaos}, {"bigbear", *bigbear}} {
+		if s.root == "" {
+			continue
+		}
+		dirs, _ := filepath.Glob(filepath.Join(s.root, "Apps", "*"))
+		sort.Strings(dirs)
+		for _, d := range dirs {
+			a, err := importCasa(d, *allowPriv)
+			add(s.store, a, err)
+		}
+	}
+
+	// Unique ids.
+	used := map[string]bool{}
+	for _, a := range apps {
+		id := slug(a.Name)
+		for n := 2; used[id]; n++ {
+			id = fmt.Sprintf("%s-%d", slug(a.Name), n)
+		}
+		used[id] = true
+		a.ID = id
+	}
+	sort.Slice(apps, func(i, j int) bool { return apps[i].ID < apps[j].ID })
+
+	if err := write(*out, *keyPath, apps, map[string]string{"runtipi": *runtipi, "casaos": *casaos, "bigbear": *bigbear}); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("catalog: %d apps\n", len(apps))
+	for _, s := range []string{"runtipi", "casaos", "bigbear"} {
+		fmt.Printf("  %-8s imported %3d  duplicate %3d  privileged/host %2d  unreadable %2d\n", s, st.imported[s], st.duplicate[s], st.privileged[s], st.broken[s])
+	}
+}
+
+func write(out, keyPath string, apps []*catalog.App, roots map[string]string) error {
+	seedB64, err := os.ReadFile(keyPath)
+	if err != nil {
+		return err
+	}
+	seed, err := base64.StdEncoding.DecodeString(strings.TrimSpace(string(seedB64)))
+	if err != nil || len(seed) != ed25519.SeedSize {
+		return fmt.Errorf("bad key in %s", keyPath)
+	}
+	priv := ed25519.NewKeyFromSeed(seed)
+	if !bytes.Equal(priv.Public().(ed25519.PublicKey), catalog.PublicKey) {
+		return fmt.Errorf("the key in %s does not match internal/catalog/key.go", keyPath)
+	}
+	os.RemoveAll(filepath.Join(out, "apps"))
+	if err := os.MkdirAll(filepath.Join(out, "apps"), 0o755); err != nil {
+		return err
+	}
+	idx := catalog.Index{Version: 1, GeneratedAt: time.Now().Unix()}
+	for _, a := range apps {
+		b, err := json.MarshalIndent(a, "", " ")
+		if err != nil {
+			return err
+		}
+		file := "apps/" + a.ID + ".json"
+		if err := os.WriteFile(filepath.Join(out, file), b, 0o644); err != nil {
+			return err
+		}
+		idx.Apps = append(idx.Apps, catalog.IndexEntry{Summary: a.Summary, File: file, SHA256: catalog.FileHash(b)})
+	}
+	raw, err := json.Marshal(idx)
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(out, "index.json"), raw, 0o644); err != nil {
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(out, "index.sig"), []byte(catalog.Sign(priv, raw)+"\n"), 0o644); err != nil {
+		return err
+	}
+	// License texts of the imported catalogs.
+	os.MkdirAll(filepath.Join(out, "LICENSES"), 0o755)
+	for store, root := range roots {
+		if root == "" {
+			continue
+		}
+		if b, err := os.ReadFile(filepath.Join(root, "LICENSE")); err == nil {
+			hdr := fmt.Sprintf("Apps imported from %s (%s), license %s.\n\n", stores[store].Store, stores[store].URL, stores[store].License)
+			os.WriteFile(filepath.Join(out, "LICENSES", store+".txt"), append([]byte(hdr), b...), 0o644)
+		}
+	}
+	return nil
+}
+
+// ---- Runtipi ----
+
+type runtipiConfig struct {
+	Name        string   `json:"name"`
+	Available   *bool    `json:"available"`
+	Port        int      `json:"port"`
+	ID          string   `json:"id"`
+	Version     string   `json:"version"`
+	Categories  []string `json:"categories"`
+	ShortDesc   string   `json:"short_desc"`
+	Description string   `json:"description"`
+	Source      string   `json:"source"`
+	Website     string   `json:"website"`
+	Arch        []string `json:"supported_architectures"`
+	Deprecated  bool     `json:"deprecated"`
+	FormFields  []struct {
+		Type        string `json:"type"`
+		Label       string `json:"label"`
+		Hint        string `json:"hint"`
+		Placeholder string `json:"placeholder"`
+		Default     any    `json:"default"`
+		Required    bool   `json:"required"`
+		Min         int    `json:"min"`
+		Max         int    `json:"max"`
+		EnvVariable string `json:"env_variable"`
+		Options     []struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"options"`
+	} `json:"form_fields"`
+}
+
+func importRuntipi(dir string, allowPriv bool) (*catalog.App, error) {
+	raw, err := os.ReadFile(filepath.Join(dir, "config.json"))
+	if err != nil {
+		return nil, nil // not an app folder
+	}
+	var c runtipiConfig
+	if err := json.Unmarshal(raw, &c); err != nil {
+		return nil, fmt.Errorf("%s: %v", dir, err)
+	}
+	if (c.Available != nil && !*c.Available) || c.Deprecated || c.Name == "" {
+		return nil, nil
+	}
+	compose, err := os.ReadFile(filepath.Join(dir, "docker-compose.yml"))
+	if err != nil {
+		return nil, fmt.Errorf("%s: no docker-compose.yml", filepath.Base(dir))
+	}
+	a := &catalog.App{
+		Summary: catalog.Summary{
+			Name:          c.Name,
+			Version:       c.Version,
+			Tagline:       firstNonEmpty(c.ShortDesc, c.Description),
+			Icon:          "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/" + filepath.Base(dir) + "/metadata/logo.jpg",
+			Architectures: c.Arch,
+		},
+		Description: c.Description,
+		Website:     c.Website,
+		Source:      c.Source,
+		MainPort:    c.Port,
+		Scheme:      "http",
+	}
+	if len(c.Categories) > 0 {
+		a.Category = category(c.Categories[0])
+	}
+	if md, err := os.ReadFile(filepath.Join(dir, "metadata", "description.md")); err == nil {
+		a.Description = strings.TrimSpace(string(md))
+	}
+	for _, f := range c.FormFields {
+		if f.EnvVariable == "" {
+			continue
+		}
+		q := catalog.Question{Key: f.EnvVariable, Label: f.Label, Hint: f.Hint, Placeholder: f.Placeholder,
+			Required: f.Required, Min: f.Min, Max: f.Max}
+		if f.Default != nil {
+			q.Default = fmt.Sprint(f.Default)
+		}
+		switch f.Type {
+		case "password":
+			q.Type = "password"
+		case "random":
+			q.Type, q.Generate, q.Required = "password", true, false
+			if q.Min == 0 {
+				q.Min = 32
+			}
+		case "number":
+			q.Type = "number"
+		case "email":
+			q.Type = "email"
+		case "boolean":
+			q.Type = "boolean"
+		case "fqdn", "fqdnip":
+			q.Type = "domain"
+		default:
+			q.Type = "text"
+		}
+		for _, o := range f.Options {
+			q.Options = append(q.Options, o.Value)
+		}
+		if len(q.Options) > 0 {
+			q.Type = "select"
+		}
+		a.Questions = append(a.Questions, q)
+	}
+	if err := processCompose(a, compose, "runtipi", 0, allowPriv); err != nil {
+		return nil, err
+	}
+	return a, nil
+}
+
+// ---- CasaOS / BigBear ----
+
+func importCasa(dir string, allowPriv bool) (*catalog.App, error) {
+	compose, err := os.ReadFile(filepath.Join(dir, "docker-compose.yml"))
+	if err != nil {
+		return nil, nil
+	}
+	var doc struct {
+		X struct {
+			Main          string            `yaml:"main"`
+			Category      string            `yaml:"category"`
+			Architectures []string          `yaml:"architectures"`
+			Title         map[string]string `yaml:"title"`
+			Tagline       map[string]string `yaml:"tagline"`
+			Description   map[string]string `yaml:"description"`
+			Icon          string            `yaml:"icon"`
+			Screenshots   []string          `yaml:"screenshot_link"`
+			PortMap       string            `yaml:"port_map"`
+			Scheme        string            `yaml:"scheme"`
+			Website       string            `yaml:"website"`
+			ProjectURL    string            `yaml:"project_url"`
+		} `yaml:"x-casaos"`
+		Services map[string]struct {
+			Image string `yaml:"image"`
+		} `yaml:"services"`
+	}
+	if err := yaml.Unmarshal(compose, &doc); err != nil {
+		return nil, fmt.Errorf("%s: %v", filepath.Base(dir), err)
+	}
+	name := english(doc.X.Title)
+	if name == "" {
+		name = filepath.Base(dir)
+	}
+	a := &catalog.App{
+		Summary: catalog.Summary{
+			Name:          name,
+			Category:      category(doc.X.Category),
+			Tagline:       english(doc.X.Tagline),
+			Icon:          doc.X.Icon,
+			Architectures: doc.X.Architectures,
+		},
+		Description: strings.TrimSpace(english(doc.X.Description)),
+		Screenshots: doc.X.Screenshots,
+		Website:     firstNonEmpty(doc.X.Website, doc.X.ProjectURL),
+		Scheme:      firstNonEmpty(doc.X.Scheme, "http"),
+	}
+	if img := doc.Services[doc.X.Main].Image; img != "" {
+		if i := strings.LastIndex(img, ":"); i > strings.LastIndex(img, "/") {
+			a.Version = img[i+1:]
+		} else {
+			a.Version = "latest"
+		}
+	}
+	a.MainPort, _ = strconv.Atoi(strings.TrimSpace(doc.X.PortMap))
+	if err := processCompose(a, compose, "casaos", a.MainPort, allowPriv); err != nil {
+		return nil, err
+	}
+	return a, nil
+}
+
+// ---- compose processing (shared) ----
+
+var errPrivileged = fmt.Errorf("needs privileged mode or the host network")
+
+var (
+	secretKeyRe = regexp.MustCompile(`(?i)(PASSWORD|PASSWD|_PASS$|^PASS$|SECRET|TOKEN|_KEY$|^KEY$|APIKEY|API_KEY)`)
+	userKeyRe   = regexp.MustCompile(`(?i)(USER|USERNAME|_LOGIN$|_NAME$|_DB$|DATABASE$)`)
+	appDataRe   = regexp.MustCompile(`/DATA/AppData/(\$\{?AppID\}?|[A-Za-z0-9._-]+)`)
+	appIDRe     = regexp.MustCompile(`\$\{?AppID\}?`)
+)
+
+// processCompose cleans a store compose file into the Box form and fills App.Compose,
+// DockerSocket, generated-secret questions and the APP_PORT question.
+func processCompose(a *catalog.App, src []byte, flavor string, mainPort int, allowPriv bool) error {
+	var root yaml.Node
+	if err := yaml.Unmarshal(src, &root); err != nil || len(root.Content) == 0 {
+		return fmt.Errorf("%s: compose not readable", a.Name)
+	}
+	doc := root.Content[0]
+	if doc.Kind != yaml.MappingNode {
+		return fmt.Errorf("%s: compose not a mapping", a.Name)
+	}
+	for _, k := range []string{"x-casaos", "version", "name"} {
+		delKey(doc, k)
+	}
+	services := mapGet(doc, "services")
+	if services == nil || services.Kind != yaml.MappingNode {
+		return fmt.Errorf("%s: no services", a.Name)
+	}
+	for i := 1; i < len(services.Content); i += 2 {
+		svc := services.Content[i]
+		if svc.Kind != yaml.MappingNode {
+			continue
+		}
+		delKey(svc, "x-casaos")
+		if !allowPriv {
+			if v := mapGet(svc, "privileged"); v != nil && v.Value == "true" {
+				return errPrivileged
+			}
+			for _, k := range []string{"network_mode", "pid"} {
+				if v := mapGet(svc, k); v != nil && v.Value == "host" {
+					return errPrivileged
+				}
+			}
+		}
+		cleanLabels(svc)
+		cleanNetworks(svc)
+		if dns := mapGet(svc, "dns"); dns != nil && strings.Contains(nodeText(dns), "DNS_IP") {
+			delKey(svc, "dns")
+		}
+		if vols := mapGet(svc, "volumes"); vols != nil && strings.Contains(nodeText(vols), "docker.sock") {
+			a.DockerSocket = true
+		}
+		if flavor == "casaos" && mainPort > 0 {
+			rewritePorts(mapGet(svc, "ports"), mainPort)
+		}
+	}
+	if nets := mapGet(doc, "networks"); nets != nil {
+		delKey(nets, "tipi_main_network")
+		if len(nets.Content) == 0 {
+			delKey(doc, "networks")
+		}
+	}
+	if flavor == "casaos" {
+		walkScalars(doc, func(n *yaml.Node) {
+			v := appDataRe.ReplaceAllString(n.Value, "$${APP_DATA_DIR}")
+			v = strings.ReplaceAll(v, "/DATA/", "${SHARED_DIR}/")
+			n.Value = appIDRe.ReplaceAllString(v, "$${APP_ID}")
+		})
+	}
+	secretsToVariables(a, services)
+
+	var buf bytes.Buffer
+	enc := yaml.NewEncoder(&buf)
+	enc.SetIndent(2)
+	if err := enc.Encode(doc); err != nil {
+		return err
+	}
+	a.Compose = buf.String()
+	if a.MainPort > 0 && strings.Contains(a.Compose, "APP_PORT") {
+		a.Questions = append([]catalog.Question{{Key: "APP_PORT", Label: "Web port", Type: "port",
+			Default: strconv.Itoa(a.MainPort), Required: true, Hint: "The port on this server that opens the app."}}, a.Questions...)
+	} else if !strings.Contains(a.Compose, "APP_PORT") && flavor == "runtipi" {
+		a.MainPort = 0 // the app publishes no web port of its own
+	}
+	if a.Questions == nil {
+		a.Questions = []catalog.Question{}
+	}
+	return nil
+}
+
+func cleanLabels(svc *yaml.Node) {
+	labels := mapGet(svc, "labels")
+	if labels == nil {
+		return
+	}
+	drop := func(k string) bool { return strings.HasPrefix(k, "traefik.") || strings.HasPrefix(k, "runtipi.") }
+	switch labels.Kind {
+	case yaml.MappingNode:
+		var kept []*yaml.Node
+		for i := 0; i+1 < len(labels.Content); i += 2 {
+			if !drop(labels.Content[i].Value) {
+				kept = append(kept, labels.Content[i], labels.Content[i+1])
+			}
+		}
+		labels.Content = kept
+	case yaml.SequenceNode:
+		var kept []*yaml.Node
+		for _, n := range labels.Content {
+			if !drop(n.Value) {
+				kept = append(kept, n)
+			}
+		}
+		labels.Content = kept
+	}
+	if len(labels.Content) == 0 {
+		delKey(svc, "labels")
+	}
+}
+
+func cleanNetworks(svc *yaml.Node) {
+	nets := mapGet(svc, "networks")
+	if nets == nil {
+		return
+	}
+	switch nets.Kind {
+	case yaml.SequenceNode:
+		var kept []*yaml.Node
+		for _, n := range nets.Content {
+			if n.Value != "tipi_main_network" {
+				kept = append(kept, n)
+			}
+		}
+		nets.Content = kept
+	case yaml.MappingNode:
+		delKey(nets, "tipi_main_network")
+	}
+	if len(nets.Content) == 0 {
+		delKey(svc, "networks")
+	}
+}
+
+// rewritePorts turns the published web port into ${APP_PORT} so the admin can pick it.
+func rewritePorts(ports *yaml.Node, mainPort int) {
+	if ports == nil || ports.Kind != yaml.SequenceNode {
+		return
+	}
+	mp := strconv.Itoa(mainPort)
+	for _, p := range ports.Content {
+		switch p.Kind {
+		case yaml.ScalarNode:
+			parts := strings.Split(p.Value, ":")
+			if len(parts) >= 2 && parts[len(parts)-2] == mp {
+				parts[len(parts)-2] = "${APP_PORT}"
+				p.Value = strings.Join(parts, ":")
+				p.Style = yaml.DoubleQuotedStyle
+				p.Tag = "!!str"
+			}
+		case yaml.MappingNode:
+			if pub := mapGet(p, "published"); pub != nil && strings.Trim(pub.Value, `"`) == mp {
+				pub.Value, pub.Tag, pub.Style = "${APP_PORT}", "!!str", yaml.DoubleQuotedStyle
+			}
+		}
+	}
+}
+
+// secretsToVariables replaces literal default passwords (POSTGRES_PASSWORD: tipi) with generated
+// secrets. All places that used the same literal get the same variable, so linked services still
+// match. A literal that also appears somewhere it cannot be safely replaced is left alone.
+func secretsToVariables(a *catalog.App, services *yaml.Node) {
+	cands := map[string]string{} // literal -> variable
+	var envSpots []struct {
+		key string
+		val *yaml.Node
+		pre string
+	}
+	for i := 1; i < len(services.Content); i += 2 {
+		env := mapGet(services.Content[i], "environment")
+		if env == nil {
+			continue
+		}
+		switch env.Kind {
+		case yaml.MappingNode:
+			for j := 0; j+1 < len(env.Content); j += 2 {
+				envSpots = append(envSpots, struct {
+					key string
+					val *yaml.Node
+					pre string
+				}{env.Content[j].Value, env.Content[j+1], ""})
+			}
+		case yaml.SequenceNode:
+			for _, n := range env.Content {
+				if k, _, ok := strings.Cut(n.Value, "="); ok {
+					envSpots = append(envSpots, struct {
+						key string
+						val *yaml.Node
+						pre string
+					}{k, n, k + "="})
+				}
+			}
+		}
+	}
+	value := func(s struct {
+		key string
+		val *yaml.Node
+		pre string
+	}) string {
+		return strings.TrimPrefix(s.val.Value, s.pre)
+	}
+	for _, s := range envSpots {
+		v := value(s)
+		if secretKeyRe.MatchString(s.key) && v != "" && !strings.Contains(v, "$") && len(v) < 200 &&
+			v != "true" && v != "false" && !strings.HasPrefix(v, "/") {
+			if _, ok := cands[v]; !ok {
+				cands[v] = "SECRET_" + strings.ToUpper(regexp.MustCompile(`[^A-Za-z0-9]+`).ReplaceAllString(s.key, "_"))
+			}
+		}
+	}
+	if len(cands) == 0 {
+		return
+	}
+	// Mark literals that show up anywhere we would not replace them.
+	handled := map[*yaml.Node]bool{}
+	unsafe := map[string]bool{}
+	for lit := range cands {
+		urlRe := regexp.MustCompile(`(://[^:/@\s]*:)` + regexp.QuoteMeta(lit) + `@`)
+		tokRe := regexp.MustCompile(`(^|[^A-Za-z0-9])` + regexp.QuoteMeta(lit) + `([^A-Za-z0-9]|$)`)
+		for _, s := range envSpots {
+			v := value(s)
+			// Whole env values are replaced (or, for a user name equal to the password, kept), and
+			// passwords inside URLs are replaced: everything else blocks the literal.
+			if v == lit || urlRe.MatchString(v) {
+				handled[s.val] = true
+			}
+		}
+		walkScalars(services, func(n *yaml.Node) {
+			if !handled[n] && tokRe.MatchString(n.Value) {
+				unsafe[lit] = true
+			}
+		})
+	}
+	added := map[string]bool{}
+	for lit, varName := range cands {
+		if unsafe[lit] {
+			continue
+		}
+		urlRe := regexp.MustCompile(`(://[^:/@\s]*:)` + regexp.QuoteMeta(lit) + `@`)
+		for _, s := range envSpots {
+			v := value(s)
+			switch {
+			case v == lit && !(userKeyRe.MatchString(s.key) && !secretKeyRe.MatchString(s.key)):
+				s.val.Value = s.pre + "${" + varName + "}"
+			case urlRe.MatchString(v):
+				s.val.Value = s.pre + urlRe.ReplaceAllString(v, "${1}$${"+varName+"}@")
+			default:
+				continue
+			}
+			s.val.Style = 0
+			if !added[varName] {
+				added[varName] = true
+				a.Questions = append(a.Questions, catalog.Question{Key: varName, Label: humanize(strings.TrimPrefix(varName, "SECRET_")),
+					Type: "password", Generate: true, Min: 24, Hint: "Generated automatically. Enter your own to replace it."})
+			}
+		}
+	}
+}
+
+// ---- yaml helpers ----
+
+func mapGet(m *yaml.Node, key string) *yaml.Node {
+	if m == nil || m.Kind != yaml.MappingNode {
+		return nil
+	}
+	for i := 0; i+1 < len(m.Content); i += 2 {
+		if m.Content[i].Value == key {
+			return m.Content[i+1]
+		}
+	}
+	return nil
+}
+
+func delKey(m *yaml.Node, key string) {
+	if m == nil || m.Kind != yaml.MappingNode {
+		return
+	}
+	for i := 0; i+1 < len(m.Content); i += 2 {
+		if m.Content[i].Value == key {
+			m.Content = append(m.Content[:i], m.Content[i+2:]...)
+			return
+		}
+	}
+}
+
+// walkScalars visits value scalars (not mapping keys).
+func walkScalars(n *yaml.Node, f func(*yaml.Node)) {
+	switch n.Kind {
+	case yaml.ScalarNode:
+		f(n)
+	case yaml.MappingNode:
+		for i := 1; i < len(n.Content); i += 2 {
+			walkScalars(n.Content[i], f)
+		}
+	case yaml.SequenceNode, yaml.DocumentNode:
+		for _, c := range n.Content {
+			walkScalars(c, f)
+		}
+	}
+}
+
+func nodeText(n *yaml.Node) string {
+	b, _ := yaml.Marshal(n)
+	return string(b)
+}
+
+// ---- text helpers ----
+
+func english(m map[string]string) string {
+	for _, k := range []string{"en_us", "en_US", "en_GB", "en_gb", "custom"} {
+		if v := strings.TrimSpace(m[k]); v != "" {
+			return v
+		}
+	}
+	for k, v := range m {
+		if strings.HasPrefix(strings.ToLower(k), "en") && strings.TrimSpace(v) != "" {
+			return strings.TrimSpace(v)
+		}
+	}
+	return ""
+}
+
+func category(c string) string {
+	c = strings.TrimSpace(strings.ReplaceAll(c, "-", " "))
+	if c == "" {
+		return "Other"
+	}
+	switch strings.ToLower(c) {
+	case "others", "other", "misc":
+		return "Other"
+	case "ai":
+		return "AI"
+	case "development", "developer", "developer tools":
+		return "Developer"
+	case "network", "networking":
+		return "Networking"
+	}
+	return strings.ToUpper(c[:1]) + strings.ToLower(c[1:])
+}
+
+func normName(s string) string {
+	return regexp.MustCompile(`[^a-z0-9]+`).ReplaceAllString(strings.ToLower(s), "")
+}
+
+func slug(s string) string {
+	v := strings.Trim(regexp.MustCompile(`[^a-z0-9]+`).ReplaceAllString(strings.ToLower(s), "-"), "-")
+	if v == "" {
+		v = "app"
+	}
+	if len(v) > 50 {
+		v = strings.Trim(v[:50], "-")
+	}
+	return v
+}
+
+func humanize(k string) string {
+	w := strings.ToLower(strings.ReplaceAll(k, "_", " "))
+	return strings.ToUpper(w[:1]) + w[1:]
+}
+
+func firstNonEmpty(v ...string) string {
+	for _, s := range v {
+		if strings.TrimSpace(s) != "" {
+			return strings.TrimSpace(s)
+		}
+	}
+	return ""
+}

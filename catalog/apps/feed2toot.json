@@ -1,0 +1,22 @@
+{
+ "id": "feed2toot",
+ "name": "Feed2toot",
+ "version": "59e3ea300189052aba25c527a3501ade5c3a57466761c8a1e0ab1c8bdf90170d",
+ "category": "Other",
+ "tagline": "Automatically parses rss feeds, identifies new posts and posts them on the Mastodon social network.",
+ "icon": "https://cdn.jsdelivr.net/gh/WisdomSky/CasaOS-LinuxServer-AppStore@main/default-icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Feed2toot automatically parses rss feeds, identifies new posts and posts them on the Mastodon social network.",
+ "main_port": 8080,
+ "scheme": "http",
+ "questions": [],
+ "compose": "services:\n  app:\n    image: linuxserver/feed2toot:0.17.20251115@sha256:59e3ea300189052aba25c527a3501ade5c3a57466761c8a1e0ab1c8bdf90170d\n    restart: unless-stopped\n    environment:\n      PUID: $PUID\n      PGID: $PGID\n      TZ: $TZ\n      FEED_LIMIT: ''\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n"
+}

@@ -1,0 +1,31 @@
+{
+ "id": "immich-kiosk",
+ "name": "Immich Kiosk",
+ "version": "28cf751b556e5c9fefc18f0c2b0ed2d6fe672df734ca3c860d6adc9b2b7fdffb",
+ "category": "Other",
+ "tagline": "Immich Kiosk",
+ "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/immich-kiosk.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Immich Kiosk is a lightweight slideshow for running on kiosk devices and browsers that uses Immich as a data source.",
+ "main_port": 3000,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3000",
+   "required": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-immich-kiosk application\nservices:\n  # Main service configuration for the Immich Kiosk application\n  # This service provides a web interface running on port 3000 for Immich Kiosk\n  big-bear-immich-kiosk:\n    # Name of the container\n    container_name: big-bear-immich-kiosk\n    # Image to be used for the container specifies the Immich Kiosk version and source\n    image: ghcr.io/damongolding/immich-kiosk:0.38.1@sha256:28cf751b556e5c9fefc18f0c2b0ed2d6fe672df734ca3c860d6adc9b2b7fdffb\n    # Enable TTY for interactive terminal access\n    tty: true\n    # Container restart policy - restarts the container unless manually stopped\n    restart: unless-stopped\n    # Environment variables for service configuration\n    # These settings control the Immich Kiosk application behavior and default admin credentials\n    # https://github.com/damongolding/immich-kiosk#configuration\n    environment:\n      # Sets the language and timezone for the container\n      LANG: \"en_us\"\n      # Sets the timezone for the container\n      TZ: \"UTC\"\n      # Sets the Immich API key for the container\n      KIOSK_IMMICH_API_KEY: \"\"\n      # Sets the Immich server URL for the container\n      KIOSK_IMMICH_URL: \"\"\n      # Sets the Immich external URL for the container\n      KIOSK_IMMICH_EXTERNAL_URL: \"\"\n    # Map port 3000 on the host to port 3000 on the container\n    ports:\n      - \"${APP_PORT}:3000\"\n"
+}

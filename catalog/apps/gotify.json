@@ -1,0 +1,49 @@
+{
+ "id": "gotify",
+ "name": "Gotify",
+ "version": "3.1.1",
+ "category": "Utilities",
+ "tagline": "Gotify, a simple server for sending and receiving notification messages.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/gotify/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# Selfhosted notification service\n\nWe wanted a simple server for sending and receiving messages (in real time per WebSocket). For this, not many open source projects existed and most of the existing ones were abandoned. Also, a requirement was that it can be self-hosted. We know there are many free and commercial push services out there.\n\nAt the heart of this project. (gotify/server)[https://hub.docker.com/r/gotify/server] features a WebUI and functionality for:\n\n-   sending messages via a REST-API\n-   subscribing/receiving messages via a web socket connection\n-   managing users, clients and applications",
+ "website": "https://gotify.net",
+ "source": "https://github.com/gotify/server",
+ "main_port": 8129,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8129",
+   "required": true
+  },
+  {
+   "key": "GOTIFY_DEFAULTUSER_NAME",
+   "label": "Gotify username",
+   "type": "text",
+   "required": true,
+   "min": 3,
+   "max": 50
+  },
+  {
+   "key": "GOTIFY_DEFAULTUSER_PASS",
+   "label": "Gotify password",
+   "type": "password",
+   "required": true,
+   "min": 8,
+   "max": 50
+  }
+ ],
+ "compose": "services:\n  gotify:\n    image: gotify/server:3.1.1\n    container_name: gotify\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/data:/app/data\n    environment:\n      - GOTIFY_DEFAULTUSER_NAME=${GOTIFY_DEFAULTUSER_NAME}\n      - GOTIFY_DEFAULTUSER_PASS=${GOTIFY_DEFAULTUSER_PASS}\n    ports:\n      - ${APP_PORT}:80\n"
+}

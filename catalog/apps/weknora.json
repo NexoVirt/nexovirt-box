@@ -1,0 +1,69 @@
+{
+ "id": "weknora",
+ "name": "WeKnora",
+ "version": "v0.2.14",
+ "category": "AI",
+ "tagline": "WeKnora is an LLM-powered framework designed for deep document understanding and semantic retrieval, especially for handling complex, heterogeneous documents.",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/WeKnora/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "WeKnora is a deep document understanding and semantic retrieval framework based on Large Language Models (LLM), specifically designed for document scenarios with complex structures and heterogeneous content. It adopts a modular architecture, integrating key technologies such as multimodal preprocessing, semantic vector indexing, intelligent retrieval, and large model inference. Based on the Retrieval-Augmented Generation (RAG) paradigm, it achieves context-aware, high-quality Q\u0026A capabilities. WeKnora can deeply understand document content in different formats, combine relevant document fragments with language model inference, and output accurate, coherent semantic results.\n\n**Key Features:**\n- Multimodal Deep Parsing: Supports structured content extraction from various formats such as PDF, Word, TXT, images, including OCR image text recognition.\n- Semantic Vector Indexing and Intelligent Retrieval: Achieves high-precision semantic matching and recall through a combination of vector retrieval, keyword retrieval, and even knowledge graph-enhanced retrieval.\n- RAG Closed-Loop Q\u0026A Generation: Generates accurate and coherent content answers by leveraging large language model inference and retrieval fragment fusion.\n- Agent Mode Enhanced Capabilities: Supports ReACT Agent mode, which can call built-in tools, external web search, etc., during multi-round iterations, to improve complex task processing capabilities.\n- Multi-type Knowledge Base Management: Can create FAQ and document-type knowledge bases, and flexibly manage tags, batch import files or URLs.\n- Configurable Dialogue Strategy and UI: Provides an intuitive Web interface and REST API, allowing online adjustment of models, retrieval thresholds, and Prompt to control dialogue behavior.\n\n**Learn More:**\n- [Official Website](https://weknora.weixin.qq.com)\n- [GitHub Link](https://github.com/Tencent/WeKnora)",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/WeKnora/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/WeKnora/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/WeKnora/screenshot-3.png"
+ ],
+ "website": "https://weknora.weixin.qq.com",
+ "main_port": 1080,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "1080",
+   "required": true
+  },
+  {
+   "key": "SECRET_MINIO_SECRET_ACCESS_KEY",
+   "label": "Minio secret access key",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
+   "key": "SECRET_DB_PASSWORD",
+   "label": "Db password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
+   "key": "SECRET_TENANT_AES_KEY",
+   "label": "Tenant aes key",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
+   "key": "SECRET_JWT_SECRET",
+   "label": "Jwt secret",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  weknora:\n    image: wechatopenai/weknora-ui:v0.2.14\n    container_name: weknora\n    ports:\n      - target: 80\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    environment:\n      - MAX_FILE_SIZE_MB=50\n    depends_on:\n      app:\n        condition: service_healthy\n    networks:\n      - weknora-network\n    restart: unless-stopped\n    deploy:\n      resources:\n        reservations:\n          memory: 128M\n  app:\n    image: wechatopenai/weknora-app:v0.2.14\n    container_name: weknora-app\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/files\n        target: /data/files\n    deploy:\n      resources:\n        reservations:\n          memory: 512M\n    healthcheck:\n      test:\n        - CMD\n        - curl\n        - -f\n        - http://localhost:8080/health\n      interval: 30s\n      timeout: 10s\n      retries: 3\n      start_period: 60s\n    environment:\n      - OTEL_EXPORTER_OTLP_ENDPOINT=jaeger:4317\n      - OTEL_SERVICE_NAME=WeKnora\n      - OTEL_TRACES_EXPORTER=otlp\n      - OTEL_METRICS_EXPORTER=none\n      - OTEL_LOGS_EXPORTER=none\n      - OTEL_PROPAGATORS=tracecontext,baggage\n      - QDRANT_HOST=qdrant\n      - QDRANT_PORT=6334\n      - QDRANT_COLLECTION=weknora_embeddings\n      - QDRANT_API_KEY=\n      - QDRANT_USE_TLS=false\n      - MINIO_ENDPOINT=minio:9000\n      - MINIO_ACCESS_KEY_ID=${SECRET_MINIO_SECRET_ACCESS_KEY}\n      - MINIO_SECRET_ACCESS_KEY=${SECRET_MINIO_SECRET_ACCESS_KEY}\n      - MINIO_BUCKET_NAME=weknora\n      - GIN_MODE=release\n      - DISABLE_REGISTRATION=false\n      - DB_DRIVER=postgres\n      - DB_HOST=weknora-postgres\n      - DB_PORT=5432\n      - DB_USER=postgres\n      - DB_PASSWORD=${SECRET_DB_PASSWORD}\n      - DB_NAME=WeKnora\n      - TZ=$TZ\n      - RETRIEVE_DRIVER=postgres\n      - DOCREADER_ADDR=weknora-docreader:50051\n      - STORAGE_TYPE=minio\n      - LOCAL_STORAGE_BASE_DIR=/data/files\n      - AUTO_RECOVER_DIRTY=true\n      - OLLAMA_BASE_URL=http://host.docker.internal:11434\n      - STREAM_MANAGER_TYPE=redis\n      - REDIS_ADDR=weknora-redis:6379\n      - REDIS_PASSWORD=redis123!@#\n      - REDIS_DB=0\n      - REDIS_PREFIX=\"stream:\"\n      - TENANT_AES_KEY=${SECRET_TENANT_AES_KEY}\n      - CONCURRENCY_POOL_SIZE=5\n      - JWT_SECRET=${SECRET_JWT_SECRET}\n      - MAX_FILE_SIZE_MB=50\n    depends_on:\n      weknora-redis:\n        condition: service_started\n      weknora-postgres:\n        condition: service_healthy\n      weknora-docreader:\n        condition: service_healthy\n    networks:\n      - weknora-network\n    restart: unless-stopped\n    extra_hosts:\n      - host.docker.internal:host-gateway\n  weknora-docreader:\n    image: wechatopenai/weknora-docreader:v0.2.14\n    container_name: weknora-docreader\n    environment:\n      - MAX_FILE_SIZE_MB=50\n      - MINIO_ENDPOINT=minio:9000\n      - MINIO_ACCESS_KEY_ID=${SECRET_MINIO_SECRET_ACCESS_KEY}\n      - MINIO_SECRET_ACCESS_KEY=${SECRET_MINIO_SECRET_ACCESS_KEY}\n      - MINIO_BUCKET_NAME=weknora\n    deploy:\n      resources:\n        reservations:\n          memory: 256M\n    healthcheck:\n      test:\n        - CMD\n        - grpc_health_probe\n        - -addr=:50051\n      interval: 30s\n      timeout: 10s\n      retries: 3\n      start_period: 60s\n    networks:\n      - weknora-network\n    restart: unless-stopped\n    extra_hosts:\n      - host.docker.internal:host-gateway\n  weknora-postgres:\n    image: paradedb/paradedb:v0.18.9-pg17\n    container_name: weknora-postgres\n    environment:\n      - POSTGRES_USER=postgres\n      - POSTGRES_PASSWORD=${SECRET_DB_PASSWORD}\n      - POSTGRES_DB=WeKnora\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/data\n        target: /var/lib/postgresql/data\n    networks:\n      - weknora-network\n    healthcheck:\n      test:\n        - CMD-SHELL\n        - pg_isready -U postgres\n      interval: 10s\n      timeout: 10s\n      retries: 3\n      start_period: 30s\n    deploy:\n      resources:\n        reservations:\n          memory: 512M\n    restart: unless-stopped\n    stop_grace_period: 1m\n  weknora-redis:\n    image: redis:7.0-alpine\n    container_name: weknora-redis\n    command:\n      - redis-server\n      - --requirepass redis123!@#\n      - --appendonly\n      - yes\n    deploy:\n      resources:\n        reservations:\n          memory: 128M\n    restart: unless-stopped\n    networks:\n      - weknora-network\n  minio:\n    image: minio/minio:RELEASE.2025-09-07T16-13-09Z\n    container_name: weknora-minio\n    ports:\n      - target: 9000\n        published: \"19000\"\n        protocol: tcp\n      - target: 9001\n        published: \"19001\"\n        protocol: tcp\n    environment:\n      - MINIO_ROOT_USER=minioadmin\n      - MINIO_ROOT_PASSWORD=${SECRET_MINIO_SECRET_ACCESS_KEY}\n    deploy:\n      resources:\n        reservations:\n          memory: 512M\n    command:\n      - server\n      - /data\n      - --console-address\n      - :9001\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/minio-data\n        target: /data\n    healthcheck:\n      test:\n        - CMD\n        - curl\n        - -f\n        - http://localhost:9000/minio/health/live\n      interval: 30s\n      timeout: 20s\n      retries: 3\n    networks:\n      - weknora-network\n    restart: unless-stopped\n  jaeger:\n    image: jaegertracing/all-in-one:1.76.0\n    container_name: weknora-jaeger\n    ports:\n      - target: 6831\n        published: \"46831\"\n        protocol: udp\n      - target: 6832\n        published: \"46832\"\n        protocol: udp\n      - target: 5778\n        published: \"45778\"\n        protocol: tcp\n      - target: 16686\n        published: \"16686\"\n        protocol: tcp\n      - target: 4317\n        published: \"44317\"\n        protocol: tcp\n      - target: 4318\n        published: \"44318\"\n        protocol: tcp\n      - target: 14250\n        published: \"14250\"\n        protocol: tcp\n      - target: 14268\n        published: \"14268\"\n        protocol: tcp\n      - target: 9411\n        published: \"49411\"\n        protocol: tcp\n    environment:\n      - COLLECTOR_OTLP_ENABLED=true\n      - COLLECTOR_ZIPKIN_HOST_PORT=:9411\n    deploy:\n      resources:\n        reservations:\n          memory: 512M\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/jaeger\n        target: /var/lib/jaeger\n    networks:\n      - weknora-network\n    restart: unless-stopped\n  neo4j:\n    image: neo4j:2025.10.1\n    container_name: weknora-neo4j\n    profiles:\n      - \"neo4j\"\n      - \"full\"\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/neo4j-data\n        target: /data\n    environment:\n      - NEO4J_AUTH=neo4j/password\n      - NEO4J_apoc_export_file_enabled=true\n      - NEO4J_apoc_import_file_enabled=true\n      - NEO4J_apoc_import_file_use__neo4j__config=true\n      - NEO4JLABS_PLUGINS=[\"apoc\"]\n    ports:\n      - target: 7474\n        published: \"47474\"\n        protocol: tcp\n      - target: 7687\n        published: \"47687\"\n        protocol: tcp\n    restart: unless-stopped\n    deploy:\n      resources:\n        reservations:\n          memory: 256M\n    networks:\n      - weknora-network\n  qdrant:\n    image: qdrant/qdrant:v1.16.2\n    container_name: weknora-qdrant\n    profiles:\n      - \"qdrant\"\n      - \"full\"\n    ports:\n      - target: 6333\n        published: \"46333\"\n        protocol: tcp\n      - target: 6334\n        published: \"46334\"\n        protocol: tcp\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/storage\n        target: /qdrant/storage\n    networks:\n      - weknora-network\n    restart: unless-stopped\n    deploy:\n      resources:\n        reservations:\n          memory: 256M\nnetworks:\n  weknora-network:\n    driver: bridge\n"
+}

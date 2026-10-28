@@ -1,0 +1,38 @@
+{
+ "id": "myspeed",
+ "name": "MySpeed",
+ "version": "1.0.9",
+ "category": "Networking",
+ "tagline": "Analysis software that shows your internet speed for up to 30 days.",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/MySpeed/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64",
+  "arm"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "MySpeed is a speed test analysis software that stores the speed of your internet for up to 30 days. This can also be useful if you want to know when your network might have drops or if you want to check if your internet matches the booked values from your contract.",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/MySpeed/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/MySpeed/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/MySpeed/screenshot-3.png"
+ ],
+ "website": "https://myspeed.dev",
+ "main_port": 5216,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "5216",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  myspeed:\n    container_name: myspeed\n    deploy:\n      resources:\n        limits:\n          memory: 256M\n    image: germannewsmaker/myspeed:1.0.9\n    ports:\n      - target: 5216\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/data\n        target: /myspeed/data\n    network_mode: bridge\n    privileged: false\n"
+}

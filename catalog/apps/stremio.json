@@ -1,0 +1,37 @@
+{
+ "id": "stremio",
+ "name": "Stremio",
+ "version": "v1.3.4",
+ "category": "Media",
+ "tagline": "Stremio is a modern media center that gives you the freedom to watch everything you want.",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Stremio/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "Stremio offers a secure, modern and seamless entertainment experience. With its easy-to-use interface and diverse content library, including 4K HDR support, users can enjoy their favorite movies and TV shows across all their devices. And with its commitment to security, Stremio is the ultimate choice for a worry-free, high-quality streaming experience.",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Stremio/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Stremio/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Stremio/screenshot-3.png"
+ ],
+ "website": "https://www.stremio.com",
+ "main_port": 8100,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8100",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  stremio:\n    container_name: stremio\n    deploy:\n      resources:\n        limits:\n          memory: 1024M\n    environment:\n      - NO_CORS=1\n      - AUTO_SERVER_URL=1\n    devices:\n      - /dev/dri:/dev/dri\n    image: tsaridas/stremio-docker:v1.3.4\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /root/.stremio-server\n    ports:\n      - target: 11470\n        published: \"11470\"\n        protocol: tcp\n      - target: 8080\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    restart: unless-stopped\n    network_mode: bridge\n    privileged: false\n"
+}

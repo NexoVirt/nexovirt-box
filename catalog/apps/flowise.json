@@ -1,0 +1,45 @@
+{
+ "id": "flowise",
+ "name": "Flowise",
+ "version": "3.1.2",
+ "category": "AI",
+ "tagline": "An open source generative AI development platform for building AI Agents and LLM workflows",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/FlowiseAi/icon.svg",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "Flowise is a generative AI development platform for building AI agents and LLM workflows. An intuitive interface with a visual editor simplifies complex workflow design, ideal for developers creating diverse AI applications, from chatbots to data processing pipelines.\n\nCore features include visual orchestration and data integration. Support for various models, custom code, and branching, looping, and routing logic enables complex workflow creation. Connection to over 100 data sources, vector databases, and memory modules ensures flexible data ingestion. Monitoring capabilities provide execution logs and visual debugging for workflow transparency and maintenance. Self-hosted and air-gapped deployment options accommodate diverse infrastructure needs.\n\nIt offers data processing with transforms, filters, aggregates, and RAG indexing pipelines. Memory optimization and planning techniques enhance performance, while MCP integration supports tool connections and authentication. Security controls include role-based access, single sign-on, and encrypted credentials for data protection. API, JavaScript and Python SDKs, and command-line interface enable extensibility, with embedded chat components and a template marketplace accelerating development. Scalability supports high-throughput workflows, and evaluation features optimize performance. With flexibility and efficiency at the core, the platform delivers a modern solution for AI development.\n\n**Key Features:**\n- Visual editor supporting multiple models, custom code, branching looping routing logic\n- Connection to over 100 data sources, vector databases, and memory modules\n- Execution logs and visual debugging for enhanced monitoring\n- Data processing with transforms, filters, aggregates, and RAG indexing pipelines\n- Various memory optimization technique and integrations\n- MCP client and server nodes for tool integration\n- Input moderation and output post-processing for safety\n- API, JavaScript and Python SDKs, and command-line interface\n- Customizable embedded chat components\n- Template marketplace and reusable components\n- Role-based access control, single sign-on, encrypted credentials\n- Vertical and horizontal scalability for high-throughput workflows\n- Datasets and evaluation features for workflow optimization\n\n**Learn More:**\n- [Flowise Official Website](https://flowiseai.com/)\n- [Flowise GitHub](https://github.com/flowiseai/flowise)\n- [Flowise Documentation](https://docs.flowiseai.com/)",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/FlowiseAi/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/FlowiseAi/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/FlowiseAi/screenshot-3.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/FlowiseAi/screenshot-4.png"
+ ],
+ "website": "https://flowiseai.com/",
+ "main_port": 3025,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3025",
+   "required": true
+  },
+  {
+   "key": "SECRET_FLOWISE_PASSWORD",
+   "label": "Flowise password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  flowise:\n    image: flowiseai/flowise:3.1.2\n    container_name: flowise\n    restart: unless-stopped\n    deploy:\n      resources:\n        reservations:\n          memory: 256M\n    environment:\n      - PORT=3025\n      - DATABASE_PATH=/root/.flowise\n      - APIKEY_PATH=/root/.flowise\n      - SECRETKEY_PATH=/root/.flowise\n      - LOG_PATH=/root/.flowise/logs\n      - BLOB_STORAGE_PATH=/root/.flowise/storage\n      - FLOWISE_USERNAME=casaos\n      - FLOWISE_PASSWORD=${SECRET_FLOWISE_PASSWORD}\n    ports:\n      - \"${APP_PORT}:3025\"\n    volumes:\n      - ${APP_DATA_DIR}:/root/.flowise\n    entrypoint: /bin/sh -c \"sleep 3; flowise start\"\n"
+}

@@ -1,0 +1,24 @@
+{
+ "id": "cross-seed",
+ "name": "Cross-Seed",
+ "version": "6.13.9",
+ "category": "Media",
+ "tagline": "Fully-automatic cross-seeding with Torznab.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/cross-seed/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# cross-seed: Fully-automatic, no false positives\n\n`cross-seed` is an app designed to help you download torrents that you can cross seed based on your existing torrents. It is designed to match conservatively to minimize manual intervention.\n\n`cross-seed` can inject the torrents it finds directly into your torrent client.\nCurrently, the supported clients are\n\n-   rTorrent\n-   qBittorrent\n-   Transmission\n-   Deluge\n\nIf your client isn't supported, `cross-seed` will download a bunch of torrent files to a folder you specify.\nAfter that, I recommend using [AutoTorrent2](https://github.com/JohnDoee/autotorrent2) to do the last-mile delivery into your client.\n\n## Tutorial\n\nHead on over to [cross-seed.org](https://www.cross-seed.org/docs/basics/getting-started) to get started.\n\n## Troubleshooting\n\nFeel free to [start a discussion](https://github.com/cross-seed/cross-seed/discussions/new), or reach out on [Discord](https://discord.gg/jpbUFzS5Wb).",
+ "website": "https://www.cross-seed.org",
+ "source": "https://github.com/cross-seed/cross-seed",
+ "main_port": 0,
+ "scheme": "http",
+ "questions": [],
+ "compose": "services:\n  cross-seed:\n    container_name: cross-seed\n    image: ghcr.io/cross-seed/cross-seed:6.13.9\n    user: '1000:1000'\n    restart: unless-stopped\n    command: daemon\n    environment:\n      - TZ=${TZ}\n    volumes:\n      - ${APP_DATA_DIR}/data/config:/config\n      - ${ROOT_FOLDER_HOST}/app-data/transmission-vpn/data/config/transmission-home/torrents:/torrents:ro\n      - ${ROOT_FOLDER_HOST}/media/torrents/watch:/cross-seeds\n"
+}

@@ -1,0 +1,37 @@
+{
+ "id": "retroarch",
+ "name": "RetroArch",
+ "version": "latest",
+ "category": "Media",
+ "tagline": "Online retro games emulator",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/RetroArch/icon.svg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "RetroArch-web is a web-based classic game emulator that enables users to enjoy a wide range of retro games directly in modern browsers. Supporting platforms like GBA, N64, DOS games, and NES (FC), it brings nostalgic gaming to life. Built on the open-source RetroArch project, RetroArch-web delivers robust features, including high-quality graphics rendering, audio processing, input controls, and save/load game progress, ensuring a precise and smooth emulation experience.\n\nDesigned for ease of use, RetroArch-web requires no complex software installation, running seamlessly in browsers. Its flexible configuration options let users customize controller setups, visual filters, and audio settings to suit individual preferences. With broad cross-platform compatibility, it ensures stable performance across devices, offering retro gaming enthusiasts a consistent experience on the go.\n\nBacked by an active open-source community, RetroArch-web continually improves performance and expands supported game platforms. Whether revisiting classic arcade titles or exploring vintage console games, RetroArch-web stands out as the ideal choice for retro gamers, combining powerful emulation with a user-friendly interface.\n\n**Key Features:**\n- Polished interface for browsing game collections with thumbnails and animated backgrounds\n- Supports multiple emulators and game engines for running classic games and discs\n- Next-frame response time for near-native hardware low-latency experience\n- Highly configurable settings to tweak game performance and display options\n- Automatic controller configuration for easy multiplayer gaming\n- Shaders to enhance old game rendering and mimic CRT monitor effects\n- Netplay for multiplayer gaming and spectator mode\n- Achievements system to unlock trophies and badges in classic games\n- Recording and streaming for capturing gameplay or live streaming\n\n**Learn More:**\n- [RetroArch Official Website](https://www.retroarch.com)\n- [RetroArch GitHub Repository](https://github.com/libretro/RetroArch)",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/RetroArch/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/RetroArch/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/RetroArch/screenshot-3.png"
+ ],
+ "website": "https://www.retroarch.com",
+ "main_port": 8183,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8183",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  retroarch:\n    image: inglebard/retroarch-web:latest\n    container_name: retroarch\n    deploy:\n      resources:\n        reservations:\n          memory: 64M\n    restart: unless-stopped\n    environment:\n      - ROOT_WWW_PATH=\"/var/www/html\"\n    ports:\n      - \"${APP_PORT}:80\"\n"
+}

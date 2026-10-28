@@ -1,0 +1,33 @@
+{
+ "id": "sonarr",
+ "name": "Sonarr",
+ "version": "4.0.20",
+ "category": "Media",
+ "tagline": "TV show manager for Usenet and BitTorrent",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/sonarr/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "## Smart PVR for newsgroup and bittorrent users. \n\nSonarr is a PVR for Usenet and BitTorrent users. It can monitor multiple RSS feeds for new episodes of your favorite shows and will grab, sort and rename them. It can also be configured to automatically upgrade the quality of files already downloaded when a better quality format becomes available.\n\n### Current Features\n\n- Support for major platforms: Windows, Linux, macOS, Raspberry Pi, etc.\n- Automatically detects new episodes\n- Can scan your existing library and download any missing episodes\n- Can watch for better quality of the episodes you already have and do an automatic upgrade. *eg. from DVD to Blu-Ray*\n- Automatic failed download handling will try another release if one fails\n- Manual search so you can pick any release or to see why a release was not downloaded automatically\n- Fully configurable episode renaming\n- Full integration with SABnzbd and NZBGet\n- Full integration with Kodi, Plex (notification, library update, metadata)\n- Full support for specials and multi-episode releases\n- And a beautiful UI\n\n## Folder Info\n\n| Root Folder                   | Container Folder |\n|-------------------------------|------------------|\n| /runtipi/app-data/sonarr/data | /config          |\n| /runtipi/media                | /downloads       |",
+ "website": "https://sonarr.tv/",
+ "source": "https://github.com/Sonarr/Sonarr",
+ "main_port": 8098,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8098",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  sonarr:\n    image: lscr.io/linuxserver/sonarr:4.0.20\n    container_name: sonarr\n    environment:\n      - PUID=1000\n      - PGID=1000\n      - TZ=${TZ}\n    volumes:\n      - /etc/localtime:/etc/localtime:ro\n      - ${APP_DATA_DIR}/data:/config\n      - ${ROOT_FOLDER_HOST}/media:/media\n    ports:\n      - ${APP_PORT}:8989\n    restart: unless-stopped\n"
+}

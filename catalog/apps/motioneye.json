@@ -1,0 +1,35 @@
+{
+ "id": "motioneye",
+ "name": "Motioneye",
+ "version": "master-amd64",
+ "category": "Home",
+ "tagline": "A web frontend for the motion daemon.",
+ "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Motioneye/icon.svg",
+ "architectures": [
+  "amd64"
+ ],
+ "attribution": {
+  "store": "CasaOS App Store",
+  "url": "https://github.com/IceWhaleTech/CasaOS-AppStore",
+  "license": "Apache-2.0"
+ },
+ "description": "motionEye is a web-based frontend for motion. Check out the wiki for more details. Changelog is available on the releases page. https://github.com/motioneye-project/motioneye",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Motioneye/screenshot-1.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Motioneye/screenshot-2.png",
+  "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Motioneye/screenshot-3.png"
+ ],
+ "main_port": 8765,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8765",
+   "required": true
+  }
+ ],
+ "compose": "services:\n  motioneye:\n    container_name: motioneye\n    image: ccrisan/motioneye:master-amd64\n    ports:\n      - target: 8765\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /etc/motioneye\n      - type: bind\n        source: ${SHARED_DIR}/Media/motioneye\n        target: /var/lib/motioneye\n    network_mode: bridge\n    privileged: false\n"
+}

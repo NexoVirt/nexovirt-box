@@ -1,0 +1,47 @@
+{
+ "id": "gitea-mirror",
+ "name": "Gitea Mirror",
+ "version": "2d97c98fd6f32915bbcc247373b9b39606d337cb3fb576980673d842dcaea291",
+ "category": "Developer",
+ "tagline": "Mirror GitHub repositories to Gitea",
+ "icon": "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps/apps/gitea-mirror/logo-new.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "Gitea Mirror is a modern web app for automatically mirroring repositories from GitHub to your self-hosted Gitea instance. It features a user-friendly interface to sync public, private, or starred GitHub repos, mirror entire organizations with structure preservation, and optionally mirror issues and labels. The application includes smart filtering, detailed logs, and scheduled automatic mirroring.",
+ "screenshots": [
+  "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps/apps/gitea-mirror/1.png",
+  "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps/apps/gitea-mirror/2.png",
+  "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps/apps/gitea-mirror/3.png",
+  "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps/apps/gitea-mirror/4.png",
+  "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps/apps/gitea-mirror/5.png",
+  "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps/apps/gitea-mirror/6.png"
+ ],
+ "main_port": 4321,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "4321",
+   "required": true
+  },
+  {
+   "key": "SECRET_BETTER_AUTH_SECRET",
+   "label": "Better auth secret",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-gitea-mirror application\nservices:\n  # Service name: big-bear-gitea-mirror\n  # The `big-bear-gitea-mirror` service definition\n  big-bear-gitea-mirror:\n    # Name of the container\n    container_name: big-bear-gitea-mirror\n    # Image to be used for the container\n    image: ghcr.io/raylabshq/gitea-mirror:v3.15.10@sha256:2d97c98fd6f32915bbcc247373b9b39606d337cb3fb576980673d842dcaea291\n    # Container restart policy\n    restart: unless-stopped\n    # Ports mapping between host and container\n    ports:\n      # Mapping port 4321 of the host to port 4321 of the container\n      - \"${APP_PORT}:4321\"\n    # Volumes to be mounted to the container\n    volumes:\n      # Mounting the local data directory to the container\n      - ${APP_DATA_DIR}/data:/app/data\n    # Environment variables for the container\n    environment:\n      - NODE_ENV=production\n      - DATABASE_URL=file:data/gitea-mirror.db\n      - HOST=0.0.0.0\n      - PORT=4321\n      - BETTER_AUTH_URL=http://0.0.0.0:4321\n      - BETTER_AUTH_SECRET=${SECRET_BETTER_AUTH_SECRET}\n      # Optional GitHub/Gitea Mirror Config (can also be set through the UI)\n      # - GITHUB_USERNAME=your-github-username\n      # - GITHUB_TOKEN=your-github-token\n      # - GITEA_URL=your-gitea-url\n      # - GITEA_TOKEN=your-gitea-token\n      # - GITEA_USERNAME=your-gitea-username\n    # Health check configuration\n    healthcheck:\n      test: [\"CMD\", \"wget\", \"--no-verbose\", \"--tries=3\", \"--spider\", \"http://localhost:4321/api/health\"]\n      interval: 30s\n      timeout: 10s\n      retries: 5\n      start_period: 30s\n"
+}

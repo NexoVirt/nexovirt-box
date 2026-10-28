@@ -1,0 +1,65 @@
+{
+ "id": "ghostfolio",
+ "name": "Ghostfolio",
+ "version": "3.93.0",
+ "category": "Finance",
+ "tagline": "Open Source Wealth Management Software.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/ghostfolio/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "**Ghostfolio** is an open source wealth management software built with web technology. The application empowers busy people to keep track of stocks, ETFs or cryptocurrencies and make solid, data-driven investment decisions. The software is designed for personal use in continuous operation.\n\n## Why Ghostfolio?\n\nGhostfolio is for you if you are...\n\n- 💼 trading stocks, ETFs or cryptocurrencies on multiple platforms\n- 🏦 pursuing a buy \u0026 hold strategy\n- 🎯 interested in getting insights of your portfolio composition\n- 👻 valuing privacy and data ownership\n- 🧘 into minimalism\n- 🧺 caring about diversifying your financial resources\n- 🆓 interested in financial independence\n- 🙅 saying no to spreadsheets\n- 😎 still reading this list\n\n## Features\n\n- ✅ Create, update and delete transactions\n- ✅ Multi account management\n- ✅ Portfolio performance for `Today`, `YTD`, `1Y`, `5Y`, `Max`\n- ✅ Various charts\n- ✅ Static analysis to identify potential risks in your portfolio\n- ✅ Import and export transactions\n- ✅ Dark Mode\n- ✅ Zen Mode\n- ✅ Progressive Web App (PWA) with a mobile-first design",
+ "website": "https://ghostfol.io",
+ "source": "https://github.com/ghostfolio/ghostfolio",
+ "main_port": 3333,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "3333",
+   "required": true
+  },
+  {
+   "key": "GHOSTFOLIO_ACCESS_TOKEN_SALT",
+   "label": "Access token salt",
+   "type": "password",
+   "min": 32,
+   "max": 32,
+   "generate": true
+  },
+  {
+   "key": "GHOSTFOLIO_JWT_SECRET_KEY",
+   "label": "JSON Web Tokens secret key",
+   "type": "password",
+   "min": 32,
+   "max": 32,
+   "generate": true
+  },
+  {
+   "key": "GHOSTFOLIO_DB_PASSWORD",
+   "label": "Database password",
+   "type": "password",
+   "min": 32,
+   "max": 32,
+   "generate": true
+  },
+  {
+   "key": "GHOSTFOLIO_REDIS_PASSWORD",
+   "label": "Redis password",
+   "type": "password",
+   "min": 32,
+   "max": 32,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  ghostfolio:\n    container_name: ghostfolio\n    image: ghostfolio/ghostfolio:3.93.0\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:3333\n    environment:\n      NODE_ENV: production\n      HOST: 0.0.0.0\n      PORT: 3333\n      ACCESS_TOKEN_SALT: $GHOSTFOLIO_ACCESS_TOKEN_SALT\n      DATABASE_URL: postgresql://ghostfolio:${GHOSTFOLIO_DB_PASSWORD}@ghostfolio-db:5432/ghostfolio\n      JWT_SECRET_KEY: ${GHOSTFOLIO_JWT_SECRET_KEY}\n      POSTGRES_DB: ghostfolio\n      POSTGRES_USER: ghostfolio\n      POSTGRES_PASSWORD: ${GHOSTFOLIO_DB_PASSWORD}\n      REDIS_HOST: ghostfolio-redis\n      REDIS_PASSWORD: ${GHOSTFOLIO_REDIS_PASSWORD}\n      REDIS_PORT: 6379\n    depends_on:\n      ghostfolio-db:\n        condition: service_healthy\n      ghostfolio-redis:\n        condition: service_healthy\n  ghostfolio-db:\n    container_name: ghostfolio-db\n    image: postgres:15.4-alpine\n    restart: unless-stopped\n    environment:\n      POSTGRES_DB: ghostfolio\n      POSTGRES_USER: ghostfolio\n      POSTGRES_PASSWORD: ${GHOSTFOLIO_DB_PASSWORD}\n      PGDATA: /var/lib/postgresql/data\n    healthcheck:\n      test:\n        - CMD\n        - pg_isready\n        - '-d'\n        - ghostfolio\n      interval: 10s\n      timeout: 5s\n      retries: 5\n    volumes:\n      - ${APP_DATA_DIR}/data/db:/var/lib/postgresql/data\n  ghostfolio-redis:\n    container_name: ghostfolio-redis\n    image: redis:7-alpine\n    restart: unless-stopped\n    command: |\n      --requirepass ${GHOSTFOLIO_REDIS_PASSWORD}\n    healthcheck:\n      test:\n        - CMD\n        - redis-cli\n        - ping\n      interval: 10s\n      timeout: 5s\n      retries: 5\n      start_period: 30s\n    volumes:\n      - ${APP_DATA_DIR}/data/redis:/data\n"
+}

@@ -1,0 +1,24 @@
+{
+ "id": "recyclarr",
+ "name": "Recyclarr",
+ "version": "8.8.0",
+ "category": "Media",
+ "tagline": "Sync TRaSH Guides.",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/recyclarr/metadata/logo.jpg",
+ "architectures": [
+  "arm64",
+  "amd64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# TRaSH Guide Updater\n\nAutomatically mirror TRaSH guides to your Sonarr/Radarr instance.\n\n## Sonarr Features\n\n### Release Profiles\n\n- \"Preferred\", \"Must Not Contain\", and \"Must Contain\" terms from guides are reflected in\n  corresponding release profile fields in Sonarr.\n- \"Include Preferred when Renaming\" is properly checked/unchecked depending on explicit mention of\n  this in the guides.\n- Profiles get created if they do not exist, or updated if they already exist. Profiles get a unique\n  name based on the guide and this name is used to find them in subsequent runs.\n- Tags can be added to any updated or created profiles.\n- Ability to convert preferred with negative scores to \"Must not contain\" terms.\n- Terms mentioned as \"optional\" in the guide are not synced to Sonarr release profiles by default\n  (can be enabled via config).\n\n### Quality Definitions\n\n- Anime and Series (Non-Anime) quality definitions from the guide.\n- \"Hybrid\" type supported that is a mixture of both.\n\n## Radarr Features\n\n### Quality Definitions\n\n- Movie quality definition from the guide\n\n### Custom Formats\n\n- A user-specified list of custom formats are synchronized to Radarr from the TRaSH guides.\n- Scores from the guides can be synchronized to quality profiles of your choosing.\n- User can specify their own scores for custom formats (instead of using the guide score).\n- Option to enable automatic deletion custom formats in Radarr when they are removed from config or\n  the guide.\n\n---\n\n*Important Notices!*\n\n- \u003e **Note**: For Sonarr updates to work, you must be running version `3.0.4.1098` or greater.\n\n- \u003e **Note**: Do not run Notifiarr's Trash Guides Integration in conjunction with Trash Updater's\n  \u003e Custom Format synchronization. In general, you should not have two different tools updating the\n  \u003e same data in Radarr.",
+ "website": "https://recyclarr.dev",
+ "source": "https://github.com/recyclarr/recyclarr",
+ "main_port": 0,
+ "scheme": "http",
+ "questions": [],
+ "compose": "services:\n  recyclarr:\n    user: ${TIPI_UID}:${TIPI_GID}\n    container_name: recyclarr\n    image: ghcr.io/recyclarr/recyclarr:8.8.0\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/data/config:/config\n    environment:\n      - RECYCLARR_CREATE_CONFIG=${RECYCLARR_CREATE_CONFIG-true}\n      - TZ=${TZ}\n"
+}

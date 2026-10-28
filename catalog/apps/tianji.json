@@ -1,0 +1,47 @@
+{
+ "id": "tianji",
+ "name": "Tianji",
+ "version": "18bf2e3d3806ceadc6be32708dfe8f907908f2f61abaaec889a830cb4d13824a",
+ "category": "Networking",
+ "tagline": "Tianji: Insight into everything, Website Analytics + Uptime Monitor + Server Status. not only another GA alternatives",
+ "icon": "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps/apps/tianji/logo.png",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "BigBearCasaOS",
+  "url": "https://github.com/bigbeartechworld/big-bear-casaos",
+  "license": "MIT"
+ },
+ "description": "During our observations of the website. We often need to use multiple applications together. For example, we need analysis tools such as GA/umami to check pv/uv and the number of visits to each page, we need an uptime monitor to check the network quality and connectivity of the server, and we need to use prometheus to obtain the status reported by the server to check the quality of the server. In addition, if we develop an application that allows open source deployment, we often need a telemetry system to help us collect the simplest information about other people's deployment situations. I think these tools should serve the same purpose, so is there an application that can integrate these common needs in a lightweight way? After all, most of the time we don't need very professional and in-depth functions. But in order to achieve comprehensive monitoring, I need to install so many services. It's good to specialize in one thing, if we are experts in related abilities we need such specialized tools. But for most users who only have lightweight needs, an All-in-One application will be more convenient and easier to use.",
+ "main_port": 12345,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "12345",
+   "required": true
+  },
+  {
+   "key": "SECRET_JWT_SECRET",
+   "label": "Jwt secret",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
+   "key": "SECRET_POSTGRES_PASSWORD",
+   "label": "Postgres password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  }
+ ],
+ "compose": "# Service definitions for the big-bear-tianji application\nservices:\n  # Service name: big-bear-tianji\n  # The `big-bear-tianji` service definition\n  big-bear-tianji:\n    # Name of the container\n    container_name: big-bear-tianji\n    # Image to be used for the container\n    image: moonrailgun/tianji:1.33.12@sha256:18bf2e3d3806ceadc6be32708dfe8f907908f2f61abaaec889a830cb4d13824a\n    # Container restart policy\n    restart: unless-stopped\n    # Environment variables for the container\n    environment:\n      DATABASE_URL: postgresql://tianji-user:${SECRET_POSTGRES_PASSWORD}@big-bear-tianji-db:5432/tianji\n      JWT_SECRET: ${SECRET_JWT_SECRET}\n      ALLOW_REGISTER: \"false\"\n      ALLOW_OPENAPI: \"true\"\n    # Ports mapping between host and container\n    ports:\n      # Mapping port 12345 of the host to port 12345 of the container\n      - \"${APP_PORT}:12345\"\n    networks:\n      - big_bear_tianji_network\n    depends_on:\n      - big-bear-tianji-db\n  # Postgres database\n  big-bear-tianji-db:\n    container_name: big-bear-tianji-db\n    image: postgres:15.4-alpine@sha256:35ce2187f2f7fb75e8e79493e13743596c21eb3789ff41ece145ae04d06e93a5\n    environment:\n      POSTGRES_DB: tianji\n      POSTGRES_USER: tianji-user\n      POSTGRES_PASSWORD: ${SECRET_POSTGRES_PASSWORD}\n    volumes:\n      - ${APP_DATA_DIR}/pgdata:/var/lib/postgresql/data\n    restart: always\n    healthcheck:\n      test: [\"CMD-SHELL\", \"pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}\"]\n      interval: 5s\n      timeout: 5s\n      retries: 5\n    networks:\n      - big_bear_tianji_network\nnetworks:\n  big_bear_tianji_network:\n    driver: bridge\n"
+}

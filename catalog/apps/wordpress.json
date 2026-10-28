@@ -1,0 +1,47 @@
+{
+ "id": "wordpress",
+ "name": "WordPress",
+ "version": "7.1.3",
+ "category": "Social",
+ "tagline": "Popular CMS for websites and blogs",
+ "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/wordpress/metadata/logo.jpg",
+ "architectures": [
+  "amd64",
+  "arm64"
+ ],
+ "attribution": {
+  "store": "Runtipi App Store",
+  "url": "https://github.com/runtipi/runtipi-appstore",
+  "license": "GPL-3.0"
+ },
+ "description": "# WordPress - The Ultimate Content Management System\n\nWordPress is the quintessential content management system (CMS) that has revolutionized the way websites and blogs are created, managed, and published on the internet. With its robust features, unparalleled flexibility, and user-friendly interface, WordPress has become the go-to choice for individuals, businesses, and organizations of all sizes.\n\n## Unleash Your Creativity\n\nWhether you're a seasoned web developer or a novice blogger, WordPress empowers you to bring your digital vision to life. Create stunning websites, blogs, portfolios, e-commerce platforms, and more with ease. Customize every aspect of your site, from layout and design to functionality and user experience.\n\n## Endless Possibilities with Themes and Plugins\n\nWordPress boasts an extensive library of themes and plugins that cater to every niche and purpose. Choose from thousands of free and premium themes to give your website a unique and polished look. Enhance your site's functionality with plugins that add features like contact forms, SEO optimization, e-commerce capabilities, and social media integration.\n\n## SEO-Friendly and Mobile-Responsive\n\nWordPress is designed with search engine optimization (SEO) in mind, making it easier for your content to rank higher on search engine results pages. Additionally, WordPress themes are mobile-responsive by default, ensuring that your site looks great and functions seamlessly on smartphones, tablets, and desktops.\n\n## Community and Support\n\nJoin a global community of WordPress enthusiasts, developers, and experts who are always ready to lend a helping hand. With an extensive array of documentation, forums, and tutorials, you'll never be alone on your WordPress journey. Stay up-to-date with the latest trends and best practices in web development and design.\n\n## Open Source and Constant Innovation\n\nWordPress is open-source software, which means it's free to use, modify, and distribute. The platform is continually evolving, with regular updates and improvements to enhance security, performance, and usability. Benefit from a future-proof CMS that adapts to the ever-changing digital landscape.\n\n## Get Started Today\n\nWhether you're building a personal blog, a corporate website, an online store, or a community forum, WordPress provides the tools and resources you need to succeed. Begin your WordPress journey today and experience the limitless possibilities of the web.\n\n**Official Website:** [WordPress.org](https://wordpress.org)\n\n**GitHub Repository:** [WordPress on GitHub](https://github.com/WordPress/WordPress)\n\n**Documentation:** [WordPress Codex](https://codex.wordpress.org/)\n\n**Support and Community:** [WordPress Support Forums](https://wordpress.org/support/)\n\n**WordPress Plugins:** [WordPress Plugin Directory](https://wordpress.org/plugins/)\n\n**WordPress Themes:** [WordPress Theme Directory](https://wordpress.org/themes/)",
+ "website": "https://wordpress.org",
+ "source": "https://github.com/WordPress/WordPress",
+ "main_port": 8213,
+ "scheme": "http",
+ "questions": [
+  {
+   "key": "APP_PORT",
+   "label": "Web port",
+   "type": "port",
+   "hint": "The port on this server that opens the app.",
+   "default": "8213",
+   "required": true
+  },
+  {
+   "key": "DB_PASSWORD",
+   "label": "Database Password",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  },
+  {
+   "key": "DB_ROOT_PASSWORD",
+   "label": "Database Root Password",
+   "type": "password",
+   "min": 32,
+   "generate": true
+  }
+ ],
+ "compose": "services:\n  wordpress:\n    container_name: wordpress\n    image: wordpress:7.1.3\n    environment:\n      - WORDPRESS_DB_HOST=wordpress-db\n      - WORDPRESS_DB_NAME=wordpress\n      - WORDPRESS_DB_USER=tipi\n      - WORDPRESS_DB_PASSWORD=${DB_PASSWORD}\n    volumes:\n      - ${APP_DATA_DIR}/data/wordpress:/var/www/html\n    ports:\n      - ${APP_PORT}:80\n    restart: unless-stopped\n    depends_on:\n      - wordpress-db\n  wordpress-db:\n    container_name: wordpress-db\n    image: mariadb:11.1.3\n    environment:\n      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}\n      - MYSQL_DATABASE=wordpress\n      - MYSQL_USER=tipi\n      - MYSQL_PASSWORD=${DB_PASSWORD}\n    volumes:\n      - ${APP_DATA_DIR}/data/mariadb:/var/lib/mysql\n    restart: unless-stopped\n"
+}
