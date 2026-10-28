@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -20,10 +21,13 @@ import (
 func TestEveryPrivateRouteNeedsAuth(t *testing.T) {
 	app, h, _ := newTestApp(t)
 	public := map[string]bool{
-		"GET /api/auth/state": true,
-		"POST /api/setup":     true,
-		"POST /api/login":     true,
-		"POST /api/logout":    true,
+		"GET /api/auth/state":            true,
+		"POST /api/setup":                true,
+		"POST /api/login":                true,
+		"POST /api/logout":               true,
+		"POST /api/login/2fa":            true,
+		"POST /api/login/passkey/begin":  true,
+		"POST /api/login/passkey/finish": true,
 	}
 	placeholder := regexp.MustCompile(`\{[^}]+\}`)
 	n := 0
@@ -293,5 +297,96 @@ func TestOnlyFailedSignInsCount(t *testing.T) {
 	}
 	if rec := post(h, "/api/login", `{"username":"admin","password":"long-enough-pw"}`, ""); rec.Code != http.StatusTooManyRequests {
 		t.Fatalf("after 5 failures: got %d", rec.Code)
+	}
+}
+
+// A burst of parallel wrong sign-ins must not get more than the limit to the password check.
+func TestParallelWrongSignInsStayLimited(t *testing.T) {
+	_, h, token := newTestApp(t)
+	setupAndLogin(t, h, token)
+	var wg sync.WaitGroup
+	codes := make(chan int, 30)
+	for i := 0; i < 30; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			codes <- post(h, "/api/login", `{"username":"admin","password":"wrong-password"}`, "").Code
+		}()
+	}
+	wg.Wait()
+	close(codes)
+	checked := 0
+	for c := range codes {
+		if c == http.StatusUnauthorized {
+			checked++
+		}
+	}
+	if checked > 5 {
+		t.Fatalf("%d parallel tries reached the password check, limit is 5", checked)
+	}
+}
+
+func TestTOTPSignIn(t *testing.T) {
+	app, h, token := newTestApp(t)
+	sess := setupAndLogin(t, h, token)
+	if rec := post(h, "/api/2fa/totp/begin", `{"password":"wrong-password"}`, sess); rec.Code == http.StatusOK {
+		t.Fatal("2FA setup without the right password")
+	}
+	var begin map[string]string
+	json.Unmarshal(post(h, "/api/2fa/totp/begin", `{"password":"long-enough-pw"}`, sess).Body.Bytes(), &begin)
+	if !strings.HasPrefix(begin["qr"], "data:image/svg+xml;base64,") || begin["secret"] == "" {
+		t.Fatalf("begin: %v", begin)
+	}
+	code := totpCode(begin["secret"], uint64(time.Now().Unix()/30))
+	var enable struct {
+		RecoveryCodes []string `json:"recovery_codes"`
+	}
+	json.Unmarshal(post(h, "/api/2fa/totp/enable", `{"code":"`+code+`"}`, sess).Body.Bytes(), &enable)
+	if len(enable.RecoveryCodes) != 10 {
+		t.Fatalf("recovery codes: %v", enable.RecoveryCodes)
+	}
+	// Password alone no longer signs in.
+	rec := post(h, "/api/login", `{"username":"admin","password":"long-enough-pw"}`, "")
+	var lr map[string]any
+	json.Unmarshal(rec.Body.Bytes(), &lr)
+	if lr["two_factor"] != true || sessionFrom(rec) != "" {
+		t.Fatalf("password alone: %v", lr)
+	}
+	pending := lr["pending"].(string)
+	if rec := post(h, "/api/login/2fa", `{"pending":"`+pending+`","code":"000000"}`, ""); rec.Code != http.StatusUnauthorized {
+		t.Fatalf("wrong code: %d", rec.Code)
+	}
+	rc := enable.RecoveryCodes[0]
+	if rec := post(h, "/api/login/2fa", `{"pending":"`+pending+`","code":"`+rc+`"}`, ""); rec.Code != http.StatusOK || sessionFrom(rec) == "" {
+		t.Fatalf("recovery code: %d %s", rec.Code, rec.Body)
+	}
+	// The recovery code is single use.
+	json.Unmarshal(post(h, "/api/login", `{"username":"admin","password":"long-enough-pw"}`, "").Body.Bytes(), &lr)
+	if rec := post(h, "/api/login/2fa", `{"pending":"`+lr["pending"].(string)+`","code":"`+rc+`"}`, ""); rec.Code == http.StatusOK {
+		t.Fatal("recovery code worked twice")
+	}
+	if app.store.recoveryLeft(1) != 9 {
+		t.Fatalf("left: %d", app.store.recoveryLeft(1))
+	}
+	// The helper now also wants the code for the console.
+	_, err := app.helper.call(context.Background(), helperRequest{Action: "console_proof", Session: hashToken(sess), Password: "long-enough-pw"}, nil)
+	if err == nil {
+		t.Fatal("console proof without the 2FA code")
+	}
+	code = totpCode(begin["secret"], uint64(time.Now().Unix()/30))
+	if _, err := app.helper.call(context.Background(), helperRequest{Action: "console_proof", Session: hashToken(sess), Password: "long-enough-pw", Code: code}, nil); err != nil {
+		t.Fatalf("console proof with code: %v", err)
+	}
+}
+
+func TestPasskeysRefusedOnIPHost(t *testing.T) {
+	app := &App{secure: true}
+	r := httptest.NewRequest("POST", "https://10.0.0.5:8443/", nil)
+	if _, err := app.webAuthnFor(r); err == nil {
+		t.Fatal("passkeys allowed on an IP address")
+	}
+	r = httptest.NewRequest("POST", "https://box.example.com:8443/", nil)
+	if _, err := app.webAuthnFor(r); err != nil {
+		t.Fatalf("domain refused: %v", err)
 	}
 }

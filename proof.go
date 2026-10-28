@@ -64,8 +64,9 @@ func (p *proofKeeper) valid(proof, session string, now time.Time) bool {
 	return hmac.Equal([]byte(mac), []byte(p.mac(session, exp)))
 }
 
-// allowTry is the helper's own limit (5 failed checks per minute), independent of the web one.
-func (p *proofKeeper) allowTry(now time.Time) bool {
+// reserve takes one of 5 tries per minute BEFORE the password check (so parallel requests
+// cannot all pass a count first); release gives it back when the check passed.
+func (p *proofKeeper) reserve(now time.Time) (release func(), ok bool) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	kept := p.attempts[:0]
@@ -75,13 +76,20 @@ func (p *proofKeeper) allowTry(now time.Time) bool {
 		}
 	}
 	p.attempts = kept
-	return len(p.attempts) < 5
-}
-
-func (p *proofKeeper) failed(now time.Time) {
-	p.mu.Lock()
+	if len(p.attempts) >= 5 {
+		return nil, false
+	}
 	p.attempts = append(p.attempts, now)
-	p.mu.Unlock()
+	return func() {
+		p.mu.Lock()
+		defer p.mu.Unlock()
+		for i, t := range p.attempts {
+			if t.Equal(now) {
+				p.attempts = append(p.attempts[:i], p.attempts[i+1:]...)
+				return
+			}
+		}
+	}, true
 }
 
 // webDB opens the web database read only (never creating files there as root).
@@ -100,7 +108,8 @@ func sessionAlive(db *sql.DB, session string, now time.Time) bool {
 // returns a proof for the session.
 func (h *helperServer) consoleProof(req helperRequest, _ func(string)) (any, error) {
 	now := time.Now()
-	if !h.proofs.allowTry(now) {
+	release, ok := h.proofs.reserve(now)
+	if !ok {
 		return nil, uerr("Too many attempts. Wait a minute and try again.")
 	}
 	db, err := h.webDB()
@@ -116,13 +125,12 @@ func (h *helperServer) consoleProof(req helperRequest, _ func(string)) (any, err
 		return nil, err
 	}
 	if bcrypt.CompareHashAndPassword([]byte(hash), []byte(req.Password)) != nil {
-		h.proofs.failed(now)
 		return nil, uerr("The password is wrong.")
 	}
 	if totpSecret != "" && !totpValid(totpSecret, req.Code, now) {
-		h.proofs.failed(now)
 		return nil, uerr("The code from your authenticator app is wrong.")
 	}
+	release()
 	return map[string]string{"proof": h.proofs.issue(req.Session, now)}, nil
 }
 

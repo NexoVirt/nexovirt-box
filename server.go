@@ -32,6 +32,7 @@ type App struct {
 	catalog   *catalogStore
 	jobs      *jobs
 	proofs    sync.Map // session hash -> console proof issued by the helper
+	tfa       *twoFactor
 }
 
 type route struct {
@@ -48,6 +49,17 @@ func (a *App) routeTable() []route {
 		{"POST /api/setup", true, a.setup},
 		{"POST /api/login", true, a.login},
 		{"POST /api/logout", true, a.logout},
+		{"POST /api/login/2fa", true, a.login2FA},
+		{"POST /api/login/passkey/begin", true, a.loginPasskeyBegin},
+		{"POST /api/login/passkey/finish", true, a.loginPasskeyFinish},
+		{"GET /api/2fa", false, a.twoFactorStatus},
+		{"POST /api/2fa/totp/begin", false, a.totpBegin},
+		{"POST /api/2fa/totp/enable", false, a.totpEnable},
+		{"POST /api/2fa/totp/disable", false, a.totpDisable},
+		{"POST /api/2fa/recovery", false, a.recoveryRegenerate},
+		{"POST /api/2fa/passkey/begin", false, a.passkeyBegin},
+		{"POST /api/2fa/passkey/finish", false, a.passkeyFinish},
+		{"POST /api/2fa/passkey/{id}/delete", false, a.passkeyDelete},
 		{"POST /api/auth/reauth", false, a.reauth},
 		{"GET /api/system", false, a.system},
 		{"GET /api/stats/stream", false, a.statsStream},
@@ -75,6 +87,9 @@ func (a *App) routeTable() []route {
 func (a *App) routes(ui fs.FS) http.Handler {
 	if a.consoles == nil {
 		a.consoles = newConsoleRegistry()
+	}
+	if a.tfa == nil {
+		a.tfa = newTwoFactor()
 	}
 	mux := http.NewServeMux()
 	for _, rt := range a.routeTable() {
@@ -343,8 +358,8 @@ func (a *App) setup(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) login(w http.ResponseWriter, r *http.Request) {
-	limitKey := "login:" + a.clientIP(r)
-	if a.limiter.blocked(limitKey) {
+	release, ok := a.limiter.reserve("login:" + a.clientIP(r))
+	if !ok {
 		writeError(w, http.StatusTooManyRequests, "Too many sign-in attempts. Wait a minute and try again.")
 		return
 	}
@@ -355,9 +370,14 @@ func (a *App) login(w http.ResponseWriter, r *http.Request) {
 	}
 	id, ok := a.store.checkLogin(c.Username, c.Password)
 	if !ok {
-		a.limiter.fail(limitKey)
 		a.store.audit(c.Username, a.clientIP(r), "login.failed", "")
 		writeError(w, http.StatusUnauthorized, "The username or password is wrong.")
+		return
+	}
+	release() // only failed sign-ins count toward the limit
+	if totp, keys := a.store.has2FA(id); totp || keys {
+		tok, methods := a.startPending(id, c.Username)
+		writeJSON(w, http.StatusOK, map[string]any{"two_factor": true, "pending": tok, "methods": methods})
 		return
 	}
 	a.store.audit(c.Username, a.clientIP(r), "login.ok", "")
@@ -445,7 +465,8 @@ func (a *App) consoleProof(token string) string {
 }
 
 func (a *App) consoleReady(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]bool{"fresh": a.consoleProof(sessionToken(r)) != ""})
+	uid, _ := a.currentUser(r)
+	writeJSON(w, http.StatusOK, map[string]bool{"fresh": a.consoleProof(sessionToken(r)) != "", "needs_code": a.store.totpSecret(uid) != ""})
 }
 
 func (a *App) activity(w http.ResponseWriter, r *http.Request) {
@@ -496,8 +517,10 @@ func (a *App) checkSetupToken(given string) bool {
 
 // ---- rate limit ----
 
-// limiter counts attempts per key in SQLite, so a restart does not reset it.
+// limiter counts attempts per key in SQLite, so a restart does not reset it. One mutex makes
+// "count, then record" atomic, so a burst of parallel requests cannot all slip past the count.
 type limiter struct {
+	mu     sync.Mutex
 	store  *Store
 	max    int
 	window time.Duration
@@ -507,29 +530,21 @@ func newLimiter(store *Store, max int, window time.Duration) *limiter {
 	return &limiter{store: store, max: max, window: window}
 }
 
-// allow counts every attempt; it fails closed when the database cannot be read.
+// reserve takes one try for key BEFORE the check it guards; it fails closed when the database
+// cannot be read. Call release when the check passed, so successful tries do not count.
+func (l *limiter) reserve(key string) (release func(), ok bool) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	id, ok, err := l.store.attempt(key, l.max, l.window)
+	if err != nil {
+		log.Printf("rate limit: %v", err)
+		return func() {}, false
+	}
+	return func() { l.store.releaseAttempt(id) }, ok
+}
+
+// allow counts every try (also successful ones).
 func (l *limiter) allow(key string) bool {
-	ok, err := l.store.attempt(key, l.max, l.window)
-	if err != nil {
-		log.Printf("rate limit: %v", err)
-		return false
-	}
+	_, ok := l.reserve(key)
 	return ok
-}
-
-// blocked reports whether key already used up its tries (fails closed on a database error).
-// Together with fail it counts only failed tries, so signing in often never locks anyone out.
-func (l *limiter) blocked(key string) bool {
-	n, err := l.store.attempts(key, l.window)
-	if err != nil {
-		log.Printf("rate limit: %v", err)
-		return true
-	}
-	return n >= l.max
-}
-
-func (l *limiter) fail(key string) {
-	if err := l.store.recordAttempt(key); err != nil {
-		log.Printf("rate limit: %v", err)
-	}
 }

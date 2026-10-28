@@ -44,6 +44,15 @@ func openStore(path string) (*Store, error) {
 		);
 		CREATE TABLE IF NOT EXISTS attempts (key TEXT NOT NULL, at INTEGER NOT NULL);
 		CREATE INDEX IF NOT EXISTS attempts_key ON attempts (key, at);
+		CREATE TABLE IF NOT EXISTS recovery_codes (code_hash TEXT PRIMARY KEY, user_id INTEGER NOT NULL);
+		CREATE TABLE IF NOT EXISTS passkeys (
+			id TEXT PRIMARY KEY,
+			user_id INTEGER NOT NULL,
+			name TEXT NOT NULL,
+			credential TEXT NOT NULL,
+			created_at INTEGER NOT NULL,
+			last_used_at INTEGER NOT NULL
+		);
 		CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 		CREATE TABLE IF NOT EXISTS audit (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -153,34 +162,32 @@ func (s *Store) deleteSession(token string) {
 	s.db.Exec(`DELETE FROM sessions WHERE token_hash = ?`, hashToken(token))
 }
 
-// attempts counts the tries for key within the window.
-func (s *Store) attempts(key string, window time.Duration) (int, error) {
-	var n int
-	err := s.db.QueryRow(`SELECT COUNT(*) FROM attempts WHERE key = ? AND at > ?`, key, time.Now().Add(-window).Unix()).Scan(&n)
-	return n, err
-}
-
-func (s *Store) recordAttempt(key string) error {
-	_, err := s.db.Exec(`INSERT INTO attempts (key, at) VALUES (?, ?)`, key, time.Now().Unix())
-	return err
-}
-
-// attempt records one try for key and reports whether it is within max per window.
-func (s *Store) attempt(key string, max int, window time.Duration) (bool, error) {
+// attempt records one try for key and reports whether it is within max per window. The row id
+// is returned so a successful try can be taken back (releaseAttempt). Callers serialize per
+// limiter (limiter.mu), so the count and the insert cannot interleave.
+func (s *Store) attempt(key string, max int, window time.Duration) (int64, bool, error) {
 	now := time.Now()
 	cutoff := now.Add(-window).Unix()
 	if _, err := s.db.Exec(`DELETE FROM attempts WHERE at <= ?`, cutoff); err != nil {
-		return false, err
+		return 0, false, err
 	}
 	var n int
 	if err := s.db.QueryRow(`SELECT COUNT(*) FROM attempts WHERE key = ? AND at > ?`, key, cutoff).Scan(&n); err != nil {
-		return false, err
+		return 0, false, err
 	}
 	if n >= max {
-		return false, nil
+		return 0, false, nil
 	}
-	_, err := s.db.Exec(`INSERT INTO attempts (key, at) VALUES (?, ?)`, key, now.Unix())
-	return err == nil, err
+	res, err := s.db.Exec(`INSERT INTO attempts (key, at) VALUES (?, ?)`, key, now.Unix())
+	if err != nil {
+		return 0, false, err
+	}
+	id, err := res.LastInsertId()
+	return id, err == nil, err
+}
+
+func (s *Store) releaseAttempt(id int64) {
+	s.db.Exec(`DELETE FROM attempts WHERE rowid = ?`, id)
 }
 
 type AuditEntry struct {
