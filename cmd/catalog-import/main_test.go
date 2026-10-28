@@ -37,7 +37,7 @@ services:
 	}
 }
 
-func TestLiteralUsedElsewhereStays(t *testing.T) {
+func TestLiteralUsedInCommandIsReplacedThereToo(t *testing.T) {
 	src := `
 services:
   redis:
@@ -48,8 +48,8 @@ services:
 `
 	a := &catalog.App{Summary: catalog.Summary{Name: "R"}}
 	processCompose(a, []byte(src), "casaos", 0, false)
-	if strings.Contains(a.Compose, "SECRET_") {
-		t.Fatalf("replaced a password that is also in the command:\n%s", a.Compose)
+	if !strings.Contains(a.Compose, "--requirepass ${SECRET_REDIS_PASSWORD}") || strings.Contains(a.Compose, "hunter22") {
+		t.Fatalf("password not replaced in the command:\n%s", a.Compose)
 	}
 }
 

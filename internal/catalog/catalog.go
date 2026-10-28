@@ -27,6 +27,7 @@ type Question struct {
 	Max         int      `json:"max,omitempty"`
 	Options     []string `json:"options,omitempty"`
 	Generate    bool     `json:"generate,omitempty"` // random secret when left empty
+	Format      string   `json:"format,omitempty"`   // "base64": generate Min random bytes, base64 encoded
 }
 
 type Attribution struct {
