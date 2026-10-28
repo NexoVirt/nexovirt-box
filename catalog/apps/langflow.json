@@ -30,7 +30,15 @@
    "hint": "The port on this server that opens the app.",
    "default": "17860",
    "required": true
+  },
+  {
+   "key": "SECRET_POSTGRES_PASSWORD",
+   "label": "Postgres password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
   }
  ],
- "compose": "services:\n  langflow:\n    container_name: langflow\n    image: langflowai/langflow:1.9.3\n    user: \"0:0\"\n    ports:\n      - target: 7860\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    depends_on:\n      - langflow-postgres\n    networks:\n      - langflow-net\n    environment:\n      - LANGFLOW_DATABASE_URL=postgresql://langflow:langflow@langflow-postgres:5432/langflow\n      - LANGFLOW_CONFIG_DIR=/app/langflow\n    volumes:\n      - ${APP_DATA_DIR}/backend:/app/langflow\n  langflow-postgres:\n    container_name: langflow-postgress\n    image: postgres:16\n    environment:\n      - POSTGRES_USER=langflow\n      - POSTGRES_PASSWORD=langflow\n      - POSTGRES_DB=langflow\n    networks:\n      - langflow-net\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/postgres\n        target: /var/lib/postgresql/data\nnetworks:\n  langflow-net:\n    driver: bridge\n"
+ "compose": "services:\n  langflow:\n    container_name: langflow\n    image: langflowai/langflow:1.9.3\n    user: \"0:0\"\n    ports:\n      - target: 7860\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    depends_on:\n      - langflow-postgres\n    networks:\n      - langflow-net\n    environment:\n      - LANGFLOW_DATABASE_URL=postgresql://langflow:${SECRET_POSTGRES_PASSWORD}@langflow-postgres:5432/langflow\n      - LANGFLOW_CONFIG_DIR=/app/langflow\n    volumes:\n      - ${APP_DATA_DIR}/backend:/app/langflow\n  langflow-postgres:\n    container_name: langflow-postgress\n    image: postgres:16\n    environment:\n      - POSTGRES_USER=langflow\n      - POSTGRES_PASSWORD=${SECRET_POSTGRES_PASSWORD}\n      - POSTGRES_DB=langflow\n    networks:\n      - langflow-net\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/postgres\n        target: /var/lib/postgresql/data\nnetworks:\n  langflow-net:\n    driver: bridge\n"
 }

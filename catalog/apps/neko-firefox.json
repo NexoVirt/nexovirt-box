@@ -26,6 +26,14 @@
    "required": true
   },
   {
+   "key": "SECRET_NEKO_PASSWORD",
+   "label": "Neko password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
    "key": "SECRET_NEKO_PASSWORD_ADMIN",
    "label": "Neko password admin",
    "type": "password",
@@ -34,5 +42,5 @@
    "generate": true
   }
  ],
- "compose": "# Service definitions for the big-bear-neko-firefox application\nservices:\n  # Service name: big-bear-neko-firefox\n  # The `big-bear-neko-firefox` service definition\n  big-bear-neko-firefox:\n    # Name of the container\n    container_name: neko-firefox\n    # Image to be used for the container\n    image: m1k1o/neko:firefox@sha256:7b6841196ec82e33f1b3db9b5789493e2b149ba5db8170d2baacb5d62e26fcff\n    # Container restart policy\n    restart: unless-stopped\n    # Shared memory size\n    shm_size: \"2gb\"\n    # Port mapping HOST:CONTAINER\n    ports:\n      - \"${APP_PORT}:8080\"\n      - \"52000:52000/udp\"\n      - \"52001:52001/udp\"\n      - \"52002:52002/udp\"\n      - \"52003:52003/udp\"\n      - \"52004:52004/udp\"\n      - \"52005:52005/udp\"\n      - \"52006:52006/udp\"\n      - \"52007:52007/udp\"\n      - \"52008:52008/udp\"\n      - \"52009:52009/udp\"\n      - \"52010:52010/udp\"\n    # Environment variables\n    environment:\n      NEKO_SCREEN: 1920x1080@30\n      NEKO_PASSWORD: neko\n      NEKO_PASSWORD_ADMIN: ${SECRET_NEKO_PASSWORD_ADMIN}\n      NEKO_EPR: 52000-52010\n      NEKO_ICELITE: \"1\"\n      NEKO_DEBUG: \"1\"\n      NEKO_NAT1TO1: \"[CASAOS_IP]\" # Replace with your own IP address\n"
+ "compose": "# Service definitions for the big-bear-neko-firefox application\nservices:\n  # Service name: big-bear-neko-firefox\n  # The `big-bear-neko-firefox` service definition\n  big-bear-neko-firefox:\n    # Name of the container\n    container_name: neko-firefox\n    # Image to be used for the container\n    image: m1k1o/neko:firefox@sha256:7b6841196ec82e33f1b3db9b5789493e2b149ba5db8170d2baacb5d62e26fcff\n    # Container restart policy\n    restart: unless-stopped\n    # Shared memory size\n    shm_size: \"2gb\"\n    # Port mapping HOST:CONTAINER\n    ports:\n      - \"${APP_PORT}:8080\"\n      - \"52000:52000/udp\"\n      - \"52001:52001/udp\"\n      - \"52002:52002/udp\"\n      - \"52003:52003/udp\"\n      - \"52004:52004/udp\"\n      - \"52005:52005/udp\"\n      - \"52006:52006/udp\"\n      - \"52007:52007/udp\"\n      - \"52008:52008/udp\"\n      - \"52009:52009/udp\"\n      - \"52010:52010/udp\"\n    # Environment variables\n    environment:\n      NEKO_SCREEN: 1920x1080@30\n      NEKO_PASSWORD: ${SECRET_NEKO_PASSWORD}\n      NEKO_PASSWORD_ADMIN: ${SECRET_NEKO_PASSWORD_ADMIN}\n      NEKO_EPR: 52000-52010\n      NEKO_ICELITE: \"1\"\n      NEKO_DEBUG: \"1\"\n      NEKO_NAT1TO1: \"[CASAOS_IP]\" # Replace with your own IP address\n"
 }

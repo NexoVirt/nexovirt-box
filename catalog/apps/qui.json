@@ -31,8 +31,16 @@
    "hint": "The port on this server that opens the app.",
    "default": "7476",
    "required": true
+  },
+  {
+   "key": "SECRET_POSTGRES_PASSWORD",
+   "label": "Postgres password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
   }
  ],
- "compose": "services:\n  # Qui Application\n  qui:\n    container_name: qui\n    image: ghcr.io/autobrr/qui:v1.28.0\n    restart: unless-stopped\n    depends_on:\n      postgres:\n        condition: service_healthy\n    deploy:\n      resources:\n        reservations:\n          memory: \"128M\"\n    ports:\n      - \"${APP_PORT}:7476\"\n    volumes:\n      - ${APP_DATA_DIR}/qui:/config\n    environment:\n      QUI__DATABASE_ENGINE: postgres\n      QUI__DATABASE_DSN: postgres://qui:qui@qui-postgres:5432/qui?sslmode=disable\n    networks:\n      - qui_network\n  # PostgreSQL Database\n  postgres:\n    container_name: qui-postgres\n    image: postgres:16-alpine\n    restart: unless-stopped\n    deploy:\n      resources:\n        reservations:\n          memory: \"128M\"\n    environment:\n      POSTGRES_USER: qui\n      POSTGRES_PASSWORD: qui\n      POSTGRES_DB: qui\n    volumes:\n      - ${APP_DATA_DIR}/postgres:/var/lib/postgresql/data\n    healthcheck:\n      test: [\"CMD-SHELL\", \"pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB\"]\n      interval: 10s\n      timeout: 5s\n      retries: 5\n    networks:\n      - qui_network\nnetworks:\n  qui_network:\n    driver: bridge\n",
+ "compose": "services:\n  # Qui Application\n  qui:\n    container_name: qui\n    image: ghcr.io/autobrr/qui:v1.28.0\n    restart: unless-stopped\n    depends_on:\n      postgres:\n        condition: service_healthy\n    deploy:\n      resources:\n        reservations:\n          memory: \"128M\"\n    ports:\n      - \"${APP_PORT}:7476\"\n    volumes:\n      - ${APP_DATA_DIR}/qui:/config\n    environment:\n      QUI__DATABASE_ENGINE: postgres\n      QUI__DATABASE_DSN: postgres://qui:${SECRET_POSTGRES_PASSWORD}@qui-postgres:5432/qui?sslmode=disable\n    networks:\n      - qui_network\n  # PostgreSQL Database\n  postgres:\n    container_name: qui-postgres\n    image: postgres:16-alpine\n    restart: unless-stopped\n    deploy:\n      resources:\n        reservations:\n          memory: \"128M\"\n    environment:\n      POSTGRES_USER: qui\n      POSTGRES_PASSWORD: ${SECRET_POSTGRES_PASSWORD}\n      POSTGRES_DB: qui\n    volumes:\n      - ${APP_DATA_DIR}/postgres:/var/lib/postgresql/data\n    healthcheck:\n      test: [\"CMD-SHELL\", \"pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB\"]\n      interval: 10s\n      timeout: 5s\n      retries: 5\n    networks:\n      - qui_network\nnetworks:\n  qui_network:\n    driver: bridge\n",
  "notes": "## Getting Started\n\n1. Open the Web UI at `http://\u003cyour-zima-ip\u003e:7476`.\n2. On first launch, create your administrator account on the setup screen.\n3. Add one or more qBittorrent instances (host, port, username and password) to start managing them from Qui.\n\n## Cross-seeding \u0026 indexers\n\nQui can automatically find and add matching torrents across your trackers. Point it at your Torznab-compatible indexers (for example Prowlarr or Jackett) to enable cross-seeding.\n\n\u003e A PostgreSQL database is deployed automatically alongside Qui — no manual setup required."
 }

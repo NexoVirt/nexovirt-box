@@ -342,10 +342,8 @@ func importCasa(dir string, allowPriv bool) (*catalog.App, error) {
 var errPrivileged = fmt.Errorf("needs privileged mode or the host network")
 
 var (
-	secretKeyRe = regexp.MustCompile(`(?i)(PASSWORD|PASSWD|_PASS$|^PASS$|SECRET|TOKEN|_KEY$|^KEY$|APIKEY|API_KEY)`)
-	userKeyRe   = regexp.MustCompile(`(?i)(USER|USERNAME|_LOGIN$|_NAME$|_DB$|DATABASE$)`)
-	appDataRe   = regexp.MustCompile(`/DATA/AppData/(\$\{?AppID\}?|[A-Za-z0-9._-]+)`)
-	appIDRe     = regexp.MustCompile(`\$\{?AppID\}?`)
+	appDataRe = regexp.MustCompile(`/DATA/AppData/(\$\{?AppID\}?|[A-Za-z0-9._-]+)`)
+	appIDRe   = regexp.MustCompile(`\$\{?AppID\}?`)
 )
 
 // processCompose cleans a store compose file into the Box form and fills App.Compose,
@@ -408,7 +406,7 @@ func processCompose(a *catalog.App, src []byte, flavor string, mainPort int, all
 		})
 	}
 	// A store tip that names a default password Box replaced with a generated one would be wrong.
-	for _, lit := range secretsToVariables(a, services) {
+	for _, lit := range catalog.FixSecretsNode(a, doc) {
 		if regexp.MustCompile(`(^|[^A-Za-z0-9])` + regexp.QuoteMeta(lit) + `([^A-Za-z0-9]|$)`).MatchString(a.Notes) {
 			a.Notes = ""
 		}
@@ -506,111 +504,6 @@ func rewritePorts(ports *yaml.Node, mainPort int) {
 			}
 		}
 	}
-}
-
-// secretsToVariables replaces literal default passwords (POSTGRES_PASSWORD: tipi) with generated
-// secrets. All places that used the same literal get the same variable, so linked services still
-// match. A literal that also appears somewhere it cannot be safely replaced is left alone.
-// It returns the literals it replaced.
-func secretsToVariables(a *catalog.App, services *yaml.Node) []string {
-	cands := map[string]string{} // literal -> variable
-	var envSpots []struct {
-		key string
-		val *yaml.Node
-		pre string
-	}
-	for i := 1; i < len(services.Content); i += 2 {
-		env := mapGet(services.Content[i], "environment")
-		if env == nil {
-			continue
-		}
-		switch env.Kind {
-		case yaml.MappingNode:
-			for j := 0; j+1 < len(env.Content); j += 2 {
-				envSpots = append(envSpots, struct {
-					key string
-					val *yaml.Node
-					pre string
-				}{env.Content[j].Value, env.Content[j+1], ""})
-			}
-		case yaml.SequenceNode:
-			for _, n := range env.Content {
-				if k, _, ok := strings.Cut(n.Value, "="); ok {
-					envSpots = append(envSpots, struct {
-						key string
-						val *yaml.Node
-						pre string
-					}{k, n, k + "="})
-				}
-			}
-		}
-	}
-	value := func(s struct {
-		key string
-		val *yaml.Node
-		pre string
-	}) string {
-		return strings.TrimPrefix(s.val.Value, s.pre)
-	}
-	for _, s := range envSpots {
-		v := value(s)
-		if secretKeyRe.MatchString(s.key) && v != "" && !strings.Contains(v, "$") && len(v) < 200 &&
-			v != "true" && v != "false" && !strings.HasPrefix(v, "/") {
-			if _, ok := cands[v]; !ok {
-				cands[v] = "SECRET_" + strings.ToUpper(regexp.MustCompile(`[^A-Za-z0-9]+`).ReplaceAllString(s.key, "_"))
-			}
-		}
-	}
-	if len(cands) == 0 {
-		return nil
-	}
-	// Mark literals that show up anywhere we would not replace them.
-	handled := map[*yaml.Node]bool{}
-	unsafe := map[string]bool{}
-	for lit := range cands {
-		urlRe := regexp.MustCompile(`(://[^:/@\s]*:)` + regexp.QuoteMeta(lit) + `@`)
-		tokRe := regexp.MustCompile(`(^|[^A-Za-z0-9])` + regexp.QuoteMeta(lit) + `([^A-Za-z0-9]|$)`)
-		for _, s := range envSpots {
-			v := value(s)
-			// Whole env values are replaced (or, for a user name equal to the password, kept), and
-			// passwords inside URLs are replaced: everything else blocks the literal.
-			if v == lit || urlRe.MatchString(v) {
-				handled[s.val] = true
-			}
-		}
-		walkScalars(services, func(n *yaml.Node) {
-			if !handled[n] && tokRe.MatchString(n.Value) {
-				unsafe[lit] = true
-			}
-		})
-	}
-	added := map[string]bool{}
-	var replaced []string
-	for lit, varName := range cands {
-		if unsafe[lit] {
-			continue
-		}
-		urlRe := regexp.MustCompile(`(://[^:/@\s]*:)` + regexp.QuoteMeta(lit) + `@`)
-		for _, s := range envSpots {
-			v := value(s)
-			switch {
-			case v == lit && !(userKeyRe.MatchString(s.key) && !secretKeyRe.MatchString(s.key)):
-				s.val.Value = s.pre + "${" + varName + "}"
-			case urlRe.MatchString(v):
-				s.val.Value = s.pre + urlRe.ReplaceAllString(v, "${1}$${"+varName+"}@")
-			default:
-				continue
-			}
-			s.val.Style = 0
-			if !added[varName] {
-				added[varName] = true
-				replaced = append(replaced, lit)
-				a.Questions = append(a.Questions, catalog.Question{Key: varName, Label: humanize(strings.TrimPrefix(varName, "SECRET_")),
-					Type: "password", Generate: true, Min: 24, Hint: "Generated automatically. Enter your own to replace it."})
-			}
-		}
-	}
-	return replaced
 }
 
 // ---- yaml helpers ----
@@ -744,11 +637,6 @@ func slug(s string) string {
 		v = strings.Trim(v[:50], "-")
 	}
 	return v
-}
-
-func humanize(k string) string {
-	w := strings.ToLower(strings.ReplaceAll(k, "_", " "))
-	return strings.ToUpper(w[:1]) + w[1:]
 }
 
 func firstNonEmpty(v ...string) string {

@@ -39,8 +39,9 @@
    "label": "Auth credential key",
    "type": "password",
    "hint": "Generated automatically. Enter your own to replace it.",
-   "min": 24,
-   "generate": true
+   "min": 32,
+   "generate": true,
+   "format": "base64"
   },
   {
    "key": "SECRET_JWT_SECRET",

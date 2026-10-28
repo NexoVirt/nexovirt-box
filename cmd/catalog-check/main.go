@@ -1,6 +1,7 @@
 // catalog-check resolves every image of every app in the catalog against its registry
 // (anonymously, like a Box would pull it), drops apps whose image is missing or private,
-// records the architectures the images really ship, writes a report and re-signs the catalog.
+// records the architectures the images really ship, replaces literal default secrets with
+// generated ones, refuses to sign while any remain, writes a report and re-signs the catalog.
 // Run it after catalog-import:
 //
 //	go run ./cmd/catalog-check -catalog catalog
@@ -62,6 +63,11 @@ func main() {
 		if err != nil {
 			log.Fatalf("%s: %v", e.ID, err)
 		}
+		if lits, err := catalog.FixSecrets(a); err != nil {
+			log.Fatal(err)
+		} else if len(lits) > 0 {
+			fmt.Printf("secrets: %s: %d literal(s) now generated\n", a.ID, len(lits))
+		}
 		rep := &appReport{App: a}
 		for _, raw := range composeImages(a.Compose) {
 			im := &imageInfo{Raw: raw}
@@ -94,6 +100,17 @@ func main() {
 		if rep.Drop == "" {
 			kept = append(kept, rep.App)
 		}
+	}
+	// A public literal secret means every Box runs with the same password: never sign that.
+	bad := 0
+	for _, a := range kept {
+		if left, err := catalog.LiteralSecrets(a.Compose); err != nil || len(left) > 0 {
+			log.Printf("%s: literal secrets %v %v", a.ID, left, err)
+			bad++
+		}
+	}
+	if bad > 0 {
+		log.Fatalf("%d apps still carry a literal secret", bad)
 	}
 	if err := os.WriteFile(*reportPath, []byte(render(reports, len(unique))), 0o644); err != nil {
 		log.Fatal(err)
