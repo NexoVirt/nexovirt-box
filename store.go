@@ -198,6 +198,12 @@ func (s *Store) endOtherSessions(uid int64, keepHash string) []string {
 	return gone
 }
 
+func (s *Store) passwordHash(uid int64) string {
+	var h string
+	s.db.QueryRow(`SELECT password_hash FROM users WHERE id = ?`, uid).Scan(&h)
+	return h
+}
+
 func (s *Store) setPassword(uid int64, password string) error {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {

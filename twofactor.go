@@ -31,6 +31,7 @@ type pendingLogin struct {
 	fails    int
 	passkey  *webauthn.SessionData
 	username string
+	pwHash   string // password hash when the password matched; a change since then voids the sign-in
 }
 
 // twoFactor holds short-lived state in memory (pending sign-ins, setup secrets, WebAuthn
@@ -496,7 +497,7 @@ func (a *App) startPending(uid int64, username string) (string, []string) {
 			delete(a.tfa.pending, k)
 		}
 	}
-	a.tfa.pending[hashToken(tok)] = &pendingLogin{uid: uid, exp: now.Add(pendingTTL), username: username}
+	a.tfa.pending[hashToken(tok)] = &pendingLogin{uid: uid, exp: now.Add(pendingTTL), username: username, pwHash: a.store.passwordHash(uid)}
 	a.tfa.mu.Unlock()
 	totp, keys := a.store.has2FA(uid)
 	var methods []string
@@ -540,6 +541,10 @@ func (a *App) endPending(tok string) {
 
 func (a *App) finishLogin(w http.ResponseWriter, r *http.Request, p *pendingLogin, tok, how string) {
 	a.endPending(tok)
+	if p.pwHash == "" || p.pwHash != a.store.passwordHash(p.uid) {
+		fail(w, errPendingGone) // the password changed while this sign-in waited for its second step
+		return
+	}
 	a.store.audit(p.username, a.clientIP(r), "login.ok", how)
 	if err := a.startSession(w, r, p.uid); err != nil {
 		log.Printf("login session: %v", err)
@@ -638,4 +643,20 @@ func (a *App) loginPasskeyFinish(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	a.finishLogin(w, r, p, tok, "passkey")
+}
+
+// forgetUser drops pending sign-ins of uid and the 2FA enrolment state of ended sessions.
+func (t *twoFactor) forgetUser(uid int64, sessions []string) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	for k, p := range t.pending {
+		if p.uid == uid {
+			delete(t.pending, k)
+		}
+	}
+	for _, h := range sessions {
+		delete(t.totpNew, h)
+		delete(t.regs, h)
+		delete(t.regsUser, h)
+	}
 }

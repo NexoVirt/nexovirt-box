@@ -433,3 +433,41 @@ func TestPasswordChangeEndsOtherSessions(t *testing.T) {
 		t.Fatalf("new password does not work: %d", rec.Code)
 	}
 }
+
+func TestPasswordChangeVoidsPendingTwoStepSignIn(t *testing.T) {
+	app, h, token := newTestApp(t)
+	sess := setupAndLogin(t, h, token)
+	var begin map[string]string
+	json.Unmarshal(post(h, "/api/2fa/totp/begin", `{"password":"long-enough-pw"}`, sess).Body.Bytes(), &begin)
+	var enable struct {
+		RecoveryCodes []string `json:"recovery_codes"`
+	}
+	json.Unmarshal(post(h, "/api/2fa/totp/enable", `{"code":"`+totpCode(begin["secret"], uint64(time.Now().Unix()/30))+`"}`, sess).Body.Bytes(), &enable)
+	startLogin := func() string {
+		var lr map[string]any
+		json.Unmarshal(post(h, "/api/login", `{"username":"admin","password":"long-enough-pw"}`, "").Body.Bytes(), &lr)
+		p, _ := lr["pending"].(string)
+		if p == "" {
+			t.Fatalf("no pending sign-in: %v", lr)
+		}
+		return p
+	}
+
+	// Someone who knows the old password waits at the second step; the owner changes the password.
+	pending := startLogin()
+	if rec := post(h, "/api/account/password", `{"current":"long-enough-pw","new":"another-long-pw"}`, sess); rec.Code != 200 {
+		t.Fatalf("change: %d %s", rec.Code, rec.Body)
+	}
+	if rec := post(h, "/api/login/2fa", `{"pending":"`+pending+`","code":"`+enable.RecoveryCodes[0]+`"}`, ""); rec.Code == http.StatusOK || sessionFrom(rec) != "" {
+		t.Fatalf("a pending sign-in from before the change finished: %d", rec.Code)
+	}
+
+	// Even a pending entry that survived (password changed another way) is refused by the hash check.
+	var lr map[string]any
+	json.Unmarshal(post(h, "/api/login", `{"username":"admin","password":"another-long-pw"}`, "").Body.Bytes(), &lr)
+	pending2 := lr["pending"].(string)
+	app.store.setPassword(1, "third-long-password")
+	if rec := post(h, "/api/login/2fa", `{"pending":"`+pending2+`","code":"`+enable.RecoveryCodes[1]+`"}`, ""); rec.Code == http.StatusOK {
+		t.Fatal("a pending sign-in finished after the password hash changed")
+	}
+}

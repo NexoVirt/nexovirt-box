@@ -612,6 +612,7 @@ func (a *App) trustedText() string {
 // endOthers signs out every other browser and closes their consoles.
 func (a *App) endOthers(uid int64, keep string) int {
 	gone := a.store.endOtherSessions(uid, keep)
+	a.tfa.forgetUser(uid, gone)
 	for _, h := range gone {
 		a.consoles.closeAll(h)
 		a.proofs.Delete(h)
