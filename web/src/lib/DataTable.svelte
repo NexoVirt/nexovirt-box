@@ -47,6 +47,8 @@
 
   const keyOf = (r) => (typeof key === 'function' ? key(r) : r[key]);
   const valueOf = (c, r) => (c.value ? c.value(r) : r[c.key]);
+  // A cell whose value is empty is left out of the stacked phone rows (columns without a value stay).
+  const blank = (c, r) => (c.value || c.key in r) && (valueOf(c, r) == null || valueOf(c, r) === '');
   const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
   function cmp(a, b) {
     if (a == null || a === '') return b == null || b === '' ? 0 : 1;
@@ -204,13 +206,13 @@
               {/if}
               {#each columns as c (c.key)}
                 <td class="{c.cls || ''} {c.hide ? 'hide-' + c.hide : ''}" class:right={c.align === 'right'} class:mono={c.mono} class:wrap={c.wrap}
-                  class:primary={c.primary} data-label={c.primary ? '' : c.label}>
-                  {#if cell}{@render cell(r, c)}{:else}{r[c.key] ?? ''}{/if}
+                  class:primary={c.primary} class:blank={blank(c, r)} data-label={c.primary ? '' : c.label}>
+                  <span class="cv">{#if cell}{@render cell(r, c)}{:else}{r[c.key] ?? ''}{/if}</span>
                 </td>
               {/each}
               {#if actions || expandable}
                 <td class="c-actions" data-label="">
-                  {#if actions}
+                  {#if actions && actions(r).some(Boolean)}
                     <button class="icon-btn sm" onclick={(e) => menuFromButton(e, r)} aria-haspopup="menu" aria-label="Actions"><Ellipsis size={18} /></button>
                   {/if}
                   {#if canOpen}
@@ -293,6 +295,7 @@
   tr.clickable { cursor: pointer; }
   .right { text-align: right; }
   .primary { font-weight: 500; }
+  .cv { display: contents; }
   .sort { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
   .sort:hover, .sort.on { color: var(--text); }
   .c-select { width: 2.75rem; }
@@ -320,10 +323,12 @@
     .search { width: 100%; flex: 1 1 100%; }
     .filters { width: 100%; margin-left: 0; }
     .filters :global(select.input) { flex: 1; min-width: 0; }
-    .hide-sm { display: none !important; }
+    .hide-sm, td.blank { display: none !important; }
     table, tbody, tr, td { display: block; width: auto !important; max-width: none; }
     thead { display: none; }
-    tbody tr { position: relative; padding: 0.75rem 1rem; border-bottom: 1px solid var(--hairline); }
+    tbody tr { position: relative; display: flex; flex-direction: column; padding: 0.75rem 1rem; border-bottom: 1px solid var(--hairline); }
+    td.primary { order: -1; }
+    .cv { display: block; min-width: 0; }
     tbody tr:last-child { border-bottom: 0; }
     td { height: auto; padding: 0.1875rem 0; border: 0 !important; display: flex; align-items: center; justify-content: space-between; gap: 1rem; text-align: right; white-space: normal; overflow-wrap: anywhere; }
     td:first-child, td:last-child { padding-left: 0; padding-right: 0; }

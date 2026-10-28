@@ -181,7 +181,7 @@
   .skeleton.line { display: block; width: 50%; height: 1rem; }
   .skeleton.disk { width: 1.75rem; height: 1.75rem; }
 
-  .who { display: inline-flex; align-items: center; gap: 0.625rem; min-width: 0; max-width: 100%; }
+  .who { display: flex; align-items: center; gap: 0.625rem; min-width: 0; max-width: 100%; }
   .muted { color: var(--text-2); }
   .state { display: inline-flex; align-items: center; gap: 0.625rem; }
   .verdict { display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 500; }

@@ -31,6 +31,7 @@
   import RefreshCw from '@lucide/svelte/icons/refresh-cw';
   import History from '@lucide/svelte/icons/history';
   import Settings2 from '@lucide/svelte/icons/settings-2';
+  import ChevronRight from '@lucide/svelte/icons/chevron-right';
 
   let { onSessionLost } = $props();
 
@@ -60,6 +61,7 @@
   ];
   let tab = $state(TABS.some((t) => t.value === location.hash.slice(1)) ? location.hash.slice(1) : 'overview');
   $effect(() => { if (location.hash.slice(1) !== tab) history.replaceState(null, '', '#' + tab); });
+  function hashTab() { const h = location.hash.slice(1); if (TABS.some((t) => t.value === h)) tab = h; }
   // archives on one target
   let archTarget = $state(''), archives = $state(null), archError = $state(''), archApp = $state(''), archSeq = 0;
   let histSort = $state({ key: 'at', dir: 'desc' }), histStatus = $state('');
@@ -258,6 +260,8 @@
   });
 </script>
 
+<svelte:window onhashchange={hashTab} />
+
 <div class="page fill">
   <header class="page-head compact">
     <div>
@@ -359,18 +363,18 @@
 
       <section class="group">
         <button class="row link-row" onclick={() => (tab = 'archives')}>
-          <span class="ico"><Archive /></span><span class="grow"><span>All backups</span><span class="t-caption">Browse, check, restore or delete what is stored on a target.</span></span>
+          <span class="ico"><Archive /></span><span class="grow"><span>All backups</span><span class="t-caption">Browse, check, restore or delete what is stored on a target.</span></span><span class="chev"><ChevronRight size={16} /></span>
         </button>
         <button class="row link-row" onclick={() => (tab = 'schedules')}>
-          <span class="ico"><CalendarClock /></span><span class="grow"><span>Schedules</span><span class="t-caption">{data.schedules.length ? `${data.schedules.filter((s) => s.enabled).length} of ${data.schedules.length} on` : 'None yet'}</span></span>
+          <span class="ico"><CalendarClock /></span><span class="grow"><span>Schedules</span><span class="t-caption">{data.schedules.length ? `${data.schedules.filter((s) => s.enabled).length} of ${data.schedules.length} on` : 'None yet'}</span></span><span class="chev"><ChevronRight size={16} /></span>
         </button>
         <button class="row link-row" onclick={() => (tab = 'targets')}>
-          <span class="ico"><Server /></span><span class="grow"><span>Targets</span><span class="t-caption">{targets.length ? targets.map((t) => t.name).join(', ') : 'None yet'}</span></span>
+          <span class="ico"><Server /></span><span class="grow"><span>Targets</span><span class="t-caption">{targets.length ? targets.map((t) => t.name).join(', ') : 'None yet'}</span></span><span class="chev"><ChevronRight size={16} /></span>
         </button>
       </section>
     </div>
   {:else if tab === 'archives'}
-    <DataTable fill label="Backups" columns={ARCH_COLS} rows={targets.length ? archives : []} key="name" error={archError} onretry={loadArchives}
+    <DataTable fill label="Backups" title={targets.find((t) => t.id === archTarget)?.name || ''} description={targets.find((t) => t.id === archTarget) ? where(targets.find((t) => t.id === archTarget)) : ''} columns={ARCH_COLS} rows={targets.length ? archives : []} key="name" error={archError} onretry={loadArchives}
       searchable placeholder="Search backups" bind:search={archApp} sort={{ key: 'at', dir: 'desc' }}
       empty={{ icon: Archive, title: targets.length ? 'No backups on this target' : 'No target yet', text: targets.length ? 'Back up now or add a schedule.' : 'Add a target first.' }}
       actions={(a) => [
@@ -441,7 +445,7 @@
       {#snippet cell(r, c)}
         {#if c.key === 'at'}<span title={full(r.at)}>{ago(r.at)}</span>
         {:else if c.key === 'app'}<span class="who">{@render appMark(r.app)}<span class="truncate">{appName(r.app)}</span></span>
-        {:else if c.key === 'kind'}{KIND[r.kind] || r.kind}{#if r.source === 'schedule'}<span class="muted"> (scheduled)</span>{/if}
+        {:else if c.key === 'kind'}{KIND[r.kind] || r.kind}{#if r.source === 'schedule'}<span class="muted">{' (scheduled)'}</span>{/if}
         {:else if c.key === 'target'}{r.target_name || targetName(r.target)}
         {:else if c.key === 'size'}<span class="num">{r.size ? bytes(r.size) : ''}</span>
         {:else if c.key === 'seconds'}<span class="num muted">{r.seconds}s</span>
@@ -569,7 +573,8 @@
   .link { padding: 0; border: 0; background: none; color: var(--accent); font: inherit; font-weight: 600; cursor: pointer; justify-self: start; }
   .link-row { width: 100%; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
   .link-row:hover { background: var(--fill); }
-  .who { display: inline-flex; align-items: center; gap: 0.625rem; min-width: 0; max-width: 100%; }
+  .chev { display: grid; color: var(--text-3); }
+  .who { display: flex; align-items: center; gap: 0.625rem; min-width: 0; max-width: 100%; }
   .muted { color: var(--text-2); }
   .warn-pill { color: var(--warn); }
   .res { display: inline-flex; align-items: center; gap: 0.4rem; }

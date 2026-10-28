@@ -420,7 +420,7 @@
   .banner .grow { flex: 1; min-width: 0; display: grid; gap: 0.125rem; }
   .skeleton.line { display: block; width: 55%; height: 1rem; }
   .state { display: inline-flex; align-items: center; gap: 0.375rem; margin-right: 0.25rem; }
-  .who { display: inline-flex; align-items: center; gap: 0.625rem; min-width: 0; max-width: 100%; }
+  .who { display: flex; align-items: center; gap: 0.625rem; min-width: 0; max-width: 100%; }
   .muted { color: var(--text-2); }
   .users { display: flex; flex-wrap: wrap; gap: 0.5rem; }
   .check { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.5rem; padding: 0 0.875rem; border-radius: var(--r-pill); background: var(--fill); cursor: pointer; font-weight: 500; }

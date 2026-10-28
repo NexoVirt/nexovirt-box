@@ -692,7 +692,7 @@
 
 <style>
   .sessions { margin-top: 1.25rem; }
-  .who { display: inline-flex; align-items: center; gap: 0.625rem; min-width: 0; max-width: 100%; }
+  .who { display: flex; align-items: center; gap: 0.625rem; min-width: 0; max-width: 100%; }
   .muted { color: var(--text-2); }
   .layout { display: grid; grid-template-columns: 14.5rem minmax(0, 1fr); gap: 1.5rem; align-items: start; }
   .tabs { position: sticky; top: 5rem; display: grid; gap: 0.125rem; padding: 0.375rem; border-radius: var(--r-tile); background: var(--surface); box-shadow: var(--shadow-tile); }
