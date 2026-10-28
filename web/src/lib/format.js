@@ -1,0 +1,27 @@
+export function bytes(n, digits = 1) {
+  if (!n || n < 0) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+  let i = 0;
+  while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; }
+  return `${n.toFixed(i === 0 ? 0 : digits)} ${units[i]}`;
+}
+
+export function rate(n) {
+  return `${bytes(n)}/s`;
+}
+
+export function pct(used, total) {
+  return total > 0 ? Math.min(100, Math.round((used / total) * 1000) / 10) : 0;
+}
+
+export function duration(sec) {
+  const d = Math.floor(sec / 86400), h = Math.floor((sec % 86400) / 3600), m = Math.floor((sec % 3600) / 60);
+  if (d > 0) return `${d}d ${h}h`;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
+// Status colour for a usage percentage.
+export function level(p) {
+  return p >= 90 ? 'red' : p >= 75 ? 'yellow' : 'green';
+}

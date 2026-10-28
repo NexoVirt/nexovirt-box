@@ -1,0 +1,9 @@
+import { defineConfig } from 'vite';
+import { svelte } from '@sveltejs/vite-plugin-svelte';
+
+// Dev: `npm run dev` proxies /api to a Box started with `go run . -dev -listen 127.0.0.1:8080`.
+export default defineConfig({
+  plugins: [svelte()],
+  build: { outDir: 'dist', emptyOutDir: true, assetsInlineLimit: 0, chunkSizeWarningLimit: 1500 },
+  server: { proxy: { '/api': { target: 'http://127.0.0.1:8080', ws: true, changeOrigin: false } } },
+});

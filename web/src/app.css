@@ -1,0 +1,13 @@
+/* NexoVirt Box overrides, loaded after Tabler and theme.css (the panel's zinc + blue brand variables). */
+
+/* Tabler 1.4.0 quirk: icon-only buttons collapse (documented fix). */
+.btn.btn-icon { padding-left: var(--tblr-btn-padding-y); padding-right: var(--tblr-btn-padding-y); }
+.btn.btn-icon .icon { margin: 0; }
+
+/* Same sidebar as the panel: follows the theme instead of Tabler's forced dark surface. */
+.navbar-vertical {
+  background-color: var(--tblr-body-bg);
+  border-right: var(--tblr-border-width) solid var(--tblr-border-color);
+}
+
+.nx-logo { color: var(--tblr-body-color); }
