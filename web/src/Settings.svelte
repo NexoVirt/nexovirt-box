@@ -121,12 +121,22 @@
   async function applyUpdate() {
     updBusy = true;
     updLines = [];
+    const target = updates.box.latest;
     const job = await runJob('/api/updates/box/apply', {}, (j) => (updLines = j.lines));
+    // The web service restarts during the update, so the job usually ends with the old process.
+    // Then wait until the new version answers.
+    let installed = job.status === 'done';
+    for (let i = 0; !installed && job.status !== 'done' && i < 45; i++) {
+      const st = await api('/api/auth/state');
+      if (st.ok && st.data.version === target) installed = true;
+      else if (st.ok && job.error && !/no longer known|not reachable/i.test(job.error)) break;
+      else await new Promise((r) => setTimeout(r, 2000));
+    }
     updBusy = false;
-    if (job.status === 'done') {
-      toast(`NexoVirt Box ${job.result.version} is installed. The page reloads.`, 'success');
-      setTimeout(() => location.reload(), 4000);
-    } else toast(job.error, 'error', 10000);
+    if (installed) {
+      toast(`NexoVirt Box ${target} is installed. The page reloads.`, 'success');
+      setTimeout(() => location.reload(), 3000);
+    } else toast(job.error || 'The update did not finish. Check the activity log.', 'error', 10000);
   }
 
   async function prune() {
@@ -392,7 +402,7 @@
           <span class="t-caption">
             {#if !updates?.box.configured}Set an update address below to get new versions.
             {:else if updates.box.error}{updates.box.error}
-            {:else if updates.box.available}Version {updates.box.latest} is available.{#if updates.box.notes} {updates.box.notes}{/if}
+            {:else if updates.box.available}{`Version ${updates.box.latest} is available. ${updates.box.notes || ''}`}
             {:else if updates.box.latest}This is the newest version.
             {:else}Not checked yet.{/if}
           </span>

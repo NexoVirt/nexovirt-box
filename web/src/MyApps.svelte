@@ -110,7 +110,7 @@
       return;
     }
     domainOpen = false;
-    toast(res.data.domain ? res.data.note : 'The domain was removed.', 'success', 9000);
+    toast(res.data.domain ? res.data.note : 'The domain was removed.', res.data.tls === 'internal' ? 'info' : 'success', 9000);
     load();
   }
 

@@ -37,8 +37,11 @@ Variables Box always provides: `APP_ID`, `APP_DATA_DIR` (`/var/lib/nexovirt-box/
   compose.yaml   verbatim from the catalog, 0600, never rewritten
   .env           answers, generated secrets and Box variables, 0600
   app.json       name, version, port, catalog source, install time
-  data/          APP_DATA_DIR
+  data/          APP_DATA_DIR (unless a data folder was chosen at install, recorded in app.json)
 ```
+
+A chosen data folder must be new or empty and outside system folders. "Delete data" removes it only when Box
+created it.
 
 Docker runs `docker compose --project-name nxbox-<id> -f compose.yaml --env-file .env ...`. Before `up`, the helper
 renders `docker compose config` and refuses ports that are already in use. Update = `pull` + `up -d` (the compose
@@ -49,10 +52,25 @@ file stays). Uninstall = `down`, then either delete the folder or keep `data/` f
 - `catalog/index.json`: `generated_at`, and per app the summary fields plus `file` and `sha256`.
 - `catalog/index.sig`: Ed25519 signature (base64) over the exact bytes of `index.json`.
 - The public key is compiled into Box (`internal/catalog/key.go`). The built-in catalog is embedded in the binary.
-  A synced catalog (`-catalog-url`) is verified by the web process for display and again by the helper before
-  every install; an older `generated_at` than the built-in one is refused (no rollback).
-- **Dev key**: `keys/catalog-dev.key` (in the repo, for development only). Replace it with an offline key before
-  a public release and update the public key.
+  A synced catalog (the "Online catalog address" in Settings, or `-catalog-url`) is verified by the web process for
+  display and again by the helper before every install; an older `generated_at` than the built-in one is refused
+  (no rollback).
+- **Release key**: the private half lives only at `~/.config/nexovirt/box-catalog.key` (0600) on the machine that
+  builds the catalog, never in this repository. `go run ./cmd/catalog-import ...` signs with it by default.
+- **Dev key**: `keys/catalog-dev.key` stays in the repo so anyone can rebuild a catalog for testing; only builds with
+  `-tags devkey` accept it.
+
+### Hosting an online catalog (owner decides)
+
+The online catalog is plain static files: `index.json`, `index.sig` and `apps/*.json`, exactly as in `catalog/`.
+Any HTTPS static host works, because Box trusts the signature, not the host. Options:
+
+- a path on the NexoVirt website (for example `https://nexovirt.com/box/catalog`, the same Plesk host),
+- a GitHub Pages site or GitHub release assets of a public catalog repository,
+- an object storage bucket (Cloudflare R2, S3) behind HTTPS.
+
+Publishing = run the importer, upload the folder, then raise `generated_at` (the importer does). Boxes pick it up
+with "Sync now" in Settings.
 
 ## Importer (`cmd/catalog-import`)
 
@@ -66,7 +84,8 @@ Offline tool that builds `catalog/` from local checkouts of:
 
 Umbrel apps are not imported (no license).
 
-Rules: dedupe by name (Runtipi first, then CasaOS, then BigBear); skip apps with `privileged`, host network or
+Rules: dedupe by normalized name and by main image (registry, `library/` and tag ignored, databases and other
+helper images skipped), Runtipi first, then CasaOS, then BigBear; every merge is printed; skip apps with `privileged`, host network or
 host PID; literal passwords in the compose (`POSTGRES_PASSWORD: tipi`) become generated secrets, shared across
 every variable that used the same literal so linked services still match; the web port becomes `${APP_PORT}`.
 Each app keeps its store, URL and license in `attribution`; the full license texts are in `catalog/LICENSES/`.

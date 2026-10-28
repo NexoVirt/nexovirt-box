@@ -79,6 +79,7 @@
     if (res.status === 401) return onSessionLost();
     if (!res.ok) return toast(res.error, 'error', 9000);
     startCountdown(res.data.change, res.data.seconds);
+    load(); // the saved rules carry their ids now
   }
 
   function startCountdown(id, left) {
@@ -195,6 +196,7 @@
 
 <style>
   .pending { display: flex; align-items: center; gap: 0.875rem; }
+  .pending .grow { flex: 1; min-width: 0; display: grid; gap: 0.125rem; }
   .ico.warn { background: color-mix(in srgb, var(--warn) 16%, transparent); color: var(--warn); }
   .head-btns { display: flex; gap: 0.5rem; flex-wrap: wrap; }
   .select-sm { min-height: 2.25rem; padding-block: 0; width: auto; font-size: 0.8125rem; }

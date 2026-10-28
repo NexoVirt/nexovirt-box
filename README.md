@@ -6,9 +6,16 @@ dashboard in the browser.
 
 **Status: test version.** It shows the live system load (CPU per thread, memory, swap, load
 average, uptime, the last 10 minutes as charts), the mounted drives and the network throughput,
-has an **app store** with 677 Docker apps (install, open, start, stop, restart, update, logs,
-uninstall), a root console in the browser and an activity log. File explorer and firewall
-management come later.
+and has:
+
+- an **app store** with 625 Docker apps (install with your own data folder, open, start, stop,
+  restart, update notices, logs, uninstall),
+- **HTTPS for apps** under their own domain through a reverse proxy (Caddy, Let's Encrypt when the
+  domain points to the server),
+- a **file explorer** (browse, upload, download, preview, rename, move, delete),
+- **firewall** rules with automatic undo when a change locks you out,
+- a root **console** in the browser, an **activity log**, two-step sign-in (authenticator app,
+  passkeys, recovery codes) and signed self-updates.
 
 ## Install
 
@@ -37,22 +44,38 @@ on a reachable server) and `cd web && npm run dev` for the UI with hot reload.
 
 ## Security notes
 
-- The console is a root shell. It is only reachable after sign-in; the WebSocket checks the
-  Origin, and every write request must come from the Box's own origin (plus SameSite=Strict
-  session cookies).
-- The web UI runs as the unprivileged user `nexovirt-box`. Root work (the console, Docker) goes
-  through `nexovirt-box helper`, a root service on a unix socket that only the web user may use
-  and that only knows a fixed list of actions.
-- Docker is only used through that helper, and it only runs app definitions from the catalog
-  signed by NexoVirt. Generated passwords and your answers are stored in a private `.env` per
-  app, never in the compose file.
-- Opening the console asks for your password again when the last confirmation is older than
-  5 minutes. Signing out closes open consoles. Sign-ins and console sessions are in the
-  activity log.
-- Sign-in, setup and password confirmation are limited to 5 attempts per minute per IP, also
-  across restarts. `X-Forwarded-For` is only trusted from proxies listed in `-trusted-proxies`.
-- Passwords are stored as bcrypt hashes; sessions as SHA-256 hashes of random tokens; the
-  database is readable by the web user only.
+- The web UI runs as the unprivileged user `nexovirt-box`. Root work (console, Docker, firewall,
+  files, reverse proxy, updates) goes through `nexovirt-box helper`, a root service on a unix
+  socket that only the web user may use and that only knows a fixed list of typed actions.
+- The console is a root shell. The helper itself checks the password (and the 2FA code) and gives
+  out a 5-minute proof bound to the session; without it the helper refuses to start a shell, so
+  even a compromised web process cannot open one. Signing out closes open consoles.
+- Two-step sign-in: TOTP with 10 single-use recovery codes, and passkeys. Browsers only allow
+  passkeys on a domain name with a trusted certificate (or localhost), not on an IP address.
+- Docker is only used through the helper, and it only runs app definitions from the catalog
+  signed by NexoVirt. Generated passwords and your answers are in a private `.env` per app; the
+  compose file is never rewritten.
+- Firewall: Box only changes its own rules (its own nftables table, ufw rules tagged
+  `nexovirt-box:`, or the firewalld rich rules it added) and shows the others read only. Each
+  change must be confirmed within 60 seconds with a new request, else the helper restores the
+  previous rules. Blocking the Box port needs a typed confirmation.
+- Files: every path is resolved and must stay inside the allowed folders; /etc, /root, /proc,
+  /sys, /dev, /boot and /run are refused (only an edit of `/etc/nexovirt-box/files.json` on the
+  server can allow them). Previews are sandboxed; SVG and HTML are always downloads.
+- Reverse proxy: Box never takes over a port another program uses; with 80/443 taken you pick
+  other ports.
+- Self-updates: only releases signed with the NexoVirt release key, applied on click; when the
+  new version does not answer, the old binary is restored.
+- Failed sign-ins, setup and password confirmations are limited to 5 per minute per IP (counted
+  atomically, also across restarts). `X-Forwarded-For` is only trusted from `-trusted-proxies`.
+- Passwords are bcrypt hashes; sessions SHA-256 hashes of random tokens; the database is readable
+  by the web user only.
+
+## Releases
+
+`go run ./cmd/release-sign -version X -base <public URL> -out dist bin/nexovirt-box-linux-*`
+writes `latest.json` and `latest.json.sig` (signed with `~/.config/nexovirt/box-release.key`,
+kept outside the repository). Upload the folder to the update address set in Settings.
 
 ## App catalog
 
@@ -66,7 +89,8 @@ belong to their projects. See `docs/app-store.md`.
 ## Tech
 
 Go (standard library HTTP server, SQLite via modernc.org/sqlite, gopsutil, creack/pty,
-coder/websocket, yaml.v3 in the catalog importer; apps run with `docker compose`) with a Svelte 5 UI using its own Apple-inspired design system (plain CSS, no UI framework)
+coder/websocket, go-webauthn, go-qrcode, yaml.v3 in the catalog importer; apps run with
+`docker compose`, the reverse proxy is the official Caddy image) with a Svelte 5 UI using its own Apple-inspired design system (plain CSS, no UI framework)
 and [Lucide](https://lucide.dev) icons (ISC), built into the binary.
 
 ## License

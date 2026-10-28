@@ -307,7 +307,7 @@ func (h *helperServer) selfUpdate(req helperRequest, logf func(string)) (any, er
 	}
 	exe, _ = filepath.EvalSymlinks(exe)
 	newPath, bakPath := exe+".new", exe+".bak"
-	if err := os.WriteFile(newPath, bin, 0o755); err != nil {
+	if err := writeExecutable(newPath, bin); err != nil {
 		return nil, err
 	}
 	if out, err := exec.CommandContext(ctx, newPath, "version").Output(); err != nil || strings.TrimSpace(string(out)) != m.Version {
@@ -326,6 +326,7 @@ func (h *helperServer) selfUpdate(req helperRequest, logf func(string)) (any, er
 	if !webHealthy(m.Version, req.HTTPPort) {
 		logf("The new version did not answer. Putting the old version back.")
 		os.Rename(bakPath, exe)
+		os.Chmod(exe, 0o755)
 		exec.Command("systemctl", "restart", "nexovirt-box").Run()
 		return nil, uerr("NexoVirt Box %s did not start correctly, so the previous version was restored.", m.Version)
 	}
@@ -340,7 +341,17 @@ func copyFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(dst, b, 0o755)
+	return writeExecutable(dst, b)
+}
+
+// writeExecutable writes a binary the unprivileged web user can run: mode 0755 set explicitly,
+// because the process umask (077) would otherwise make it 0700 root and the web unit could not
+// start (203/EXEC).
+func writeExecutable(path string, b []byte) error {
+	if err := os.WriteFile(path, b, 0o755); err != nil {
+		return err
+	}
+	return os.Chmod(path, 0o755)
 }
 
 // webHealthy waits for the web service to answer with the expected version.

@@ -29,7 +29,13 @@ if ! id "$USER_NAME" >/dev/null 2>&1; then
 fi
 
 systemctl stop nexovirt-box 2>/dev/null || true
-install -m 0755 "$BIN_SRC" /usr/local/bin/nexovirt-box
+install -m 0755 -o root -g root "$BIN_SRC" /usr/local/bin/nexovirt-box
+chmod 0755 /usr/local/bin/nexovirt-box
+# The web unit runs as $USER_NAME: it must be able to execute the binary (else 203/EXEC).
+if ! su -s /bin/sh "$USER_NAME" -c '/usr/local/bin/nexovirt-box version' >/dev/null 2>&1; then
+  echo "The user $USER_NAME cannot run /usr/local/bin/nexovirt-box. Check its mode (needs 0755) and the mount options of /usr/local." >&2
+  exit 1
+fi
 install -d -m 0755 -o root -g root "$BASE"
 install -d -m 0700 -o "$USER_NAME" -g "$USER_NAME" "$WEB"
 install -d -m 0700 -o root -g root "$APPS"

@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"syscall"
 	"testing"
 )
 
@@ -54,6 +55,18 @@ func TestCheckDataDir(t *testing.T) {
 	os.WriteFile(filepath.Join(dir, "f"), []byte("x"), 0o600)
 	if checkDataDir(dir) == nil {
 		t.Fatal("non-empty folder accepted")
+	}
+}
+
+func TestWriteExecutableIgnoresUmask(t *testing.T) {
+	old := syscall.Umask(0o077)
+	defer syscall.Umask(old)
+	p := filepath.Join(t.TempDir(), "bin")
+	if err := writeExecutable(p, []byte("x")); err != nil {
+		t.Fatal(err)
+	}
+	if st, _ := os.Stat(p); st.Mode().Perm() != 0o755 {
+		t.Fatalf("mode %v, the web user could not run it", st.Mode().Perm())
 	}
 }
 
