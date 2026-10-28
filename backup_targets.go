@@ -252,7 +252,12 @@ func (h *helperServer) backupTargets(req helperRequest, _ func(string)) (any, er
 	return map[string]any{"targets": out, "pbs_client": err == nil, "default_path": h.defaultBackupDir()}, nil
 }
 
+var errProofBackup = userError{"Enter your password to change backup targets or delete backups."}
+
 func (h *helperServer) backupTargetSave(req helperRequest, _ func(string)) (any, error) {
+	if !h.consoleAllowed(req) {
+		return nil, errProofBackup
+	}
 	if req.Target == nil {
 		return nil, uerr("The request could not be read.")
 	}
@@ -304,6 +309,9 @@ func (h *helperServer) backupTargetSave(req helperRequest, _ func(string)) (any,
 }
 
 func (h *helperServer) backupTargetDelete(req helperRequest, _ func(string)) (any, error) {
+	if !h.consoleAllowed(req) {
+		return nil, errProofBackup
+	}
 	backupMu.Lock()
 	defer backupMu.Unlock()
 	ts := h.loadTargets()
@@ -601,6 +609,9 @@ func (h *helperServer) backupList(req helperRequest, _ func(string)) (any, error
 }
 
 func (h *helperServer) backupDelete(req helperRequest, _ func(string)) (any, error) {
+	if !h.consoleAllowed(req) {
+		return nil, errProofBackup
+	}
 	if _, _, ok := parseArchiveName(req.Name); !ok {
 		return nil, uerr("This backup does not exist.")
 	}

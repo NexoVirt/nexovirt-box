@@ -230,3 +230,20 @@ func TestScheduleDue(t *testing.T) {
 		t.Fatalf("weekly: %v", d)
 	}
 }
+
+// Changing targets and deleting backups need the helper-checked password proof.
+func TestBackupWritesNeedProof(t *testing.T) {
+	h := &helperServer{appsDir: filepath.Join(t.TempDir(), "apps"), webState: t.TempDir(), etcDir: t.TempDir(), proofs: newProofKeeper()}
+	tgt := backupTarget{Type: "local", Name: "x", Path: "/srv/backups"}
+	calls := map[string]func() (any, error){
+		"save":          func() (any, error) { return h.backupTargetSave(helperRequest{Target: &tgt}, nil) },
+		"target_delete": func() (any, error) { return h.backupTargetDelete(helperRequest{TargetID: "abcdefgh1234"}, nil) },
+		"delete":        func() (any, error) { return h.backupDelete(helperRequest{TargetID: "abcdefgh1234", Name: "a-20261028T090500Z.nxb"}, nil) },
+		"restore":       func() (any, error) { return h.backupRestore(t.Context(), helperRequest{TargetID: "abcdefgh1234", Name: "a-20261028T090500Z.nxb"}, func(string) {}) },
+	}
+	for name, call := range calls {
+		if _, err := call(); err == nil || !strings.Contains(err.Error(), "password") {
+			t.Errorf("%s without a proof: %v", name, err)
+		}
+	}
+}

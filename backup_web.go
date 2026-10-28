@@ -176,9 +176,9 @@ func (a *App) startBackup(app, target, source, user, ip string) (*job, error) {
 			return nil, err
 		}
 		var res struct {
-			Name    string
-			Size    int64
-			Seconds int64
+			Name    string `json:"name"`
+			Size    int64  `json:"size"`
+			Seconds int64  `json:"seconds"`
 		}
 		json.Unmarshal(raw, &res)
 		rec.Status, rec.Name, rec.Size, rec.Seconds = "ok", res.Name, res.Size, res.Seconds
@@ -321,13 +321,23 @@ func (a *App) backupKeySet(w http.ResponseWriter, r *http.Request) {
 	w.Write(raw)
 }
 
+// proofReq adds the session's password proof; the helper checks it itself.
+func (a *App) proofReq(r *http.Request, req helperRequest) helperRequest {
+	tok := sessionToken(r)
+	req.Session, req.Proof = hashToken(tok), a.consoleProof(tok)
+	return req
+}
+
 func (a *App) backupTargetSave(w http.ResponseWriter, r *http.Request) {
 	var t backupTarget
 	if err := readJSON(r, &t); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	raw, err := a.helperCall(r, helperRequest{Action: "backup_target_save", Target: &t}, 15*time.Second)
+	if !a.needProof(w, r) {
+		return
+	}
+	raw, err := a.helperCall(r, a.proofReq(r, helperRequest{Action: "backup_target_save", Target: &t}), 15*time.Second)
 	if err != nil {
 		writeError(w, http.StatusUnprocessableEntity, friendly(err))
 		return
@@ -345,7 +355,10 @@ func (a *App) backupTargetDelete(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if _, err := a.helperCall(r, helperRequest{Action: "backup_target_delete", TargetID: id}, 10*time.Second); err != nil {
+	if !a.needProof(w, r) {
+		return
+	}
+	if _, err := a.helperCall(r, a.proofReq(r, helperRequest{Action: "backup_target_delete", TargetID: id}), 10*time.Second); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, friendly(err))
 		return
 	}
@@ -499,7 +512,10 @@ func (a *App) backupDelete(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	if _, err := a.helperCall(r, helperRequest{Action: "backup_delete", TargetID: in.Target, Name: in.Name}, 60*time.Second); err != nil {
+	if !a.needProof(w, r) {
+		return
+	}
+	if _, err := a.helperCall(r, a.proofReq(r, helperRequest{Action: "backup_delete", TargetID: in.Target, Name: in.Name}), 60*time.Second); err != nil {
 		writeError(w, http.StatusUnprocessableEntity, friendly(err))
 		return
 	}

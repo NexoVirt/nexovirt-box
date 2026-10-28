@@ -86,11 +86,13 @@ type notifyRule struct {
 }
 
 // Fields per channel kind; secret fields are sealed in the database.
-var channelFields = map[string]struct{ fields, secrets []string }{
-	"email":   {[]string{"host", "port", "security", "username", "password", "from", "to"}, []string{"password"}},
-	"discord": {[]string{"url"}, []string{"url"}},
-	"ntfy":    {[]string{"server", "topic", "token"}, []string{"token"}},
-	"webhook": {[]string{"url", "token"}, []string{"url", "token"}},
+// dest are the fields that decide where a message (and so a stored secret) goes: when one of
+// them changes, kept secrets are dropped and must be entered again.
+var channelFields = map[string]struct{ fields, secrets, dest []string }{
+	"email":   {[]string{"host", "port", "security", "username", "password", "from", "to"}, []string{"password"}, []string{"host", "port", "security", "username"}},
+	"discord": {[]string{"url"}, []string{"url"}, nil},
+	"ntfy":    {[]string{"server", "topic", "token"}, []string{"token"}, []string{"server", "topic"}},
+	"webhook": {[]string{"url", "token"}, []string{"url", "token"}, []string{"url"}},
 }
 
 const (
@@ -207,6 +209,9 @@ func (n *notifier) validate(c notifyChannel) error {
 		if cfg["security"] == "none" && !privateHost(cfg["host"]) {
 			return uerr("Unencrypted mail is only allowed to this server or a private network.")
 		}
+		if cfg["username"] != "" && cfg["password"] == "" {
+			return uerr("Enter the password for the mail server user.")
+		}
 		if !emailAddrRe.MatchString(cfg["from"]) {
 			return uerr("Enter the sender address.")
 		}
@@ -256,7 +261,14 @@ func (n *notifier) saveChannel(c notifyChannel) (int64, error) {
 		if err != nil {
 			return 0, err
 		}
-		if old.Kind == c.Kind {
+		same := old.Kind == c.Kind
+		for _, d := range spec.dest {
+			// An empty secret URL keeps the stored one, so it is the same destination.
+			if clean[d] != "" && clean[d] != old.Config[d] {
+				same = false
+			}
+		}
+		if same {
 			for _, s := range spec.secrets {
 				if clean[s] == "" {
 					clean[s] = old.Config[s]

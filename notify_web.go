@@ -32,6 +32,9 @@ func (a *App) notifyChannelSave(w http.ResponseWriter, r *http.Request) {
 	if c.Config == nil {
 		c.Config = map[string]string{}
 	}
+	if !a.needProof(w, r) {
+		return
+	}
 	id, err := a.notify.saveChannel(c)
 	if err != nil {
 		writeError(w, http.StatusUnprocessableEntity, friendly(err))
@@ -54,6 +57,9 @@ func (a *App) notifyChannelDelete(w http.ResponseWriter, r *http.Request) {
 func (a *App) notifyChannelTest(w http.ResponseWriter, r *http.Request) {
 	if !a.limiter.allow("notifytest:" + a.clientIP(r)) {
 		writeError(w, http.StatusTooManyRequests, "Too many test messages. Wait a minute and try again.")
+		return
+	}
+	if !a.needProof(w, r) {
 		return
 	}
 	id, _ := strconv.ParseInt(r.PathValue("id"), 10, 64)

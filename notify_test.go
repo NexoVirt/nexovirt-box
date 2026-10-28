@@ -128,3 +128,37 @@ func TestNotifyRateLimit(t *testing.T) {
 		t.Fatal("rate limit never resets")
 	}
 }
+
+// Pointing a channel somewhere else must not carry the stored secret along (it would be sent to
+// the new address by the next message or test).
+func TestNotifySecretsDroppedOnNewDestination(t *testing.T) {
+	n, _ := newTestNotifier(t)
+	id, err := n.saveChannel(notifyChannel{Kind: "webhook", Name: "Hook", Enabled: true, Config: map[string]string{"url": "https://hooks.example.com/a", "token": "tok-secret"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := n.saveChannel(notifyChannel{ID: id, Kind: "webhook", Name: "Hook", Enabled: true, Config: map[string]string{"url": "https://evil.example.net/x"}}); err != nil {
+		t.Fatal(err)
+	}
+	if ch, _ := n.channel(id); ch.Config["token"] != "" {
+		t.Fatal("token kept for a new webhook address")
+	}
+	nid, _ := n.saveChannel(notifyChannel{Kind: "ntfy", Name: "N", Enabled: true, Config: map[string]string{"server": "https://ntfy.sh", "topic": "a", "token": "tk"}})
+	n.saveChannel(notifyChannel{ID: nid, Kind: "ntfy", Name: "N", Enabled: true, Config: map[string]string{"server": "https://evil.example.net", "topic": "a"}})
+	if ch, _ := n.channel(nid); ch.Config["token"] != "" {
+		t.Fatal("ntfy token kept for a new server")
+	}
+	mid, err := n.saveChannel(notifyChannel{Kind: "email", Name: "M", Enabled: true, Config: map[string]string{"host": "smtp.example.com", "port": "587",
+		"security": "starttls", "username": "box", "password": "pw-secret", "from": "a@example.com", "to": "b@example.com"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = n.saveChannel(notifyChannel{ID: mid, Kind: "email", Name: "M", Enabled: true, Config: map[string]string{"host": "smtp.evil.example.net", "port": "587",
+		"security": "starttls", "username": "box", "from": "a@example.com", "to": "b@example.com"}})
+	if err == nil {
+		t.Fatal("mail server changed without entering the password again")
+	}
+	if ch, _ := n.channel(mid); ch.Config["host"] != "smtp.example.com" || ch.Config["password"] != "pw-secret" {
+		t.Fatalf("refused change was stored: %v", ch.Config["host"])
+	}
+}
