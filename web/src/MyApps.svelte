@@ -281,7 +281,7 @@
     <div class="group">{#each Array(3) as _}<div class="row"><span class="skeleton sq"></span><span class="skeleton line"></span></div>{/each}</div>
   {:else if !apps.length}
     <div class="tile empty">
-      <span class="empty-ico"><LayoutGrid size={26} /></span>
+      <span class="ico xl accent empty-ico"><LayoutGrid /></span>
       <h2 class="t-title">No apps yet</h2>
       <p class="t-sub">Pick something from the App Store. It is ready in a minute.</p>
       <button class="btn btn-primary" onclick={() => onNavigate('/apps')}>Open the App Store</button>
@@ -428,7 +428,7 @@
   .pop-item.danger { color: var(--error); }
   .empty { display: grid; justify-items: center; gap: 0.5rem; text-align: center; padding: 2.5rem 1.25rem; }
   .empty .btn { margin-top: 0.75rem; }
-  .empty-ico { display: grid; place-items: center; width: 3.5rem; height: 3.5rem; color: var(--accent); margin-bottom: 0.25rem; }
+  .empty-ico { margin-bottom: 0.25rem; }
   .dlg { display: grid; gap: 0.875rem; padding: 1.5rem; }
   .dlg-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
   .busy { display: flex; align-items: center; gap: 0.5rem; }

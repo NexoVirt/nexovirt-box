@@ -1,4 +1,5 @@
 <script>
+  import DataTable from '$lib/DataTable.svelte';
   import { onMount } from 'svelte';
   import { api } from '$lib/api.js';
   import { toast } from '$lib/toast.svelte.js';
@@ -347,6 +348,11 @@
   }
 
   onMount(() => { load(); loadAccount(); });
+  const SESSION_COLS = [
+    { key: 'agent', label: 'Browser', primary: true },
+    { key: 'ip', label: 'Address' },
+    { key: 'created_at', label: 'Signed in', sortable: true, firstDir: 'desc' },
+  ];
 </script>
 
 <div class="page">
@@ -465,25 +471,16 @@
             {/if}
           </section>
 
-          <div class="sub-head">
-            <p class="t-section sub">Signed-in browsers</p>
-            {#if sessions && sessions.length > 1}<button class="btn btn-gray btn-sm" onclick={endOthers}><LogOut size={15} />Sign out the others</button>{/if}
+          <div class="sessions">
+            <DataTable label="Signed-in browsers" title="Signed-in browsers" columns={SESSION_COLS} rows={sessions} key="id" maxHeight="22rem" empty={{ icon: Monitor, title: 'No sessions' }}>
+              {#snippet toolbar()}{#if sessions && sessions.length > 1}<button class="btn btn-gray btn-sm" onclick={endOthers}><LogOut size={15} />Sign out the others</button>{/if}{/snippet}
+              {#snippet cell(se, c)}
+                {#if c.key === 'agent'}<span class="who"><span class="ico"><Monitor /></span><span class="truncate">{se.agent || se.ip ? browserName(se.agent) : 'Earlier sign-in'}</span>{#if se.current}<span class="pill here">This browser</span>{/if}</span>
+                {:else if c.key === 'ip'}<span class="mono muted">{se.ip || ''}</span>
+                {:else}<span class="muted">{se.created_at ? ago(se.created_at) : 'Before Box recorded it'}</span>{/if}
+              {/snippet}
+            </DataTable>
           </div>
-          <section class="group">
-            {#if !sessions}
-              <div class="row"><span class="skeleton line"></span></div>
-            {:else}
-              {#each sessions as se (se.id)}
-                <div class="row">
-                  <span class="ico"><Monitor size={16} /></span>
-                  <div class="grow">
-                    <span>{se.agent || se.ip ? browserName(se.agent) : 'Earlier sign-in'}{#if se.current}<span class="pill here">This browser</span>{/if}</span>
-                    <span class="t-caption">{se.ip ? `${se.ip}${se.created_at ? `, signed in ${ago(se.created_at)}` : ''}` : 'Signed in before Box recorded browser details'}</span>
-                  </div>
-                </div>
-              {/each}
-            {/if}
-          </section>
 
           <p class="t-section sub">Reverse proxies in front of Box</p>
           <section class="group">
@@ -694,6 +691,9 @@
 </Dialog>
 
 <style>
+  .sessions { margin-top: 1.25rem; }
+  .who { display: inline-flex; align-items: center; gap: 0.625rem; min-width: 0; max-width: 100%; }
+  .muted { color: var(--text-2); }
   .layout { display: grid; grid-template-columns: 14.5rem minmax(0, 1fr); gap: 1.5rem; align-items: start; }
   .tabs { position: sticky; top: 5rem; display: grid; gap: 0.125rem; padding: 0.375rem; border-radius: var(--r-tile); background: var(--surface); box-shadow: var(--shadow-tile); }
   .tab { display: flex; align-items: center; gap: 0.625rem; min-height: 2.5rem; padding: 0 0.5rem; border: 0; border-radius: 0.625rem; background: none; color: var(--text); font: inherit; font-weight: 500; text-align: left; cursor: pointer; transition: background-color 150ms ease, transform 100ms ease-out; }

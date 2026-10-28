@@ -8,6 +8,7 @@
   import { runJob } from '$lib/jobs.js';
   import Dialog from '$lib/Dialog.svelte';
   import Segmented from '$lib/Segmented.svelte';
+  import DataTable from '$lib/DataTable.svelte';
   import FolderOpen from '@lucide/svelte/icons/folder-open';
   import Users from '@lucide/svelte/icons/users';
   import User from '@lucide/svelte/icons/user';
@@ -25,6 +26,31 @@
 
   let { onSessionLost } = $props();
 
+  const SHARE_COLS = [
+    { key: 'name', label: 'Name', primary: true, sortable: true },
+    { key: 'path', label: 'Folder', sortable: true },
+    { key: 'access', label: 'Access', value: (x) => (x.read_only ? 'Read only' : 'Read and write') },
+    { key: 'users', label: 'Who', hide: 'md', value: (x) => x.users.join(', ') },
+    { key: 'address', label: 'Address', hide: 'md' },
+    { key: 'conn', label: 'Connected', hide: 'md' },
+    { key: 'enabled', label: 'On', align: 'right' },
+  ];
+  const USER_COLS = [{ key: 'name', label: 'User', primary: true, sortable: true }];
+  const EXPORT_COLS = [
+    { key: 'path', label: 'Folder', primary: true, sortable: true },
+    { key: 'access', label: 'Access' },
+    { key: 'clients', label: 'Clients', value: (x) => x.clients.join(', ') },
+    { key: 'comment', label: 'Note', hide: 'md' },
+    { key: 'mount', label: 'Mount', hide: 'md' },
+    { key: 'enabled', label: 'On', align: 'right' },
+  ];
+  const LINK_COLS = [
+    { key: 'name', label: 'Name', primary: true, sortable: true },
+    { key: 'path', label: 'Path', hide: 'md' },
+    { key: 'created', label: 'Created', sortable: true, firstDir: 'desc' },
+    { key: 'downloads', label: 'Downloads', align: 'right', sortable: true },
+    { key: 'expires', label: 'Until', sortable: true },
+  ];
   const TABS = [
     { value: 'samba', label: 'Samba' },
     { value: 'nfs', label: 'NFS' },
@@ -213,113 +239,85 @@
   {:else if tab === 'samba'}
     {#if !st.samba.installed}
       <div class="tile banner">
-        <span class="ico accent"><MonitorSmartphone size={17} /></span>
+        <span class="ico md accent"><MonitorSmartphone /></span>
         <span class="grow"><span class="t-head">Share folders with Windows, macOS and Linux</span>
           <span class="t-caption">{installing === 'samba' ? installLine || 'Installing Samba' : 'This needs Samba. Box installs it and adds one include line to smb.conf; your other Samba settings stay.'}</span></span>
         <button class="btn btn-primary btn-sm" onclick={() => install('samba')} disabled={!!installing}>{#if installing === 'samba'}<Loader size={15} class="spinner" />Installing{:else}<Download size={15} />Install Samba{/if}</button>
       </div>
     {:else}
-      <section class="group">
-        <div class="group-head">
-          <div><h2 class="t-head">Shared folders</h2><p class="t-caption"><span class="dot" class:ok={st.samba.active}></span> Samba is {st.samba.active ? 'running' : 'not running'}</p></div>
+      <DataTable label="Shared folders" title="Shared folders" columns={SHARE_COLS} rows={st.samba.shares} key="id" maxHeight="28rem"
+        empty={{ icon: FolderOpen, title: 'No shared folders yet', text: st.samba.users.length ? 'Choose New share to share a folder.' : 'Add a share user first, then share a folder.' }}
+        actions={(x) => [
+          { label: 'Edit', icon: Pencil, run: () => editShare(x) },
+          { label: 'Remove', icon: Trash, danger: true, run: () => deleteShare(x) },
+        ]}>
+        {#snippet toolbar()}
+          <span class="t-caption state"><span class="dot" class:ok={st.samba.active}></span>Samba is {st.samba.active ? 'running' : 'not running'}</span>
           <button class="btn btn-tinted btn-sm" onclick={() => editShare(null)}><Plus size={15} />New share</button>
-        </div>
-        {#if st.samba.shares.length}
-          {#each st.samba.shares as s (s.id)}
-            {@const conn = st.samba.clients[s.name] || []}
-            <div class="row item">
-              <span class="ico"><FolderOpen size={16} /></span>
-              <span class="grow">
-                <span class="t-head">{s.name} <span class="pill sm">{s.read_only ? 'Read only' : 'Read and write'}</span>{#if s.guest}<span class="pill sm">Guests</span>{/if}</span>
-                <span class="t-caption truncate"><span class="mono">{s.path}</span> · {s.guest ? 'anyone on the network' : s.users.join(', ')}</span>
-                <span class="t-caption mono truncate">\\{host}\{s.name}  ·  smb://{host}/{s.name}</span>
-              </span>
-              <span class="conn t-caption" title={conn.join(', ')}>{conn.length ? `${conn.length} connected` : ''}</span>
-              <input type="checkbox" class="switch" checked={s.enabled} onchange={() => flipShare(s)} disabled={busy === 'flip' + s.id} aria-label="Share {s.name} on or off" />
-              <button class="icon-btn sm" onclick={() => editShare(s)} aria-label="Edit {s.name}"><Pencil size={15} /></button>
-              <button class="icon-btn sm" onclick={() => deleteShare(s)} aria-label="Remove {s.name}"><Trash size={15} /></button>
-            </div>
-          {/each}
-        {:else}
-          <div class="empty"><FolderOpen size={28} /><p class="t-head">No shared folders yet</p><p class="t-caption">{st.samba.users.length ? 'Choose New share to share a folder.' : 'Add a share user first, then share a folder.'}</p></div>
-        {/if}
-      </section>
+        {/snippet}
+        {#snippet cell(x, c)}
+          {#if c.key === 'name'}<span class="who"><span class="ico accent"><FolderOpen /></span><span class="truncate">{x.name}</span></span>
+          {:else if c.key === 'path'}<span class="mono">{x.path}</span>
+          {:else if c.key === 'access'}{x.read_only ? 'Read only' : 'Read and write'}{#if x.guest}<span class="muted">, guests</span>{/if}
+          {:else if c.key === 'users'}<span class="muted">{x.guest ? 'Anyone on the network' : x.users.join(', ')}</span>
+          {:else if c.key === 'address'}<span class="mono muted">\\{host}\{x.name}</span>
+          {:else if c.key === 'conn'}{@const conn = st.samba.clients[x.name] || []}<span class="muted" title={conn.join(', ')}>{conn.length ? `${conn.length} connected` : ''}</span>
+          {:else}<input type="checkbox" class="switch" checked={x.enabled} onchange={() => flipShare(x)} disabled={busy === 'flip' + x.id} aria-label="Share {x.name} on or off" />{/if}
+        {/snippet}
+      </DataTable>
 
-      <section class="group">
-        <div class="group-head">
-          <div><h2 class="t-head">Share users</h2><p class="t-caption">Accounts only for shares: no shell, no home folder, no sign-in to the server.</p></div>
-          <button class="btn btn-gray btn-sm" onclick={() => editUser('')}><Plus size={15} />Add user</button>
-        </div>
-        {#if st.samba.users.length}
-          {#each st.samba.users as u (u)}
-            <div class="row item">
-              <span class="ico"><User size={16} /></span>
-              <span class="grow"><span class="t-head">{u}</span></span>
-              <button class="btn btn-gray btn-sm" onclick={() => editUser(u)}><KeyRound size={14} />New password</button>
-              <button class="icon-btn sm" onclick={() => deleteUser(u)} aria-label="Remove {u}"><Trash size={15} /></button>
-            </div>
-          {/each}
-        {:else}
-          <div class="empty"><Users size={28} /><p class="t-caption">No share users yet.</p></div>
-        {/if}
-      </section>
+      <DataTable label="Share users" title="Share users" description="Accounts only for shares: no shell, no home folder, no sign-in to the server." columns={USER_COLS}
+        rows={st.samba.users.map((u) => ({ name: u }))} key="name" maxHeight="20rem"
+        empty={{ icon: Users, title: 'No share users yet' }}
+        actions={(u) => [
+          { label: 'New password', icon: KeyRound, run: () => editUser(u.name) },
+          { label: 'Remove', icon: Trash, danger: true, run: () => deleteUser(u.name) },
+        ]}>
+        {#snippet toolbar()}<button class="btn btn-gray btn-sm" onclick={() => editUser('')}><Plus size={15} />Add user</button>{/snippet}
+        {#snippet cell(u)}<span class="who"><span class="ico"><User /></span>{u.name}</span>{/snippet}
+      </DataTable>
     {/if}
   {:else if tab === 'nfs'}
     {#if !st.nfs.installed}
       <div class="tile banner">
-        <span class="ico accent"><Network size={17} /></span>
+        <span class="ico md accent"><Network /></span>
         <span class="grow"><span class="t-head">Export folders over NFS</span>
           <span class="t-caption">{installing === 'nfs' ? installLine || 'Installing the NFS server' : 'For Linux machines and hypervisors on your network. Box installs nfs-kernel-server and writes only its own exports file.'}</span></span>
         <button class="btn btn-primary btn-sm" onclick={() => install('nfs')} disabled={!!installing}>{#if installing === 'nfs'}<Loader size={15} class="spinner" />Installing{:else}<Download size={15} />Install NFS server{/if}</button>
       </div>
     {:else}
-      <section class="group">
-        <div class="group-head">
-          <div><h2 class="t-head">Exports</h2><p class="t-caption"><span class="dot" class:ok={st.nfs.active}></span> NFS server {st.nfs.active ? 'running' : 'not running'}{#if st.nfs.clients.length} · connected: {st.nfs.clients.join(', ')}{/if}</p></div>
+      <DataTable label="NFS exports" title="Exports" columns={EXPORT_COLS} rows={st.nfs.exports} key="id"
+        empty={{ icon: Network, title: 'No exports yet', text: 'Root on a client is always mapped to nobody (root_squash).' }}
+        actions={(x) => [
+          { label: 'Edit', icon: Pencil, run: () => editExport(x) },
+          { label: 'Remove', icon: Trash, danger: true, run: () => deleteExport(x) },
+        ]}>
+        {#snippet toolbar()}
+          <span class="t-caption state"><span class="dot" class:ok={st.nfs.active}></span>NFS server {st.nfs.active ? 'running' : 'not running'}{#if st.nfs.clients.length}, connected: {st.nfs.clients.join(', ')}{/if}</span>
           <button class="btn btn-tinted btn-sm" onclick={() => editExport(null)}><Plus size={15} />New export</button>
-        </div>
-        {#if st.nfs.exports.length}
-          {#each st.nfs.exports as x (x.id)}
-            <div class="row item">
-              <span class="ico"><Network size={16} /></span>
-              <span class="grow">
-                <span class="t-head"><span class="mono">{x.path}</span> <span class="pill sm">{x.read_only ? 'Read only' : 'Read and write'}</span></span>
-                <span class="t-caption truncate">For {x.clients.join(', ')}{#if x.comment} · {x.comment}{/if}</span>
-                <span class="t-caption mono truncate">mount {host}:{x.path} /mnt</span>
-              </span>
-              <input type="checkbox" class="switch" checked={x.enabled} onchange={() => flipExport(x)} disabled={busy === 'flip' + x.id} aria-label="Export on or off" />
-              <button class="icon-btn sm" onclick={() => editExport(x)} aria-label="Edit export"><Pencil size={15} /></button>
-              <button class="icon-btn sm" onclick={() => deleteExport(x)} aria-label="Remove export"><Trash size={15} /></button>
-            </div>
-          {/each}
-        {:else}
-          <div class="empty"><Network size={28} /><p class="t-head">No exports yet</p><p class="t-caption">Root on a client is always mapped to nobody (root_squash).</p></div>
-        {/if}
-      </section>
+        {/snippet}
+        {#snippet cell(x, c)}
+          {#if c.key === 'path'}<span class="who"><span class="ico accent"><Network /></span><span class="mono truncate">{x.path}</span></span>
+          {:else if c.key === 'access'}{x.read_only ? 'Read only' : 'Read and write'}
+          {:else if c.key === 'clients'}<span class="mono">{x.clients.join(', ')}</span>
+          {:else if c.key === 'comment'}<span class="muted">{x.comment || ''}</span>
+          {:else if c.key === 'mount'}<span class="mono muted">mount {host}:{x.path} /mnt</span>
+          {:else}<input type="checkbox" class="switch" checked={x.enabled} onchange={() => flipExport(x)} disabled={busy === 'flip' + x.id} aria-label="Export on or off" />{/if}
+        {/snippet}
+      </DataTable>
     {/if}
   {:else}
-    <section class="group">
-      <div class="group-head">
-        <div><h2 class="t-head">Download links</h2><p class="t-caption">Create a link in Files: right-click a file or folder and choose Share link.</p></div>
-      </div>
-      {#if links === null}
-        <div class="row"><span class="skeleton line"></span></div>
-      {:else if links.length}
-        {#each links as l (l.id)}
-          <div class="row item">
-            <span class="ico"><Link size={16} /></span>
-            <span class="grow">
-              <span class="t-head truncate">{l.name}{l.dir ? '.zip' : ''} {#if l.password}<Lock size={13} aria-label="Password protected" />{/if}</span>
-              <span class="t-caption truncate"><span class="mono">{l.path}</span> · created {ago(l.created)}</span>
-            </span>
-            <span class="t-caption meta"><span class="num">{l.downloads}{l.max_downloads ? ` of ${l.max_downloads}` : ''}</span> downloads<br />until {until(l.expires)}</span>
-            <button class="btn btn-gray btn-sm" onclick={() => revoke(l)}>Revoke</button>
-          </div>
-        {/each}
-      {:else}
-        <div class="empty"><Link size={28} /><p class="t-head">No active links</p><p class="t-caption">Expired and revoked links disappear from this list.</p></div>
-      {/if}
-    </section>
+    <DataTable label="Download links" title="Download links" description="Create a link in Files: right-click a file or folder and choose Share link." columns={LINK_COLS}
+      rows={links} key="id" empty={{ icon: Link, title: 'No active links', text: 'Expired and revoked links disappear from this list.' }}
+      actions={(l) => [{ label: 'Revoke', icon: Trash, danger: true, run: () => revoke(l) }]}>
+      {#snippet cell(l, c)}
+        {#if c.key === 'name'}<span class="who"><span class="ico accent"><Link /></span><span class="truncate">{l.name}{l.dir ? '.zip' : ''}</span>{#if l.password}<Lock size={13} aria-label="Password protected" />{/if}</span>
+        {:else if c.key === 'path'}<span class="mono muted">{l.path}</span>
+        {:else if c.key === 'created'}<span class="muted">{ago(l.created)}</span>
+        {:else if c.key === 'downloads'}<span class="num">{l.downloads}{l.max_downloads ? ` of ${l.max_downloads}` : ''}</span>
+        {:else}{until(l.expires)}{/if}
+      {/snippet}
+    </DataTable>
   {/if}
 </div>
 
@@ -420,24 +418,12 @@
 <style>
   .banner { display: flex; align-items: center; gap: 0.875rem; padding: 1rem 1.125rem; }
   .banner .grow { flex: 1; min-width: 0; display: grid; gap: 0.125rem; }
-  .ico.accent { background: var(--accent-fill); color: var(--accent); }
   .skeleton.line { display: block; width: 55%; height: 1rem; }
-  .group-head p { margin: 0.125rem 0 0; display: flex; align-items: center; gap: 0.375rem; }
-  .item { min-height: 4rem; }
-  .item .t-head { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
-  .pill.sm { height: 1.375rem; padding: 0 0.55rem; font-size: 0.6875rem; }
-  .conn { white-space: nowrap; }
-  .meta { text-align: right; white-space: nowrap; }
-  .icon-btn.sm { width: 2.25rem; height: 2.25rem; }
-  .empty { display: grid; justify-items: center; gap: 0.375rem; padding: 1.75rem 1rem 2rem; text-align: center; color: var(--text-3); }
-  .empty p { margin: 0; }
-  .empty .t-head { color: var(--text-2); }
+  .state { display: inline-flex; align-items: center; gap: 0.375rem; margin-right: 0.25rem; }
+  .who { display: inline-flex; align-items: center; gap: 0.625rem; min-width: 0; max-width: 100%; }
+  .muted { color: var(--text-2); }
   .users { display: flex; flex-wrap: wrap; gap: 0.5rem; }
   .check { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.5rem; padding: 0 0.875rem; border-radius: var(--r-pill); background: var(--fill); cursor: pointer; font-weight: 500; }
   .check input { accent-color: var(--accent); width: 1rem; height: 1rem; }
   .area { height: 6rem; padding: 0.625rem 0.875rem; resize: vertical; line-height: 1.5; }
-  @media (max-width: 639px) {
-    .item { flex-wrap: wrap; }
-    .meta { text-align: left; }
-  }
 </style>

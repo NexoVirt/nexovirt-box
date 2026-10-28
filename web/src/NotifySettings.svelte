@@ -1,5 +1,6 @@
 <script>
   // Settings > Notifications: channels, which events go where, and the history.
+  import DataTable from '$lib/DataTable.svelte';
   import { onMount } from 'svelte';
   import { api } from '$lib/api.js';
   import { withProof } from '$lib/proof.svelte.js';
@@ -96,6 +97,12 @@
   const evLabel = (k) => data?.events.find((e) => e.key === k)?.label || (k === 'test' ? 'Test message' : k);
 
   onMount(load);
+  const HIST_COLS = [
+    { key: 'title', label: 'Message', primary: true },
+    { key: 'event', label: 'Event', value: (h) => evLabel(h.event) },
+    { key: 'result', label: 'Result', wrap: true },
+    { key: 'at', label: 'Sent', sortable: true, firstDir: 'desc', align: 'right' },
+  ];
 </script>
 
 {#if !data}
@@ -146,17 +153,17 @@
   </section>
   <p class="t-caption note">The same alert is sent at most once every 30 minutes, and at most 20 messages go out in 10 minutes.</p>
 
-  <p class="t-section sub">Recent notifications</p>
-  <section class="group">
-    {#each data.history as h, i (i)}
-      <div class="row">
-        <div class="grow"><span>{h.title}</span><span class="t-caption">{evLabel(h.event)}. {h.result}</span></div>
-        <span class="t-caption">{ago(h.at)}</span>
-      </div>
-    {:else}
-      <div class="row t-sub">Nothing was sent yet.</div>
-    {/each}
-  </section>
+  <div class="hist">
+    <DataTable label="Recent notifications" title="Recent notifications" columns={HIST_COLS} rows={data.history.map((h, i) => ({ ...h, _i: i }))} key="_i"
+      searchable placeholder="Search notifications" maxHeight="24rem" empty={{ icon: Bell, title: 'Nothing was sent yet' }}>
+      {#snippet cell(h, c)}
+        {#if c.key === 'title'}{h.title}
+        {:else if c.key === 'event'}<span class="muted">{evLabel(h.event)}</span>
+        {:else if c.key === 'result'}<span class="muted">{h.result}</span>
+        {:else}<span class="muted" title={new Date(h.at * 1000).toLocaleString()}>{ago(h.at)}</span>{/if}
+      {/snippet}
+    </DataTable>
+  </div>
 {/if}
 
 <Dialog bind:open label="Notification channel" {origin} locked={busy}>
@@ -204,6 +211,8 @@
 </Dialog>
 
 <style>
+  .hist { margin-top: 1.25rem; }
+  .muted { color: var(--text-2); }
   h2, p { margin: 0; }
   .sub-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; }
   .sub { margin: 0.75rem 1.125rem 0; }
