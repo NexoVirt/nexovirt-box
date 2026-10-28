@@ -13,6 +13,9 @@
   import Settings from './Settings.svelte';
   import Files from './Files.svelte';
   import Firewall from './Firewall.svelte';
+  import Backups from './Backups.svelte';
+  import PasswordGate from '$lib/PasswordGate.svelte';
+  import Archive from '@lucide/svelte/icons/archive';
   import Logo from '$lib/Logo.svelte';
   import Sheet from '$lib/Sheet.svelte';
   import Popover from '$lib/Popover.svelte';
@@ -40,6 +43,7 @@
     { path: '/monitor', title: 'Monitor', icon: Gauge },
     { path: '/apps', title: 'App Store', icon: LayoutGrid },
     { path: '/apps/installed', title: 'My Apps', icon: Boxes },
+    { path: '/backups', title: 'Backups', icon: Archive },
     { path: '/files', title: 'Files', icon: FolderOpen },
     { path: '/firewall', title: 'Firewall', icon: Shield },
     { path: '/console', title: 'Console', icon: SquareTerminal },
@@ -130,6 +134,7 @@
 </script>
 
 <Toaster />
+<PasswordGate />
 
 {#snippet nav()}
   <nav class="nav" aria-label="Main">
@@ -218,6 +223,8 @@
           <Console onSessionLost={sessionLost} />
         {:else if page.path === '/files'}
           {#key pageKey}<Files onSessionLost={sessionLost} />{/key}
+        {:else if page.path === '/backups'}
+          {#key pageKey}<Backups onSessionLost={sessionLost} />{/key}
         {:else if page.path === '/firewall'}
           <Firewall onSessionLost={sessionLost} />
         {:else if page.path === '/settings'}
