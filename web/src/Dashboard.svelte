@@ -141,6 +141,7 @@
     busy = rest;
     if (job.http === 401) return onSessionLost();
     if (job.status === 'done') toast(`${app.name} ${key === 'start' ? 'started' : key === 'stop' ? 'stopped' : 'restarted'}.`, 'success');
+    else if (job.error?.startsWith('needs_docker_socket:')) { toast('Allow Docker access for this app in My Apps first.', 'info', 8000); onNavigate('/apps/installed'); }
     else toast(job.error, 'error', 8000);
     loadApps();
   }

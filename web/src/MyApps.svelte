@@ -14,6 +14,9 @@
   import DockerSetup from './DockerSetup.svelte';
   import OwnAppDialog from './OwnAppDialog.svelte';
   import AppBackups from './AppBackups.svelte';
+  import CatalogUpdateDialog from './CatalogUpdateDialog.svelte';
+  import { withProof } from '$lib/proof.svelte.js';
+  import FileDiff from '@lucide/svelte/icons/file-diff';
   import Archive from '@lucide/svelte/icons/archive';
   import FilePen from '@lucide/svelte/icons/file-pen';
   import Plus from '@lucide/svelte/icons/plus';
@@ -62,6 +65,8 @@
   let proxy = $state(null);
   let ownOpen = $state(false), ownId = $state('');
   let backupsFor = $state(null), backupsOpen = $state(false);
+  let catFor = $state(null), catOpen = $state(false);
+  let socketFor = $state(null), socketOpen = $state(false), socketBusy = $state(false); // { app, op }
   let domainFor = $state(null), domainOpen = $state(false), domain = $state(''), domainBusy = $state(false), domainError = $state('');
 
   const followJobs = jobFollower((job, id) => {
@@ -174,17 +179,33 @@
     load();
   }
 
-  async function act(app, op) {
+  async function act(app, op, allow = false) {
     menu = null;
     busy = { ...busy, [app.id]: op };
-    const job = await runJob(`/api/apps/${app.id}/action`, { op });
+    const job = await (allow ? withProof : (f) => f())(() => runJob(`/api/apps/${app.id}/action`, { op, allow_docker_socket: allow }));
     const { [app.id]: _, ...rest } = busy;
     busy = rest;
+    if (job.cancelled) return;
     if (job.http === 401) return onSessionLost();
     if (job.status === 'done') toast(`${app.name} ${DONE[op]}.`, 'success');
+    else if (job.error?.startsWith('needs_docker_socket:')) { socketFor = { app, op }; socketOpen = true; }
     else toast(job.error, 'error', 8000);
     if (op === 'update' && job.status === 'done') updates.apps[app.id] = { available: false };
     load();
+  }
+
+  async function allowSocket() {
+    socketBusy = true;
+    await act(socketFor.app, socketFor.op, true);
+    socketBusy = false;
+    socketOpen = false;
+  }
+
+  function openCatalog(e, app) {
+    menu = null;
+    origin = e ? { x: e.clientX, y: e.clientY } : null;
+    catFor = app;
+    catOpen = true;
   }
 
   function showLogs(e, app) {
@@ -289,6 +310,9 @@
           {#if updates.apps[app.id]?.available && !working}
             <button class="btn btn-primary btn-sm" onclick={() => act(app, 'update')} title="A newer image is available: {updates.apps[app.id].images.join(', ')}"><Download size={15} /><span class="open-text">Update</span></button>
           {/if}
+          {#if app.catalog_update && !working}
+            <button class="btn btn-tinted btn-sm" onclick={(e) => openCatalog(e, app)} title="The app store has a newer definition for this app"><FileDiff size={15} /><span class="open-text">Catalog update available</span></button>
+          {/if}
           {#if app.state === 'running' && openURL(app)}
             <a class="btn btn-tinted btn-sm open" href={openURL(app)} target="_blank" rel="noopener noreferrer" aria-label="Open {app.name}"><ExternalLink size={15} /><span class="open-text">Open</span></a>
           {/if}
@@ -321,6 +345,19 @@
 <svelte:window onpointerdown={(e) => { if (menu && !e.target.closest('.more')) menu = null; }} />
 
 <OwnAppDialog bind:open={ownOpen} editId={ownId} {origin} {onSessionLost} onDone={load} />
+<CatalogUpdateDialog bind:open={catOpen} app={catFor} {origin} {onSessionLost} onDone={load} />
+
+<Dialog bind:open={socketOpen} label="Docker access" locked={socketBusy}>
+  <div class="dlg">
+    <h2 class="t-title">Allow Docker access for {socketFor?.app.name}?</h2>
+    <p class="t-sub">This app uses the Docker socket, which means full control of the server. Box asks once and remembers your answer. You confirm it with your password.</p>
+    <div class="buttons">
+      <button class="btn btn-gray" data-close onclick={() => (socketOpen = false)} disabled={socketBusy}>Cancel</button>
+      <button class="btn btn-primary" onclick={allowSocket} disabled={socketBusy}>{#if socketBusy}<Loader size={16} class="spinner" />Starting{:else}Allow and start{/if}</button>
+    </div>
+  </div>
+</Dialog>
+
 <AppBackups bind:open={backupsOpen} app={backupsFor} apps={apps || []} {origin} {onSessionLost} {onNavigate} onDone={load} />
 
 <Dialog bind:open={credsOpen} label="Login details" {origin}>
