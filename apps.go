@@ -400,6 +400,7 @@ type appBody struct {
 	Answers    map[string]string `json:"answers"`
 	Op         string            `json:"op"`
 	DeleteData bool              `json:"delete_data"`
+	DataDir    string            `json:"data_dir"`
 }
 
 func readAppBody(r *http.Request) (appBody, error) {
@@ -423,7 +424,7 @@ func (a *App) appInstall(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	a.runJob(w, r, "install", id, "app.install", helperRequest{Action: "app_install", ID: id, Answers: b.Answers})
+	a.runJob(w, r, "install", id, "app.install", helperRequest{Action: "app_install", ID: id, Answers: b.Answers, DataDir: b.DataDir})
 }
 
 func (a *App) appAction(w http.ResponseWriter, r *http.Request) {

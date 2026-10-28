@@ -4,8 +4,10 @@ package main
 import (
 	"embed"
 	"flag"
+	"fmt"
 	"io/fs"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/user"
@@ -24,6 +26,10 @@ const defaultSocket = "/run/nexovirt-box/helper.sock"
 
 func main() {
 	syscall.Umask(0o077) // everything Box writes is private unless it says otherwise
+	if len(os.Args) > 1 && os.Args[1] == "version" {
+		fmt.Println(version)
+		return
+	}
 	if len(os.Args) > 1 && os.Args[1] == "helper" {
 		runHelper(os.Args[2:])
 		return
@@ -45,7 +51,10 @@ func main() {
 	}
 	defer store.db.Close()
 
+	_, portStr, _ := net.SplitHostPort(*listen)
+	port, _ := strconv.Atoi(portStr)
 	app := &App{
+		port:    port,
 		store:   store,
 		limiter: newLimiter(store, 5, time.Minute),
 		secure:  !*dev,
@@ -62,6 +71,7 @@ func main() {
 		log.Fatalf("setup token: %v", err)
 	}
 	go app.sampler.run()
+	go app.watchUpdates()
 
 	ui, err := fs.Sub(webDist, "web/dist")
 	if err != nil {

@@ -75,11 +75,11 @@ func TestBuildEnvValidates(t *testing.T) {
 		"bad select": {"ADMIN_USER": "bob", "MODE": "c"},
 	}
 	for name, ans := range cases {
-		if _, _, err := buildEnv(app, ans, "/x/demo", "/x"); err == nil {
+		if _, _, err := buildEnv(app, ans, "/x/demo", "/x/demo/data", "/x"); err == nil {
 			t.Fatalf("%s: accepted", name)
 		}
 	}
-	env, port, err := buildEnv(app, map[string]string{"ADMIN_USER": "bob", "APP_PORT": "9000", "MODE": "b", "APP_ID": "evil"}, "/x/demo", "/x")
+	env, port, err := buildEnv(app, map[string]string{"ADMIN_USER": "bob", "APP_PORT": "9000", "MODE": "b", "APP_ID": "evil"}, "/x/demo", "/x/demo/data", "/x")
 	if err != nil {
 		t.Fatal(err)
 	}

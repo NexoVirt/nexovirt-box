@@ -33,6 +33,8 @@ type App struct {
 	jobs      *jobs
 	proofs    sync.Map // session hash -> console proof issued by the helper
 	tfa       *twoFactor
+	port      int // listen port (the helper checks it after a self-update)
+	updates   updateCache
 }
 
 type route struct {
@@ -80,6 +82,15 @@ func (a *App) routeTable() []route {
 		{"GET /api/apps/{id}/logs", false, a.appLogs},
 		{"GET /api/jobs/{id}", false, a.jobStatus},
 		{"GET /api/settings", false, a.settingsGet},
+		{"GET /api/updates", false, a.updatesGet},
+		{"POST /api/updates/check", false, a.updatesCheck},
+		{"POST /api/updates/box/apply", false, a.boxUpdateApply},
+		{"GET /api/images/unused", false, a.imagesUnused},
+		{"POST /api/images/prune", false, a.imagesPrune},
+		{"GET /api/proxy", false, a.proxyStatus},
+		{"POST /api/proxy", false, a.proxySetup},
+		{"POST /api/proxy/remove", false, a.proxyRemove},
+		{"POST /api/apps/{id}/domain", false, a.appDomain},
 		{"POST /api/settings", false, a.settingsSave},
 	}
 }

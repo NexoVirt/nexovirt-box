@@ -35,6 +35,10 @@ type installedApp struct {
 	Scheme      string `json:"scheme"`
 	Store       string `json:"store"`
 	InstalledAt int64  `json:"installed_at"`
+	Domain      string `json:"domain,omitempty"`
+	TLS         string `json:"tls,omitempty"`
+	DataDir     string `json:"data_dir,omitempty"`
+	DataCreated bool   `json:"data_created,omitempty"` // Box created DataDir, so "delete data" may remove it
 }
 
 type appStatus struct {
@@ -199,17 +203,33 @@ func (h *helperServer) appInstall(req helperRequest, logf func(string)) (any, er
 	if _, err := os.Stat(filepath.Join(dir, "compose.yaml")); err == nil {
 		return nil, uerr("%s is already installed.", app.Name)
 	}
-	env, port, err := buildEnv(app, req.Answers, dir, filepath.Dir(h.appsDir))
+	dataDir := filepath.Join(dir, "data")
+	customData := req.DataDir != "" && req.DataDir != dataDir
+	if customData {
+		if err := checkDataDir(req.DataDir); err != nil {
+			return nil, err
+		}
+		dataDir = req.DataDir
+	}
+	env, port, err := buildEnv(app, req.Answers, dir, dataDir, filepath.Dir(h.appsDir))
 	if err != nil {
 		return nil, err
 	}
 	_, statErr := os.Stat(dir)
 	fresh := os.IsNotExist(statErr) // a kept data folder from an earlier install is reused
-	if err := os.MkdirAll(filepath.Join(dir, "data"), 0o700); err != nil {
+	_, dataErr := os.Stat(dataDir)
+	dataCreated := customData && os.IsNotExist(dataErr)
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return nil, err
 	}
-	os.Chmod(filepath.Join(dir, "data"), 0o755)
+	if err := os.MkdirAll(dataDir, 0o755); err != nil {
+		return nil, err
+	}
+	os.Chmod(dataDir, 0o755)
 	cleanup := func() {
+		if dataCreated {
+			os.RemoveAll(dataDir)
+		}
 		if fresh {
 			os.RemoveAll(dir)
 			return
@@ -219,7 +239,7 @@ func (h *helperServer) appInstall(req helperRequest, logf func(string)) (any, er
 		}
 	}
 	meta := installedApp{ID: app.ID, Name: app.Name, Version: app.Version, MainPort: port, Scheme: app.Scheme,
-		Store: app.Attribution.Store, InstalledAt: time.Now().Unix()}
+		Store: app.Attribution.Store, InstalledAt: time.Now().Unix(), DataDir: dataDir, DataCreated: dataCreated}
 	metaJSON, _ := json.MarshalIndent(meta, "", "  ")
 	for name, body := range map[string][]byte{"compose.yaml": []byte(app.Compose), ".env": env, "app.json": metaJSON} {
 		if err := os.WriteFile(filepath.Join(dir, name), body, 0o600); err != nil {
@@ -255,10 +275,10 @@ var (
 
 // buildEnv validates the answers and renders the .env file. Single quotes are not allowed in
 // answers so every value can be written as KEY='value' (no interpolation, no escaping).
-func buildEnv(app *catalog.App, answers map[string]string, dir, base string) ([]byte, int, error) {
+func buildEnv(app *catalog.App, answers map[string]string, dir, dataDir, base string) ([]byte, int, error) {
 	ip := serverIP()
 	vals := map[string]string{
-		"APP_ID": app.ID, "APP_DATA_DIR": filepath.Join(dir, "data"), "APP_PORT": strconv.Itoa(app.MainPort),
+		"APP_ID": app.ID, "APP_DATA_DIR": dataDir, "APP_PORT": strconv.Itoa(app.MainPort),
 		"APP_DOMAIN": ip, "APP_HOST": ip, "INTERNAL_IP": ip, "NETWORK_INTERFACE": ip, "APP_PROTOCOL": "http",
 		"LOCAL_DOMAIN": "local", "DNS_IP": "1.1.1.1", "APP_EXPOSED": "false",
 		"TZ": timezone(), "PUID": "1000", "PGID": "1000",
@@ -615,7 +635,21 @@ func (h *helperServer) appUninstall(req helperRequest, logf func(string)) (any, 
 			return nil, err
 		}
 	}
+	dataDir := meta.DataDir
+	if dataDir == "" {
+		dataDir = filepath.Join(dir, "data")
+	}
+	defer func() {
+		if meta.Domain != "" {
+			h.reloadProxy(logf) // its route is gone with app.json
+		}
+	}()
 	if req.DeleteData {
+		if meta.DataCreated { // only a folder Box created itself is deleted
+			if err := os.RemoveAll(dataDir); err != nil {
+				return nil, err
+			}
+		}
 		if err := os.RemoveAll(dir); err != nil {
 			return nil, err
 		}
@@ -625,8 +659,8 @@ func (h *helperServer) appUninstall(req helperRequest, logf func(string)) (any, 
 	for _, f := range []string{"compose.yaml", ".env", "app.json"} {
 		os.Remove(filepath.Join(dir, f))
 	}
-	logf(meta.Name + " was removed. Its data stays in " + filepath.Join(dir, "data") + ".")
-	return map[string]any{"data_kept": true, "data_dir": filepath.Join(dir, "data")}, nil
+	logf(meta.Name + " was removed. Its data stays in " + dataDir + ".")
+	return map[string]any{"data_kept": true, "data_dir": dataDir}, nil
 }
 
 func (h *helperServer) appLogs(req helperRequest, logf func(string)) (any, error) {
@@ -654,4 +688,80 @@ func (h *helperServer) appLogs(req helperRequest, logf func(string)) (any, error
 		out = out[len(out)-512*1024:]
 	}
 	return map[string]string{"logs": string(out)}, nil
+}
+
+// systemDirs never hold app data (and nothing below them).
+var systemDirs = []string{"/etc", "/usr", "/bin", "/sbin", "/lib", "/lib32", "/lib64", "/boot", "/proc", "/sys",
+	"/dev", "/run", "/root", "/var/lib/docker", "/var/lib/nexovirt-box/web", "/var/log", "/tmp"}
+
+func underAny(p string, dirs []string) bool {
+	for _, d := range dirs {
+		if p == d || strings.HasPrefix(p, d+"/") {
+			return true
+		}
+	}
+	return false
+}
+
+// checkDataDir accepts an absolute folder outside system paths that is new or empty.
+func checkDataDir(p string) error {
+	if !filepath.IsAbs(p) || filepath.Clean(p) != p || strings.Count(p, "/") < 2 {
+		return uerr("Use a full folder path like /srv/apps/name.")
+	}
+	if underAny(p, systemDirs) {
+		return uerr("%s is a system folder. Pick a folder under /srv, /home, /opt or /mnt.", p)
+	}
+	st, err := os.Lstat(p)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil || !st.IsDir() {
+		return uerr("%s exists and is not a folder.", p)
+	}
+	entries, _ := os.ReadDir(p)
+	if len(entries) > 0 {
+		return uerr("%s is not empty. Pick an empty or new folder.", p)
+	}
+	return nil
+}
+
+// ---- unused images ----
+
+func danglingImages() ([]string, int64) {
+	out, err := exec.Command("docker", "images", "--filter", "dangling=true", "--quiet", "--no-trunc").Output()
+	if err != nil {
+		return nil, 0
+	}
+	ids := strings.Fields(string(out))
+	if len(ids) == 0 {
+		return nil, 0
+	}
+	sizes, _ := exec.Command("docker", append([]string{"image", "inspect", "--format", "{{.Size}}"}, ids...)...).Output()
+	var total int64
+	for _, s := range strings.Fields(string(sizes)) {
+		n, _ := strconv.ParseInt(s, 10, 64)
+		total += n
+	}
+	return ids, total
+}
+
+func (h *helperServer) imagesUnused(req helperRequest, logf func(string)) (any, error) {
+	if needDocker() != nil {
+		return map[string]any{"count": 0, "bytes": 0}, nil
+	}
+	ids, total := danglingImages()
+	return map[string]any{"count": len(ids), "bytes": total}, nil
+}
+
+func (h *helperServer) imagesPrune(req helperRequest, logf func(string)) (any, error) {
+	if err := needDocker(); err != nil {
+		return nil, err
+	}
+	ids, total := danglingImages()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	if err := runStream(ctx, exec.Command("docker", "image", "prune", "--force"), logf); err != nil {
+		return nil, err
+	}
+	return map[string]any{"count": len(ids), "bytes": total}, nil
 }

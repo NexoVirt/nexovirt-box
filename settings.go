@@ -11,7 +11,13 @@ import (
 // Settings the admin can change in the UI. Each key has its own validation; unknown keys are refused.
 var settingKeys = map[string]func(string) (string, error){
 	"catalog_url": httpsURL("The catalog URL"),
-	"release_url": httpsURL("The update URL"),
+	"release_url": func(v string) (string, error) {
+		v = strings.TrimRight(strings.TrimSpace(v), "/")
+		if v != "" && !releaseURLOK(v) {
+			return "", userError{"The update address must be an https:// address."}
+		}
+		return v, nil
+	},
 }
 
 func httpsURL(what string) func(string) (string, error) {

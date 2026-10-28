@@ -44,6 +44,12 @@ type helperRequest struct {
 	Code       string            `json:"code,omitempty"`
 	Session    string            `json:"session,omitempty"` // sha256 of the session cookie
 	Proof      string            `json:"proof,omitempty"`
+	HTTPPort   int               `json:"http_port,omitempty"`
+	HTTPSPort  int               `json:"https_port,omitempty"`
+	Email      string            `json:"email,omitempty"`
+	Domain     string            `json:"domain,omitempty"`
+	DataDir    string            `json:"data_dir,omitempty"`
+	URL        string            `json:"url,omitempty"`
 }
 
 type helperMsg struct {
@@ -160,6 +166,14 @@ func (h *helperServer) actions() map[string]helperAction {
 		"app_action":     h.appAction,
 		"app_uninstall":  h.appUninstall,
 		"app_logs":       h.appLogs,
+		"app_domain":     h.appDomain,
+		"proxy_status":   h.proxyStatus,
+		"proxy_setup":    h.proxySetup,
+		"proxy_remove":   h.proxyRemove,
+		"images_unused":  h.imagesUnused,
+		"images_prune":   h.imagesPrune,
+		"updates_check":  h.updatesCheck,
+		"self_update":    h.selfUpdate,
 	}
 }
 
