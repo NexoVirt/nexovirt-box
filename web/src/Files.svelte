@@ -585,6 +585,7 @@
 <svelte:window onkeydown={keydown} />
 
 <div class="page fill">
+  <header class="page-head compact"><h1 class="t-large">Files</h1></header>
   <div class="explorer tile">
     <!-- Toolbar -->
     <div class="bar-top">

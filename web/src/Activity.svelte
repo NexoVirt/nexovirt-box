@@ -146,6 +146,7 @@
 </script>
 
 <div class="page fill">
+  <header class="page-head compact"><h1 class="t-large">Activity</h1></header>
   <div class="card tile">
     <div class="head">
       <div class="title">

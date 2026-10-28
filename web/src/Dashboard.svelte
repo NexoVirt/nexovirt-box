@@ -357,7 +357,7 @@
 <ContextMenu bind:menu onPick={pick} />
 
 <style>
-  .home { display: grid; gap: 1.25rem; padding-top: 0.5rem; }
+  .home { display: grid; gap: 1.25rem; }
   .hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; }
   .greet { display: grid; gap: 0.25rem; min-width: 0; }
   .greet p, .greet h1 { margin: 0; }

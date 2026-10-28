@@ -231,9 +231,10 @@ select.input option { background: var(--surface); color: var(--text); }
 /* Page header shared by the list pages. */
 .page { display: grid; gap: 1.5rem; }
 .page.fill { display: flex; flex-direction: column; flex: 1; min-height: 0; gap: 1rem; }
-.page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; padding-top: 0.5rem; }
+.page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
 .page-head h1, .page-head p { margin: 0; }
 .page-head p { margin-top: 0.375rem; }
+.page-head.compact { padding-top: 0; }
 .group-head { padding: 1rem 1.125rem 0.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .group-head h2 { margin: 0; }
 .ico { display: grid; place-items: center; width: 1.75rem; height: 1.75rem; border-radius: 0.5rem; background: var(--fill); color: var(--text-2); flex-shrink: 0; }

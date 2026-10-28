@@ -230,9 +230,7 @@
 
 <style>
   .page { display: grid; gap: 1.5rem; }
-  .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; padding-top: 0.5rem; }
   h1, h2, p { margin: 0; }
-  .page-head p { margin-top: 0.375rem; }
   .sep { color: var(--text-3); margin: 0 0.125rem; }
   .skeleton.inline { display: inline-block; width: 14rem; height: 0.9rem; vertical-align: middle; }
 

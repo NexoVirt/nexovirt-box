@@ -157,10 +157,7 @@
 </Dialog>
 
 <style>
-  .page { display: grid; gap: 1.5rem; }
-  .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; padding-top: 0.5rem; }
   h1, p { margin: 0; }
-  .page-head p { margin-top: 0.375rem; }
   .skeleton.inline { display: inline-block; width: 16rem; height: 0.9rem; vertical-align: middle; }
 
   .controls { display: grid; gap: 0.875rem; position: sticky; top: 3.75rem; z-index: 5; padding: 0.25rem 0 0.5rem; background: color-mix(in srgb, var(--bg) 88%, transparent); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); }

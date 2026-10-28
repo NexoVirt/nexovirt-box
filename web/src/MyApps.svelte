@@ -315,10 +315,7 @@
 </Dialog>
 
 <style>
-  .page { display: grid; gap: 1.5rem; }
-  .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; padding-top: 0.5rem; }
   h1, h2, p { margin: 0; }
-  .page-head p { margin-top: 0.375rem; }
   .skeleton.sq { width: 42px; height: 42px; border-radius: 10px; }
   .skeleton.line { display: block; width: 40%; height: 0.8rem; }
   .group { overflow: visible; }

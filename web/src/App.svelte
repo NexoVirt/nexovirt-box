@@ -58,7 +58,6 @@
   let path = $state(location.pathname);
   let menuOpen = $state(false);
   let userOpen = $state(false);
-  let scrolled = $state(false);
   let mode = $state(theme.mode);
 
   $effect(() => { if (mode !== theme.mode) setThemeMode(mode); });
@@ -119,13 +118,8 @@
   onMount(() => {
     loadState();
     const onPop = () => (path = location.pathname);
-    const onScroll = () => (scrolled = scrollY > 4);
     addEventListener('popstate', onPop);
-    addEventListener('scroll', onScroll, { passive: true });
-    return () => {
-      removeEventListener('popstate', onPop);
-      removeEventListener('scroll', onScroll);
-    };
+    return () => removeEventListener('popstate', onPop);
   });
 
   let page = $derived(pages.find((p) => p.path === path) || pages[0]);
@@ -147,6 +141,42 @@
       </a>
     {/each}
   </nav>
+{/snippet}
+
+{#snippet account(inSheet)}
+  <div class="account">
+    <div class="user">
+      {#if inSheet}
+        <div class="account-btn static">
+          <span class="avatar">{initials}</span>
+          <span class="account-text"><span class="truncate">{state.username}</span><span class="t-caption">Version {state.version}</span></span>
+        </div>
+      {:else}
+        <button class="account-btn" onclick={() => (userOpen = !userOpen)} aria-haspopup="menu" aria-expanded={userOpen} aria-label="Account and appearance">
+          <span class="avatar">{initials}</span>
+          <span class="account-text"><span class="truncate">{state.username}</span><span class="t-caption">Version {state.version}</span></span>
+        </button>
+      {/if}
+    </div>
+    <button class="icon-btn theme-btn" onclick={toggleTheme} aria-label={theme.current === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} title={theme.current === 'dark' ? 'Light mode' : 'Dark mode'}>
+      {#if theme.current === 'dark'}<Sun size={18} />{:else}<Moon size={18} />{/if}
+    </button>
+    {#if !inSheet}
+      <Popover bind:open={userOpen} label="Account" up>
+        <div class="pop-section">
+          <span class="pop-label">Appearance</span>
+          <Segmented options={themeModes} bind:value={mode} label="Appearance" />
+        </div>
+        <button class="pop-item" role="menuitem" onclick={signOut}><LogOut size={16} />Sign out</button>
+      </Popover>
+    {/if}
+  </div>
+  {#if inSheet}
+    <div class="sheet-account">
+      <Segmented options={themeModes} bind:value={mode} label="Appearance" />
+      <button class="btn btn-gray btn-sm" onclick={signOut}><LogOut size={15} />Sign out</button>
+    </div>
+  {/if}
 {/snippet}
 
 {#if !state}
@@ -175,37 +205,12 @@
         </span>
       </a>
       {@render nav()}
-      <div class="side-foot t-caption">Version {state.version}</div>
+      <div class="side-foot">{@render account(false)}</div>
     </aside>
 
     <div class="content">
-      <header class="toolbar" class:scrolled class:titled={fill}>
-        <button class="icon-btn menu-btn" onclick={() => (menuOpen = true)} aria-label="Open navigation"><Menu size={20} /></button>
-        <span class="toolbar-title t-head">{page.title}</span>
-        <div class="toolbar-end">
-          <button class="icon-btn" onclick={toggleTheme} aria-label={theme.current === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} title={theme.current === 'dark' ? 'Light mode' : 'Dark mode'}>
-            {#if theme.current === 'dark'}<Sun size={19} />{:else}<Moon size={19} />{/if}
-          </button>
-          <div class="user">
-            <button class="avatar-btn" onclick={() => (userOpen = !userOpen)} aria-haspopup="menu" aria-expanded={userOpen} aria-label="Account and appearance">
-              <span class="avatar">{initials}</span>
-            </button>
-            <Popover bind:open={userOpen} label="Account">
-              <div class="pop-head">
-                <span class="avatar lg">{initials}</span>
-                <span>
-                  <span class="t-head">{state.username}</span>
-                  <span class="t-caption">Administrator</span>
-                </span>
-              </div>
-              <div class="pop-section">
-                <span class="t-section">Appearance</span>
-                <Segmented options={themeModes} bind:value={mode} label="Appearance" />
-              </div>
-              <button class="pop-item" role="menuitem" onclick={signOut}><LogOut size={16} />Sign out</button>
-            </Popover>
-          </div>
-        </div>
+      <header class="mobile-bar">
+        <button class="icon-btn" onclick={() => (menuOpen = true)} aria-label="Open navigation"><Menu size={20} /></button>
       </header>
 
       <main>
@@ -241,6 +246,7 @@
       </span>
     </div>
     {@render nav()}
+    <div class="sheet-foot">{@render account(true)}</div>
   </Sheet>
 {/if}
 
@@ -264,7 +270,6 @@
   }
   .brand { display: flex; align-items: center; gap: 0.75rem; padding: 0.25rem 0.5rem 1.25rem; border-radius: 0.75rem; }
   .brand > span, .sheet-brand > span { display: grid; min-width: 0; }
-  .side-foot { margin-top: auto; padding: 0 0.625rem; color: var(--text-3); }
 
   .nav { display: grid; gap: 0.125rem; }
   .nav a {
@@ -280,37 +285,30 @@
 
   .content { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 
-  /* Toolbar: transparent at the top; once content scrolls under it, it becomes a floating panel
-     with the sidebar's material, radius, inset and hairline. */
-  .toolbar {
-    position: sticky; top: 0.5rem; z-index: 20; display: flex; align-items: center; gap: 0.5rem;
-    height: 3.5rem; margin: 0.5rem 0.5rem 0; padding: 0 0.5rem 0 1rem;
-    border-radius: 1.375rem; background: transparent; box-shadow: 0 0 0 1px transparent;
-    transition: background-color 240ms ease, box-shadow 240ms ease, -webkit-backdrop-filter 240ms ease, backdrop-filter 240ms ease;
-  }
-  .toolbar.scrolled {
-    background: var(--material-thick); box-shadow: 0 0 0 1px var(--hairline), var(--shadow-tile);
-    -webkit-backdrop-filter: blur(40px) saturate(180%); backdrop-filter: blur(40px) saturate(180%);
-  }
-  .toolbar-title { opacity: 0; transform: translateY(4px); transition: opacity 200ms ease, transform 300ms var(--spring); }
-  .toolbar.scrolled .toolbar-title, .toolbar.titled .toolbar-title { opacity: 1; transform: none; }
-  .toolbar-end { margin-left: auto; display: flex; align-items: center; }
-  .menu-btn { display: none; margin-left: -0.5rem; }
-
   .user { position: relative; }
-  .avatar-btn {
-    display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border: 0; padding: 0;
-    background: none; border-radius: 999px; cursor: pointer; transition: transform 100ms ease-out;
+  .account { position: relative; display: flex; align-items: center; gap: 0.25rem; }
+  .account .user { flex: 1; min-width: 0; }
+  .account-btn {
+    display: flex; align-items: center; gap: 0.625rem; width: 100%; min-height: 3rem; padding: 0.375rem 0.5rem;
+    border: 0; border-radius: 0.875rem; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer;
+    transition: background-color 150ms ease, transform 100ms ease-out;
   }
-  .avatar-btn:active { transform: scale(0.94); }
+  .account-btn:hover, .account-btn[aria-expanded='true'] { background: var(--fill); }
+  .account-btn:active { transform: scale(0.98); }
+  .account-btn.static { cursor: default; }
+  .account-btn.static:hover { background: none; }
+  .account-text { display: grid; min-width: 0; font-weight: 600; }
+  .theme-btn { flex-shrink: 0; }
+  .side-foot { margin-top: auto; padding-top: 0.75rem; border-top: 1px solid var(--hairline); }
+  .sheet-foot { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--hairline); }
+  .sheet-account { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.5rem 0.5rem 0; }
+  .mobile-bar { display: none; }
   .avatar {
     display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 999px;
     background: var(--accent-fill); color: var(--accent); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.02em;
   }
-  .avatar.lg { width: 2.5rem; height: 2.5rem; font-size: 0.875rem; }
-  .pop-head { display: flex; align-items: center; gap: 0.75rem; padding: 0.625rem 0.625rem 0.75rem; }
-  .pop-head > span:last-child { display: grid; }
-  .pop-section { display: grid; gap: 0.5rem; padding: 0.625rem; border-top: 1px solid var(--hairline); }
+  .pop-section { display: grid; gap: 0.5rem; padding: 0.5rem 0.5rem 0.625rem; }
+  .pop-label { font-size: 0.8125rem; font-weight: 500; color: var(--text-2); padding: 0 0.125rem; }
   .pop-item {
     display: flex; align-items: center; gap: 0.625rem; width: 100%; min-height: 2.75rem; padding: 0 0.625rem;
     border: 0; border-top: 1px solid var(--hairline); background: none; cursor: pointer; text-align: left; font-weight: 500;
@@ -318,14 +316,18 @@
   }
   .pop-item:hover { background: var(--fill); }
 
-  main { flex: 1; padding: 0.5rem 1.5rem 2.5rem; }
+  main { flex: 1; padding: 1.75rem 2rem 2.5rem; }
 
   .sheet-brand { display: flex; align-items: center; gap: 0.75rem; padding: 0.25rem 0.5rem 1rem; }
 
   @media (max-width: 899px) {
     .sidebar { display: none; }
-    .menu-btn { display: inline-grid; }
-    .toolbar { padding: 0 0.25rem 0 0.75rem; top: max(0.5rem, env(safe-area-inset-top, 0px)); }
-    main { padding: 0.25rem 1rem 2rem; }
+    .mobile-bar {
+      position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 0.25rem;
+      min-height: 3.25rem; padding: env(safe-area-inset-top, 0px) 0.5rem 0 0.25rem;
+      background: color-mix(in srgb, var(--bg) 80%, transparent);
+      -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: blur(24px) saturate(180%);
+    }
+    main { padding: 0.5rem 1rem 2rem; }
   }
 </style>
