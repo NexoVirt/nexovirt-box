@@ -6,6 +6,7 @@
   import { toast } from '$lib/toast.svelte.js';
   import Dialog from '$lib/Dialog.svelte';
   import Popover from '$lib/Popover.svelte';
+  import DataTable from '$lib/DataTable.svelte';
   import Segmented from '$lib/Segmented.svelte';
   import AppIcon from '$lib/AppIcon.svelte';
   import Shield from '@lucide/svelte/icons/shield';
@@ -159,6 +160,17 @@
     load();
     return () => clearInterval(timer);
   });
+  const RULE_COLS = [
+    { key: 'dir', label: 'Direction' },
+    { key: 'action', label: 'Action', primary: true },
+    { key: 'proto', label: 'Protocol', mono: true },
+    { key: 'port', label: 'Port', mono: true },
+    { key: 'source', label: 'From' },
+    { key: 'comment', label: 'Note', hide: 'md' },
+    { key: 'app', label: 'App', hide: 'md' },
+  ];
+  const sameRule = (a, b) => a.action === b.action && a.proto === b.proto && a.port === b.port && (a.source || '') === (b.source || '') && (a.comment || '') === (b.comment || '');
+  const isNew = (r) => !status.rules.some((x) => sameRule(x, r));
 </script>
 
 <div class="page">
@@ -171,7 +183,7 @@
 
   {#if pending}
     <div class="tile pending" role="status">
-      <span class="ico warn"><ShieldAlert size={18} /></span>
+      <span class="ico md warn"><ShieldAlert /></span>
       <div class="grow">
         <span class="t-head">Keep these rules?</span>
         <span class="t-caption">They are active now. Without a confirmation, Box puts the previous rules back in <span class="num">{pending.left}</span> s, so you cannot lock yourself out.</span>
@@ -191,86 +203,66 @@
   {:else}
     <div class="stats">
       <div class="tile stat">
-        <span class="stat-ico"><ShieldCheck size={18} /></span>
+        <span class="ico md accent"><ShieldCheck /></span>
         <span class="stat-text"><span class="t-caption">Firewall</span><span class="t-head">{BACKENDS[status.backend]}</span></span>
       </div>
       <div class="tile stat">
-        <span class="stat-ico"><ArrowDownToLine size={18} /></span>
+        <span class="ico md accent"><ArrowDownToLine /></span>
         <span class="stat-text"><span class="t-caption">Incoming by default</span><span class="t-head"><span class="dot" class:ok={status.policies?.in === 'allow'} class:warn={status.policies?.in === 'deny'}></span>{POLICY[status.policies?.in || 'unknown']}</span></span>
       </div>
       <div class="tile stat">
-        <span class="stat-ico"><ArrowUpFromLine size={18} /></span>
+        <span class="ico md accent"><ArrowUpFromLine /></span>
         <span class="stat-text"><span class="t-caption">Outgoing by default</span><span class="t-head"><span class="dot" class:ok={status.policies?.out === 'allow'} class:warn={status.policies?.out === 'deny'}></span>{POLICY[status.policies?.out || 'unknown']}</span></span>
       </div>
       <div class="tile stat">
-        <span class="stat-ico"><ListChecks size={18} /></span>
+        <span class="ico md accent"><ListChecks /></span>
         <span class="stat-text"><span class="t-caption">Box rules</span><span class="t-head num">{status.rules.length}{#if dirty}<span class="t-caption"> ({changes} unsaved)</span>{/if}</span></span>
       </div>
     </div>
 
-    <section class="group rules">
-      <div class="group-head">
-        <h2 class="t-head">Rules</h2>
-        <div class="head-btns">
-          <div class="pop-wrap">
-            <button class="btn btn-gray btn-sm" onclick={() => (presetsOpen = !presetsOpen)} aria-haspopup="menu" aria-expanded={presetsOpen}><Zap size={15} />Quick add</button>
-            <Popover bind:open={presetsOpen} label="Quick add">
-              <p class="t-section pop-title">Common</p>
-              {#each PRESETS as p (p.label)}
-                {@const Icon = p.icon}
-                <button class="pop-item" role="menuitem" onclick={() => addPreset(p.rules)}>
-                  <span class="pop-ico"><Icon size={15} /></span><span class="grow"><span>{p.label}</span><span class="t-caption">{p.hint}</span></span>
-                </button>
-              {/each}
-              {#if apps.some((a) => a.main_port)}
-                <p class="t-section pop-title">Apps</p>
-                {#each apps.filter((a) => a.main_port) as a (a.id)}
-                  <button class="pop-item" role="menuitem" onclick={() => addPreset([{ port: String(a.main_port), comment: a.name.slice(0, 60) }])}>
-                    <AppIcon id={a.id} name={a.name} size={22} icon={a.icon} /><span class="grow"><span class="truncate">{a.name}</span><span class="t-caption">Port {a.main_port}</span></span>
+    <DataTable label="Firewall rules" title="Rules" description="Incoming traffic. Box applies its rules together, after you confirm them." columns={RULE_COLS}
+      rows={draft.map((r, i) => ({ ...r, _i: i }))} key="_i" rowClass={(r) => (isNew(r) ? 'new' : '')} onrowdblclick={(r) => openEditor(r._i)}
+      actions={(r) => [
+        { label: 'Edit', icon: Pencil, run: () => openEditor(r._i) },
+        { label: 'Remove', icon: Trash, danger: true, run: () => draft.splice(r._i, 1) },
+      ]}
+      empty={{ icon: Shield, title: 'No rules from Box yet', text: 'Everything the server allowed before still applies. Use Quick add for common ports.' }}>
+      {#snippet toolbar()}
+          <div class="head-btns">
+            <div class="pop-wrap">
+              <button class="btn btn-gray btn-sm" onclick={() => (presetsOpen = !presetsOpen)} aria-haspopup="menu" aria-expanded={presetsOpen}><Zap size={15} />Quick add</button>
+              <Popover bind:open={presetsOpen} label="Quick add">
+                <p class="t-section pop-title">Common</p>
+                {#each PRESETS as p (p.label)}
+                  {@const Icon = p.icon}
+                  <button class="pop-item" role="menuitem" onclick={() => addPreset(p.rules)}>
+                    <span class="ico"><Icon /></span><span class="grow"><span>{p.label}</span><span class="t-caption">{p.hint}</span></span>
                   </button>
                 {/each}
-              {/if}
-            </Popover>
+                {#if apps.some((a) => a.main_port)}
+                  <p class="t-section pop-title">Apps</p>
+                  {#each apps.filter((a) => a.main_port) as a (a.id)}
+                    <button class="pop-item" role="menuitem" onclick={() => addPreset([{ port: String(a.main_port), comment: a.name.slice(0, 60) }])}>
+                      <AppIcon id={a.id} name={a.name} size={22} icon={a.icon} /><span class="grow"><span class="truncate">{a.name}</span><span class="t-caption">Port {a.main_port}</span></span>
+                    </button>
+                  {/each}
+                {/if}
+              </Popover>
+            </div>
+            <button class="btn btn-tinted btn-sm" onclick={() => openEditor()}><Plus size={15} />Add rule</button>
           </div>
-          <button class="btn btn-tinted btn-sm" onclick={() => openEditor()}><Plus size={15} />Add rule</button>
-        </div>
-      </div>
-
-      {#if draft.length}
-        <div class="table-scroll">
-          <table>
-            <thead>
-              <tr><th>Direction</th><th>Action</th><th>Protocol</th><th>Port</th><th>From</th><th>Note</th><th>App</th><th class="sr">Actions</th></tr>
-            </thead>
-            <tbody>
-              {#each draft as r, i (i)}
-                {@const app = appFor(r)}
-                {@const isNew = !status.rules.some((s) => JSON.stringify(s) === JSON.stringify(r))}
-                <tr class:new={isNew} ondblclick={() => openEditor(i)}>
-                  <td><span class="dir"><ArrowDownToLine size={14} />In</span>{#if isNew}<span class="unsaved">Unsaved</span>{/if}</td>
-                  <td><span class="pill" class:allow={r.action === 'allow'} class:deny={r.action === 'deny'}><span class="dot" class:ok={r.action === 'allow'} class:error={r.action === 'deny'}></span>{r.action === 'allow' ? 'Allow' : 'Block'}</span></td>
-                  <td class="mono">{r.proto.toUpperCase()}</td>
-                  <td class="mono num">{r.port}</td>
-                  <td class:mono={!!r.source} class:muted={!r.source}>{r.source || 'Anywhere'}</td>
-                  <td class="note truncate">{r.comment || ''}</td>
-                  <td>{#if app}<span class="app"><AppIcon id={app.id} name={app.name} size={20} icon={app.icon} /><span class="truncate">{app.name}</span></span>{/if}</td>
-                  <td class="acts">
-                    <button class="icon-btn sm" onclick={() => openEditor(i)} aria-label="Edit rule"><Pencil size={15} /></button>
-                    <button class="icon-btn sm" onclick={() => draft.splice(i, 1)} aria-label="Remove rule"><Trash size={15} /></button>
-                  </td>
-                </tr>
-              {/each}
-            </tbody>
-          </table>
-        </div>
-      {:else}
-        <div class="empty">
-          <Shield size={30} />
-          <p class="t-head">No rules from Box yet</p>
-          <p class="t-caption">Everything the server allowed before still applies. Use Quick add for common ports.</p>
-        </div>
-      {/if}
-    </section>
+      {/snippet}
+      {#snippet cell(r, c)}
+        {@const app = appFor(r)}
+        {#if c.key === 'dir'}<span class="dir"><ArrowDownToLine size={14} />In</span>{#if isNew(r)}<span class="unsaved">Unsaved</span>{/if}
+        {:else if c.key === 'action'}<span class="pill" class:allow={r.action === 'allow'} class:deny={r.action === 'deny'}><span class="dot" class:ok={r.action === 'allow'} class:error={r.action === 'deny'}></span>{r.action === 'allow' ? 'Allow' : 'Block'}</span>
+        {:else if c.key === 'proto'}{r.proto.toUpperCase()}
+        {:else if c.key === 'source'}<span class:mono={!!r.source} class:muted={!r.source}>{r.source || 'Anywhere'}</span>
+        {:else if c.key === 'comment'}<span class="muted">{r.comment || ''}</span>
+        {:else if c.key === 'app'}{#if app}<span class="app"><AppIcon id={app.id} name={app.name} size={20} icon={app.icon} /><span class="truncate">{app.name}</span></span>{/if}
+        {:else}{r[c.key]}{/if}
+      {/snippet}
+    </DataTable>
 
     {#if dirty || status.backend === 'ufw'}
       <div class="save-bar" class:dirty>
@@ -337,11 +329,9 @@
   .pending .grow { flex: 1; min-width: 0; display: grid; gap: 0.25rem; }
   .countdown { margin-top: 0.25rem; }
   .countdown > span { transition: transform 1s linear; }
-  .ico.warn { color: var(--warn); }
 
   .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.75rem; }
   .stat { display: flex; align-items: center; gap: 0.75rem; padding: 1rem 1.125rem; }
-  .stat-ico { display: grid; place-items: center; width: 2.25rem; height: 2.25rem; color: var(--accent); flex-shrink: 0; }
   .stat-text { display: grid; gap: 0.125rem; min-width: 0; }
   .stat-text .t-head { display: flex; align-items: center; gap: 0.4rem; }
 
@@ -352,30 +342,14 @@
   .pop-item { display: flex; align-items: center; gap: 0.625rem; width: 100%; min-height: 2.75rem; padding: 0.25rem 0.625rem; border: 0; border-radius: 0.625rem; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
   .pop-item:hover { background: var(--fill); }
   .pop-item .grow { flex: 1; min-width: 0; display: grid; }
-  .pop-ico { display: grid; place-items: center; width: 22px; height: 22px; color: var(--text-2); }
 
-  .table-scroll { overflow-x: auto; padding: 0.25rem 0.5rem 0.5rem; }
-  table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.8125rem; }
-  th { text-align: left; font-size: 0.75rem; font-weight: 600; color: var(--text-2); padding: 0.5rem 0.625rem; border-bottom: 1px solid var(--hairline); white-space: nowrap; }
-  td { padding: 0.375rem 0.625rem; height: 2.875rem; border-bottom: 1px solid var(--hairline); white-space: nowrap; }
-  tbody tr:last-child td { border-bottom: 0; }
-  tbody tr:hover td { background: var(--fill); }
-  tbody tr td:first-child { border-radius: 0.5rem 0 0 0.5rem; }
-  tbody tr td:last-child { border-radius: 0 0.5rem 0.5rem 0; }
   .unsaved { margin-left: 0.375rem; color: var(--accent); font-size: 0.6875rem; font-weight: 600; }
-  .sr { font-size: 0; }
   .dir { display: inline-flex; align-items: center; gap: 0.375rem; color: var(--text-2); }
   .pill.allow { background: color-mix(in srgb, var(--ok) 12%, transparent); color: var(--text); }
   .pill.deny { background: var(--error-fill); color: var(--text); }
-  .note { max-width: 14rem; color: var(--text-2); }
   .muted { color: var(--text-2); }
   .app { display: inline-flex; align-items: center; gap: 0.5rem; max-width: 12rem; }
-  .acts { text-align: right; width: 1%; }
-  .icon-btn.sm { width: 2.25rem; height: 2.25rem; }
 
-  .empty { display: grid; justify-items: center; gap: 0.375rem; padding: 2rem 1rem 2.25rem; text-align: center; color: var(--text-3); }
-  .empty p { margin: 0; }
-  .empty .t-head { color: var(--text-2); }
 
   .save-bar { position: sticky; bottom: 1rem; z-index: 10; display: flex; align-items: center; justify-content: flex-end; gap: 0.625rem; flex-wrap: wrap; }
   .save-bar.dirty { padding: 0.625rem 0.75rem 0.625rem 1.125rem; border-radius: 1.125rem; background: var(--material); box-shadow: var(--shadow-float); -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: blur(30px) saturate(180%); }

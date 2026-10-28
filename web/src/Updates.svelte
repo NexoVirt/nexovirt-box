@@ -7,6 +7,7 @@
   import { ago } from '$lib/format.js';
   import { runJob } from '$lib/jobs.js';
   import Dialog from '$lib/Dialog.svelte';
+  import DataTable from '$lib/DataTable.svelte';
   import RefreshCw from '@lucide/svelte/icons/refresh-cw';
   import Loader from '@lucide/svelte/icons/loader-circle';
   import CircleAlert from '@lucide/svelte/icons/circle-alert';
@@ -28,6 +29,12 @@
   let rebootOpen = $state(false), rebootText = $state(''), rebooting = $state(false);
   let autoBusy = $state(false);
   let poll;
+  const PKG_COLS = [
+    { key: 'name', label: 'Package', primary: true, sortable: true },
+    { key: 'current', label: 'Installed', mono: true, hide: 'md' },
+    { key: 'candidate', label: 'New version', mono: true },
+    { key: 'suite', label: 'Source', sortable: true, value: (p) => (p.security ? '0 security' : p.suite) },
+  ];
 
   const lost = (res) => { if (res.status === 401) { onSessionLost(); return true; } return false; };
 
@@ -54,14 +61,6 @@
   }
 
   const security = $derived(status ? status.packages.filter((p) => p.security).length : 0);
-  const allOn = $derived(status && status.packages.length > 0 && selected.size === status.packages.length);
-
-  function toggle(name) {
-    const s = new Set(selected);
-    s.has(name) ? s.delete(name) : s.add(name);
-    selected = s;
-  }
-  function toggleAll() { selected = allOn ? new Set() : new Set(status.packages.map((p) => p.name)); }
   function selectSecurity() { selected = new Set(status.packages.filter((p) => p.security).map((p) => p.name)); }
 
   // Simulate first: the plan dialog shows what apt will really do.
@@ -158,7 +157,7 @@
   {:else}
     {#if status.reboot_required}
       <div class="tile banner" role="status">
-        <span class="ico warn"><Power size={17} /></span>
+        <span class="ico md warn"><Power /></span>
         <span class="grow"><span class="t-head">Restart needed</span><span class="t-caption">An update (for example a new kernel) only takes effect after the server restarts.</span></span>
         <button class="btn btn-gray btn-sm" onclick={() => { rebootText = ''; rebootOpen = true; }} disabled={run?.state === 'running'}>Restart server</button>
       </div>
@@ -166,7 +165,7 @@
 
     {#if refreshing}
       <div class="tile banner" role="status">
-        <span class="ico"><Loader size={17} class="spinner" /></span>
+        <span class="ico md accent"><Loader class="spinner" /></span>
         <span class="grow"><span class="t-head">Checking the package sources</span><span class="t-caption">apt reads every repository. This can take up to two and a half minutes.</span></span>
       </div>
     {/if}
@@ -182,8 +181,8 @@
     {#if run && run.state !== 'idle'}
       <section class="group">
         <button class="row run-head" onclick={() => (logOpen = !logOpen)} aria-expanded={logOpen}>
-          <span class="ico" class:accent={run.state === 'running'} class:okc={run.state === 'done'} class:errc={run.state === 'failed'}>
-            {#if run.state === 'running'}<Loader size={16} class="spinner" />{:else if run.state === 'done'}<CircleCheck size={16} />{:else}<CircleAlert size={16} />{/if}
+          <span class="ico md" class:accent={run.state === 'running'} class:ok={run.state === 'done'} class:error={run.state === 'failed'}>
+            {#if run.state === 'running'}<Loader class="spinner" />{:else if run.state === 'done'}<CircleCheck />{:else}<CircleAlert />{/if}
           </span>
           <span class="grow">
             <span class="t-head">{run.state === 'running' ? 'Installing updates' : run.state === 'done' ? 'Updates installed' : 'The update failed'}</span>
@@ -195,49 +194,22 @@
       </section>
     {/if}
 
-    <section class="group">
-      <div class="group-head">
-        <div>
-          <h2 class="t-head">Available updates</h2>
-          <p class="t-caption">
-            {status.packages.length} {status.packages.length === 1 ? 'package' : 'packages'}{#if security}, {security} security{/if}
-            {#if status.lists_at} · lists from {ago(status.lists_at)}{/if}
-          </p>
-        </div>
+    <DataTable label="Available updates" title="Available updates"
+      description="{status.packages.length} {status.packages.length === 1 ? 'package' : 'packages'}{security ? `, ${security} security` : ''}{status.lists_at ? ` · lists from ${ago(status.lists_at)}` : ''}"
+      columns={PKG_COLS} rows={status.packages} key="name" selectable bind:selected searchable placeholder="Search packages" maxHeight="34rem"
+      empty={{ icon: CircleCheck, title: 'Everything is up to date', text: 'Check for updates to read the package sources again.' }}>
+      {#snippet toolbar()}
         {#if security && security !== status.packages.length}
           <button class="btn btn-gray btn-sm" onclick={selectSecurity}><ShieldCheck size={15} />Select security updates</button>
         {/if}
-      </div>
-      {#if status.packages.length}
-        <div class="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th class="cb"><input type="checkbox" checked={allOn} indeterminate={selected.size > 0 && !allOn} onchange={toggleAll} aria-label="Select all" /></th>
-                <th>Package</th><th>Installed</th><th>New version</th><th>Source</th>
-              </tr>
-            </thead>
-            <tbody>
-              {#each status.packages as p (p.name)}
-                <tr class:on={selected.has(p.name)} onclick={() => toggle(p.name)}>
-                  <td class="cb"><input type="checkbox" checked={selected.has(p.name)} onclick={(e) => e.stopPropagation()} onchange={() => toggle(p.name)} aria-label="Select {p.name}" /></td>
-                  <td class="name"><span class="truncate">{p.name}</span></td>
-                  <td class="mono muted">{p.current}</td>
-                  <td class="mono">{p.candidate}</td>
-                  <td>{#if p.security}<span class="pill sec"><ShieldCheck size={13} />Security</span>{:else}<span class="muted">{p.suite}</span>{/if}</td>
-                </tr>
-              {/each}
-            </tbody>
-          </table>
-        </div>
-      {:else}
-        <div class="empty">
-          <CircleCheck size={30} />
-          <p class="t-head">Everything is up to date</p>
-          <p class="t-caption">Check for updates to read the package sources again.</p>
-        </div>
-      {/if}
-    </section>
+      {/snippet}
+      {#snippet cell(p, c)}
+        {#if c.key === 'name'}{p.name}
+        {:else if c.key === 'current'}<span class="muted">{p.current}</span>
+        {:else if c.key === 'candidate'}{p.candidate}
+        {:else}{#if p.security}<span class="pill sec"><ShieldCheck size={13} />Security</span>{:else}<span class="muted">{p.suite}</span>{/if}{/if}
+      {/snippet}
+    </DataTable>
 
     {#if status.packages.length}
       <div class="save-bar">
@@ -253,7 +225,7 @@
 
     <section class="group">
       <label class="row auto">
-        <span class="ico"><ShieldCheck size={16} /></span>
+        <span class="ico accent"><ShieldCheck /></span>
         <span class="grow">
           <span class="t-head">Install security updates automatically</span>
           <span class="t-caption">
@@ -309,10 +281,6 @@
 <style>
   .banner { display: flex; align-items: center; gap: 0.875rem; padding: 1rem 1.125rem; }
   .banner .grow, .run-head .grow { flex: 1; min-width: 0; display: grid; gap: 0.125rem; }
-  .ico.warn { background: color-mix(in srgb, var(--warn) 16%, transparent); color: var(--warn); }
-  .ico.accent { background: var(--accent-fill); color: var(--accent); }
-  .ico.okc { background: color-mix(in srgb, var(--ok) 14%, transparent); color: var(--ok); }
-  .ico.errc { background: var(--error-fill); color: var(--error); }
 
   .repo { display: grid; gap: 0.625rem; }
   .repo-head { display: flex; align-items: center; gap: 0.5rem; color: var(--error); }
@@ -328,26 +296,8 @@
     white-space: pre-wrap; word-break: break-word; border-top: 1px solid var(--hairline); background: var(--surface-2);
   }
 
-  .group-head p { margin: 0.125rem 0 0; }
-  .table-scroll { overflow-x: auto; padding: 0.25rem 0.5rem 0.5rem; max-height: 34rem; overflow-y: auto; }
-  table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.8125rem; }
-  th { position: sticky; top: 0; background: var(--surface); text-align: left; font-size: 0.75rem; font-weight: 600; color: var(--text-2); padding: 0.5rem 0.625rem; border-bottom: 1px solid var(--hairline); white-space: nowrap; z-index: 1; }
-  td { padding: 0.375rem 0.625rem; height: 2.75rem; border-bottom: 1px solid var(--hairline); white-space: nowrap; }
-  tbody tr { cursor: pointer; }
-  tbody tr:last-child td { border-bottom: 0; }
-  tbody tr:hover td { background: var(--fill); }
-  tbody tr.on td { background: var(--accent-fill); }
-  tbody tr td:first-child { border-radius: 0.5rem 0 0 0.5rem; }
-  tbody tr td:last-child { border-radius: 0 0.5rem 0.5rem 0; }
-  .cb { width: 2.25rem; }
-  .cb input { width: 1.05rem; height: 1.05rem; accent-color: var(--accent); cursor: pointer; }
-  .name { font-weight: 600; max-width: 18rem; }
   .muted { color: var(--text-2); }
   .pill.sec { height: 1.5rem; background: var(--accent-fill); color: var(--accent); }
-
-  .empty { display: grid; justify-items: center; gap: 0.375rem; padding: 2rem 1rem 2.25rem; text-align: center; color: var(--text-3); }
-  .empty p { margin: 0; }
-  .empty .t-head { color: var(--text-2); }
 
   .save-bar {
     position: sticky; bottom: 1rem; z-index: 10; display: flex; align-items: center; justify-content: flex-end; gap: 0.625rem; flex-wrap: wrap;
