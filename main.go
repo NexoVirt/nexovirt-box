@@ -72,6 +72,7 @@ func main() {
 	}
 	go app.sampler.run()
 	go app.watchUpdates()
+	go app.watchDisks()
 
 	ui, err := fs.Sub(webDist, "web/dist")
 	if err != nil {
