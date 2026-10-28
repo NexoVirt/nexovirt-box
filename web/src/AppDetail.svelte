@@ -1,9 +1,11 @@
 <script>
   // App details, the install form (typed questions) and the live install progress, in one dialog.
   import { api } from '$lib/api.js';
-  import { runJob, plainText, appURL, versionLabel } from '$lib/jobs.js';
+  import { runJob, plainText, appURL, versionLabel, generatePassword } from '$lib/jobs.js';
   import AppIcon from '$lib/AppIcon.svelte';
   import JobLog from '$lib/JobLog.svelte';
+  import Secret from '$lib/Secret.svelte';
+  import Credentials from '$lib/Credentials.svelte';
   import Loader from '@lucide/svelte/icons/loader-circle';
   import CircleAlert from '@lucide/svelte/icons/circle-alert';
   import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
@@ -23,10 +25,16 @@
   let error = $state('');
   let result = $state(null);
   let busy = $state(false);
+  let own = $state({}); // password key -> the admin sets it instead of a generated one
+  let confirm = $state({});
+  let fieldError = $state({});
+  let socketOK = $state(false);
 
   let archOK = $derived(!summary.architectures?.length || summary.architectures.includes(arch));
-  let visible = $derived((app?.questions || []).filter((q) => !q.generate));
-  let generated = $derived((app?.questions || []).filter((q) => q.generate));
+  let visible = $derived((app?.questions || []).filter((q) => q.type !== 'password'));
+  let passwords = $derived((app?.questions || []).filter((q) => q.type === 'password'));
+  const MIN_OWN = 8;
+  const minOwn = (q) => Math.max(q.min || 0, MIN_OWN);
   let blocker = $derived(
     installed ? 'Already installed.'
     : !archOK ? `Not available for ${arch} servers.`
@@ -45,18 +53,47 @@
       else {
         app = res.data;
         const a = {};
-        for (const q of app.questions) a[q.key] = q.type === 'boolean' ? (q.default || 'false') : (q.generate ? '' : q.default || '');
+        for (const q of app.questions) {
+          if (q.type === 'password') a[q.key] = q.locked ? '' : generatePassword(q); // locked ones are made by the server
+          else a[q.key] = q.type === 'boolean' ? (q.default || 'false') : (q.generate ? '' : q.default || '');
+        }
         answers = a;
+        own = {};
+        confirm = {};
+        fieldError = {};
+        socketOK = false;
       }
     });
   });
 
+  function setOwn(q, on) {
+    own = { ...own, [q.key]: on };
+    answers[q.key] = on ? '' : generatePassword(q);
+    confirm[q.key] = '';
+    fieldError = { ...fieldError, [q.key]: '' };
+  }
+
+  function checkPasswords() {
+    const errs = {};
+    for (const q of passwords) {
+      if (!own[q.key]) continue;
+      const v = answers[q.key] || '';
+      if (v.length < minOwn(q)) errs[q.key] = `Use at least ${minOwn(q)} characters.`;
+      else if (q.max && v.length > q.max) errs[q.key] = `Use at most ${q.max} characters.`;
+      else if (/['\r\n]/.test(v)) errs[q.key] = 'Single quotes and line breaks are not possible here.';
+      else if (v !== (confirm[q.key] || '')) errs[q.key] = 'The two passwords do not match.';
+    }
+    fieldError = errs;
+    return !Object.keys(errs).length;
+  }
+
   async function install(e) {
     e.preventDefault();
+    if (!checkPasswords()) return;
     busy = true;
     view = 'progress';
     lines = [];
-    const job = await runJob(`/api/apps/${app.id}/install`, { answers, data_dir: dataDir.trim() }, (j) => (lines = j.lines));
+    const job = await runJob(`/api/apps/${app.id}/install`, { answers, data_dir: dataDir.trim(), allow_docker_socket: socketOK }, (j) => (lines = j.lines));
     busy = false;
     if (job.http === 401) return onSessionLost();
     if (job.status === 'done') {
@@ -100,6 +137,29 @@
       {#if q.hint}<span class="t-caption">{q.hint}</span>{/if}
     </label>
   {/if}
+{/snippet}
+
+{#snippet pwField(q)}
+  <div class="pw">
+    <div class="pw-head">
+      <span class="field-text"><span class="field-label">{q.label}</span>{#if q.hint}<span class="t-caption">{q.hint}</span>{/if}</span>
+      {#if !q.locked}
+        <button type="button" class="link-btn" onclick={() => setOwn(q, !own[q.key])}>{own[q.key] ? 'Use a generated one' : 'Set my own'}</button>
+      {/if}
+    </div>
+    {#if q.locked}
+      <span class="pw-value"><span class="pill">Generated</span><span class="t-caption">Shown in the login details after the install.</span></span>
+    {:else if !own[q.key]}
+      <span class="pw-value"><span class="pill">Generated</span><Secret value={answers[q.key]} label={q.label} /></span>
+    {:else}
+      <input class="input" type="password" bind:value={answers[q.key]} placeholder="New password" aria-label={q.label}
+        autocomplete="new-password" minlength={minOwn(q)} maxlength={q.max || undefined} required />
+      <input class="input" type="password" bind:value={confirm[q.key]} placeholder="Repeat the password" aria-label="Repeat {q.label}"
+        autocomplete="new-password" required />
+      {#if fieldError[q.key]}<span class="t-caption err" role="alert">{fieldError[q.key]}</span>
+      {:else}<span class="t-caption">At least {minOwn(q)} characters.</span>{/if}
+    {/if}
+  </div>
 {/snippet}
 
 <div class="detail">
@@ -154,14 +214,20 @@
     </div>
   {:else if view === 'form'}
     <form class="form" id="install-form" onsubmit={install}>
-      {#if !visible.length}<p class="t-sub">{app.name} needs no settings. Box stores its data in its own folder.</p>{/if}
+      {#if !visible.length && !passwords.length}<p class="t-sub">{app.name} needs no settings. Box stores its data in its own folder.</p>{/if}
       {#each visible as q (q.key)}{@render field(q)}{/each}
-      {#if generated.length}
-        <details class="advanced">
-          <summary>Generated passwords ({generated.length})</summary>
-          <p class="t-caption">Box creates strong random values for these. Enter your own only if you need to know them.</p>
-          {#each generated as q (q.key)}{@render field(q)}{/each}
-        </details>
+      {#if passwords.length}
+        <section class="pw-group" aria-label="Passwords">
+          <h3 class="t-section">Passwords</h3>
+          <p class="t-caption">Box creates strong passwords for you. You find them later in My Apps under Login details.</p>
+          {#each passwords as q (q.key)}{@render pwField(q)}{/each}
+        </section>
+      {/if}
+      {#if app.docker_socket}
+        <label class="row-field socket">
+          <span class="field-text"><span class="field-label">Give {app.name} access to Docker</span><span class="t-caption">It can then start any container and control the whole server. Only agree if you trust this app.</span></span>
+          <input class="switch" type="checkbox" bind:checked={socketOK} required />
+        </label>
       {/if}
       <details class="advanced">
         <summary>Data folder</summary>
@@ -178,6 +244,7 @@
       <span class="ok-ico"><CircleCheck size={28} /></span>
       <h3 class="t-title">{app.name} is installed</h3>
       <p class="t-sub">It runs now and starts again after a reboot.</p>
+      <div class="done-creds"><Credentials id={app.id} {onSessionLost} /></div>
       <div class="buttons">
         {#if appURL(result)}
           <a class="btn btn-primary" href={appURL(result)} target="_blank" rel="noopener noreferrer"><ExternalLink size={16} />Open {app.name}</a>
@@ -221,6 +288,16 @@
   .advanced[open] { gap: 0.875rem; }
   .advanced summary { cursor: pointer; font-weight: 600; font-size: 0.8125rem; }
   .advanced .input { background-color: var(--surface); }
+  .pw-group { display: grid; gap: 0.75rem; }
+  .pw-group h3 { margin: 0; }
+  .pw { display: grid; gap: 0.5rem; padding: 0.75rem 0.875rem; border-radius: var(--r-control); background: var(--fill); }
+  .pw .input { background-color: var(--surface); }
+  .pw-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+  .pw-value { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
+  .link-btn { border: 0; background: none; padding: 0.25rem 0; min-height: 2rem; color: var(--accent); font-weight: 600; font-size: 0.8125rem; cursor: pointer; white-space: nowrap; }
+  .err { color: var(--error); }
+  .socket { padding: 0.75rem 0.875rem; border-radius: var(--r-control); background: var(--fill); }
+  .done-creds { width: 100%; text-align: left; margin-top: 0.5rem; }
   .done { display: grid; justify-items: center; gap: 0.5rem; text-align: center; padding: 0.5rem 0 0.25rem; }
   .ok-ico { display: grid; place-items: center; width: 3.5rem; height: 3.5rem; border-radius: 50%; background: var(--accent-fill); color: var(--accent); margin-bottom: 0.25rem; }
   .buttons { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; margin-top: 0.75rem; }

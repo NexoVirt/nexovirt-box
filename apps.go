@@ -101,7 +101,10 @@ func (a *App) catalogApp(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "This app is not in the catalog.")
 		return
 	}
-	writeJSON(w, http.StatusOK, app)
+	writeJSON(w, http.StatusOK, struct {
+		*catalog.App
+		Questions []presentedQuestion `json:"questions"`
+	}{app, presentQuestions(app.Questions)})
 }
 
 // catalogSync downloads a signed catalog from -catalog-url, verifies it and swaps it in.
@@ -269,35 +272,59 @@ func (c *catalogStore) download(ctx context.Context, src string) ([]byte, error)
 }
 
 // ---- jobs (long helper actions run in the background, the UI polls) ----
+//
+// Jobs live in memory while they run and are saved to SQLite (log tail included), so a reload,
+// a web restart or a helper restart never leaves an app looking busy forever: on start every
+// job that was still running is marked interrupted, and a watchdog stops jobs that made no
+// progress for jobStall.
 
 type job struct {
 	mu       sync.Mutex
-	ID       string   `json:"id"`
-	Kind     string   `json:"kind"`
-	App      string   `json:"app"`
-	Status   string   `json:"status"` // running, done, failed
-	Lines    []string `json:"lines"`
-	Error    string   `json:"error,omitempty"`
-	Result   any      `json:"result,omitempty"`
-	Started  int64    `json:"started"`
-	finished time.Time
+	ID       string    `json:"id"`
+	Kind     string    `json:"kind"`
+	App      string    `json:"app"`
+	Status   string    `json:"status"` // running, done, failed, interrupted
+	Lines    []string  `json:"lines"`
+	Error    string    `json:"error,omitempty"`
+	Result   any       `json:"result,omitempty"`
+	Started  int64     `json:"started"`
+	Finished int64     `json:"finished,omitempty"`
+	progress time.Time // last log line
+	saved    time.Time
+	cancel   context.CancelFunc
 }
 
 type jobs struct {
-	mu sync.Mutex
-	m  map[string]*job
+	mu    sync.Mutex
+	m     map[string]*job // running and recently finished
+	store *Store
+	stall time.Duration
 }
 
-func newJobs() *jobs { return &jobs{m: map[string]*job{}} }
+const (
+	maxJobLines = 400
+	jobStall    = 15 * time.Minute
+)
 
-const maxJobLines = 400
+func newJobs(store *Store) *jobs {
+	js := &jobs{m: map[string]*job{}, store: store, stall: jobStall}
+	n, err := store.interruptJobs()
+	if err != nil {
+		log.Printf("jobs: %v", err)
+	} else if n > 0 {
+		log.Printf("jobs: %d unfinished job(s) from the last run marked interrupted", n)
+	}
+	return js
+}
+
+const interruptedMsg = "This action was interrupted because NexoVirt Box restarted. Try it again."
 
 // start runs fn in the background. Only one job per app (or for Docker) runs at a time.
-func (js *jobs) start(kind, app string, fn func(logf func(string)) (any, error)) (*job, error) {
+func (js *jobs) start(kind, app string, fn func(ctx context.Context, logf func(string)) (any, error)) (*job, error) {
 	js.mu.Lock()
 	for id, j := range js.m {
 		j.mu.Lock()
-		if j.Status != "running" && time.Since(j.finished) > time.Hour {
+		if j.Status != "running" && time.Since(time.Unix(j.Finished, 0)) > time.Hour {
 			delete(js.m, id)
 		} else if j.Status == "running" && j.App == app {
 			j.mu.Unlock()
@@ -306,34 +333,108 @@ func (js *jobs) start(kind, app string, fn func(logf func(string)) (any, error))
 		}
 		j.mu.Unlock()
 	}
-	j := &job{ID: randomToken()[:16], Kind: kind, App: app, Status: "running", Lines: []string{}, Started: time.Now().Unix()}
+	ctx, cancel := context.WithCancel(context.Background())
+	now := time.Now()
+	j := &job{ID: randomToken()[:16], Kind: kind, App: app, Status: "running", Lines: []string{}, Started: now.Unix(),
+		progress: now, cancel: cancel}
 	js.m[j.ID] = j
 	js.mu.Unlock()
+	js.save(j)
+	go js.watch(j, ctx)
 	go func() {
-		res, err := fn(func(s string) {
+		defer cancel()
+		res, err := fn(ctx, func(s string) {
 			j.mu.Lock()
 			j.Lines = append(j.Lines, s)
 			if len(j.Lines) > maxJobLines {
 				j.Lines = j.Lines[len(j.Lines)-maxJobLines:]
 			}
+			j.progress = time.Now()
+			flush := time.Since(j.saved) > 2*time.Second || len(j.Lines) <= 3 // first lines show what it was doing
 			j.mu.Unlock()
+			if flush {
+				js.save(j)
+			}
 		})
 		j.mu.Lock()
-		defer j.mu.Unlock()
-		j.finished = time.Now()
-		if err != nil {
-			j.Status, j.Error = "failed", friendly(err)
-			return
+		if j.Status == "running" { // the watchdog may have ended it already
+			j.Finished = time.Now().Unix()
+			if errors.Is(err, errHelperStopped) {
+				j.Status, j.Error = "interrupted", friendly(err)
+			} else if err != nil {
+				j.Status, j.Error = "failed", friendly(err)
+			} else {
+				j.Status, j.Result = "done", res
+			}
 		}
-		j.Status, j.Result = "done", res
+		j.mu.Unlock()
+		js.save(j)
 	}()
 	return j, nil
 }
 
+// watch fails a job that printed nothing for js.stall and cancels its helper call, which
+// stops the action in the helper and frees the app.
+func (js *jobs) watch(j *job, ctx context.Context) {
+	t := time.NewTicker(min(js.stall/4, 30*time.Second))
+	defer t.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+			j.mu.Lock()
+			stalled := j.Status == "running" && time.Since(j.progress) > js.stall
+			if stalled {
+				j.Status, j.Finished = "failed", time.Now().Unix()
+				j.Error = fmt.Sprintf("Nothing happened for %d minutes, so the action was stopped. Try it again.", int(js.stall.Minutes()))
+			}
+			j.mu.Unlock()
+			if stalled {
+				js.save(j)
+				j.cancel()
+				return
+			}
+		}
+	}
+}
+
+func (js *jobs) save(j *job) {
+	j.mu.Lock()
+	j.saved = time.Now()
+	lines, _ := json.Marshal(j.Lines)
+	res, _ := json.Marshal(j.Result)
+	row := []any{j.ID, j.Kind, j.App, j.Status, j.Started, j.Finished, j.Error, string(lines), string(res)}
+	j.mu.Unlock()
+	if err := js.store.saveJob(row); err != nil {
+		log.Printf("jobs: save %s: %v", row[0], err)
+	}
+}
+
+// get returns a snapshot of a job from memory or, after a restart, from the database.
 func (js *jobs) get(id string) *job {
 	js.mu.Lock()
+	j := js.m[id]
+	js.mu.Unlock()
+	if j != nil {
+		return j
+	}
+	return js.store.loadJob(id)
+}
+
+// running lists the jobs that are still running (one per app at most).
+func (js *jobs) running() []map[string]any {
+	js.mu.Lock()
 	defer js.mu.Unlock()
-	return js.m[id]
+	out := []map[string]any{}
+	for _, j := range js.m {
+		j.mu.Lock()
+		if j.Status == "running" {
+			out = append(out, map[string]any{"id": j.ID, "kind": j.Kind, "app": j.App, "started": j.Started})
+		}
+		j.mu.Unlock()
+	}
+	return out
 }
 
 func friendly(err error) string {
@@ -356,11 +457,15 @@ func (a *App) jobStatus(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, j)
 }
 
+func (a *App) jobsRunning(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, a.jobs.running())
+}
+
 func (a *App) runJob(w http.ResponseWriter, r *http.Request, kind, app, audit string, req helperRequest) {
 	uid, _ := a.currentUser(r)
 	name, ip := a.store.username(uid), a.clientIP(r)
-	j, err := a.jobs.start(kind, app, func(logf func(string)) (any, error) {
-		raw, err := a.helper.call(context.Background(), req, logf)
+	j, err := a.jobs.start(kind, app, func(ctx context.Context, logf func(string)) (any, error) {
+		raw, err := a.helper.call(ctx, req, logf)
 		if err != nil {
 			a.store.audit(name, ip, audit+".failed", app)
 			return nil, err
@@ -405,10 +510,12 @@ func (a *App) appsList(w http.ResponseWriter, r *http.Request) {
 }
 
 type appBody struct {
-	Answers    map[string]string `json:"answers"`
-	Op         string            `json:"op"`
-	DeleteData bool              `json:"delete_data"`
-	DataDir    string            `json:"data_dir"`
+	Answers           map[string]string `json:"answers"`
+	Retry             bool              `json:"retry"`
+	AllowDockerSocket bool              `json:"allow_docker_socket"`
+	Op                string            `json:"op"`
+	DeleteData        bool              `json:"delete_data"`
+	DataDir           string            `json:"data_dir"`
 }
 
 func readAppBody(r *http.Request) (appBody, error) {
@@ -432,7 +539,11 @@ func (a *App) appInstall(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	a.runJob(w, r, "install", id, "app.install", helperRequest{Action: "app_install", ID: id, Answers: b.Answers, DataDir: b.DataDir})
+	kind := "install"
+	if b.Retry {
+		kind = "retry"
+	}
+	a.runJob(w, r, kind, id, "app.install", helperRequest{Action: "app_install", ID: id, Answers: b.Answers, DataDir: b.DataDir, Retry: b.Retry, AllowDockerSocket: b.AllowDockerSocket})
 }
 
 func (a *App) appAction(w http.ResponseWriter, r *http.Request) {
@@ -459,6 +570,17 @@ func (a *App) appUninstall(w http.ResponseWriter, r *http.Request) {
 	}
 	id := r.PathValue("id")
 	a.runJob(w, r, "uninstall", id, "app.uninstall", helperRequest{Action: "app_uninstall", ID: id, DeleteData: b.DeleteData})
+}
+
+// appCredentials shows the app's own login details (answers and generated passwords).
+func (a *App) appCredentials(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if !catalog.IDRe.MatchString(id) {
+		writeError(w, http.StatusNotFound, "This app does not exist.")
+		return
+	}
+	a.audit(r, "app.credentials", id)
+	a.helperJSON(w, r, helperRequest{Action: "app_credentials", ID: id})
 }
 
 func (a *App) appLogs(w http.ResponseWriter, r *http.Request) {

@@ -1,7 +1,10 @@
 <script>
   import { onMount } from 'svelte';
   import { api } from '$lib/api.js';
-  import { runJob, appURL, versionLabel } from '$lib/jobs.js';
+  import { runJob, appURL, versionLabel, jobFollower, BUSY_LABEL } from '$lib/jobs.js';
+  import Credentials from '$lib/Credentials.svelte';
+  import KeyRound from '@lucide/svelte/icons/key-round';
+  import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
   import { toast } from '$lib/toast.svelte.js';
   import AppIcon from '$lib/AppIcon.svelte';
   import Dialog from '$lib/Dialog.svelte';
@@ -25,15 +28,20 @@
   let { onSessionLost, onNavigate } = $props();
 
   const STATES = {
-    running: ['Running', 'ok'], partial: ['Partly running', 'warn'], restarting: ['Restarting', 'warn'],
-    stopped: ['Stopped', ''], unknown: ['Unknown', ''],
+    running: ['Running', 'ok'], partial: ['Partly running', 'warn'], restarting: ['Keeps restarting', 'warn'],
+    stopped: ['Stopped', ''], exited: ['Stopped with an error', 'error'], not_created: ['Not started yet', ''],
+    interrupted: ['Install interrupted', 'warn'], unknown: ['Unknown', ''],
   };
-  const DONE = { start: 'started', stop: 'stopped', restart: 'restarted', update: 'updated' };
+  const DONE = { start: 'started', stop: 'stopped', restart: 'restarted', update: 'updated', install: 'installed', retry: 'installed', uninstall: 'removed' };
+  // Down although nobody stopped it.
+  const DOWN = ['exited', 'partial', 'restarting', 'stopped', 'not_created'];
 
   let apps = $state(null);
   let error = $state('');
   let docker = $state(null);
-  let busy = $state({}); // id -> action label
+  let busy = $state({}); // id -> action started on this page
+  let bg = $state({}); // id -> action running in the background (after a reload, another tab)
+  let credsFor = $state(null), credsOpen = $state(false);
   let menu = $state(null); // id of the open menu
   // Logs dialog
   let logsFor = $state(null);
@@ -55,12 +63,47 @@
   let proxy = $state(null);
   let domainFor = $state(null), domainOpen = $state(false), domain = $state(''), domainBusy = $state(false), domainError = $state('');
 
+  const followJobs = jobFollower((job, id) => {
+    const name = apps?.find((x) => x.id === id)?.name || 'The app';
+    if (job.status === 'done') toast(`${name} ${DONE[job.kind] || 'is ready'}.`, 'success');
+    else if (job.http !== 401) toast(job.error, 'error', 8000);
+    load();
+  }, () => busy);
+
   async function load() {
-    const [a, d] = await Promise.all([api('/api/apps'), api('/api/docker')]);
+    const [a, d, j] = await Promise.all([api('/api/apps'), api('/api/docker'), followJobs()]);
     if (a.status === 401) return onSessionLost();
     if (!a.ok) error = a.error;
     else { error = ''; apps = a.data; }
     if (d.ok) docker = d.data;
+    bg = j;
+  }
+
+  const busyOf = (app) => busy[app.id] || bg[app.id] || app.busy || '';
+  const unexpected = $derived((apps || []).filter((a) => !busyOf(a) && !a.stopped && DOWN.includes(a.state)));
+
+  function stateText(app) {
+    if (app.state === 'exited' && app.exit_code) return `Stopped with an error (code ${app.exit_code})`;
+    return (STATES[app.state] || STATES.unknown)[0];
+  }
+
+  async function retry(app) {
+    menu = null;
+    busy = { ...busy, [app.id]: 'retry' };
+    const job = await runJob(`/api/apps/${app.id}/install`, { retry: true });
+    const { [app.id]: _, ...rest } = busy;
+    busy = rest;
+    if (job.http === 401) return onSessionLost();
+    if (job.status === 'done') toast(`${app.name} is installed and running.`, 'success');
+    else toast(job.error, 'error', 8000);
+    load();
+  }
+
+  function showCreds(e, app) {
+    menu = null;
+    origin = { x: e.clientX, y: e.clientY };
+    credsFor = app;
+    credsOpen = true;
   }
 
   async function loadExtras() {
@@ -206,6 +249,20 @@
     <DockerSetup {docker} onDone={load} />
   {/if}
 
+  {#each unexpected as app (app.id)}
+    <div class="notice down" role="status">
+      <CircleAlert size={18} />
+      <div class="down-text">
+        <span><strong>{app.name}</strong> {app.state === 'not_created' ? 'is not running yet.' : app.state === 'restarting' ? 'keeps restarting.' : app.exit_code ? `stopped unexpectedly (exit code ${app.exit_code}).` : 'is not running, but nobody stopped it.'}</span>
+        {#if app.last_lines?.length}<pre class="tail mono">{app.last_lines.join('\n')}</pre>{/if}
+        <span class="down-btns">
+          <button class="btn btn-primary btn-sm" onclick={() => act(app, 'start')}><Play size={15} />Start</button>
+          {#if app.state !== 'not_created'}<button class="btn btn-gray btn-sm" onclick={(e) => showLogs(e, app)}><ScrollText size={15} />View logs</button>{/if}
+        </span>
+      </div>
+    </div>
+  {/each}
+
   {#if error}
     <div class="notice"><CircleAlert size={18} /><span>{error}</span></div>
   {:else if !apps}
@@ -220,32 +277,40 @@
   {:else}
     <div class="group">
       {#each apps as app (app.id)}
-        {@const [label, tone] = STATES[app.state] || STATES.unknown}
+        {@const [, tone] = STATES[app.state] || STATES.unknown}
+        {@const working = busyOf(app)}
         <div class="row app">
           <AppIcon id={app.id} name={app.name} size={42} />
           <div class="main">
             <span class="t-head truncate">{app.name}</span>
             <span class="t-caption truncate">{[app.version && `Version ${versionLabel(app.version)}`, app.domain || (app.main_port && `Port ${app.main_port}`)].filter(Boolean).join('  ·  ')}</span>
             <span class="state t-caption">
-              {#if busy[app.id]}<Loader size={14} class="spinner" />{busy[app.id] === 'update' ? 'Updating' : 'Working'}
-              {:else}<span class="dot {tone}"></span>{label}{/if}
+              {#if working}<Loader size={14} class="spinner" />{BUSY_LABEL[working] || 'Working'}
+              {:else}<span class="dot {tone}"></span>{stateText(app)}{/if}
             </span>
           </div>
-          {#if updates.apps[app.id]?.available && !busy[app.id]}
+          {#if app.state === 'interrupted' && !working}
+            <button class="btn btn-primary btn-sm" onclick={() => retry(app)}><RotateCcw size={15} /><span class="open-text">Retry install</span></button>
+          {/if}
+          {#if updates.apps[app.id]?.available && !working}
             <button class="btn btn-primary btn-sm" onclick={() => act(app, 'update')} title="A newer image is available: {updates.apps[app.id].images.join(', ')}"><Download size={15} /><span class="open-text">Update</span></button>
           {/if}
           {#if app.state === 'running' && openURL(app)}
             <a class="btn btn-tinted btn-sm open" href={openURL(app)} target="_blank" rel="noopener noreferrer" aria-label="Open {app.name}"><ExternalLink size={15} /><span class="open-text">Open</span></a>
           {/if}
           <div class="more">
-            <button class="icon-btn" onclick={() => (menu = menu === app.id ? null : app.id)} aria-haspopup="menu" aria-expanded={menu === app.id} aria-label="Actions for {app.name}" disabled={!!busy[app.id]}>
+            <button class="icon-btn" onclick={() => (menu = menu === app.id ? null : app.id)} aria-haspopup="menu" aria-expanded={menu === app.id} aria-label="Actions for {app.name}" disabled={!!working}>
               <Ellipsis size={19} />
             </button>
             <Popover open={menu === app.id} label="Actions for {app.name}">
-              {#if app.state !== 'running'}<button class="pop-item" role="menuitem" onclick={() => act(app, 'start')}><Play size={16} />Start</button>{/if}
-              {#if app.state !== 'stopped'}<button class="pop-item" role="menuitem" onclick={() => act(app, 'stop')}><Square size={16} />Stop</button>{/if}
-              <button class="pop-item" role="menuitem" onclick={() => act(app, 'restart')}><RotateCw size={16} />Restart</button>
-              <button class="pop-item" role="menuitem" onclick={() => act(app, 'update')}><Download size={16} />Update</button>
+              {#if app.state === 'interrupted'}<button class="pop-item" role="menuitem" onclick={() => retry(app)}><RotateCcw size={16} />Retry install</button>
+              {:else if app.state !== 'running'}<button class="pop-item" role="menuitem" onclick={() => act(app, 'start')}><Play size={16} />Start</button>{/if}
+              {#if !['stopped', 'exited', 'not_created', 'interrupted'].includes(app.state)}<button class="pop-item" role="menuitem" onclick={() => act(app, 'stop')}><Square size={16} />Stop</button>{/if}
+              {#if app.state !== 'interrupted' && app.state !== 'not_created'}
+                <button class="pop-item" role="menuitem" onclick={() => act(app, 'restart')}><RotateCw size={16} />Restart</button>
+                <button class="pop-item" role="menuitem" onclick={() => act(app, 'update')}><Download size={16} />Update</button>
+              {/if}
+              <button class="pop-item" role="menuitem" onclick={(e) => showCreds(e, app)}><KeyRound size={16} />Login details</button>
               <button class="pop-item" role="menuitem" onclick={(e) => showLogs(e, app)}><ScrollText size={16} />Logs</button>
               <button class="pop-item" role="menuitem" onclick={(e) => editDomain(e, app)}><Globe size={16} />Domain and HTTPS</button>
               <button class="pop-item danger" role="menuitem" onclick={(e) => askRemove(e, app)}><Trash2 size={16} />Uninstall</button>
@@ -271,6 +336,14 @@
       <pre class="logs mono" bind:this={logBox} onscroll={onLogScroll}>{logs}</pre>
     {/if}
     <div class="buttons"><button class="btn btn-gray" data-close onclick={() => (logsOpen = false)}>Close</button></div>
+  </div>
+</Dialog>
+
+<Dialog bind:open={credsOpen} label="Login details" {origin}>
+  <div class="dlg">
+    <h2 class="t-title">Login details for {credsFor?.name}</h2>
+    {#if credsOpen && credsFor}<Credentials id={credsFor.id} {onSessionLost} />{/if}
+    <div class="buttons"><button class="btn btn-gray" data-close onclick={() => (credsOpen = false)}>Close</button></div>
   </div>
 </Dialog>
 
@@ -343,6 +416,10 @@
     white-space: pre-wrap; word-break: break-word;
   }
   .busy { display: flex; align-items: center; gap: 0.5rem; }
+  .down { align-items: flex-start; margin-bottom: 0.75rem; }
+  .down-text { display: grid; gap: 0.5rem; min-width: 0; flex: 1; }
+  .down-btns { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .tail { margin: 0; padding: 0.5rem 0.625rem; border-radius: 0.5rem; background: var(--fill); color: var(--text-2); font-size: 0.75rem; line-height: 1.45; white-space: pre-wrap; word-break: break-word; max-height: 7.5rem; overflow: auto; }
   .row-field { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.75rem 0.875rem; border-radius: var(--r-control); background: var(--fill); cursor: pointer; }
   .field-text { display: grid; gap: 0.125rem; }
   .buttons { display: flex; justify-content: flex-end; gap: 0.5rem; }
