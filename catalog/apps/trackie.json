@@ -26,14 +26,6 @@
    "required": true
   },
   {
-   "key": "SECRET_ACTUAL_TOKEN_EXPIRATION",
-   "label": "Actual token expiration",
-   "type": "password",
-   "hint": "Generated automatically. Enter your own to replace it.",
-   "min": 24,
-   "generate": true
-  },
-  {
    "key": "SECRET_ACTUAL_IDENTITY_SECRET",
    "label": "Actual identity secret",
    "type": "password",
@@ -50,5 +42,5 @@
    "generate": true
   }
  ],
- "compose": "services:\n  trackie:\n    image: ghcr.io/trackie-nz/trackie:26.9.0@sha256:7c13fedacc7232f10ed3ebc59374c1b2fbe42f89d04575d2838992fb9587540d\n    container_name: trackie\n    restart: unless-stopped\n    ports:\n      - \"${APP_PORT}:5006\"\n    volumes:\n      - ${APP_DATA_DIR}/data:/data\n    environment:\n      NODE_ENV: production\n      ACTUAL_LOGIN_METHOD: openid\n      ACTUAL_OPENID_ENFORCE: \"true\"\n      ACTUAL_USER_CREATION_MODE: login\n      ACTUAL_OPENID_DISCOVERY_URL: \"\"\n      ACTUAL_OPENID_CLIENT_ID: \"\"\n      ACTUAL_OPENID_CLIENT_SECRET: \"\"\n      ACTUAL_OPENID_SERVER_HOSTNAME: http://localhost:20005\n      ACTUAL_TOKEN_EXPIRATION: ${SECRET_ACTUAL_TOKEN_EXPIRATION}\n      ACTUAL_IDENTITY_SECRET: ${SECRET_ACTUAL_IDENTITY_SECRET}\n      ACTUAL_AKAHU_TOKEN_SECRET: ${SECRET_ACTUAL_AKAHU_TOKEN_SECRET}\n      TZ: Pacific/Auckland\n"
+ "compose": "services:\n  trackie:\n    image: ghcr.io/trackie-nz/trackie:26.9.0@sha256:7c13fedacc7232f10ed3ebc59374c1b2fbe42f89d04575d2838992fb9587540d\n    container_name: trackie\n    restart: unless-stopped\n    ports:\n      - \"${APP_PORT}:5006\"\n    volumes:\n      - ${APP_DATA_DIR}/data:/data\n    environment:\n      NODE_ENV: production\n      ACTUAL_LOGIN_METHOD: openid\n      ACTUAL_OPENID_ENFORCE: \"true\"\n      ACTUAL_USER_CREATION_MODE: login\n      ACTUAL_OPENID_DISCOVERY_URL: \"\"\n      ACTUAL_OPENID_CLIENT_ID: \"\"\n      ACTUAL_OPENID_CLIENT_SECRET: \"\"\n      ACTUAL_OPENID_SERVER_HOSTNAME: http://localhost:20005\n      ACTUAL_TOKEN_EXPIRATION: \"7776000\"\n      ACTUAL_IDENTITY_SECRET: ${SECRET_ACTUAL_IDENTITY_SECRET}\n      ACTUAL_AKAHU_TOKEN_SECRET: ${SECRET_ACTUAL_AKAHU_TOKEN_SECRET}\n      TZ: Pacific/Auckland\n"
 }

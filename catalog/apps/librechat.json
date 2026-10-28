@@ -32,6 +32,22 @@
    "required": true
   },
   {
+   "key": "SECRET_ASSISTANTS_API_KEY",
+   "label": "Assistants api key",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
+   "key": "SECRET_JWT_SECRET",
+   "label": "Jwt secret",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
    "key": "SECRET_JWT_REFRESH_SECRET",
    "label": "Jwt refresh secret",
    "type": "password",
@@ -62,31 +78,7 @@
    "hint": "Generated automatically. Enter your own to replace it.",
    "min": 24,
    "generate": true
-  },
-  {
-   "key": "SECRET_ASSISTANTS_API_KEY",
-   "label": "Assistants api key",
-   "type": "password",
-   "hint": "Generated automatically. Enter your own to replace it.",
-   "min": 24,
-   "generate": true
-  },
-  {
-   "key": "SECRET_REFRESH_TOKEN_EXPIRY",
-   "label": "Refresh token expiry",
-   "type": "password",
-   "hint": "Generated automatically. Enter your own to replace it.",
-   "min": 24,
-   "generate": true
-  },
-  {
-   "key": "SECRET_JWT_SECRET",
-   "label": "Jwt secret",
-   "type": "password",
-   "hint": "Generated automatically. Enter your own to replace it.",
-   "min": 24,
-   "generate": true
   }
  ],
- "compose": "services:\n  librechat-api:\n    container_name: librechat-api\n    ports:\n      - \"${APP_PORT}:3080\"\n    depends_on:\n      - librechat-mongodb\n      - librechat-rag-api\n    image: ghcr.io/danny-avila/librechat-dev:latest\n    restart: unless-stopped\n    extra_hosts:\n      - \"host.docker.internal:host-gateway\"\n    environment:\n      - ASSISTANTS_API_KEY=${SECRET_ASSISTANTS_API_KEY}\n      - OPENAI_API_KEY=${SECRET_ASSISTANTS_API_KEY}\n      - GOOGLE_KEY=${SECRET_ASSISTANTS_API_KEY}\n      - ANTHROPIC_API_KEY=${SECRET_ASSISTANTS_API_KEY}\n      - HOST=0.0.0.0\n      - PORT=3080\n      - DOMAIN_CLIENT=http://0.0.0.0:3080\n      - DOMAIN_SERVER=http://0.0.0.0:3080\n      - NO_INDEX=true\n      - TRUST_PROXY=1\n      - CONSOLE_JSON=false\n      - DEBUG_LOGGING=true\n      - DEBUG_CONSOLE=false\n      - MONGO_URI=mongodb://librechat-mongodb:27017/LibreChat\n      - MEILI_HOST=http://librechat-meilisearch:7700\n      - RAG_PORT=8000\n      - RAG_API_URL=http://librechat-rag-api:8000\n      - SEARCH=true\n      - MEILI_NO_ANALYTICS=true\n      - OPENAI_MODERATION=false\n      - BAN_VIOLATIONS=true\n      - BAN_DURATION=1000 * 60 * 60 * 2\n      - BAN_INTERVAL=20\n      - LOGIN_VIOLATION_SCORE=1\n      - REGISTRATION_VIOLATION_SCORE=1\n      - CONCURRENT_VIOLATION_SCORE=1\n      - MESSAGE_VIOLATION_SCORE=1\n      - NON_BROWSER_VIOLATION_SCORE=20\n      - TTS_VIOLATION_SCORE=0\n      - STT_VIOLATION_SCORE=0\n      - FORK_VIOLATION_SCORE=0\n      - IMPORT_VIOLATION_SCORE=0\n      - FILE_UPLOAD_VIOLATION_SCORE=0\n      - LOGIN_MAX=7\n      - LOGIN_WINDOW=5\n      - REGISTER_MAX=5\n      - REGISTER_WINDOW=60\n      - LIMIT_CONCURRENT_MESSAGES=true\n      - CONCURRENT_MESSAGE_MAX=2\n      - LIMIT_MESSAGE_IP=true\n      - MESSAGE_IP_MAX=40\n      - MESSAGE_IP_WINDOW=1\n      - LIMIT_MESSAGE_USER=false\n      - MESSAGE_USER_MAX=40\n      - MESSAGE_USER_WINDOW=1\n      - ILLEGAL_MODEL_REQ_SCORE=5\n      - ALLOW_EMAIL_LOGIN=true\n      - ALLOW_REGISTRATION=true\n      - ALLOW_SOCIAL_LOGIN=false\n      - ALLOW_SOCIAL_REGISTRATION=false\n      - ALLOW_PASSWORD_RESET=false\n      - ALLOW_UNVERIFIED_EMAIL_LOGIN=true\n      - SESSION_EXPIRY=1000 * 60 * 15\n      - REFRESH_TOKEN_EXPIRY=${SECRET_REFRESH_TOKEN_EXPIRY}\n      - JWT_SECRET=${SECRET_JWT_SECRET}\n      - JWT_REFRESH_SECRET=${SECRET_JWT_REFRESH_SECRET}\n      - CREDS_KEY=${SECRET_CREDS_KEY}\n      - CREDS_IV=e2341419ec3dd3d19b13a1a87fafcbfb\n      - DEBUG_PLUGINS=true\n      - DEBUG_OPENAI=false\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/images\n        target: /app/client/public/images\n      - type: bind\n        source: ${APP_DATA_DIR}/uploads\n        target: /app/uploads\n      - type: bind\n        source: ${APP_DATA_DIR}/logs\n        target: /app/api/logs\n    networks:\n      - librechat-net\n    deploy:\n      resources:\n        reservations:\n          memory: 1024M\n  librechat-mongodb:\n    container_name: librechat-mongodb\n    image: mongo:6.0\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/data-node\n        target: /data/db\n    command: [\"mongod\", \"--noauth\"]\n    networks:\n      - librechat-net\n    deploy:\n      resources:\n        reservations:\n          memory: 1024M\n  librechat-meilisearch:\n    container_name: librechat-meilisearch\n    image: getmeili/meilisearch:v1.12.3\n    restart: unless-stopped\n    user: \"1000:1000\"\n    environment:\n      - MEILI_HOST=http://librechat-meilisearch:7700\n      - MEILI_NO_ANALYTICS=true\n      - MEILI_MASTER_KEY=${SECRET_MEILI_MASTER_KEY}\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/meili_data_v1.12\n        target: /meili_data\n    networks:\n      - librechat-net\n  librechat-vectordb:\n    container_name: librechat-vectordb\n    image: ankane/pgvector:v0.5.1\n    environment:\n      POSTGRES_DB: mydatabase\n      POSTGRES_USER: myuser\n      POSTGRES_PASSWORD: ${SECRET_POSTGRES_PASSWORD}\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/postgresql/data:/var/lib/postgresql/data\n    networks:\n      - librechat-net\n    deploy:\n      resources:\n        reservations:\n          memory: 500M\n  librechat-rag-api:\n    container_name: librechat-rag-api\n    image: ghcr.io/danny-avila/librechat-rag-api-dev-lite:v0.6.0\n    environment:\n      - DB_HOST=librechat-vectordb\n      - RAG_PORT=8000\n    restart: unless-stopped\n    depends_on:\n      - librechat-vectordb\n    networks:\n      - librechat-net\n    deploy:\n      resources:\n        reservations:\n          memory: 1024M\nnetworks:\n  librechat-net:\n    driver: bridge\n"
+ "compose": "services:\n  librechat-api:\n    container_name: librechat-api\n    ports:\n      - \"${APP_PORT}:3080\"\n    depends_on:\n      - librechat-mongodb\n      - librechat-rag-api\n    image: ghcr.io/danny-avila/librechat-dev:latest\n    restart: unless-stopped\n    extra_hosts:\n      - \"host.docker.internal:host-gateway\"\n    environment:\n      - ASSISTANTS_API_KEY=${SECRET_ASSISTANTS_API_KEY}\n      - OPENAI_API_KEY=${SECRET_ASSISTANTS_API_KEY}\n      - GOOGLE_KEY=${SECRET_ASSISTANTS_API_KEY}\n      - ANTHROPIC_API_KEY=${SECRET_ASSISTANTS_API_KEY}\n      - HOST=0.0.0.0\n      - PORT=3080\n      - DOMAIN_CLIENT=http://0.0.0.0:3080\n      - DOMAIN_SERVER=http://0.0.0.0:3080\n      - NO_INDEX=true\n      - TRUST_PROXY=1\n      - CONSOLE_JSON=false\n      - DEBUG_LOGGING=true\n      - DEBUG_CONSOLE=false\n      - MONGO_URI=mongodb://librechat-mongodb:27017/LibreChat\n      - MEILI_HOST=http://librechat-meilisearch:7700\n      - RAG_PORT=8000\n      - RAG_API_URL=http://librechat-rag-api:8000\n      - SEARCH=true\n      - MEILI_NO_ANALYTICS=true\n      - OPENAI_MODERATION=false\n      - BAN_VIOLATIONS=true\n      - BAN_DURATION=1000 * 60 * 60 * 2\n      - BAN_INTERVAL=20\n      - LOGIN_VIOLATION_SCORE=1\n      - REGISTRATION_VIOLATION_SCORE=1\n      - CONCURRENT_VIOLATION_SCORE=1\n      - MESSAGE_VIOLATION_SCORE=1\n      - NON_BROWSER_VIOLATION_SCORE=20\n      - TTS_VIOLATION_SCORE=0\n      - STT_VIOLATION_SCORE=0\n      - FORK_VIOLATION_SCORE=0\n      - IMPORT_VIOLATION_SCORE=0\n      - FILE_UPLOAD_VIOLATION_SCORE=0\n      - LOGIN_MAX=7\n      - LOGIN_WINDOW=5\n      - REGISTER_MAX=5\n      - REGISTER_WINDOW=60\n      - LIMIT_CONCURRENT_MESSAGES=true\n      - CONCURRENT_MESSAGE_MAX=2\n      - LIMIT_MESSAGE_IP=true\n      - MESSAGE_IP_MAX=40\n      - MESSAGE_IP_WINDOW=1\n      - LIMIT_MESSAGE_USER=false\n      - MESSAGE_USER_MAX=40\n      - MESSAGE_USER_WINDOW=1\n      - ILLEGAL_MODEL_REQ_SCORE=5\n      - ALLOW_EMAIL_LOGIN=true\n      - ALLOW_REGISTRATION=true\n      - ALLOW_SOCIAL_LOGIN=false\n      - ALLOW_SOCIAL_REGISTRATION=false\n      - ALLOW_PASSWORD_RESET=false\n      - ALLOW_UNVERIFIED_EMAIL_LOGIN=true\n      - SESSION_EXPIRY=1000 * 60 * 15\n      - REFRESH_TOKEN_EXPIRY=(1000 * 60 * 60 * 24) * 7\n      - JWT_SECRET=${SECRET_JWT_SECRET}\n      - JWT_REFRESH_SECRET=${SECRET_JWT_REFRESH_SECRET}\n      - CREDS_KEY=${SECRET_CREDS_KEY}\n      - CREDS_IV=e2341419ec3dd3d19b13a1a87fafcbfb\n      - DEBUG_PLUGINS=true\n      - DEBUG_OPENAI=false\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/images\n        target: /app/client/public/images\n      - type: bind\n        source: ${APP_DATA_DIR}/uploads\n        target: /app/uploads\n      - type: bind\n        source: ${APP_DATA_DIR}/logs\n        target: /app/api/logs\n    networks:\n      - librechat-net\n    deploy:\n      resources:\n        reservations:\n          memory: 1024M\n  librechat-mongodb:\n    container_name: librechat-mongodb\n    image: mongo:6.0\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/data-node\n        target: /data/db\n    command: [\"mongod\", \"--noauth\"]\n    networks:\n      - librechat-net\n    deploy:\n      resources:\n        reservations:\n          memory: 1024M\n  librechat-meilisearch:\n    container_name: librechat-meilisearch\n    image: getmeili/meilisearch:v1.12.3\n    restart: unless-stopped\n    user: \"1000:1000\"\n    environment:\n      - MEILI_HOST=http://librechat-meilisearch:7700\n      - MEILI_NO_ANALYTICS=true\n      - MEILI_MASTER_KEY=${SECRET_MEILI_MASTER_KEY}\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/meili_data_v1.12\n        target: /meili_data\n    networks:\n      - librechat-net\n  librechat-vectordb:\n    container_name: librechat-vectordb\n    image: ankane/pgvector:v0.5.1\n    environment:\n      POSTGRES_DB: mydatabase\n      POSTGRES_USER: myuser\n      POSTGRES_PASSWORD: ${SECRET_POSTGRES_PASSWORD}\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/postgresql/data:/var/lib/postgresql/data\n    networks:\n      - librechat-net\n    deploy:\n      resources:\n        reservations:\n          memory: 500M\n  librechat-rag-api:\n    container_name: librechat-rag-api\n    image: ghcr.io/danny-avila/librechat-rag-api-dev-lite:v0.6.0\n    environment:\n      - DB_HOST=librechat-vectordb\n      - RAG_PORT=8000\n    restart: unless-stopped\n    depends_on:\n      - librechat-vectordb\n    networks:\n      - librechat-net\n    deploy:\n      resources:\n        reservations:\n          memory: 1024M\nnetworks:\n  librechat-net:\n    driver: bridge\n"
 }

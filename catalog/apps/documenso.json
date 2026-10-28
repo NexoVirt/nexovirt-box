@@ -27,14 +27,6 @@
    "required": true
   },
   {
-   "key": "SECRET_POSTGRES_PASSWORD",
-   "label": "Postgres password",
-   "type": "password",
-   "hint": "Generated automatically. Enter your own to replace it.",
-   "min": 24,
-   "generate": true
-  },
-  {
    "key": "SECRET_NEXTAUTH_SECRET",
    "label": "Nextauth secret",
    "type": "password",
@@ -61,6 +53,14 @@
   {
    "key": "SECRET_NEXT_PRIVATE_SMTP_PASSWORD",
    "label": "Next private smtp password",
+   "type": "password",
+   "hint": "Generated automatically. Enter your own to replace it.",
+   "min": 24,
+   "generate": true
+  },
+  {
+   "key": "SECRET_POSTGRES_PASSWORD",
+   "label": "Postgres password",
    "type": "password",
    "hint": "Generated automatically. Enter your own to replace it.",
    "min": 24,
