@@ -7,6 +7,8 @@
   import Dashboard from './Dashboard.svelte';
   import Console from './Console.svelte';
   import Activity from './Activity.svelte';
+  import AppStore from './AppStore.svelte';
+  import MyApps from './MyApps.svelte';
   import Logo from '$lib/Logo.svelte';
   import Sheet from '$lib/Sheet.svelte';
   import Popover from '$lib/Popover.svelte';
@@ -15,6 +17,8 @@
   import Gauge from '@lucide/svelte/icons/gauge';
   import SquareTerminal from '@lucide/svelte/icons/square-terminal';
   import History from '@lucide/svelte/icons/history';
+  import LayoutGrid from '@lucide/svelte/icons/layout-grid';
+  import Boxes from '@lucide/svelte/icons/boxes';
   import Menu from '@lucide/svelte/icons/menu';
   import LogOut from '@lucide/svelte/icons/log-out';
   import RefreshCw from '@lucide/svelte/icons/refresh-cw';
@@ -25,6 +29,8 @@
 
   const pages = [
     { path: '/', title: 'Dashboard', icon: Gauge },
+    { path: '/apps', title: 'App Store', icon: LayoutGrid },
+    { path: '/apps/installed', title: 'My Apps', icon: Boxes },
     { path: '/console', title: 'Console', icon: SquareTerminal },
     { path: '/activity', title: 'Activity', icon: History },
   ];
@@ -67,6 +73,10 @@
 
   function go(e, to) {
     e.preventDefault();
+    navigate(to);
+  }
+
+  function navigate(to) {
     menuOpen = false;
     if (to !== path) {
       history.pushState({}, '', to);
@@ -184,6 +194,10 @@
           <Console onSessionLost={sessionLost} />
         {:else if page.path === '/activity'}
           <Activity onSessionLost={sessionLost} />
+        {:else if page.path === '/apps'}
+          <AppStore onSessionLost={sessionLost} />
+        {:else if page.path === '/apps/installed'}
+          <MyApps onSessionLost={sessionLost} onNavigate={navigate} />
         {:else}
           <Dashboard {system} onSessionLost={sessionLost} />
         {/if}
