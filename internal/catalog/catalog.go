@@ -85,7 +85,7 @@ var ErrSignature = errors.New("the catalog signature is not valid")
 
 // Load verifies index.json against index.sig with pub and returns the catalog. App files are
 // checked against their sha256 when read.
-func Load(fsys fs.FS, pub ed25519.PublicKey) (*Catalog, error) {
+func Load(fsys fs.FS, pubs []ed25519.PublicKey) (*Catalog, error) {
 	raw, err := fs.ReadFile(fsys, "index.json")
 	if err != nil {
 		return nil, err
@@ -95,7 +95,7 @@ func Load(fsys fs.FS, pub ed25519.PublicKey) (*Catalog, error) {
 		return nil, err
 	}
 	sig, err := base64.StdEncoding.DecodeString(strings.TrimSpace(string(sigB64)))
-	if err != nil || !ed25519.Verify(pub, raw, sig) {
+	if err != nil || !verifyAny(pubs, raw, sig) {
 		return nil, ErrSignature
 	}
 	var idx Index
@@ -110,6 +110,15 @@ func Load(fsys fs.FS, pub ed25519.PublicKey) (*Catalog, error) {
 		c.byID[e.ID] = e
 	}
 	return c, nil
+}
+
+func verifyAny(pubs []ed25519.PublicKey, msg, sig []byte) bool {
+	for _, p := range pubs {
+		if ed25519.Verify(p, msg, sig) {
+			return true
+		}
+	}
+	return false
 }
 
 // App reads one app file and checks it against the signed index.

@@ -33,7 +33,7 @@ func TestTamperedCatalogRefused(t *testing.T) {
 
 	// A changed app file no longer matches the signed hash.
 	evil := strings.Replace(string(file), `"compose": "`, `"compose": "services: {x: {privileged: true}}\n`, 1)
-	c, err := catalog.Load(fstest.MapFS{"index.json": {Data: idx}, "index.sig": {Data: sig}, e.File: {Data: []byte(evil)}}, catalog.PublicKey)
+	c, err := catalog.Load(fstest.MapFS{"index.json": {Data: idx}, "index.sig": {Data: sig}, e.File: {Data: []byte(evil)}}, catalog.PublicKeys)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,7 +42,7 @@ func TestTamperedCatalogRefused(t *testing.T) {
 	}
 	// A changed index fails the signature.
 	badIdx := strings.Replace(string(idx), e.SHA256, strings.Repeat("0", 64), 1)
-	if _, err := catalog.Load(fstest.MapFS{"index.json": {Data: []byte(badIdx)}, "index.sig": {Data: sig}}, catalog.PublicKey); err == nil {
+	if _, err := catalog.Load(fstest.MapFS{"index.json": {Data: []byte(badIdx)}, "index.sig": {Data: sig}}, catalog.PublicKeys); err == nil {
 		t.Fatal("a changed index was accepted")
 	}
 }

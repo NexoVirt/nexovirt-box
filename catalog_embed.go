@@ -22,14 +22,14 @@ func loadCatalog(webState string) (*catalog.Catalog, string, error) {
 	if err != nil {
 		return nil, "", err
 	}
-	builtin, err := catalog.Load(sub, catalog.PublicKey)
+	builtin, err := catalog.Load(sub, catalog.PublicKeys)
 	if err != nil {
 		return nil, "", err
 	}
 	if webState != "" {
 		dir := filepath.Join(webState, "catalog")
 		if _, err := os.Stat(filepath.Join(dir, "index.json")); err == nil {
-			if synced, err := catalog.Load(os.DirFS(dir), catalog.PublicKey); err == nil && synced.Index.GeneratedAt >= builtin.Index.GeneratedAt {
+			if synced, err := catalog.Load(os.DirFS(dir), catalog.PublicKeys); err == nil && synced.Index.GeneratedAt >= builtin.Index.GeneratedAt {
 				return synced, "synced", nil
 			}
 		}

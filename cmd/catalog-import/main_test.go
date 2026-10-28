@@ -64,3 +64,16 @@ func TestPrivilegedSkipped(t *testing.T) {
 		}
 	}
 }
+
+func TestMainImageIgnoresRegistryTagAndHelpers(t *testing.T) {
+	c := "services:\n  db:\n    image: postgres:16\n  app:\n    image: lscr.io/linuxserver/jellyfin:10.9\n"
+	if got := mainImage(c); got != "linuxserver/jellyfin" {
+		t.Fatalf("got %q", got)
+	}
+	if mainImage("services:\n  a:\n    image: docker.io/library/ghost@sha256:abc\n") != "ghost" {
+		t.Fatal("library prefix or digest kept")
+	}
+	if mainImage("services:\n  a:\n    image: adguard/adguardhome:latest\n") != mainImage("services:\n  b:\n    image: docker.io/adguard/adguardhome\n") {
+		t.Fatal("same image did not match")
+	}
+}

@@ -2,7 +2,7 @@
 // CasaOS and BigBear app stores. It runs offline on the build machine, never on a Box.
 //
 //	go run ./cmd/catalog-import -runtipi ../stores/runtipi-appstore -casaos ../stores/CasaOS-AppStore \
-//	    -bigbear ../stores/big-bear-casaos -out catalog -key keys/catalog-dev.key
+//	    -bigbear ../stores/big-bear-casaos -out catalog
 package main
 
 import (
@@ -40,13 +40,14 @@ func main() {
 	casaos := flag.String("casaos", "", "checkout of IceWhaleTech/CasaOS-AppStore")
 	bigbear := flag.String("bigbear", "", "checkout of bigbeartechworld/big-bear-casaos")
 	out := flag.String("out", "catalog", "output directory")
-	keyPath := flag.String("key", "keys/catalog-dev.key", "base64 Ed25519 seed")
+	keyPath := flag.String("key", os.ExpandEnv("$HOME/.config/nexovirt/box-catalog.key"), "base64 Ed25519 seed (release key, kept outside the repository)")
 	allowPriv := flag.Bool("allow-privileged", false, "also import apps that need privileged mode or the host network")
 	flag.Parse()
 
 	st := stats{map[string]int{}, map[string]int{}, map[string]int{}, map[string]int{}}
 	var apps []*catalog.App
-	seen := map[string]bool{}
+	seen := map[string]string{} // dedupe key -> name of the app that kept it
+	var merges []string
 	add := func(store string, a *catalog.App, err error) {
 		if err != nil {
 			if err == errPrivileged {
@@ -60,12 +61,24 @@ func main() {
 		if a == nil {
 			return
 		}
-		k := normName(a.Name)
-		if seen[k] {
-			st.duplicate[store]++
-			return
+		// Duplicates: the same normalized name, or the same main image (for example
+		// "Adguard" and "AdGuard Home"). Stores are read in preference order, so the first wins.
+		keys := []string{"name:" + normName(a.Name)}
+		if img := mainImage(a.Compose); img != "" {
+			keys = append(keys, "image:"+img)
 		}
-		seen[k] = true
+		for _, k := range keys {
+			if first, ok := seen[k]; ok {
+				st.duplicate[store]++
+				if first != a.Name {
+					merges = append(merges, fmt.Sprintf("%s (%s) -> %s [%s]", a.Name, store, first, k))
+				}
+				return
+			}
+		}
+		for _, k := range keys {
+			seen[k] = a.Name
+		}
 		a.Attribution = stores[store]
 		apps = append(apps, a)
 		st.imported[store]++
@@ -103,6 +116,12 @@ func main() {
 	}
 	sort.Slice(apps, func(i, j int) bool { return apps[i].ID < apps[j].ID })
 
+	sort.Strings(merges)
+	fmt.Printf("Merged %d near-duplicates:\n", len(merges))
+	for _, m := range merges {
+		fmt.Println("  " + m)
+	}
+
 	if err := write(*out, *keyPath, apps, map[string]string{"runtipi": *runtipi, "casaos": *casaos, "bigbear": *bigbear}); err != nil {
 		log.Fatal(err)
 	}
@@ -122,8 +141,12 @@ func write(out, keyPath string, apps []*catalog.App, roots map[string]string) er
 		return fmt.Errorf("bad key in %s", keyPath)
 	}
 	priv := ed25519.NewKeyFromSeed(seed)
-	if !bytes.Equal(priv.Public().(ed25519.PublicKey), catalog.PublicKey) {
-		return fmt.Errorf("the key in %s does not match internal/catalog/key.go", keyPath)
+	known := false
+	for _, p := range catalog.PublicKeys {
+		known = known || bytes.Equal(priv.Public().(ed25519.PublicKey), p)
+	}
+	if !known {
+		return fmt.Errorf("the key in %s does not match internal/catalog/key.go (dev key: build with -tags devkey)", keyPath)
 	}
 	os.RemoveAll(filepath.Join(out, "apps"))
 	if err := os.MkdirAll(filepath.Join(out, "apps"), 0o755); err != nil {
@@ -681,6 +704,43 @@ func category(c string) string {
 		return "Networking"
 	}
 	return strings.ToUpper(c[:1]) + strings.ToLower(c[1:])
+}
+
+// infraImages are helper services (databases, caches, proxies); they never identify an app.
+var infraImages = map[string]bool{"postgres": true, "mysql": true, "mariadb": true, "redis": true, "valkey/valkey": true,
+	"mongo": true, "nginx": true, "memcached": true, "busybox": true, "alpine": true, "pgvector/pgvector": true,
+	"bitnami/redis": true, "bitnami/postgresql": true, "bitnami/mariadb": true, "tensorchord/pgvecto-rs": true}
+
+// mainImage is the repository of the first non-helper service image, without registry host,
+// "library/" and tag, so lscr.io/linuxserver/x:1 and linuxserver/x:latest compare equal.
+func mainImage(compose string) string {
+	var doc struct {
+		Services yaml.Node `yaml:"services"`
+	}
+	if yaml.Unmarshal([]byte(compose), &doc) != nil || doc.Services.Kind != yaml.MappingNode {
+		return ""
+	}
+	for i := 1; i < len(doc.Services.Content); i += 2 {
+		img := mapGet(doc.Services.Content[i], "image")
+		if img == nil || img.Value == "" || strings.Contains(img.Value, "$") {
+			continue
+		}
+		repo := strings.ToLower(img.Value)
+		if at := strings.Index(repo, "@"); at >= 0 {
+			repo = repo[:at]
+		}
+		if c := strings.LastIndex(repo, ":"); c > strings.LastIndex(repo, "/") {
+			repo = repo[:c]
+		}
+		if first, rest, ok := strings.Cut(repo, "/"); ok && strings.ContainsAny(first, ".:") {
+			repo = rest
+		}
+		repo = strings.TrimPrefix(repo, "library/")
+		if !infraImages[repo] {
+			return repo
+		}
+	}
+	return ""
 }
 
 func normName(s string) string {
