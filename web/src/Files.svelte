@@ -10,6 +10,8 @@
   import { kindOf, PREVIEW_IMAGE, PREVIEW_TEXT } from '$lib/fileKinds.js';
   import Dialog from '$lib/Dialog.svelte';
   import ContextMenu from '$lib/ContextMenu.svelte';
+  import ShareLinkDialog from '$lib/ShareLinkDialog.svelte';
+  import LinkIcon from '@lucide/svelte/icons/link';
   import FileTree from '$lib/FileTree.svelte';
   import ChevronLeft from '@lucide/svelte/icons/chevron-left';
   import ChevronRight from '@lucide/svelte/icons/chevron-right';
@@ -377,6 +379,7 @@
   }
 
   // Context menu: on an item (acts on the selection) or on empty space (the folder).
+  let share = $state({ path: '', name: '', dir: false, origin: null }), shareOpen = $state(false), menuAt = null;
   function context(e, entry, i) {
     e.preventDefault();
     if (!path) return;
@@ -393,6 +396,7 @@
           { key: 'cut', label: 'Cut', icon: Scissors, hint: shortcut('X') },
           { key: 'paste-into', label: 'Paste into folder', icon: ClipboardPaste, disabled: !clip || !one?.dir },
           { key: 'move', label: 'Move to', icon: FolderInput },
+          { key: 'share', label: 'Share link', icon: LinkIcon, disabled: !one },
           'sep',
           { key: 'info', label: 'Get info', icon: Info, disabled: !one },
           { key: 'delete', label: 'Delete', icon: Trash, danger: true, hint: 'Del' },
@@ -407,6 +411,7 @@
           { key: 'reload', label: 'Reload', icon: RefreshCw },
         ];
     menu = { x: e.clientX, y: e.clientY, items };
+    menuAt = { x: e.clientX, y: e.clientY };
   }
   const shortcut = (k) => (navigator.platform?.startsWith('Mac') ? `⌘${k}` : `Ctrl+${k}`);
 
@@ -421,6 +426,7 @@
       'paste-into': () => one && paste(join(path, one.name)),
       move: () => askMove(selEntries),
       info: () => one && showInfo(one),
+      share: () => one && (share = { path: join(path, one.name), name: one.name, dir: one.dir, origin: menuAt }, shareOpen = true),
       delete: () => askDelete(selEntries),
       mkdir: () => askName('mkdir'),
       upload: () => fileInput.click(),
@@ -829,6 +835,7 @@
 {/if}
 
 <ContextMenu bind:menu onPick={pick} />
+<ShareLinkDialog bind:open={shareOpen} path={share.path} name={share.name} dir={share.dir} origin={share.origin} />
 
 <Dialog bind:open={nameOpen} label={nameMode === 'mkdir' ? 'New folder' : 'Rename'} locked={nameBusy}>
   <form class="dlg" onsubmit={submitName}>
