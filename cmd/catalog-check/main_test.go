@@ -122,4 +122,10 @@ func TestDecide(t *testing.T) {
 	if rep.Drop != "unsupported-arch" {
 		t.Errorf("no box arch: %q", rep.Drop)
 	}
+	rep = mk(result{Status: "ok", Archs: []string{"amd64", "arm64"}})
+	rep.App.Architectures = []string{"amd64"}
+	decide(rep)
+	if !slices.Equal(rep.App.Architectures, []string{"amd64"}) {
+		t.Errorf("never wider than the store: %v", rep.App.Architectures)
+	}
 }

@@ -140,7 +140,8 @@ func composeImages(compose string) []string {
 }
 
 // decide drops apps with a missing or private image and narrows Architectures to what every
-// image really ships. Images that could not be checked (errors, rate limits) never drop an app.
+// image really ships, never wider than the source store listed. Images that could not be
+// checked (errors, rate limits) never drop an app.
 func decide(rep *appReport) {
 	archSets := [][]string{}
 	for _, im := range rep.Images {
@@ -164,12 +165,14 @@ func decide(rep *appReport) {
 		for _, s := range archSets {
 			all = all && slices.Contains(s, a)
 		}
-		if all {
+		// The source store's own list may be narrower (a binary inside the image, a GPU build):
+		// never widen it.
+		if all && (len(rep.App.Architectures) == 0 || slices.Contains(rep.App.Architectures, a)) {
 			archs = append(archs, a)
 		}
 	}
 	if len(archs) == 0 {
-		rep.Drop, rep.Why = "unsupported-arch", "no image ships amd64 or arm64 for every service"
+		rep.Drop, rep.Why = "unsupported-arch", "the images ship neither amd64 nor arm64 for every service (or not the ones the store lists)"
 		return
 	}
 	rep.App.Architectures = archs
