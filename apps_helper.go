@@ -44,17 +44,19 @@ type installedApp struct {
 	Stopped     bool   `json:"stopped,omitempty"`          // stopped on purpose (desired state), no alert
 	Custom      bool   `json:"custom,omitempty"`           // an own app (compose from the admin, customapp.go)
 	Icon        string `json:"icon,omitempty"`             // own apps: lucide:<name> or upload
+	ComposeSHA  string `json:"compose_sha,omitempty"`      // sha256 of the catalog compose it runs (catalogupdate.go)
 }
 
 type appStatus struct {
 	installedApp
 	// running, partial, restarting, stopped (all exited cleanly), exited (a container failed),
 	// not_created (no containers), interrupted (an install did not finish), unknown
-	State      string            `json:"state"`
-	Busy       string            `json:"busy,omitempty"` // action running in the helper right now
-	ExitCode   int               `json:"exit_code,omitempty"`
-	LastLines  []string          `json:"last_lines,omitempty"` // newest log lines when it stopped unexpectedly
-	Containers []containerStatus `json:"containers"`
+	State         string            `json:"state"`
+	CatalogUpdate bool              `json:"catalog_update,omitempty"` // the catalog has a newer compose definition
+	Busy          string            `json:"busy,omitempty"`           // action running in the helper right now
+	ExitCode      int               `json:"exit_code,omitempty"`
+	LastLines     []string          `json:"last_lines,omitempty"` // newest log lines when it stopped unexpectedly
+	Containers    []containerStatus `json:"containers"`
 }
 
 type containerStatus struct {
@@ -353,7 +355,7 @@ func (h *helperServer) appInstall(ctx context.Context, req helperRequest, logf f
 	}
 	meta := installedApp{ID: app.ID, Name: app.Name, Version: app.Version, MainPort: port, Scheme: app.Scheme,
 		Store: app.Attribution.Store, InstalledAt: time.Now().Unix(), DataDir: dataDir, DataCreated: dataCreated,
-		SocketOK: app.DockerSocket && req.AllowDockerSocket}
+		SocketOK: app.DockerSocket && req.AllowDockerSocket, ComposeSHA: composeSHA([]byte(app.Compose))}
 	metaJSON, _ := json.MarshalIndent(meta, "", "  ")
 	for name, body := range map[string][]byte{installMarker: nil, "compose.yaml": []byte(app.Compose), ".env": env, "app.json": metaJSON} {
 		if err := os.WriteFile(filepath.Join(dir, name), body, 0o600); err != nil {
@@ -441,7 +443,8 @@ func buildEnv(app *catalog.App, answers map[string]string, dir, dataDir, base st
 			return nil, 0, uerr("%s cannot contain single quotes or line breaks.", q.Label)
 		}
 		if v == "" && q.Generate {
-			v = randomSecret(generatedLen(q))
+			vals[q.Key] = generateValue(q) // generated values fit their own rules, nothing to check
+			continue
 		}
 		if v == "" {
 			v = q.Default
@@ -693,6 +696,7 @@ func (h *helperServer) appsStatus(req helperRequest, logf func(string)) (any, er
 	entries, _ := os.ReadDir(h.appsDir)
 	out := []appStatus{}
 	haveDocker := needDocker() == nil
+	cat := cachedCatalog(h.webState)
 	for _, e := range entries {
 		if !e.IsDir() || validID(e.Name()) != nil {
 			continue
@@ -703,6 +707,11 @@ func (h *helperServer) appsStatus(req helperRequest, logf func(string)) (any, er
 		}
 		dir := h.appDir(meta.ID)
 		st := appStatus{installedApp: meta, State: "unknown", Containers: []containerStatus{}, Busy: h.busyOp(meta.ID)}
+		if cat != nil && !meta.Custom {
+			if app, err := cat.App(meta.ID); err == nil {
+				st.CatalogUpdate = catalogUpdateAvailable(meta, dir, app)
+			}
+		}
 		if haveDocker {
 			st.Containers, st.State, st.ExitCode = composeStatus(dir, meta.ID)
 		}
@@ -814,6 +823,20 @@ func (h *helperServer) appAction(ctx context.Context, req helperRequest, logf fu
 	meta, err := h.readMeta(req.ID)
 	if err != nil {
 		return nil, err
+	}
+	if req.Op == "start" || req.Op == "update" {
+		var app *catalog.App
+		if cat, _, err := loadCatalog(h.webState); err == nil {
+			app, _ = cat.App(req.ID)
+		}
+		changed, err := socketGate(&meta, app, req.AllowDockerSocket, func() bool { return h.consoleAllowed(req) })
+		if err != nil {
+			return nil, err
+		}
+		if changed {
+			logf("Docker access allowed for " + meta.Name)
+			h.writeMeta(meta)
+		}
 	}
 	dir := h.appDir(req.ID)
 	ctx, cancel := context.WithTimeout(ctx, 40*time.Minute)

@@ -562,7 +562,16 @@ func (a *App) appAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id := r.PathValue("id")
-	a.runJob(w, r, b.Op, id, "app."+b.Op, helperRequest{Action: "app_action", ID: id, Op: b.Op})
+	req := helperRequest{Action: "app_action", ID: id, Op: b.Op}
+	if b.AllowDockerSocket { // apps installed before Box asked: confirmed once, with the password
+		if !a.needProof(w, r) {
+			return
+		}
+		req.AllowDockerSocket = true
+		req = a.proofReq(r, req)
+		a.audit(r, "app.docker_socket_ok", id)
+	}
+	a.runJob(w, r, b.Op, id, "app."+b.Op, req)
 }
 
 func (a *App) appUninstall(w http.ResponseWriter, r *http.Request) {

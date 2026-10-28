@@ -4,6 +4,9 @@ package main
 // CasaOS "root" variables point, and how password questions are answered.
 
 import (
+	"cmp"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -213,6 +216,17 @@ func presentQuestions(qs []catalog.Question) []presentedQuestion {
 		out = append(out, pq)
 	}
 	return out
+}
+
+// generateValue is a random secret for a question left empty: format base64 is Min random bytes
+// (default 32), base64 encoded; anything else a password that fits Min and Max.
+func generateValue(q catalog.Question) string {
+	if q.Format == "base64" {
+		b := make([]byte, cmp.Or(q.Min, 32))
+		rand.Read(b)
+		return base64.StdEncoding.EncodeToString(b)
+	}
+	return randomSecret(generatedLen(q))
 }
 
 func generatedLen(q catalog.Question) int {

@@ -225,15 +225,16 @@ func (h *helperServer) fdActions() map[string]func(helperRequest) (any, *os.File
 // ctxActions are the long app actions; they are cancelled when the caller disconnects.
 func (h *helperServer) ctxActions() map[string]func(context.Context, helperRequest, func(string)) (any, error) {
 	return map[string]func(context.Context, helperRequest, func(string)) (any, error){
-		"app_install":     h.appInstall,
-		"app_action":      h.appAction,
-		"app_uninstall":   h.appUninstall,
-		"backup_run":      h.backupRun,
-		"backup_restore":  h.backupRestore,
-		"backup_verify":   h.backupVerify,
-		"custom_app_save": h.customAppSave,
-		"pkg_install":     h.pkgInstall,
-		"auto_updates":    h.autoUpdatesSet,
+		"app_install":        h.appInstall,
+		"app_action":         h.appAction,
+		"app_uninstall":      h.appUninstall,
+		"app_catalog_update": h.appCatalogUpdate,
+		"backup_run":         h.backupRun,
+		"backup_restore":     h.backupRestore,
+		"backup_verify":      h.backupVerify,
+		"custom_app_save":    h.customAppSave,
+		"pkg_install":        h.pkgInstall,
+		"auto_updates":       h.autoUpdatesSet,
 	}
 }
 
@@ -245,6 +246,7 @@ func (h *helperServer) actions() map[string]helperAction {
 		"docker_install":       h.dockerInstall,
 		"apps_status":          h.appsStatus,
 		"app_credentials":      h.appCredentials,
+		"app_catalog_diff":     h.appCatalogDiff,
 		"app_logs":             h.appLogs,
 		"app_domain":           h.appDomain,
 		"proxy_status":         h.proxyStatus,
