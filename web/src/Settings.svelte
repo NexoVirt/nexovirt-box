@@ -51,6 +51,7 @@
   const THEMES = [{ value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }, { value: 'system', label: 'Auto' }];
   let tab = $state(TABS.some((t) => t.key === location.hash.slice(1)) ? location.hash.slice(1) : 'general');
   function pickTab(k) { tab = k; history.replaceState(null, '', '#' + k); }
+  function hashTab() { const h = location.hash.slice(1); if (TABS.some((t) => t.key === h)) tab = h; }
   let mode = $state(theme.mode);
   $effect(() => { if (mode !== theme.mode) setThemeMode(mode); });
 
@@ -354,6 +355,8 @@
     { key: 'created_at', label: 'Signed in', sortable: true, firstDir: 'desc' },
   ];
 </script>
+
+<svelte:window onhashchange={hashTab} />
 
 <div class="page">
   <header class="page-head">
