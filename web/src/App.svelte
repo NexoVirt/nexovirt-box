@@ -18,6 +18,8 @@
   import RefreshCw from '@lucide/svelte/icons/refresh-cw';
   import CircleAlert from '@lucide/svelte/icons/circle-alert';
   import Loader from '@lucide/svelte/icons/loader-circle';
+  import Sun from '@lucide/svelte/icons/sun';
+  import Moon from '@lucide/svelte/icons/moon';
 
   const pages = [
     { path: '/', title: 'Dashboard', icon: Gauge },
@@ -39,6 +41,8 @@
   let mode = $state(theme.mode);
 
   $effect(() => { if (mode !== theme.mode) setThemeMode(mode); });
+
+  function toggleTheme() { mode = theme.current === 'dark' ? 'light' : 'dark'; }
 
   async function loadState() {
     loadError = '';
@@ -147,6 +151,9 @@
         <button class="icon-btn menu-btn" onclick={() => (menuOpen = true)} aria-label="Open navigation"><Menu size={20} /></button>
         <span class="toolbar-title t-head">{page.title}</span>
         <div class="toolbar-end">
+          <button class="icon-btn" onclick={toggleTheme} aria-label={theme.current === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} title={theme.current === 'dark' ? 'Light mode' : 'Dark mode'}>
+            {#if theme.current === 'dark'}<Sun size={19} />{:else}<Moon size={19} />{/if}
+          </button>
           <div class="user">
             <button class="avatar-btn" onclick={() => (userOpen = !userOpen)} aria-haspopup="menu" aria-expanded={userOpen} aria-label="Account and appearance">
               <span class="avatar">{initials}</span>

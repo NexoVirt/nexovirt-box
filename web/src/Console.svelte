@@ -124,7 +124,7 @@
 </div>
 
 <style>
-  .page { max-width: 72rem; margin: 0 auto; display: grid; gap: 1.25rem; }
+  .page { display: grid; gap: 1.25rem; }
   .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; padding-top: 0.5rem; }
   h1, p { margin: 0; }
   .page-head p { margin-top: 0.375rem; }

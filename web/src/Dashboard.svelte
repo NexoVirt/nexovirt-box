@@ -141,8 +141,8 @@
       </section>
 
       <section class="side">
-        <h2 class="t-section label">System</h2>
         <div class="group">
+          <div class="group-head"><h2 class="t-head">System</h2></div>
           {#if !system}
             {#each Array(6) as _}<div class="row"><span class="skeleton line"></span></div>{/each}
           {:else}
@@ -163,8 +163,8 @@
     </div>
 
     <section>
-      <h2 class="t-section label">Network</h2>
       <div class="group">
+        <div class="group-head"><h2 class="t-head">Network</h2></div>
         {#each snap.network as n (n.name)}
           <div class="row net">
             <span class="row-icon"><Network size={16} /></span>
@@ -184,8 +184,8 @@
     </section>
 
     <section>
-      <h2 class="t-section label">Storage</h2>
       <div class="group">
+        <div class="group-head"><h2 class="t-head">Storage</h2></div>
         {#each snap.disks as d (d.mountpoint)}
           {@const p = pct(d.used, d.total)}
           <div class="row disk">
@@ -213,7 +213,7 @@
 </div>
 
 <style>
-  .page { max-width: 72rem; margin: 0 auto; display: grid; gap: 1.5rem; }
+  .page { display: grid; gap: 1.5rem; }
   .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; padding-top: 0.5rem; }
   h1, h2, p { margin: 0; }
   .page-head p { margin-top: 0.375rem; }
@@ -227,7 +227,7 @@
   .skeleton.block { display: block; height: 11rem; }
 
   .split { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; }
-  .label { padding: 0 1.125rem 0.5rem; }
+  .group-head { padding: 1rem 1.125rem 0.25rem; }
 
   .tile-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
   .tile-head > div { min-width: 0; }
