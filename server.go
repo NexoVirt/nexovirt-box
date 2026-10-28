@@ -4,6 +4,7 @@ import (
 	"crypto/subtle"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/fs"
 	"log"
 	"net"
@@ -105,6 +106,9 @@ func (a *App) routeTable() []route {
 		{"GET /api/files/size", false, a.filesSize},
 		{"GET /api/files/zip", false, a.filesZip},
 		{"POST /api/settings", false, a.settingsSave},
+		{"GET /api/sessions", false, a.sessionsList},
+		{"POST /api/sessions/end-others", false, a.sessionsEndOthers},
+		{"POST /api/account/password", false, a.passwordChange},
 	}
 }
 
@@ -295,8 +299,8 @@ func (a *App) setCookie(w http.ResponseWriter, token string, maxAge int) {
 	})
 }
 
-func (a *App) startSession(w http.ResponseWriter, userID int64) error {
-	t, err := a.store.newSession(userID)
+func (a *App) startSession(w http.ResponseWriter, r *http.Request, userID int64) error {
+	t, err := a.store.newSession(userID, a.clientIP(r), r.UserAgent())
 	if err != nil {
 		return err
 	}
@@ -375,7 +379,7 @@ func (a *App) setup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	os.Remove(a.tokenPath)
-	if err := a.startSession(w, 1); err != nil {
+	if err := a.startSession(w, r, 1); err != nil {
 		log.Printf("setup session: %v", err)
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
@@ -405,7 +409,7 @@ func (a *App) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.store.audit(c.Username, a.clientIP(r), "login.ok", "")
-	t, err := a.store.newSession(id)
+	t, err := a.store.newSession(id, a.clientIP(r), r.UserAgent())
 	if err != nil {
 		log.Printf("login session: %v", err)
 		writeError(w, http.StatusInternalServerError, "You could not be signed in. Check the service log.")
@@ -587,4 +591,76 @@ func (l *limiter) reserve(key string) (release func(), ok bool) {
 func (l *limiter) allow(key string) bool {
 	_, ok := l.reserve(key)
 	return ok
+}
+
+// ---- account: sessions and password ----
+
+func (a *App) sessionsList(w http.ResponseWriter, r *http.Request) {
+	uid, _ := a.currentUser(r)
+	writeJSON(w, http.StatusOK, map[string]any{"sessions": a.store.sessionsFor(uid, hashToken(sessionToken(r))),
+		"trusted_proxies": a.trustedText()})
+}
+
+func (a *App) trustedText() string {
+	var out []string
+	for _, n := range a.trusted {
+		out = append(out, n.String())
+	}
+	return strings.Join(out, ", ")
+}
+
+// endOthers signs out every other browser and closes their consoles.
+func (a *App) endOthers(uid int64, keep string) int {
+	gone := a.store.endOtherSessions(uid, keep)
+	for _, h := range gone {
+		a.consoles.closeAll(h)
+		a.proofs.Delete(h)
+	}
+	return len(gone)
+}
+
+func (a *App) sessionsEndOthers(w http.ResponseWriter, r *http.Request) {
+	var c struct {
+		Password string `json:"password"`
+	}
+	if err := readJSON(r, &c); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	uid, err := a.checkPassword(r, c.Password)
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	n := a.endOthers(uid, hashToken(sessionToken(r)))
+	a.audit(r, "account.sessions_end", fmt.Sprintf("%d other sessions", n))
+	writeJSON(w, http.StatusOK, map[string]any{"ended": n})
+}
+
+func (a *App) passwordChange(w http.ResponseWriter, r *http.Request) {
+	var c struct {
+		Current string `json:"current"`
+		New     string `json:"new"`
+	}
+	if err := readJSON(r, &c); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if len(c.New) < minPassword || len(c.New) > 72 {
+		writeError(w, http.StatusUnprocessableEntity, fmt.Sprintf("The new password needs %d to 72 characters.", minPassword))
+		return
+	}
+	uid, err := a.checkPassword(r, c.Current)
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	if err := a.store.setPassword(uid, c.New); err != nil {
+		log.Printf("password change: %v", err)
+		writeError(w, http.StatusInternalServerError, "The password could not be saved. Check the service log.")
+		return
+	}
+	n := a.endOthers(uid, hashToken(sessionToken(r)))
+	a.audit(r, "account.password", fmt.Sprintf("%d other sessions signed out", n))
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "ended": n})
 }

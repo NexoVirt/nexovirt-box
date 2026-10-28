@@ -390,3 +390,46 @@ func TestPasskeysRefusedOnIPHost(t *testing.T) {
 		t.Fatalf("domain refused: %v", err)
 	}
 }
+
+func TestPasswordChangeEndsOtherSessions(t *testing.T) {
+	app, h, token := newTestApp(t)
+	sess := setupAndLogin(t, h, token)
+	other := sessionFrom(post(h, "/api/login", `{"username":"admin","password":"long-enough-pw"}`, ""))
+	closed := make(chan struct{})
+	app.consoles.add(hashToken(other), func() { close(closed) })
+
+	var list struct{ Sessions []SessionInfo }
+	json.Unmarshal(get(h, "/api/sessions", sess).Body.Bytes(), &list)
+	current := 0
+	for _, si := range list.Sessions {
+		if si.Current {
+			current++
+		}
+	}
+	if len(list.Sessions) < 2 || current != 1 || list.Sessions[0].IP != "10.0.0.1" {
+		t.Fatalf("sessions: %+v", list.Sessions)
+	}
+	if rec := post(h, "/api/account/password", `{"current":"wrong-password","new":"another-long-pw"}`, sess); rec.Code == 200 {
+		t.Fatal("changed with a wrong current password")
+	}
+	if rec := post(h, "/api/account/password", `{"current":"long-enough-pw","new":"short"}`, sess); rec.Code == 200 {
+		t.Fatal("accepted a short password")
+	}
+	if rec := post(h, "/api/account/password", `{"current":"long-enough-pw","new":"another-long-pw"}`, sess); rec.Code != 200 {
+		t.Fatalf("change: %d %s", rec.Code, rec.Body)
+	}
+	select {
+	case <-closed:
+	default:
+		t.Fatal("the other session's console stayed open")
+	}
+	if rec := get(h, "/api/system", other); rec.Code != http.StatusUnauthorized {
+		t.Fatalf("other session still works: %d", rec.Code)
+	}
+	if rec := get(h, "/api/sessions", sess); rec.Code != 200 {
+		t.Fatal("the changing session was signed out")
+	}
+	if rec := post(h, "/api/login", `{"username":"admin","password":"another-long-pw"}`, ""); rec.Code != 200 {
+		t.Fatalf("new password does not work: %d", rec.Code)
+	}
+}

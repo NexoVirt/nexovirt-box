@@ -541,7 +541,7 @@ func (a *App) endPending(tok string) {
 func (a *App) finishLogin(w http.ResponseWriter, r *http.Request, p *pendingLogin, tok, how string) {
 	a.endPending(tok)
 	a.store.audit(p.username, a.clientIP(r), "login.ok", how)
-	if err := a.startSession(w, p.uid); err != nil {
+	if err := a.startSession(w, r, p.uid); err != nil {
 		log.Printf("login session: %v", err)
 		writeError(w, http.StatusInternalServerError, "You could not be signed in. Check the service log.")
 		return

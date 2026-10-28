@@ -66,6 +66,9 @@ func openStore(path string) (*Store, error) {
 	for _, alter := range []string{
 		`ALTER TABLE sessions ADD COLUMN reauth_at INTEGER NOT NULL DEFAULT 0`,
 		`ALTER TABLE users ADD COLUMN totp_secret TEXT`,
+		`ALTER TABLE sessions ADD COLUMN created_at INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE sessions ADD COLUMN ip TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE sessions ADD COLUMN agent TEXT NOT NULL DEFAULT ''`,
 	} {
 		if err != nil {
 			break
@@ -139,13 +142,69 @@ func randomToken() string {
 	return hex.EncodeToString(b)
 }
 
-func (s *Store) newSession(userID int64) (string, error) {
+func (s *Store) newSession(userID int64, ip, agent string) (string, error) {
 	t := randomToken()
 	now := time.Now()
+	if len(agent) > 200 {
+		agent = agent[:200]
+	}
 	s.db.Exec(`DELETE FROM sessions WHERE expires_at < ?`, now.Unix())
-	_, err := s.db.Exec(`INSERT INTO sessions (token_hash, user_id, expires_at, reauth_at) VALUES (?, ?, ?, ?)`,
-		hashToken(t), userID, now.Add(sessionTTL).Unix(), now.Unix())
+	_, err := s.db.Exec(`INSERT INTO sessions (token_hash, user_id, expires_at, reauth_at, created_at, ip, agent) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		hashToken(t), userID, now.Add(sessionTTL).Unix(), now.Unix(), now.Unix(), ip, agent)
 	return t, err
+}
+
+// SessionInfo is a signed-in browser as Settings shows it. ID is a short, non-secret label.
+type SessionInfo struct {
+	ID        string `json:"id"`
+	CreatedAt int64  `json:"created_at"`
+	IP        string `json:"ip"`
+	Agent     string `json:"agent"`
+	Current   bool   `json:"current"`
+}
+
+func (s *Store) sessionsFor(uid int64, currentHash string) []SessionInfo {
+	out := []SessionInfo{}
+	rows, err := s.db.Query(`SELECT token_hash, created_at, ip, agent FROM sessions WHERE user_id = ? AND expires_at > ? ORDER BY created_at DESC`, uid, time.Now().Unix())
+	if err != nil {
+		return out
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var h string
+		var si SessionInfo
+		if rows.Scan(&h, &si.CreatedAt, &si.IP, &si.Agent) == nil {
+			si.ID, si.Current = h[:12], h == currentHash
+			out = append(out, si)
+		}
+	}
+	return out
+}
+
+// endOtherSessions signs out every other browser of the user and returns their hashes.
+func (s *Store) endOtherSessions(uid int64, keepHash string) []string {
+	var gone []string
+	rows, err := s.db.Query(`SELECT token_hash FROM sessions WHERE user_id = ? AND token_hash != ?`, uid, keepHash)
+	if err == nil {
+		for rows.Next() {
+			var h string
+			if rows.Scan(&h) == nil {
+				gone = append(gone, h)
+			}
+		}
+		rows.Close()
+	}
+	s.db.Exec(`DELETE FROM sessions WHERE user_id = ? AND token_hash != ?`, uid, keepHash)
+	return gone
+}
+
+func (s *Store) setPassword(uid int64, password string) error {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	_, err = s.db.Exec(`UPDATE users SET password_hash = ? WHERE id = ?`, string(hash), uid)
+	return err
 }
 
 func (s *Store) sessionUser(token string) (int64, bool) {
@@ -211,7 +270,7 @@ func (s *Store) audit(username, ip, action, detail string) {
 
 // auditCategories map an Activity filter to action prefixes.
 var auditCategories = map[string][]string{
-	"signin":   {"login.", "logout", "reauth.", "2fa."},
+	"signin":   {"login.", "logout", "reauth.", "2fa.", "account."},
 	"console":  {"console."},
 	"apps":     {"app.", "docker.", "catalog.", "images.", "proxy."},
 	"files":    {"files."},
