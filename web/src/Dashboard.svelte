@@ -242,7 +242,7 @@
           {@const Icon = r.icon}
           <li role="option" aria-selected={i === active}>
             <button class:on={i === active} onmousedown={(e) => e.preventDefault()} onclick={() => choose(r)} onmouseenter={() => (active = i)}>
-              {#if r.app}<AppIcon id={r.app.id} name={r.app.name} size={28} />
+              {#if r.app}<AppIcon id={r.app.id} name={r.app.name} size={28} icon={r.app.icon} />
               {:else if r.store}<AppIcon id={r.store.id} name={r.store.name} size={28} />
               {:else}<span class="r-ico"><Icon size={16} /></span>{/if}
               <span class="r-text"><span class="truncate">{r.label}</span><span class="t-caption truncate">{r.hint}</span></span>
@@ -276,7 +276,7 @@
               onpointerdown={(e) => pressStart(e, a)} onpointerup={pressEnd} onpointerleave={pressEnd} onpointercancel={pressEnd}
               title="{a.name}: click to open, right-click for more">
               <span class="icon-wrap">
-                <AppIcon id={a.id} name={a.name} size={64} />
+                <AppIcon id={a.id} name={a.name} size={64} icon={a.icon} />
                 {#if busy[a.id] || bg[a.id]}<span class="busy"><Loader size={18} class="spinner" /></span>{/if}
                 <span class="dot state {STATE[a.state] ?? ''}" aria-label={a.state}></span>
               </span>
