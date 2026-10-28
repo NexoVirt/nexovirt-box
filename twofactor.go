@@ -546,6 +546,7 @@ func (a *App) finishLogin(w http.ResponseWriter, r *http.Request, p *pendingLogi
 		return
 	}
 	a.store.audit(p.username, a.clientIP(r), "login.ok", how)
+	a.onLogin(p.username, a.clientIP(r))
 	if err := a.startSession(w, r, p.uid); err != nil {
 		log.Printf("login session: %v", err)
 		writeError(w, http.StatusInternalServerError, "You could not be signed in. Check the service log.")
@@ -575,6 +576,7 @@ func (a *App) login2FA(w http.ResponseWriter, r *http.Request) {
 		a.finishLogin(w, r, p, in.Pending, "recovery code")
 	default:
 		a.store.audit(p.username, a.clientIP(r), "login.failed", "wrong 2FA code")
+		a.onLoginFailed(a.clientIP(r))
 		writeError(w, http.StatusUnauthorized, "The code is wrong.")
 	}
 }

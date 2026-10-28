@@ -42,6 +42,8 @@ type installedApp struct {
 	DataCreated bool   `json:"data_created,omitempty"`     // Box created DataDir, so "delete data" may remove it
 	SocketOK    bool   `json:"docker_socket_ok,omitempty"` // the admin agreed to give this app Docker access
 	Stopped     bool   `json:"stopped,omitempty"`          // stopped on purpose (desired state), no alert
+	Custom      bool   `json:"custom,omitempty"`           // an own app (compose from the admin, customapp.go)
+	Icon        string `json:"icon,omitempty"`             // own apps: lucide:<name> or upload
 }
 
 type appStatus struct {
@@ -130,7 +132,7 @@ func (h *helperServer) policy(m installedApp) mountPolicy {
 	if m.DataDir != "" {
 		allow = append(allow, m.DataDir)
 	}
-	return mountPolicy{base: h.base(), allow: allow, allowSocket: m.SocketOK}
+	return mountPolicy{base: h.base(), allow: allow, allowSocket: m.SocketOK, custom: m.Custom}
 }
 
 func exists(p string) bool { _, err := os.Stat(p); return err == nil }
@@ -555,18 +557,30 @@ func timezone() string {
 // checkConfig renders the compose config, refuses host folders the app must not see
 // (appsafety.go) and host ports that are already in use.
 func checkConfig(ctx context.Context, dir, id string, p mountPolicy, ports bool) error {
-	cmd := compose(dir, id, "config", "--format", "json")
-	out, err := exec.CommandContext(ctx, cmd.Path, cmd.Args[1:]...).Output()
-	if err != nil {
-		msg := ""
-		var ee *exec.ExitError
-		if errors.As(err, &ee) {
-			msg = strings.TrimSpace(lastLine(string(ee.Stderr)))
+	if p.custom { // checked before Docker reads it (customapp.go)
+		raw, err := os.ReadFile(filepath.Join(dir, "compose.yaml"))
+		if err != nil {
+			return err
 		}
-		return uerr("The app definition could not be read by Docker: %s", msg)
+		if err := checkOwnComposeRaw(raw); err != nil {
+			return err
+		}
+		env, _ := os.ReadFile(filepath.Join(dir, ".env"))
+		if err := checkOwnEnv(string(env)); err != nil {
+			return err
+		}
+	}
+	out, err := renderConfig(ctx, dir, id)
+	if err != nil {
+		return err
 	}
 	if err := checkMounts(out, p); err != nil {
 		return err
+	}
+	if p.custom {
+		if err := checkPrivileges(out); err != nil {
+			return err
+		}
 	}
 	if !ports {
 		return nil
@@ -581,6 +595,20 @@ func checkConfig(ctx context.Context, dir, id string, p mountPolicy, ports bool)
 		}
 	}
 	return nil
+}
+
+func renderConfig(ctx context.Context, dir, id string) ([]byte, error) {
+	cmd := compose(dir, id, "config", "--format", "json")
+	out, err := exec.CommandContext(ctx, cmd.Path, cmd.Args[1:]...).Output()
+	if err != nil {
+		msg := ""
+		var ee *exec.ExitError
+		if errors.As(err, &ee) {
+			msg = strings.TrimSpace(lastLine(string(ee.Stderr)))
+		}
+		return nil, uerr("The app definition could not be read by Docker: %s", msg)
+	}
+	return out, nil
 }
 
 type hostPort struct {

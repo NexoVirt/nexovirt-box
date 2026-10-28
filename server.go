@@ -36,6 +36,8 @@ type App struct {
 	tfa       *twoFactor
 	port      int // listen port (the helper checks it after a self-update)
 	updates   updateCache
+	state     string    // web state directory
+	notify    *notifier // nil until set up (tests)
 }
 
 type route struct {
@@ -111,6 +113,25 @@ func (a *App) routeTable() []route {
 		{"GET /api/sessions", false, a.sessionsList},
 		{"POST /api/sessions/end-others", false, a.sessionsEndOthers},
 		{"POST /api/account/password", false, a.passwordChange},
+		{"GET /api/backups", false, a.backupsGet},
+		{"POST /api/backups/key", false, a.backupKeySet},
+		{"POST /api/backups/targets", false, a.backupTargetSave},
+		{"POST /api/backups/targets/{id}/delete", false, a.backupTargetDelete},
+		{"GET /api/backups/targets/{id}/archives", false, a.backupArchives},
+		{"POST /api/backups/schedules", false, a.backupScheduleSave},
+		{"POST /api/backups/schedules/{id}/delete", false, a.backupScheduleDelete},
+		{"POST /api/backups/run", false, a.backupRunNow},
+		{"POST /api/backups/restore", false, a.backupRestore},
+		{"POST /api/backups/verify", false, a.backupVerify},
+		{"POST /api/backups/delete", false, a.backupDelete},
+		{"POST /api/apps/custom", false, a.customAppSave},
+		{"GET /api/apps/{id}/custom", false, a.customAppGet},
+		{"POST /api/apps/{id}/icon", false, a.customIconUpload},
+		{"GET /api/notify", false, a.notifyGet},
+		{"POST /api/notify/channels", false, a.notifyChannelSave},
+		{"POST /api/notify/channels/{id}/delete", false, a.notifyChannelDelete},
+		{"POST /api/notify/channels/{id}/test", false, a.notifyChannelTest},
+		{"POST /api/notify/rules", false, a.notifyRulesSave},
 	}
 }
 
@@ -401,6 +422,7 @@ func (a *App) login(w http.ResponseWriter, r *http.Request) {
 	id, ok := a.store.checkLogin(c.Username, c.Password)
 	if !ok {
 		a.store.audit(c.Username, a.clientIP(r), "login.failed", "")
+		a.onLoginFailed(a.clientIP(r))
 		writeError(w, http.StatusUnauthorized, "The username or password is wrong.")
 		return
 	}
@@ -411,6 +433,7 @@ func (a *App) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.store.audit(c.Username, a.clientIP(r), "login.ok", "")
+	a.onLogin(c.Username, a.clientIP(r))
 	t, err := a.store.newSession(id, a.clientIP(r), r.UserAgent())
 	if err != nil {
 		log.Printf("login session: %v", err)

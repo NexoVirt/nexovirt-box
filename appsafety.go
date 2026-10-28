@@ -21,6 +21,7 @@ type mountPolicy struct {
 	base        string   // Box's state dir (/var/lib/nexovirt-box)
 	allow       []string // folders inside base the app may use: its own dir, its data dir, the shared dir
 	allowSocket bool     // the catalog marks the app as needing Docker and the admin agreed
+	custom      bool     // an own app: raw compose and privilege checks too (customapp.go)
 }
 
 // Folders that are never mounted, nor any folder that contains them.

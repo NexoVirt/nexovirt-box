@@ -62,6 +62,7 @@ func (a *App) refreshUpdates(ctx context.Context) {
 	a.updates.mu.Lock()
 	a.updates.at, a.updates.apps, a.updates.box, a.updates.boxErr = time.Now().Unix(), apps, box, boxErr
 	a.updates.mu.Unlock()
+	a.notifyUpdates()
 }
 
 func (a *App) updatesJSON() map[string]any {

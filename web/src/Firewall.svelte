@@ -226,7 +226,7 @@
                 <p class="t-section pop-title">Apps</p>
                 {#each apps.filter((a) => a.main_port) as a (a.id)}
                   <button class="pop-item" role="menuitem" onclick={() => addPreset([{ port: String(a.main_port), comment: a.name.slice(0, 60) }])}>
-                    <AppIcon id={a.id} name={a.name} size={22} /><span class="grow"><span class="truncate">{a.name}</span><span class="t-caption">Port {a.main_port}</span></span>
+                    <AppIcon id={a.id} name={a.name} size={22} icon={a.icon} /><span class="grow"><span class="truncate">{a.name}</span><span class="t-caption">Port {a.main_port}</span></span>
                   </button>
                 {/each}
               {/if}
@@ -253,7 +253,7 @@
                   <td class="mono num">{r.port}</td>
                   <td class:mono={!!r.source} class:muted={!r.source}>{r.source || 'Anywhere'}</td>
                   <td class="note truncate">{r.comment || ''}</td>
-                  <td>{#if app}<span class="app"><AppIcon id={app.id} name={app.name} size={20} /><span class="truncate">{app.name}</span></span>{/if}</td>
+                  <td>{#if app}<span class="app"><AppIcon id={app.id} name={app.name} size={20} icon={app.icon} /><span class="truncate">{app.name}</span></span>{/if}</td>
                   <td class="acts">
                     <button class="icon-btn sm" onclick={() => openEditor(i)} aria-label="Edit rule"><Pencil size={15} /></button>
                     <button class="icon-btn sm" onclick={() => draft.splice(i, 1)} aria-label="Remove rule"><Trash size={15} /></button>
