@@ -80,8 +80,16 @@ func (a *App) catalogList(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "The app catalog could not be loaded. Check the service log.")
 		return
 	}
+	type listed struct {
+		catalog.IndexEntry
+		Supported bool `json:"supported"` // installable on this server's architecture
+	}
+	apps := make([]listed, len(cat.Index.Apps))
+	for i, e := range cat.Index.Apps {
+		apps[i] = listed{e, archSupported(e.Architectures)}
+	}
 	writeJSON(w, http.StatusOK, map[string]any{
-		"source": src, "generated_at": cat.Index.GeneratedAt, "apps": cat.Index.Apps,
+		"source": src, "generated_at": cat.Index.GeneratedAt, "apps": apps,
 		"arch": goarch(), "sync_url": a.catalog.getURL() != "",
 	})
 }

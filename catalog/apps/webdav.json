@@ -6,10 +6,7 @@
  "tagline": "A web-based file sharing and management protocol",
  "icon": "https://icon.casaos.io/main/all/webdav.png",
  "architectures": [
-  "amd64",
-  "386",
-  "arm64",
-  "arm"
+  "amd64"
  ],
  "attribution": {
   "store": "CasaOS App Store",

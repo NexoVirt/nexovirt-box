@@ -6,8 +6,8 @@
  "tagline": "A minimalist, open source online pastebin where the server has zero knowledge of pasted data. Data is encrypted/decrypted in the browser using 256 bits AES.",
  "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/privatebin/metadata/logo.jpg",
  "architectures": [
-  "arm64",
-  "amd64"
+  "amd64",
+  "arm64"
  ],
  "attribution": {
   "store": "Runtipi App Store",

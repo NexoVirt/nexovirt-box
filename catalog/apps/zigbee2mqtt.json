@@ -6,8 +6,8 @@
  "tagline": "Zigbee to MQTT bridge",
  "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/zigbee2mqtt/metadata/logo.jpg",
  "architectures": [
-  "arm64",
-  "amd64"
+  "amd64",
+  "arm64"
  ],
  "attribution": {
   "store": "Runtipi App Store",

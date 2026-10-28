@@ -6,8 +6,8 @@
  "tagline": "Maintainerr will manage the storage space on your plex server, launching automated actions to delete your files.",
  "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/maintainerr/metadata/logo.jpg",
  "architectures": [
-  "arm64",
-  "amd64"
+  "amd64",
+  "arm64"
  ],
  "attribution": {
   "store": "Runtipi App Store",

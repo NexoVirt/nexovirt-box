@@ -6,8 +6,7 @@
  "tagline": "Zotero",
  "icon": "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps/apps/zotero/logo.png",
  "architectures": [
-  "amd64",
-  "arm64"
+  "amd64"
  ],
  "attribution": {
   "store": "BigBearCasaOS",

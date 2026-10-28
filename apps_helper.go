@@ -95,7 +95,7 @@ func runStream(ctx context.Context, cmd *exec.Cmd, logf func(string)) error {
 	}
 	stop := context.AfterFunc(ctx, func() { cmd.Process.Kill() })
 	defer stop()
-	var last string
+	var last, hint string
 	done := make(chan struct{})
 	go func() {
 		sc := bufio.NewScanner(pr)
@@ -106,6 +106,9 @@ func runStream(ctx context.Context, cmd *exec.Cmd, logf func(string)) error {
 				continue
 			}
 			last = line
+			if hint == "" {
+				hint = dockerHint(line)
+			}
 			if logf != nil {
 				logf(line)
 			}
@@ -119,12 +122,42 @@ func runStream(ctx context.Context, cmd *exec.Cmd, logf func(string)) error {
 		if ctx.Err() != nil {
 			return uerr("The action took too long and was stopped.")
 		}
+		if hint != "" {
+			return userError{hint} // the raw Docker lines are in the job log
+		}
 		if last == "" {
 			last = err.Error()
 		}
 		return uerr("Docker reported: %s", last)
 	}
 	return nil
+}
+
+// dockerHint turns a known Docker pull failure line into a friendly message ("" otherwise).
+func dockerHint(line string) string {
+	l := strings.ToLower(line)
+	has := func(subs ...string) bool {
+		for _, x := range subs {
+			if strings.Contains(l, x) {
+				return true
+			}
+		}
+		return false
+	}
+	switch {
+	case has("toomanyrequests", "pull rate limit", "rate limit exceeded"):
+		return "Docker Hub is limiting downloads from this server right now. Try again in an hour or two."
+	case has("no matching manifest for"):
+		return "This app's image is not built for this server's processor (" + runtime.GOARCH + ")."
+	case has("pull access denied", "repository does not exist", "manifest unknown", "requested access to the resource is denied") ||
+		(has("manifest for") && has("not found")):
+		return "This app's image is not available from its registry right now. It may have been removed or made private."
+	case has("no space left on device"):
+		return "The server ran out of disk space while downloading the app. Free some space and try again."
+	case has("dial tcp", "i/o timeout", "tls handshake timeout", "no such host") && has("registry", "pull", "/v2/"):
+		return "The image registry could not be reached. Check the server's internet connection and DNS."
+	}
+	return ""
 }
 
 func needDocker() error {

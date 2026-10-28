@@ -6,8 +6,8 @@
  "tagline": "A media server for your comics, mangas, BDs, magazines and eBooks.",
  "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/komga/metadata/logo.jpg",
  "architectures": [
-  "arm64",
-  "amd64"
+  "amd64",
+  "arm64"
  ],
  "attribution": {
   "store": "Runtipi App Store",

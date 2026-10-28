@@ -7,7 +7,6 @@
  "icon": "https://cdn.jsdelivr.net/gh/WisdomSky/CasaOS-LinuxServer-AppStore@main/default-icon.svg",
  "architectures": [
   "amd64",
-  "armv7",
   "arm64"
  ],
  "attribution": {

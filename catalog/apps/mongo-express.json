@@ -6,8 +6,8 @@
  "tagline": "Web-based MongoDB admin interface, written with Node.js and Express",
  "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/mongo-express/metadata/logo.jpg",
  "architectures": [
-  "arm64",
-  "amd64"
+  "amd64",
+  "arm64"
  ],
  "attribution": {
   "store": "Runtipi App Store",

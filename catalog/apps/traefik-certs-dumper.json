@@ -6,7 +6,6 @@
  "tagline": "Dumps Let's Encrypt certificates of a specified domain which Traefik stores in acme.json.",
  "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/traefik-certs-dumper/metadata/logo.jpg",
  "architectures": [
-  "arm64",
   "amd64"
  ],
  "attribution": {

@@ -2,7 +2,9 @@ package main
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -109,5 +111,30 @@ func TestPublishedPorts(t *testing.T) {
 		if !want[p] {
 			t.Fatalf("unexpected %v", p)
 		}
+	}
+}
+
+func TestPullFailuresBecomeFriendly(t *testing.T) {
+	raw := "Error response from daemon: pull access denied for artsemkniazeu/hestiacp, repository does not exist or may require 'docker login'"
+	for line, want := range map[string]string{
+		raw: "not available from its registry",
+		"toomanyrequests: You have reached your unauthenticated pull rate limit.":                     "limiting downloads",
+		"no matching manifest for linux/arm64/v8 in the manifest list entries":                        "not built for this server",
+		"manifest for ghcr.io/x/y:1 not found: manifest unknown: manifest unknown":                    "not available from its registry",
+		`Get "https://registry-1.docker.io/v2/": dial tcp: lookup registry-1.docker.io: no such host`: "could not be reached",
+		"Container nxbox-x-app-1 Started":                                                             "",
+	} {
+		if got := dockerHint(line); (want == "") != (got == "") || !strings.Contains(got, want) {
+			t.Errorf("%q: got %q", line, got)
+		}
+	}
+	// The failing compose run reports the friendly text; the raw line stays in the job log.
+	var logged []string
+	err := runStream(t.Context(), exec.Command("sh", "-c", `echo " app Pulling"; echo "`+raw+`" >&2; echo "exit status 1"; exit 1`), func(s string) { logged = append(logged, s) })
+	if err == nil || strings.Contains(err.Error(), "docker login") || !strings.Contains(err.Error(), "removed or made private") {
+		t.Fatalf("error: %v", err)
+	}
+	if !slices.Contains(logged, raw) {
+		t.Fatalf("raw line not logged: %v", logged)
 	}
 }

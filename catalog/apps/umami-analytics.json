@@ -6,8 +6,8 @@
  "tagline": "Umami is a simple, fast, privacy-focused alternative to Google Analytics.",
  "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/umami-analytics/metadata/logo.jpg",
  "architectures": [
-  "arm64",
-  "amd64"
+  "amd64",
+  "arm64"
  ],
  "attribution": {
   "store": "Runtipi App Store",

@@ -6,8 +6,8 @@
  "tagline": "Take control over your live stream video by running it yourself. Streaming + chat out of the box.",
  "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/owncast/metadata/logo.jpg",
  "architectures": [
-  "arm64",
-  "amd64"
+  "amd64",
+  "arm64"
  ],
  "attribution": {
   "store": "Runtipi App Store",

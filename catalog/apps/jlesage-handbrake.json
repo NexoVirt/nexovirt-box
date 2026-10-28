@@ -6,8 +6,7 @@
  "tagline": "This project implements a Docker container for Handbrake.",
  "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/handbrake.png",
  "architectures": [
-  "amd64",
-  "arm64"
+  "amd64"
  ],
  "attribution": {
   "store": "BigBearCasaOS",

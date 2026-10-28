@@ -6,8 +6,8 @@
  "tagline": "Docker compose.yaml stack-oriented manager.",
  "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/dockge/metadata/logo.jpg",
  "architectures": [
-  "arm64",
-  "amd64"
+  "amd64",
+  "arm64"
  ],
  "docker_socket": true,
  "attribution": {

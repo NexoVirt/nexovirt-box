@@ -6,8 +6,7 @@
  "tagline": "Project Management",
  "icon": "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps/apps/project-management/logo.png",
  "architectures": [
-  "amd64",
-  "arm64"
+  "amd64"
  ],
  "attribution": {
   "store": "BigBearCasaOS",

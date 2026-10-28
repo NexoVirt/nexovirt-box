@@ -6,8 +6,8 @@
  "tagline": "This container needs special attention. Please check https://hub. Docker. Com/r/linuxserver/python for details.",
  "icon": "https://cdn.jsdelivr.net/gh/WisdomSky/CasaOS-LinuxServer-AppStore@main/default-icon.svg",
  "architectures": [
-  "arm64",
-  "amd64"
+  "amd64",
+  "arm64"
  ],
  "attribution": {
   "store": "BigBearCasaOS",

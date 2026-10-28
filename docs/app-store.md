@@ -89,3 +89,19 @@ helper images skipped), Runtipi first, then CasaOS, then BigBear; every merge is
 host PID; literal passwords in the compose (`POSTGRES_PASSWORD: tipi`) become generated secrets, shared across
 every variable that used the same literal so linked services still match; the web port becomes `${APP_PORT}`.
 Each app keeps its store, URL and license in `attribution`; the full license texts are in `catalog/LICENSES/`.
+
+## Image check (`cmd/catalog-check`)
+
+Run after every import: `go run ./cmd/catalog-check`. It resolves every image of every app anonymously, the way a
+Box pulls it (Docker Hub tags through the Hub API, which does not count against the anonymous pull limit; digests on
+Docker Hub with a HEAD; other registries through the OCI distribution API: token from `WWW-Authenticate`, then the
+manifest, and the config blob for single-arch images). 8 workers, retries with backoff, a 429 pauses that registry
+and resumes. Results are cached in `.catalog-check-cache.json` (gitignored, 7 days for definite answers, errors are
+always re-checked), so reruns are cheap.
+
+- Apps with a missing or private image are dropped.
+- `architectures` becomes what every image really ships (`amd64`, `arm64`); Box refuses to install an app on an
+  architecture outside that list, and the catalog list API returns `supported` per app for this server.
+- Images that could not be checked never drop or narrow an app. Apps following `latest` are kept and listed.
+- The report (`docs/catalog-image-report.md`) lists removed apps with the reason, amd64-only apps, `latest` apps and
+  unchecked images. The catalog is then re-signed with the release key (`-dry-run` only reports).

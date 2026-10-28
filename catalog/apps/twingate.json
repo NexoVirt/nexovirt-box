@@ -7,8 +7,7 @@
  "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Twingate/icon.svg",
  "architectures": [
   "amd64",
-  "arm64",
-  "arm"
+  "arm64"
  ],
  "attribution": {
   "store": "CasaOS App Store",
