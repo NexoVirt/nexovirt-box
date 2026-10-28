@@ -15,5 +15,5 @@
   <circle cx="39.17" cy="43.37" r="4" fill="currentColor" fill-opacity="0.35" />
   <circle cx="16.83" cy="43.37" r="4" fill="currentColor" fill-opacity="0.35" />
   <circle cx="9.93" cy="22.13" r="4" fill="currentColor" fill-opacity="0.35" />
-  <circle cx="28" cy="28" r="7" fill="currentColor" />
+  <circle cx="28" cy="28" r="7" fill="var(--primary)" />
 </svg>

@@ -101,10 +101,10 @@
       <Card.Root class="gap-0 p-6">
         {@render statCard(Cpu, 'CPU', `${snap.cpu.total.toFixed(1)} %`)}
         <Sparkline values={cpuHistory} class="mt-3 text-primary" />
-        <div class="mt-3 flex h-6 items-end gap-0.5" title="Load per CPU thread">
+        <div class="mt-3 flex h-8 items-end gap-1" title="Load per CPU thread">
           {#each snap.cpu.cores as c, i (i)}
             <div class="flex h-full flex-1 items-end rounded-sm bg-muted">
-              <div class="w-full rounded-sm transition-all duration-500 {level(c)}" style:height="{Math.max(6, c)}%"></div>
+              <div class="w-full rounded-sm transition-all duration-500 {level(c)}" style:height="{Math.max(8, c)}%"></div>
             </div>
           {/each}
         </div>

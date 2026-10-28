@@ -33,7 +33,7 @@
   function measure() {
     if (!host) return;
     const top = host.getBoundingClientRect().top + window.scrollY;
-    height = Math.max(320, window.innerHeight - top - 40);
+    height = Math.max(320, window.innerHeight - top - 64);
   }
 
   function sendResize() {
