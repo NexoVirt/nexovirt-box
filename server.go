@@ -94,6 +94,13 @@ func (a *App) routeTable() []route {
 		{"GET /api/firewall", false, a.firewallStatus},
 		{"POST /api/firewall", false, a.firewallApply},
 		{"POST /api/firewall/confirm", false, a.firewallConfirm},
+		{"GET /api/files", false, a.filesList},
+		{"GET /api/files/download", false, a.filesDownload},
+		{"POST /api/files/upload", false, a.filesUpload},
+		{"POST /api/files/mkdir", false, a.filesMutate("files_mkdir", "files.mkdir")},
+		{"POST /api/files/rename", false, a.filesMutate("files_rename", "files.move")},
+		{"POST /api/files/delete", false, a.filesMutate("files_delete", "files.delete")},
+		{"POST /api/files/roots", false, a.filesRootsSet},
 		{"POST /api/settings", false, a.settingsSave},
 	}
 }

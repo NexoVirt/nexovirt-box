@@ -138,6 +138,18 @@ func (h *helperServer) handle(c *net.UnixConn) {
 		h.console(c, req)
 		return
 	}
+	if fa, ok := h.fdActions()[req.Action]; ok {
+		data, f, err := fa(req)
+		if err != nil {
+			writeMsg(c, helperMsg{Type: "result", Error: friendlyHelperErr(req.Action, err)})
+			return
+		}
+		raw, _ := json.Marshal(data)
+		b, _ := json.Marshal(helperMsg{Type: "result", OK: true, Data: raw})
+		c.WriteMsgUnix(append(b, '\n'), unix.UnixRights(int(f.Fd())), nil)
+		f.Close() // the web process holds its own copy now
+		return
+	}
 	act, ok := h.actions()[req.Action]
 	if !ok {
 		writeMsg(c, helperMsg{Type: "result", Error: "This action is not allowed."})
@@ -146,20 +158,31 @@ func (h *helperServer) handle(c *net.UnixConn) {
 	logf := func(s string) { writeMsg(c, helperMsg{Type: "log", Line: s}) }
 	data, err := act(req, logf)
 	if err != nil {
-		msg := err.Error()
-		var ue userError
-		if !errors.As(err, &ue) {
-			log.Printf("helper %s: %v", req.Action, err)
-			msg = "The action failed on the server. Check the helper log (journalctl -u nexovirt-box-helper)."
-		}
-		writeMsg(c, helperMsg{Type: "result", Error: msg})
+		writeMsg(c, helperMsg{Type: "result", Error: friendlyHelperErr(req.Action, err)})
 		return
 	}
 	raw, _ := json.Marshal(data)
 	writeMsg(c, helperMsg{Type: "result", OK: true, Data: raw})
 }
 
+func friendlyHelperErr(action string, err error) string {
+	var ue userError
+	if errors.As(err, &ue) {
+		return ue.msg
+	}
+	log.Printf("helper %s: %v", action, err)
+	return "The action failed on the server. Check the helper log (journalctl -u nexovirt-box-helper)."
+}
+
 type helperAction func(req helperRequest, logf func(string)) (any, error)
+
+// fdActions answer with an open file descriptor (file downloads and uploads).
+func (h *helperServer) fdActions() map[string]func(helperRequest) (any, *os.File, error) {
+	return map[string]func(helperRequest) (any, *os.File, error){
+		"files_open_read":  h.filesOpenRead,
+		"files_open_write": h.filesOpenWrite,
+	}
+}
 
 // actions is the complete allowlist (plus "console", handled separately).
 func (h *helperServer) actions() map[string]helperAction {
@@ -183,6 +206,12 @@ func (h *helperServer) actions() map[string]helperAction {
 		"firewall_status":  h.firewallStatus,
 		"firewall_apply":   h.firewallApply,
 		"firewall_confirm": h.firewallConfirm,
+		"files_list":       h.filesList,
+		"files_mkdir":      h.filesMkdir,
+		"files_rename":     h.filesRename,
+		"files_delete":     h.filesDelete,
+		"files_finish":     h.filesUploadFinish,
+		"files_roots_set":  h.filesRootsSet,
 	}
 }
 
@@ -299,41 +328,56 @@ func writeReq(c net.Conn, req helperRequest) error {
 // console asks for a root shell and returns the pty master plus the connection that keeps the
 // shell alive (close both to end it).
 func (hc *helperClient) console(session, proof string, cols, rows uint16) (*os.File, *net.UnixConn, error) {
+	_, f, c, err := hc.callFD(helperRequest{Action: "console", Session: session, Proof: proof, Cols: cols, Rows: rows}, "The shell could not be started.")
+	return f, c, err
+}
+
+// openFile runs an fd action (files_open_read / files_open_write) and returns the file.
+func (hc *helperClient) openFile(req helperRequest) (json.RawMessage, *os.File, error) {
+	data, f, c, err := hc.callFD(req, "The file could not be opened.")
+	if c != nil {
+		c.Close()
+	}
+	return data, f, err
+}
+
+// callFD sends one request and reads a result line that carries a file descriptor.
+func (hc *helperClient) callFD(req helperRequest, failMsg string) (json.RawMessage, *os.File, *net.UnixConn, error) {
 	c, err := hc.dial()
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
-	if err := writeReq(c, helperRequest{Action: "console", Session: session, Proof: proof, Cols: cols, Rows: rows}); err != nil {
+	if err := writeReq(c, req); err != nil {
 		c.Close()
-		return nil, nil, errHelperDown
+		return nil, nil, nil, errHelperDown
 	}
-	buf := make([]byte, 4096)
+	buf := make([]byte, 64*1024)
 	oob := make([]byte, unix.CmsgSpace(4))
-	c.SetReadDeadline(time.Now().Add(10 * time.Second))
+	c.SetReadDeadline(time.Now().Add(15 * time.Second))
 	n, oobn, _, _, err := c.ReadMsgUnix(buf, oob)
 	c.SetReadDeadline(time.Time{})
 	if err != nil {
 		c.Close()
-		return nil, nil, errHelperDown
+		return nil, nil, nil, errHelperDown
 	}
 	var m helperMsg
 	json.Unmarshal([]byte(strings.TrimSpace(string(buf[:n]))), &m)
 	if !m.OK {
 		c.Close()
 		if m.Error == "" {
-			m.Error = "The shell could not be started."
+			m.Error = failMsg
 		}
-		return nil, nil, userError{m.Error}
+		return nil, nil, nil, userError{m.Error}
 	}
 	msgs, err := unix.ParseSocketControlMessage(oob[:oobn])
 	if err != nil || len(msgs) == 0 {
 		c.Close()
-		return nil, nil, userError{"The shell could not be started."}
+		return nil, nil, nil, userError{failMsg}
 	}
 	fds, err := unix.ParseUnixRights(&msgs[0])
 	if err != nil || len(fds) == 0 {
 		c.Close()
-		return nil, nil, userError{"The shell could not be started."}
+		return nil, nil, nil, userError{failMsg}
 	}
-	return os.NewFile(uintptr(fds[0]), "pty"), c, nil
+	return m.Data, os.NewFile(uintptr(fds[0]), "helper-fd"), c, nil
 }
