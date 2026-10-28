@@ -265,15 +265,18 @@
 
   .content { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 
-  /* Toolbar floats over the content; a hairline appears only once content scrolls under it. */
+  /* Toolbar: transparent at the top; once content scrolls under it, it becomes a floating panel
+     with the sidebar's material, radius, inset and hairline. */
   .toolbar {
-    position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 0.5rem;
-    height: 3.75rem; padding: 0 1rem 0 1.5rem; padding-top: env(safe-area-inset-top, 0px);
-    background: color-mix(in srgb, var(--bg) 72%, transparent);
-    -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: blur(24px) saturate(180%);
-    box-shadow: 0 1px 0 transparent; transition: box-shadow 200ms ease;
+    position: sticky; top: 0.5rem; z-index: 20; display: flex; align-items: center; gap: 0.5rem;
+    height: 3.5rem; margin: 0.5rem 0.5rem 0; padding: 0 0.5rem 0 1rem;
+    border-radius: 1.375rem; background: transparent; box-shadow: 0 0 0 1px transparent;
+    transition: background-color 240ms ease, box-shadow 240ms ease, -webkit-backdrop-filter 240ms ease, backdrop-filter 240ms ease;
   }
-  .toolbar.scrolled { box-shadow: 0 1px 0 var(--hairline); }
+  .toolbar.scrolled {
+    background: var(--material-thick); box-shadow: 0 0 0 1px var(--hairline), var(--shadow-tile);
+    -webkit-backdrop-filter: blur(40px) saturate(180%); backdrop-filter: blur(40px) saturate(180%);
+  }
   .toolbar-title { opacity: 0; transform: translateY(4px); transition: opacity 200ms ease, transform 300ms var(--spring); }
   .toolbar.scrolled .toolbar-title { opacity: 1; transform: none; }
   .toolbar-end { margin-left: auto; display: flex; align-items: center; }
@@ -300,14 +303,14 @@
   }
   .pop-item:hover { background: var(--fill); }
 
-  main { flex: 1; padding: 0.25rem 1.5rem 2.5rem; }
+  main { flex: 1; padding: 0.5rem 1.5rem 2.5rem; }
 
   .sheet-brand { display: flex; align-items: center; gap: 0.75rem; padding: 0.25rem 0.5rem 1rem; }
 
   @media (max-width: 899px) {
     .sidebar { display: none; }
     .menu-btn { display: inline-grid; }
-    .toolbar { padding: 0 0.75rem 0 1rem; }
+    .toolbar { padding: 0 0.25rem 0 0.75rem; top: max(0.5rem, env(safe-area-inset-top, 0px)); }
     main { padding: 0.25rem 1rem 2rem; }
   }
 </style>
