@@ -332,7 +332,7 @@ func (h *helperServer) firewallStatus(req helperRequest, logf func(string)) (any
 	if st.Rules == nil {
 		st.Rules = []fwRule{}
 	}
-	res := map[string]any{"backend": backend, "rules": st.Rules, "foreign": foreignRules(backend)}
+	res := map[string]any{"backend": backend, "rules": st.Rules, "foreign": foreignRules(backend), "policies": defaultPolicies(backend)}
 	var p fwPending
 	if readJSONFile(fwPath("firewall.pending.json"), &p) {
 		res["pending"] = map[string]any{"id": p.ID, "seconds_left": max(0, p.Deadline-time.Now().Unix())}
@@ -418,4 +418,75 @@ func restoreFirewall() {
 		}
 		fwMu.Unlock()
 	}
+}
+
+// fwPolicies is what happens to traffic no rule matches (shown on the Firewall overview).
+type fwPolicies struct {
+	In  string `json:"in"`  // allow | deny | unknown
+	Out string `json:"out"` // allow | deny | unknown
+}
+
+var ufwDefaultRe = regexp.MustCompile(`Default:\s*(\w+)\s*\(incoming\),\s*(\w+)\s*\(outgoing\)`)
+
+func policyWord(s string) string {
+	switch strings.ToLower(s) {
+	case "accept", "allow", "default":
+		return "allow"
+	case "drop", "deny", "reject", "%%reject%%":
+		return "deny"
+	}
+	return "unknown"
+}
+
+// parseNftPolicies reads the policy of the input/output filter chains outside Box's own table.
+// No such chain means the kernel lets the traffic through.
+func parseNftPolicies(ruleset string) fwPolicies {
+	p := fwPolicies{In: "allow", Out: "allow"}
+	ours := false
+	for _, l := range strings.Split(ruleset, "\n") {
+		t := strings.TrimSpace(l)
+		if strings.HasPrefix(l, "table ") {
+			ours = strings.HasPrefix(l, "table inet nexovirt_box")
+		}
+		if ours || !strings.Contains(t, "type filter hook") {
+			continue
+		}
+		pol := "allow"
+		if i := strings.Index(t, "policy "); i >= 0 {
+			pol = policyWord(strings.Trim(strings.Fields(t[i+7:])[0], ";"))
+		}
+		if strings.Contains(t, "hook input") && pol == "deny" {
+			p.In = "deny"
+		}
+		if strings.Contains(t, "hook output") && pol == "deny" {
+			p.Out = "deny"
+		}
+	}
+	return p
+}
+
+func defaultPolicies(backend string) fwPolicies {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	switch backend {
+	case "nftables":
+		out, err := exec.CommandContext(ctx, "nft", "list", "ruleset").Output()
+		if err == nil {
+			return parseNftPolicies(string(out))
+		}
+	case "ufw":
+		out, _ := exec.CommandContext(ctx, "ufw", "status", "verbose").Output()
+		if m := ufwDefaultRe.FindStringSubmatch(string(out)); m != nil {
+			return fwPolicies{In: policyWord(m[1]), Out: policyWord(m[2])}
+		}
+	case "firewalld":
+		zone, _ := exec.CommandContext(ctx, "firewall-cmd", "--get-default-zone").Output()
+		target, _ := exec.CommandContext(ctx, "firewall-cmd", "--permanent", "--zone="+strings.TrimSpace(string(zone)), "--get-target").Output()
+		in := "deny" // firewalld's "default" target rejects what no service allows
+		if strings.EqualFold(strings.TrimSpace(string(target)), "ACCEPT") {
+			in = "allow"
+		}
+		return fwPolicies{In: in, Out: "allow"}
+	}
+	return fwPolicies{In: "unknown", Out: "unknown"}
 }

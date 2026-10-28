@@ -220,7 +220,7 @@
   .advanced { display: grid; gap: 0.75rem; padding: 0.75rem 0.875rem; border-radius: var(--r-control); background: var(--fill); }
   .advanced[open] { gap: 0.875rem; }
   .advanced summary { cursor: pointer; font-weight: 600; font-size: 0.8125rem; }
-  .advanced .input { background: var(--surface); }
+  .advanced .input { background-color: var(--surface); }
   .done { display: grid; justify-items: center; gap: 0.5rem; text-align: center; padding: 0.5rem 0 0.25rem; }
   .ok-ico { display: grid; place-items: center; width: 3.5rem; height: 3.5rem; border-radius: 50%; background: var(--accent-fill); color: var(--accent); margin-bottom: 0.25rem; }
   .buttons { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; margin-top: 0.75rem; }

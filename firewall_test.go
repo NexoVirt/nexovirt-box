@@ -39,3 +39,17 @@ func TestBlocksBoxPort(t *testing.T) {
 		t.Fatal("allow or udp counted as block")
 	}
 }
+
+func TestDefaultPolicyParsing(t *testing.T) {
+	rs := "table inet filter {\n\tchain input {\n\t\ttype filter hook input priority filter; policy drop;\n\t}\n\tchain output {\n\t\ttype filter hook output priority filter; policy accept;\n\t}\n}\ntable inet nexovirt_box {\n\tchain out {\n\t\ttype filter hook output priority 0; policy drop;\n\t}\n}\n"
+	if p := parseNftPolicies(rs); p.In != "deny" || p.Out != "allow" {
+		t.Fatalf("nft: %+v", p)
+	}
+	if p := parseNftPolicies(""); p.In != "allow" || p.Out != "allow" {
+		t.Fatalf("empty ruleset: %+v", p)
+	}
+	m := ufwDefaultRe.FindStringSubmatch("Status: active\nDefault: deny (incoming), allow (outgoing), disabled (routed)\n")
+	if m == nil || policyWord(m[1]) != "deny" || policyWord(m[2]) != "allow" {
+		t.Fatalf("ufw: %v", m)
+	}
+}
