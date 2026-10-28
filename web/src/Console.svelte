@@ -20,7 +20,7 @@
   function measure() {
     if (!host) return;
     const top = host.getBoundingClientRect().top;
-    height = Math.max(320, window.innerHeight - top - 32);
+    height = Math.max(320, window.innerHeight - top - 56);
   }
 
   function sendResize() {
@@ -57,21 +57,20 @@
   }
 
   onMount(() => {
-    measure();
     term = new Terminal({
       cursorBlink: true,
       fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace',
       fontSize: 14,
-      theme: { background: '#09090b', foreground: '#e4e4e7', cursor: '#60a5fa' },
+      theme: { background: '#000000', foreground: '#e4e4e7', cursor: '#60a5fa' },
     });
     fit = new FitAddon();
     term.loadAddon(fit);
     term.open(host);
-    fit.fit();
     term.onData((d) => {
       if (ws && ws.readyState === WebSocket.OPEN) ws.send(enc.encode(d));
     });
-    connect();
+    // Size the box first, then fit the terminal into it and connect with the real size.
+    onWindowResize().then(connect);
     addEventListener('resize', onWindowResize);
     return () => {
       removeEventListener('resize', onWindowResize);

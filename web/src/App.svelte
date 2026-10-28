@@ -109,7 +109,7 @@
               <span class="avatar avatar-sm bg-secondary-lt text-secondary">{state.username.slice(0, 2).toUpperCase()}</span>
               <div class="flex-fill text-truncate">
                 <div class="fw-medium text-truncate">{state.username}</div>
-                <div class="small text-secondary">Version {state.version}</div>
+                <div class="small text-secondary text-truncate" title="Version {state.version}">v{state.version}</div>
               </div>
               <button class="btn btn-icon btn-ghost-secondary" title={theme === 'dark' ? 'Light mode' : 'Dark mode'} aria-label="Toggle theme" onclick={toggleTheme}>
                 <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
