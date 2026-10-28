@@ -264,6 +264,7 @@ func (h *helperServer) actions() map[string]helperAction {
 		"samba_share_delete": h.sambaShareDelete,
 		"samba_user_save":    h.sambaUserSave,
 		"samba_user_delete":  h.sambaUserDelete,
+		"samba_handover":     h.sambaHandover,
 		"nfs_export_save":    h.nfsExportSave,
 		"nfs_export_delete":  h.nfsExportDelete,
 	}

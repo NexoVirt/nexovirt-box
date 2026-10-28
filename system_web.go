@@ -287,3 +287,13 @@ func (a *App) nfsExportSave(w http.ResponseWriter, r *http.Request) {
 func (a *App) nfsExportDelete(w http.ResponseWriter, r *http.Request) {
 	a.helperReply(w, r, helperRequest{Action: "nfs_export_delete", ID: r.PathValue("id")}, time.Minute, "shares.nfs_delete", r.PathValue("id"))
 }
+
+func (a *App) sambaHandover(w http.ResponseWriter, r *http.Request) {
+	if in, ok := readSys(w, r); ok {
+		audit := ""
+		if in.Op == "apply" {
+			audit = "shares.handover"
+		}
+		a.helperReply(w, r, helperRequest{Action: "samba_handover", Path: in.Path, Name: in.Name, Op: in.Op}, 5*time.Minute, audit, in.Path+" -> "+in.Name)
+	}
+}

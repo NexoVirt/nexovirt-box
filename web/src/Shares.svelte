@@ -95,11 +95,31 @@
     if (share.guest) share.read_only = true;
     const res = await send('/api/shares/samba', { share }, 'share');
     if (!res) return;
+    if (!res.ok && res.error.startsWith('needs_handover:')) return offerHandover(res.error.slice(15).trim());
     if (!res.ok) { shareErr = res.error; return; }
     shareOpen = false;
     toast(`The share ${share.name} is saved.`, 'success');
     load();
   }
+  // A read-write share needs a folder owned by one of its users: offer to hand it over.
+  let hand = $state(null), handOpen = $state(false);
+  async function offerHandover(msg) {
+    const res = await send('/api/shares/samba/handover', { path: share.path, op: 'check' }, 'share');
+    if (!res) return;
+    if (!res.ok) { shareErr = `${msg} ${res.error}`; return; }
+    hand = { ...res.data, msg, user: share.users[0] || '' };
+    handOpen = true;
+  }
+  async function applyHandover() {
+    const res = await send('/api/shares/samba/handover', { path: hand.path, name: hand.user, op: 'apply' }, 'hand');
+    if (!res) return;
+    if (!res.ok) return toast(res.error, 'error', 9000);
+    handOpen = false;
+    toast(`${hand.count} ${hand.count === 1 ? 'item belongs' : 'items belong'} to ${hand.user} now.`, 'success');
+    saveShare();
+  }
+  function readOnlyInstead() { handOpen = false; share.read_only = true; saveShare(); }
+
   async function flipShare(s) {
     const res = await send('/api/shares/samba', { share: { ...s, enabled: !s.enabled } }, 'flip' + s.id);
     if (res && !res.ok) toast(res.error, 'error', 9000);
@@ -331,6 +351,24 @@
         <button class="btn btn-primary" disabled={busy === 'share'}>{#if busy === 'share'}<Loader size={16} class="spinner" />Saving{:else}Save{/if}</button>
       </div>
     </form>
+  {/if}
+</Dialog>
+
+<Dialog bind:open={handOpen} label="Hand the folder over">
+  {#if hand}
+    <div class="dlg">
+      <h2 class="t-title">Hand this folder over?</h2>
+      <p class="t-sub">{hand.path} belongs to {hand.owner}. Over Samba, files are written as the folder's owner, so a read-write share needs a folder that belongs to one of its users.</p>
+      <label class="field"><span class="field-label">New owner</span>
+        <select class="input" bind:value={hand.user}>{#each share.users as u}<option value={u}>{u}</option>{/each}</select>
+      </label>
+      <p class="t-caption">{hand.count.toLocaleString()} {hand.count === 1 ? 'item changes' : 'files and folders change'} owner to {hand.user} (and its group). Links are changed themselves, never what they point to.</p>
+      <div class="buttons">
+        <button class="btn btn-gray" data-close onclick={() => (handOpen = false)}>Cancel</button>
+        <button class="btn btn-gray" onclick={readOnlyInstead}>Share read-only instead</button>
+        <button class="btn btn-primary" onclick={applyHandover} disabled={busy === 'hand' || !hand.user}>{#if busy === 'hand'}<Loader size={16} class="spinner" />Handing over{:else}Hand over to {hand.user}{/if}</button>
+      </div>
+    </div>
   {/if}
 </Dialog>
 

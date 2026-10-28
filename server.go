@@ -128,6 +128,7 @@ func (a *App) routeTable() []route {
 		{"POST /api/shares/samba", false, a.sambaShareSave},
 		{"POST /api/shares/samba/{id}/delete", false, a.sambaShareDelete},
 		{"POST /api/shares/samba-users", false, a.sambaUserSave},
+		{"POST /api/shares/samba/handover", false, a.sambaHandover},
 		{"POST /api/shares/samba-users/{name}/delete", false, a.sambaUserDelete},
 		{"POST /api/shares/nfs", false, a.nfsExportSave},
 		{"POST /api/shares/nfs/{id}/delete", false, a.nfsExportDelete},

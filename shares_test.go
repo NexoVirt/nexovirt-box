@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -122,5 +124,56 @@ func TestParseClients(t *testing.T) {
 	ss := "0      0      10.0.0.1:2049      10.0.0.7:812\n0 0 [::ffff:10.0.0.1]:2049 [::ffff:10.0.0.8]:700\n"
 	if got := parseNFSPeers(ss); strings.Join(got, ",") != "10.0.0.7,10.0.0.8" {
 		t.Fatalf("%v", got)
+	}
+}
+
+func TestHandoverPathRules(t *testing.T) {
+	base := "/var/lib/nexovirt-box"
+	for _, bad := range []string{"/", "/etc", "/etc/samba", "/usr/share", "/var/lib/nexovirt-box", "/var/lib/nexovirt-box/apps/x", "/var/lib/docker/volumes", "/root/x"} {
+		if handoverPathOK(bad, []string{"/srv", "/var/lib/nexovirt-box/apps"}, base) == nil {
+			t.Fatalf("%s accepted", bad)
+		}
+	}
+	if handoverPathOK("/srv", []string{"/srv"}, base) == nil {
+		t.Fatal("a top folder itself accepted")
+	}
+	if err := handoverPathOK("/srv/media", []string{"/srv"}, base); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// The walk changes owners below the folder only and never follows a symlink: the link itself
+// changes owner (lchown), its target outside never does.
+func TestHandoverWalkSkipsSymlinkTargets(t *testing.T) {
+	root := t.TempDir()
+	outside := t.TempDir()
+	os.WriteFile(filepath.Join(outside, "secret"), []byte("x"), 0o600)
+	os.MkdirAll(filepath.Join(root, "a", "b"), 0o755)
+	os.WriteFile(filepath.Join(root, "a", "f.txt"), []byte("x"), 0o644)
+	os.Symlink(outside, filepath.Join(root, "a", "out"))
+	os.Symlink(filepath.Join(outside, "secret"), filepath.Join(root, "link-file"))
+	var seen []string
+	n, err := handoverWalk(root, func(p string) error { seen = append(seen, p); return nil })
+	if err != nil || n != 6 { // root, a, a/b, a/f.txt, a/out, link-file
+		t.Fatalf("n=%d err=%v seen=%v", n, err, seen)
+	}
+	for _, p := range seen {
+		if strings.HasPrefix(p, outside) {
+			t.Fatalf("walked outside: %s", p)
+		}
+	}
+}
+
+func TestReadWriteNeedsOwnerAmongUsers(t *testing.T) {
+	dir := t.TempDir()
+	me, _ := folderOwner(dir)
+	if rwOwnerOK(sambaShare{Path: dir, Users: []string{"someone-else"}}) == nil {
+		t.Fatal("read-write share on a folder owned by nobody in the list accepted")
+	}
+	if err := rwOwnerOK(sambaShare{Path: dir, Users: []string{me}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := rwOwnerOK(sambaShare{Path: dir, ReadOnly: true, Users: []string{"someone-else"}}); err != nil {
+		t.Fatal(err)
 	}
 }

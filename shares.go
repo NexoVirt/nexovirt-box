@@ -9,6 +9,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -414,6 +415,9 @@ func (h *helperServer) sambaShareSave(req helperRequest, logf func(string)) (any
 	if err := checkSambaShare(s, st.SambaUsers); err != nil {
 		return nil, err
 	}
+	if err := rwOwnerOK(s); err != nil {
+		return nil, err
+	}
 	if s.Guest {
 		s.Users = []string{}
 	}
@@ -666,4 +670,111 @@ func (h *helperServer) filesStat(req helperRequest, logf func(string)) (any, err
 		return nil, uerr("Only files and folders can be shared.")
 	}
 	return map[string]any{"dir": fi.IsDir(), "size": fi.Size(), "name": filepath.Base(real)}, nil
+}
+
+// ---- handover (chown a share folder to a share user) ----
+
+// handoverPathOK: strictly inside an allowed folder (never the top folder itself), never a
+// system folder and never Box's own state.
+func handoverPathOK(real string, roots []string, base string) error {
+	if real == "/" || underAny(real, systemDirs) || underAny(real, blockedDirs) || underAny(real, boxDirs) ||
+		real == base || within(real, base) {
+		return uerr("Box does not change the owner of system folders or its own files.")
+	}
+	for _, r := range roots {
+		if within(real, r) {
+			return nil
+		}
+	}
+	return uerr("Only folders inside the folders Files may show can be handed over, not a top folder itself.")
+}
+
+// handoverWalk calls fn for the folder and everything below it. WalkDir never follows
+// symlinks, so a link is visited (and lchown'ed) but never what it points to.
+func handoverWalk(dir string, fn func(string) error) (int, error) {
+	n := 0
+	err := filepath.WalkDir(dir, func(p string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		n++
+		return fn(p)
+	})
+	return n, err
+}
+
+const maxHandover = 500000
+
+func (h *helperServer) sambaHandover(req helperRequest, logf func(string)) (any, error) {
+	real, _, err := h.resolve(req.Path, true)
+	if err != nil {
+		return nil, err
+	}
+	if fi, err := os.Lstat(real); err != nil || !fi.IsDir() {
+		return nil, uerr("Choose a folder, not a file.")
+	}
+	roots, _ := h.roots()
+	var rs []string
+	for _, r := range roots {
+		rs = append(rs, r.real)
+	}
+	if err := handoverPathOK(real, rs, h.base()); err != nil {
+		return nil, err
+	}
+	owner, _ := folderOwner(real)
+	sharesMu.Lock()
+	defer sharesMu.Unlock()
+	st := loadShares()
+	isUser := func(n string) bool {
+		for _, u := range st.SambaUsers {
+			if u == n {
+				return true
+			}
+		}
+		return false
+	}
+	if req.Op == "check" {
+		c := 0
+		n, _ := handoverWalk(real, func(string) error {
+			if c++; c >= maxHandover {
+				return filepath.SkipAll
+			}
+			return nil
+		})
+		return map[string]any{"path": real, "owner": owner, "owner_is_share_user": isUser(owner), "count": n}, nil
+	}
+	if req.Op != "apply" {
+		return nil, uerr("Choose check or apply.")
+	}
+	if !isUser(req.Name) {
+		return nil, uerr("%s is not a share user.", req.Name)
+	}
+	u, err := user.Lookup(req.Name)
+	if err != nil {
+		return nil, uerr("The user %s was not found.", req.Name)
+	}
+	uid, _ := strconv.Atoi(u.Uid)
+	gid, _ := strconv.Atoi(u.Gid)
+	n, err := handoverWalk(real, func(p string) error {
+		return os.Lchown(p, uid, gid)
+	})
+	if err != nil {
+		return nil, uerr("Not every file could be handed over (%d done): %v", n, errors.Unwrap(err))
+	}
+	return map[string]any{"path": real, "owner": req.Name, "count": n}, nil
+}
+
+// rwOwnerOK: a read-write share needs a folder owned by one of its users (files are written as
+// the folder's owner, and that must never be root or a stranger).
+func rwOwnerOK(s sambaShare) error {
+	if s.ReadOnly {
+		return nil
+	}
+	owner, _ := folderOwner(s.Path)
+	for _, u := range s.Users {
+		if u == owner {
+			return nil
+		}
+	}
+	return userError{"needs_handover: This folder belongs to " + owner + ". Hand it over to a share user first, or share it read-only."}
 }
