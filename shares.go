@@ -703,7 +703,7 @@ func handoverWalk(dir string, fn func(string) error) (int, error) {
 	return n, err
 }
 
-const maxHandover = 500000
+const maxHandover = 200000
 
 func (h *helperServer) sambaHandover(req helperRequest, logf func(string)) (any, error) {
 	real, _, err := h.resolve(req.Path, true)
@@ -721,10 +721,19 @@ func (h *helperServer) sambaHandover(req helperRequest, logf func(string)) (any,
 	if err := handoverPathOK(real, rs, h.base()); err != nil {
 		return nil, err
 	}
+	pw, err := os.ReadFile("/etc/passwd")
+	if err != nil {
+		return nil, uerr("The accounts of this server could not be read.")
+	}
+	ents := parsePasswd(string(pw))
+	if who := handoverHomeConflict(real, ents); who != "" {
+		return nil, uerr("This folder is or contains the home folder of %s. Box does not change the owner of home folders.", who)
+	}
 	owner, _ := folderOwner(real)
 	sharesMu.Lock()
 	defer sharesMu.Unlock()
 	st := loadShares()
+	shareUIDs := map[int]bool{}
 	isUser := func(n string) bool {
 		for _, u := range st.SambaUsers {
 			if u == n {
@@ -733,15 +742,25 @@ func (h *helperServer) sambaHandover(req helperRequest, logf func(string)) (any,
 		}
 		return false
 	}
+	for _, u := range st.SambaUsers {
+		if x, err := user.Lookup(u); err == nil {
+			id, _ := strconv.Atoi(x.Uid)
+			shareUIDs[id] = true
+		}
+	}
+	owners, count, err := handoverOwners(real)
+	if err != nil {
+		var ue userError
+		if errors.As(err, &ue) {
+			return nil, err
+		}
+		return nil, uerr("The folder could not be read completely.")
+	}
+	if err := handoverOwnersOK(owners, ents, shareUIDs); err != nil {
+		return nil, err
+	}
 	if req.Op == "check" {
-		c := 0
-		n, _ := handoverWalk(real, func(string) error {
-			if c++; c >= maxHandover {
-				return filepath.SkipAll
-			}
-			return nil
-		})
-		return map[string]any{"path": real, "owner": owner, "owner_is_share_user": isUser(owner), "count": n}, nil
+		return map[string]any{"path": real, "owner": owner, "owner_is_share_user": isUser(owner), "count": count}, nil
 	}
 	if req.Op != "apply" {
 		return nil, uerr("Choose check or apply.")
@@ -777,4 +796,106 @@ func rwOwnerOK(s sambaShare) error {
 		}
 	}
 	return userError{"needs_handover: This folder belongs to " + owner + ". Hand it over to a share user first, or share it read-only."}
+}
+
+type passwdEntry struct {
+	name  string
+	uid   int
+	home  string
+	shell string
+}
+
+func parsePasswd(s string) []passwdEntry {
+	var out []passwdEntry
+	for _, l := range strings.Split(s, "\n") {
+		f := strings.Split(l, ":")
+		if len(f) < 7 {
+			continue
+		}
+		uid, err := strconv.Atoi(f[2])
+		if err != nil {
+			continue
+		}
+		out = append(out, passwdEntry{name: f[0], uid: uid, home: filepath.Clean(f[5]), shell: f[6]})
+	}
+	return out
+}
+
+func hasLoginShell(shell string) bool {
+	return shell != "" && !strings.HasSuffix(shell, "/nologin") && !strings.HasSuffix(shell, "/false")
+}
+
+// handoverHomeConflict names the account whose home directory is the folder, lies above it or
+// lies inside it ("" when there is none).
+func handoverHomeConflict(real string, ents []passwdEntry) string {
+	for _, e := range ents {
+		if e.home == "/" || e.home == "." || e.home == "/nonexistent" || strings.HasPrefix(e.home, "/nonexistent/") {
+			continue
+		}
+		if real == e.home || within(real, e.home) || within(e.home, real) {
+			return e.name
+		}
+	}
+	return ""
+}
+
+// handoverOwnersOK: every item (uid -> count) must belong to root or a Box share user.
+func handoverOwnersOK(owners map[int]int, ents []passwdEntry, shareUIDs map[int]bool) error {
+	byUID := map[int]passwdEntry{}
+	for _, e := range ents {
+		byUID[e.uid] = e
+	}
+	var login, other []string
+	for uid, n := range owners {
+		if uid == 0 || shareUIDs[uid] {
+			continue
+		}
+		e, ok := byUID[uid]
+		name := e.name
+		if !ok {
+			name = "uid " + strconv.Itoa(uid)
+		}
+		item := fmt.Sprintf("%s (%d)", name, n)
+		if ok && uid >= 1000 && uid != 65534 && hasLoginShell(e.shell) {
+			login = append(login, item)
+		} else {
+			other = append(other, item)
+		}
+	}
+	sort.Strings(login)
+	sort.Strings(other)
+	if len(login) > 0 {
+		return uerr("Files here belong to the login account %s. Box only hands over folders that belong to root or a share user.", strings.Join(login, ", "))
+	}
+	if len(other) > 0 {
+		return uerr("Files here belong to %s. Box only hands over folders that belong to root or a share user.", strings.Join(other, ", "))
+	}
+	return nil
+}
+
+// handoverOwners counts the owners of the folder and everything below it (without following links).
+func handoverOwners(real string) (map[int]int, int, error) {
+	owners := map[int]int{}
+	n, err := handoverWalk(real, func(p string) error {
+		fi, err := os.Lstat(p)
+		if err != nil {
+			return err
+		}
+		if s, ok := fi.Sys().(*syscall.Stat_t); ok {
+			owners[int(s.Uid)]++
+		}
+		if len(owners) > 0 && n0(owners) >= maxHandover {
+			return uerr("This folder has more than %d items. Hand it over in the console instead.", maxHandover)
+		}
+		return nil
+	})
+	return owners, n, err
+}
+
+func n0(m map[int]int) int {
+	t := 0
+	for _, v := range m {
+		t += v
+	}
+	return t
 }

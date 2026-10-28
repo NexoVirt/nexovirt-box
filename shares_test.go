@@ -177,3 +177,43 @@ func TestReadWriteNeedsOwnerAmongUsers(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+const testPasswd = `root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin
+git:x:998:998::/srv/git:/usr/bin/git-shell
+bob:x:1000:1000:Bob:/home/bob:/bin/bash
+anna:x:995:986:NexoVirt Box share user:/nonexistent:/usr/sbin/nologin
+nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
+`
+
+func TestHandoverRefusesHomes(t *testing.T) {
+	ents := parsePasswd(testPasswd)
+	for _, p := range []string{"/srv/git", "/srv/git/repo", "/srv", "/var/www", "/var/www/html", "/home/bob/x"} {
+		if handoverHomeConflict(p, ents) == "" {
+			t.Fatalf("%s accepted", p)
+		}
+	}
+	if u := handoverHomeConflict("/srv/media", ents); u != "" {
+		t.Fatalf("/srv/media refused for %s", u)
+	}
+}
+
+func TestHandoverOwners(t *testing.T) {
+	ents := parsePasswd(testPasswd)
+	share := map[int]bool{995: true}
+	// root and share users are fine
+	if err := handoverOwnersOK(map[int]int{0: 10, 995: 2}, ents, share); err != nil {
+		t.Fatal(err)
+	}
+	// a real login account (uid >= 1000 with a shell) is refused by name
+	if err := handoverOwnersOK(map[int]int{0: 3, 1000: 1}, ents, share); err == nil || !strings.Contains(err.Error(), "bob") {
+		t.Fatalf("bob: %v", err)
+	}
+	// any other account too (service user, unknown uid)
+	for _, uid := range []int{33, 4242} {
+		if handoverOwnersOK(map[int]int{uid: 1}, ents, share) == nil {
+			t.Fatalf("uid %d accepted", uid)
+		}
+	}
+}
