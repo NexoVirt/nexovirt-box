@@ -143,7 +143,7 @@
   let logsApp = $derived(path.match(/^\/apps\/([a-z0-9][a-z0-9-]{0,62})\/logs$/)?.[1] || '');
   let page = $derived(pages.find((p) => p.path === (logsApp ? '/apps/installed' : path)) || pages[0]);
   // These pages fill the window and scroll inside their own card.
-  const FILL = new Set(['/files', '/activity']);
+  const FILL = new Set(['/files', '/activity', '/backups']);
   let fill = $derived(FILL.has(page.path) || !!logsApp);
   let initials = $derived(state?.username ? state.username.slice(0, 2).toUpperCase() : '');
 </script>

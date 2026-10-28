@@ -7,7 +7,9 @@
   import { bytes, ago } from '$lib/format.js';
   import Dialog from '$lib/Dialog.svelte';
   import JobLog from '$lib/JobLog.svelte';
-  import Popover from '$lib/Popover.svelte';
+  import DataTable from '$lib/DataTable.svelte';
+  import Segmented from '$lib/Segmented.svelte';
+  import AppIcon from '$lib/AppIcon.svelte';
   import RestoreDialog from './RestoreDialog.svelte';
   import TargetDialog from './TargetDialog.svelte';
   import KeyRound from '@lucide/svelte/icons/key-round';
@@ -19,13 +21,16 @@
   import Play from '@lucide/svelte/icons/play';
   import Loader from '@lucide/svelte/icons/loader-circle';
   import Copy from '@lucide/svelte/icons/copy';
-  import Ellipsis from '@lucide/svelte/icons/ellipsis';
   import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
   import ShieldCheck from '@lucide/svelte/icons/shield-check';
   import Pencil from '@lucide/svelte/icons/pencil';
   import Trash2 from '@lucide/svelte/icons/trash-2';
   import Archive from '@lucide/svelte/icons/archive';
   import CircleAlert from '@lucide/svelte/icons/circle-alert';
+  import CircleCheck from '@lucide/svelte/icons/circle-check';
+  import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+  import History from '@lucide/svelte/icons/history';
+  import Settings2 from '@lucide/svelte/icons/settings-2';
 
   let { onSessionLost } = $props();
 
@@ -33,7 +38,7 @@
   const KIND_ICON = { local: HardDrive, s3: Cloud, pbs: Server };
 
   let data = $state(null), error = $state(''), apps = $state([]);
-  let origin = $state(null), menu = $state(null);
+  let origin = $state(null);
   // key
   let keyOpen = $state(false), keyMode = $state('create'), keyText = $state(''), keyBusy = $state(false), keyError = $state(''), secret = $state(''), saved = $state(false);
   // targets
@@ -45,6 +50,19 @@
   // restore and verify
   let restoreOpen = $state(false), restorePreset = $state(null);
   let verifying = $state({});
+  // tabs (#overview, #archives, ... in the URL)
+  const TABS = [
+    { value: 'overview', label: 'Overview' },
+    { value: 'archives', label: 'Backups' },
+    { value: 'schedules', label: 'Schedules' },
+    { value: 'targets', label: 'Targets' },
+    { value: 'activity', label: 'Activity' },
+  ];
+  let tab = $state(TABS.some((t) => t.value === location.hash.slice(1)) ? location.hash.slice(1) : 'overview');
+  $effect(() => { if (location.hash.slice(1) !== tab) history.replaceState(null, '', '#' + tab); });
+  // archives on one target
+  let archTarget = $state(''), archives = $state(null), archError = $state(''), archApp = $state(''), archSeq = 0;
+  let histSort = $state({ key: 'at', dir: 'desc' }), histStatus = $state('');
 
   let targets = $derived(data?.targets?.targets || []);
   let appName = (id) => (id === 'box' ? 'Box settings' : id === '*' ? 'All apps and Box settings' : apps.find((a) => a.id === id)?.name || id);
@@ -58,6 +76,7 @@
     data = b.data;
     if (a.ok) apps = a.data;
     if (!runTarget && targets.length) runTarget = targets[0].id;
+    if (!targets.some((t) => t.id === archTarget)) archTarget = targets[0]?.id || '';
   }
 
   function at(e) { origin = e ? { x: e.clientX, y: e.clientY } : null; }
@@ -81,9 +100,8 @@
 
   // ---- targets ----
   function addTarget(e) { at(e); targetEdit = null; targetOpen = true; }
-  function editTarget(e, t) { menu = null; at(e); targetEdit = t; targetOpen = true; }
+  function editTarget(e, t) { at(e); targetEdit = t; targetOpen = true; }
   async function deleteTarget(t) {
-    menu = null;
     const res = await withProof(() => api(`/api/backups/targets/${t.id}/delete`, { method: 'POST' }));
     if (res.cancelled) return;
     if (!res.ok) return toast(res.error, 'error', 7000);
@@ -93,7 +111,6 @@
 
   // ---- schedules ----
   function openSched(e, s) {
-    menu = null;
     at(e);
     schedError = '';
     sched = s ? { ...s, keep: { ...s.keep } } : { app: '*', target: targets[0]?.id || '', freq: 'daily', weekday: 0, time: '03:30', keep: { last: 7, daily: 7, weekly: 4 }, enabled: true };
@@ -115,7 +132,6 @@
     load();
   }
   async function deleteSched(s) {
-    menu = null;
     await api(`/api/backups/schedules/${s.id}/delete`, { method: 'POST' });
     toast('Schedule deleted.', 'success');
     load();
@@ -147,17 +163,92 @@
 
   // ---- history actions ----
   async function verify(r) {
-    menu = null;
     verifying = { ...verifying, [r.id]: true };
+    toast(`Checking ${r.name}. This reads the whole backup.`, 'info');
     const job = await runJob('/api/backups/verify', { target: r.target, name: r.name });
     verifying = { ...verifying, [r.id]: false };
     if (job.status === 'done') toast(`${r.name} is complete and can be restored (${job.result.files} files).`, 'success', 7000);
     else toast(job.error, 'error', 9000);
     load();
   }
-  function restore(e, r) { menu = null; at(e); restorePreset = r ? { target: r.target, name: r.name, app: r.app } : null; restoreOpen = true; }
+  // ---- archives ----
+  async function loadArchives() {
+    if (!archTarget) { archives = []; return; }
+    const my = ++archSeq;
+    archives = null;
+    archError = '';
+    const res = await api(`/api/backups/targets/${archTarget}/archives`);
+    if (my !== archSeq) return;
+    if (res.status === 401) return onSessionLost();
+    if (!res.ok) { archError = res.error; archives = []; return; }
+    archives = res.data;
+  }
+  $effect(() => { if (tab === 'archives' && archTarget) loadArchives(); });
+  async function deleteArchive(a) {
+    const res = await withProof(() => api('/api/backups/delete', { method: 'POST', body: { target: archTarget, name: a.name } }));
+    if (res.cancelled) return;
+    if (!res.ok) return toast(res.error, 'error', 7000);
+    toast('The backup was deleted.', 'success');
+    loadArchives();
+  }
+  function browse(t) { archTarget = t.id; tab = 'archives'; }
+
+  function restore(e, r) { at(e); restorePreset = r ? { target: r.target, name: r.name, app: r.app } : null; restoreOpen = true; }
 
   const STATUS = { ok: ['Done', 'ok'], failed: ['Failed', 'error'] };
+  const TYPE = { local: 'Folder on this server', s3: 'S3 bucket', pbs: 'Proxmox Backup Server' };
+  const when = new Intl.DateTimeFormat(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  const full = (t) => new Date(t * 1000).toLocaleString();
+  function where(t) { return t.type === 'local' ? t.path : t.type === 's3' ? `${t.bucket}${t.prefix ? '/' + t.prefix : ''} on ${t.endpoint}` : t.repository; }
+  function untilText(t) {
+    const s = t - Date.now() / 1000;
+    if (s < 3600) return `in ${Math.max(1, Math.round(s / 60))} min`;
+    if (s < 86400) return `in ${Math.round(s / 3600)} h`;
+    return `in ${Math.round(s / 86400)} days`;
+  }
+
+  // Overview numbers.
+  let backups = $derived((data?.history || []).filter((r) => r.kind === 'backup'));
+  let lastBackup = $derived(backups[0]);
+  let lastOk = $derived(backups.find((r) => r.status === 'ok'));
+  let nextSched = $derived((data?.schedules || []).filter((s) => s.enabled && s.next_run).sort((a, b) => a.next_run - b.next_run)[0]);
+  let weekAgo = $derived(Date.now() / 1000 - 7 * 86400);
+  let recentFailed = $derived((data?.history || []).filter((r) => r.status === 'failed' && r.at > weekAgo));
+  let history = $derived(histStatus ? (data?.history || []).filter((r) => r.status === histStatus) : data?.history || []);
+
+  const ARCH_COLS = [
+    { key: 'app', label: 'App', primary: true, sortable: true, value: (a) => appName(a.app) },
+    { key: 'at', label: 'Created', sortable: true, firstDir: 'desc' },
+    { key: 'size', label: 'Size', align: 'right', sortable: true, firstDir: 'desc' },
+    { key: 'name', label: 'File', mono: true, hide: 'md' },
+  ];
+  const SCHED_COLS = [
+    { key: 'app', label: 'Backs up', primary: true, value: (s) => appName(s.app) },
+    { key: 'when', label: 'When', value: (s) => schedText(s) },
+    { key: 'target', label: 'To', value: (s) => targetName(s.target), hide: 'md' },
+    { key: 'keep', label: 'Keeps', value: (s) => keepText(s.keep), hide: 'md' },
+    { key: 'next_run', label: 'Next run', sortable: true },
+    { key: 'enabled', label: 'On', align: 'right' },
+  ];
+  const TARGET_COLS = [
+    { key: 'name', label: 'Name', primary: true, sortable: true },
+    { key: 'type', label: 'Type', value: (t) => TYPE[t.type] || t.type, sortable: true },
+    { key: 'where', label: 'Location', value: where, mono: true, hide: 'md' },
+  ];
+  const HIST_COLS = [
+    { key: 'at', label: 'When', sortable: true, firstDir: 'desc' },
+    { key: 'app', label: 'What', primary: true, value: (r) => appName(r.app), sortable: true },
+    { key: 'kind', label: 'Action', value: (r) => KIND[r.kind] || r.kind },
+    { key: 'target', label: 'Target', value: (r) => r.target_name || targetName(r.target), hide: 'md' },
+    { key: 'size', label: 'Size', align: 'right', hide: 'md' },
+    { key: 'seconds', label: 'Took', align: 'right', hide: 'md' },
+    { key: 'status', label: 'Result', wrap: true },
+  ];
+  const histActions = (r) => r.kind === 'backup' && r.status === 'ok' && r.name ? [
+    { label: 'Restore', icon: RotateCcw, run: () => restore(null, r) },
+    { label: 'Check that it restores', icon: ShieldCheck, disabled: verifying[r.id], run: () => verify(r) },
+  ] : [];
+
   const KIND = { backup: 'Backup', restore: 'Restore', verify: 'Check' };
 
   onMount(() => {
@@ -167,8 +258,8 @@
   });
 </script>
 
-<div class="page">
-  <header class="page-head">
+<div class="page fill">
+  <header class="page-head compact">
     <div>
       <h1 class="t-large">Backups</h1>
       <p class="t-sub">Encrypted copies of your apps and of Box's settings.</p>
@@ -181,129 +272,193 @@
     {/if}
   </header>
 
+  <div class="tabs"><Segmented options={TABS} bind:value={tab} label="Backups sections" /></div>
+
   {#if error}
     <div class="notice"><CircleAlert size={18} /><span>{error}</span></div>
   {:else if !data}
-    <div class="group">{#each Array(4) as _}<div class="row"><span class="skeleton line"></span></div>{/each}</div>
-  {:else}
-    {#if !data.key.configured}
-      <div class="tile intro">
-        <span class="intro-ico"><KeyRound size={26} /></span>
-        <div class="intro-text">
-          <h2 class="t-title">Set up the backup key</h2>
-          <p class="t-sub">Every backup is encrypted with this key before it leaves the app. Box keeps a copy for one-click restores. Save it somewhere safe too: you need it to restore on another server.</p>
-          <div class="intro-btns">
-            <button class="btn btn-primary" onclick={(e) => openKey(e, 'create')}>Create a key</button>
-            <button class="btn btn-gray" onclick={(e) => openKey(e, 'import')}>I have a key</button>
+    <div class="stats">{#each Array(3) as _}<div class="tile stat"><span class="skeleton" style:height="3.5rem"></span></div>{/each}</div>
+  {:else if tab === 'overview'}
+    <div class="scroll">
+      {#if !data.key.configured}
+        <section class="tile intro">
+          <span class="ico xl accent"><KeyRound /></span>
+          <div class="intro-text">
+            <h2 class="t-title">Set up the backup key</h2>
+            <p class="t-sub">Every backup is encrypted with this key before it leaves the app. Box keeps a copy for one-click restores. Save it somewhere safe too: you need it to restore on another server.</p>
+            <div class="btns">
+              <button class="btn btn-primary" onclick={(e) => openKey(e, 'create')}>Create a key</button>
+              <button class="btn btn-gray" onclick={(e) => openKey(e, 'import')}>I have a key</button>
+            </div>
           </div>
+        </section>
+      {:else if !targets.length}
+        <section class="tile intro">
+          <span class="ico xl accent"><HardDrive /></span>
+          <div class="intro-text">
+            <h2 class="t-title">Choose where backups go</h2>
+            <p class="t-sub">A folder on this server, an S3 bucket or a Proxmox Backup Server. Another machine is safer: a copy on the same disk does not survive a broken disk.</p>
+            <div class="btns"><button class="btn btn-primary" onclick={(e) => { tab = 'targets'; addTarget(e); }}><Plus size={16} />Add a target</button></div>
+          </div>
+        </section>
+      {/if}
+
+      <div class="stats">
+        <div class="tile stat">
+          <span class="ico md" class:ok={lastBackup?.status === 'ok'} class:error={lastBackup?.status === 'failed'} class:accent={!lastBackup}>
+            {#if lastBackup?.status === 'failed'}<CircleAlert />{:else if lastBackup}<CircleCheck />{:else}<Archive />{/if}
+          </span>
+          <span class="stat-text">
+            <span class="t-caption">Last backup</span>
+            {#if lastBackup}
+              <span class="t-head" title={full(lastBackup.at)}>{lastBackup.status === 'ok' ? 'Done' : 'Failed'} {ago(lastBackup.at)}</span>
+              <span class="t-caption truncate">{appName(lastBackup.app)}{lastBackup.size ? `, ${bytes(lastBackup.size)}` : ''}</span>
+            {:else}<span class="t-head">None yet</span>{/if}
+          </span>
+        </div>
+        <div class="tile stat">
+          <span class="ico md accent"><CalendarClock /></span>
+          <span class="stat-text">
+            <span class="t-caption">Next scheduled</span>
+            {#if nextSched}
+              <span class="t-head" title={full(nextSched.next_run)}>{when.format(nextSched.next_run * 1000)}</span>
+              <span class="t-caption truncate">{appName(nextSched.app)}, {untilText(nextSched.next_run)}</span>
+            {:else}<span class="t-head">No schedule</span>{#if targets.length}<button class="link" onclick={(e) => { tab = 'schedules'; openSched(e); }}>Add one</button>{/if}{/if}
+          </span>
+        </div>
+        <div class="tile stat">
+          <span class="ico md accent"><History /></span>
+          <span class="stat-text">
+            <span class="t-caption">Last 7 days</span>
+            <span class="t-head num">{backups.filter((r) => r.at > weekAgo && r.status === 'ok').length} backups</span>
+            <span class="t-caption">{recentFailed.length ? `${recentFailed.length} failed` : 'Nothing failed'}</span>
+          </span>
         </div>
       </div>
-    {/if}
 
-    <div class="sub-head">
-      <p class="t-section">Targets</p>
-      <button class="btn btn-tinted btn-sm" onclick={addTarget}><Plus size={15} />Add target</button>
-    </div>
-    <section class="group">
-      {#each targets as t (t.id)}
-        {@const Icon = KIND_ICON[t.type] || HardDrive}
-        <div class="row">
-          <span class="ico"><Icon size={16} /></span>
-          <div class="grow">
-            <span>{t.name}</span>
-            <span class="t-caption mono truncate">{t.type === 'local' ? t.path : t.type === 's3' ? `${t.bucket}${t.prefix ? '/' + t.prefix : ''} on ${t.endpoint}` : t.repository}</span>
-          </div>
-          {#if t.type === 'pbs' && !data.targets.pbs_client}<span class="pill warn-pill">Client missing</span>{/if}
-          <div class="more">
-            <button class="icon-btn" onclick={() => (menu = menu === 't' + t.id ? null : 't' + t.id)} aria-label="Actions for {t.name}" aria-expanded={menu === 't' + t.id}><Ellipsis size={19} /></button>
-            <Popover open={menu === 't' + t.id} label="Actions for {t.name}">
-              <button class="pop-item" onclick={(e) => editTarget(e, t)}><Pencil size={16} />Edit</button>
-              <button class="pop-item" onclick={(e) => restore(e, { target: t.id })}><RotateCcw size={16} />Browse backups</button>
-              <button class="pop-item danger" onclick={() => deleteTarget(t)}><Trash2 size={16} />Remove</button>
-            </Popover>
-          </div>
+      {#if recentFailed.length}
+        <div class="notice" role="alert">
+          <CircleAlert size={18} />
+          <span><strong>{appName(recentFailed[0].app)}</strong>: {recentFailed[0].error || 'The last run failed.'} <button class="link" onclick={() => { histStatus = 'failed'; tab = 'activity'; }}>Show what failed</button></span>
         </div>
-      {:else}
-        <div class="row t-sub">No target yet. Add a folder on this server, an S3 bucket or a Proxmox Backup Server.</div>
-      {/each}
-    </section>
+      {/if}
 
-    <div class="sub-head">
-      <p class="t-section">Schedules</p>
-      <button class="btn btn-tinted btn-sm" onclick={(e) => openSched(e)} disabled={!targets.length}><Plus size={15} />Add schedule</button>
-    </div>
-    <section class="group">
-      {#each data.schedules as s (s.id)}
-        <div class="row">
-          <span class="ico"><CalendarClock size={16} /></span>
-          <div class="grow">
-            <span>{appName(s.app)}</span>
-            <span class="t-caption">{schedText(s)} to {targetName(s.target)}. {keepText(s.keep)}.</span>
+      {#if data.key.configured}
+        <section class="group">
+          <div class="row">
+            <span class="ico accent"><KeyRound /></span>
+            <div class="grow"><span>Backup key</span><span class="t-caption mono truncate">Public part {data.key.recipient}</span></div>
+            <button class="btn btn-gray btn-sm" onclick={(e) => openKey(e, 'import')}>Replace</button>
           </div>
-          <input class="switch" type="checkbox" checked={s.enabled} onchange={() => toggleSched(s)} aria-label="Schedule on" />
-          <div class="more">
-            <button class="icon-btn" onclick={() => (menu = menu === 's' + s.id ? null : 's' + s.id)} aria-label="Schedule actions" aria-expanded={menu === 's' + s.id}><Ellipsis size={19} /></button>
-            <Popover open={menu === 's' + s.id} label="Schedule actions">
-              <button class="pop-item" onclick={(e) => openSched(e, s)}><Pencil size={16} />Edit</button>
-              <button class="pop-item danger" onclick={() => deleteSched(s)}><Trash2 size={16} />Delete</button>
-            </Popover>
+          <div class="row">
+            <span class="ico warn"><ShieldCheck /></span>
+            <div class="grow"><span>Keep a copy of the secret key</span><span class="t-caption">Box showed it once when it was created. Without it, backups cannot be restored on another server. Keep it in a password manager, not on this server.</span></div>
           </div>
-        </div>
-      {:else}
-        <div class="row t-sub">{targets.length ? 'No schedule yet. Daily backups at night are a good start.' : 'Add a target first.'}</div>
-      {/each}
-    </section>
+        </section>
+      {/if}
 
-    <p class="t-section sub">History</p>
-    <div class="table-wrap group">
-      <table class="hist">
-        <thead><tr><th>When</th><th>What</th><th>Action</th><th>Target</th><th class="num">Size</th><th class="num">Took</th><th>Result</th><th></th></tr></thead>
-        <tbody>
-          {#each data.history as r (r.id)}
-            {@const [label, tone] = STATUS[r.status] || ['Unknown', '']}
-            <tr>
-              <td title={new Date(r.at * 1000).toLocaleString()}>{ago(r.at)}</td>
-              <td>{appName(r.app)}</td>
-              <td>{KIND[r.kind] || r.kind}{r.source === 'schedule' ? ' (scheduled)' : ''}</td>
-              <td class="truncate">{r.target_name || targetName(r.target)}</td>
-              <td class="num">{r.size ? bytes(r.size) : ''}</td>
-              <td class="num">{r.seconds}s</td>
-              <td><span class="res" title={r.error}><span class="dot {tone}"></span>{label}</span>{#if r.error}<span class="t-caption err">{r.error}</span>{/if}</td>
-              <td class="act">
-                {#if r.kind === 'backup' && r.status === 'ok' && r.name}
-                  <div class="more">
-                    <button class="icon-btn" onclick={() => (menu = menu === 'h' + r.id ? null : 'h' + r.id)} aria-label="Actions for this backup" disabled={verifying[r.id]}>
-                      {#if verifying[r.id]}<Loader size={17} class="spinner" />{:else}<Ellipsis size={19} />{/if}
-                    </button>
-                    <Popover open={menu === 'h' + r.id} label="Backup actions">
-                      <button class="pop-item" onclick={(e) => restore(e, r)}><RotateCcw size={16} />Restore</button>
-                      <button class="pop-item" onclick={() => verify(r)}><ShieldCheck size={16} />Check that it restores</button>
-                    </Popover>
-                  </div>
-                {/if}
-              </td>
-            </tr>
-          {:else}
-            <tr><td colspan="8" class="t-sub empty-row"><Archive size={16} />No backups yet.</td></tr>
-          {/each}
-        </tbody>
-      </table>
-    </div>
-
-    {#if data.key.configured}
-      <p class="t-section sub">Encryption</p>
       <section class="group">
-        <div class="row">
-          <span class="ico"><KeyRound size={16} /></span>
-          <div class="grow"><span>Backup key</span><span class="t-caption mono truncate">Public part {data.key.recipient}</span></div>
-          <button class="btn btn-gray btn-sm" onclick={(e) => openKey(e, 'import')}>Replace</button>
-        </div>
+        <button class="row link-row" onclick={() => (tab = 'archives')}>
+          <span class="ico"><Archive /></span><span class="grow"><span>All backups</span><span class="t-caption">Browse, check, restore or delete what is stored on a target.</span></span>
+        </button>
+        <button class="row link-row" onclick={() => (tab = 'schedules')}>
+          <span class="ico"><CalendarClock /></span><span class="grow"><span>Schedules</span><span class="t-caption">{data.schedules.length ? `${data.schedules.filter((s) => s.enabled).length} of ${data.schedules.length} on` : 'None yet'}</span></span>
+        </button>
+        <button class="row link-row" onclick={() => (tab = 'targets')}>
+          <span class="ico"><Server /></span><span class="grow"><span>Targets</span><span class="t-caption">{targets.length ? targets.map((t) => t.name).join(', ') : 'None yet'}</span></span>
+        </button>
       </section>
-    {/if}
+    </div>
+  {:else if tab === 'archives'}
+    <DataTable fill label="Backups" columns={ARCH_COLS} rows={targets.length ? archives : []} key="name" error={archError} onretry={loadArchives}
+      searchable placeholder="Search backups" bind:search={archApp} sort={{ key: 'at', dir: 'desc' }}
+      empty={{ icon: Archive, title: targets.length ? 'No backups on this target' : 'No target yet', text: targets.length ? 'Back up now or add a schedule.' : 'Add a target first.' }}
+      actions={(a) => [
+        { label: 'Restore', icon: RotateCcw, run: () => restore(null, { target: archTarget, name: a.name, app: a.app }) },
+        { label: 'Check that it restores', icon: ShieldCheck, run: () => verify({ id: a.name, target: archTarget, name: a.name }) },
+        { label: 'Delete', icon: Trash2, danger: true, run: () => deleteArchive(a) },
+      ]}
+      footText={archives ? `${archives.length} ${archives.length === 1 ? 'backup' : 'backups'}, ${bytes(archives.reduce((n, a) => n + (a.size || 0), 0))}` : ''}>
+      {#snippet toolbar()}
+        {#if targets.length > 1}
+          <select class="input" bind:value={archTarget} aria-label="Target">{#each targets as t (t.id)}<option value={t.id}>{t.name}</option>{/each}</select>
+        {/if}
+        <button class="icon-btn" onclick={loadArchives} aria-label="Reload" title="Reload"><RefreshCw size={16} class={archives === null ? 'spinner' : ''} /></button>
+      {/snippet}
+      {#snippet cell(a, c)}
+        {#if c.key === 'app'}<span class="who">{@render appMark(a.app)}<span class="truncate">{appName(a.app)}</span></span>
+        {:else if c.key === 'at'}<span title={full(a.at)}>{ago(a.at)}</span>
+        {:else if c.key === 'size'}<span class="num">{bytes(a.size || 0)}</span>
+        {:else}<span class="muted">{a.name}</span>{/if}
+      {/snippet}
+    </DataTable>
+  {:else if tab === 'schedules'}
+    <DataTable fill label="Schedules" columns={SCHED_COLS} rows={data.schedules} key="id"
+      empty={{ icon: CalendarClock, title: 'No schedule yet', text: targets.length ? 'Daily backups at night are a good start.' : 'Add a target first.' }}
+      actions={(s) => [
+        { label: 'Edit', icon: Pencil, run: () => openSched(null, s) },
+        { label: 'Back up now', icon: Play, run: () => { runTarget = s.target; openRun(null, s.app === '*' ? 'box' : s.app); } },
+        { label: 'Delete', icon: Trash2, danger: true, run: () => deleteSched(s) },
+      ]}>
+      {#snippet toolbar()}<button class="btn btn-tinted btn-sm" onclick={(e) => openSched(e)} disabled={!targets.length}><Plus size={15} />Add schedule</button>{/snippet}
+      {#snippet emptyAction()}{#if targets.length}<button class="btn btn-primary btn-sm" onclick={(e) => openSched(e)}><Plus size={15} />Add schedule</button>{/if}{/snippet}
+      {#snippet cell(s, c)}
+        {#if c.key === 'app'}<span class="who">{@render appMark(s.app)}<span class="truncate">{appName(s.app)}</span></span>
+        {:else if c.key === 'when'}{schedText(s)}
+        {:else if c.key === 'target'}{targetName(s.target)}
+        {:else if c.key === 'keep'}<span class="muted">{keepText(s.keep)}</span>
+        {:else if c.key === 'next_run'}{#if s.enabled && s.next_run}<span title={full(s.next_run)}>{when.format(s.next_run * 1000)}</span>{:else}<span class="muted">Off</span>{/if}
+        {:else}<input class="switch" type="checkbox" checked={s.enabled} onchange={() => toggleSched(s)} aria-label="Schedule on" />{/if}
+      {/snippet}
+    </DataTable>
+  {:else if tab === 'targets'}
+    <DataTable fill label="Targets" columns={TARGET_COLS} rows={targets} key="id"
+      empty={{ icon: HardDrive, title: 'No target yet', text: 'Add a folder on this server, an S3 bucket or a Proxmox Backup Server.' }}
+      actions={(t) => [
+        { label: 'Edit', icon: Pencil, run: () => editTarget(null, t) },
+        { label: 'Browse backups', icon: Archive, run: () => browse(t) },
+        { label: 'Remove', icon: Trash2, danger: true, run: () => deleteTarget(t) },
+      ]}>
+      {#snippet toolbar()}<button class="btn btn-tinted btn-sm" onclick={addTarget}><Plus size={15} />Add target</button>{/snippet}
+      {#snippet emptyAction()}<button class="btn btn-primary btn-sm" onclick={addTarget}><Plus size={15} />Add target</button>{/snippet}
+      {#snippet cell(t, c)}
+        {#if c.key === 'name'}
+          {@const Icon = KIND_ICON[t.type] || HardDrive}
+          <span class="who"><span class="ico accent"><Icon /></span><span class="truncate">{t.name}</span>{#if t.type === 'pbs' && !data.targets.pbs_client}<span class="pill warn-pill">Client missing</span>{/if}</span>
+        {:else if c.key === 'type'}{TYPE[t.type] || t.type}
+        {:else}<span class="muted">{where(t)}</span>{/if}
+      {/snippet}
+    </DataTable>
+  {:else}
+    <DataTable fill label="Backup activity" columns={HIST_COLS} rows={history} key="id" bind:sort={histSort}
+      searchable placeholder="Search activity" actions={histActions}
+      empty={{ icon: History, title: histStatus ? 'Nothing failed' : 'Nothing happened yet', text: histStatus ? '' : 'Backups, restores and checks show up here.' }}>
+      {#snippet toolbar()}
+        <select class="input" bind:value={histStatus} aria-label="Result">
+          <option value="">All results</option><option value="ok">Done</option><option value="failed">Failed</option>
+        </select>
+      {/snippet}
+      {#snippet cell(r, c)}
+        {#if c.key === 'at'}<span title={full(r.at)}>{ago(r.at)}</span>
+        {:else if c.key === 'app'}<span class="who">{@render appMark(r.app)}<span class="truncate">{appName(r.app)}</span></span>
+        {:else if c.key === 'kind'}{KIND[r.kind] || r.kind}{#if r.source === 'schedule'}<span class="muted"> (scheduled)</span>{/if}
+        {:else if c.key === 'target'}{r.target_name || targetName(r.target)}
+        {:else if c.key === 'size'}<span class="num">{r.size ? bytes(r.size) : ''}</span>
+        {:else if c.key === 'seconds'}<span class="num muted">{r.seconds}s</span>
+        {:else}
+          {@const [text, tone] = STATUS[r.status] || ['Unknown', '']}
+          <span class="res">{#if verifying[r.id]}<Loader size={14} class="spinner" />Checking{:else}<span class="dot {tone}"></span>{text}{/if}</span>
+          {#if r.error}<span class="t-caption err">{r.error}</span>{/if}
+        {/if}
+      {/snippet}
+    </DataTable>
   {/if}
 </div>
 
-<svelte:window onpointerdown={(e) => { if (menu && !e.target.closest('.more')) menu = null; }} />
+{#snippet appMark(id)}
+  {#if id === 'box' || id === '*'}<span class="ico accent"><Settings2 /></span>
+  {:else}<AppIcon {id} name={appName(id)} size={22} icon={apps.find((a) => a.id === id)?.icon} />{/if}
+{/snippet}
 
 <Dialog bind:open={keyOpen} label="Backup key" {origin} locked={keyBusy || (!!secret && !saved)}>
   <form class="dlg" onsubmit={saveKey}>
@@ -401,35 +556,32 @@
 <style>
   h2, p { margin: 0; }
   .head-btns { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-  .intro { display: flex; gap: 1.125rem; align-items: flex-start; margin-bottom: 0.5rem; }
-  .intro-ico { display: grid; place-items: center; flex-shrink: 0; width: 3.25rem; height: 3.25rem; border-radius: 1rem; background: var(--accent-fill); color: var(--accent); }
-  .intro-text { display: grid; gap: 0.5rem; }
-  .intro-btns { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem; }
-  .sub-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; margin: 1.25rem 1.125rem 0.5rem; }
-  .sub { margin: 1.25rem 1.125rem 0.5rem; }
-  .group { overflow: visible; }
-  .more { position: relative; }
+  .tabs { display: flex; }
+  .tabs :global(.seg) { min-width: min(100%, 34rem); }
+  .scroll { flex: 1; min-height: 0; overflow: auto; display: grid; align-content: start; gap: 1rem; padding-bottom: 1rem; }
+  .intro { display: flex; gap: 1.25rem; align-items: flex-start; padding: 1.5rem; }
+  .intro-text { display: grid; gap: 0.5rem; max-width: 40rem; }
+  .btns { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem; }
+  .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; }
+  .stat { display: flex; align-items: flex-start; gap: 0.875rem; padding: 1.125rem 1.25rem; }
+  .stat-text { display: grid; gap: 0.125rem; min-width: 0; }
+  .stat .t-head { font-size: 1.0625rem; }
+  .link { padding: 0; border: 0; background: none; color: var(--accent); font: inherit; font-weight: 600; cursor: pointer; justify-self: start; }
+  .link-row { width: 100%; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+  .link-row:hover { background: var(--fill); }
+  .who { display: inline-flex; align-items: center; gap: 0.625rem; min-width: 0; max-width: 100%; }
+  .muted { color: var(--text-2); }
   .warn-pill { color: var(--warn); }
-  .skeleton.line { display: block; width: 50%; height: 0.8rem; }
-  .table-wrap { overflow-x: auto; }
-  .hist { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
-  .hist th { text-align: left; font-weight: 600; font-size: 0.75rem; color: var(--text-2); padding: 0.75rem 0.875rem 0.5rem; white-space: nowrap; }
-  .hist td { padding: 0.625rem 0.875rem; border-top: 1px solid var(--hairline); vertical-align: middle; white-space: nowrap; }
-  .hist td.truncate { max-width: 12rem; }
-  .num { text-align: right; font-variant-numeric: tabular-nums; }
   .res { display: inline-flex; align-items: center; gap: 0.4rem; }
-  .err { display: block; white-space: normal; max-width: 22rem; }
-  .act { width: 2.75rem; }
-  .empty-row { display: flex; align-items: center; gap: 0.5rem; padding: 1.25rem 0.875rem; }
-  .pop-item { display: flex; align-items: center; gap: 0.625rem; width: 100%; min-height: 2.5rem; padding: 0 0.625rem; border: 0; background: none; cursor: pointer; text-align: left; font-weight: 500; border-radius: 0.625rem; white-space: nowrap; }
-  .pop-item:hover { background: var(--fill); }
-  .pop-item.danger { color: var(--error); }
-  .dlg { display: grid; gap: 0.875rem; padding: 1.5rem; }
-  .field { display: grid; gap: 0.375rem; }
+  .err { display: block; white-space: normal; max-width: 22rem; color: var(--error); }
   .cols { display: flex; gap: 0.75rem; flex-wrap: wrap; }
   .cols .field { flex: 1; min-width: 8rem; }
   .secret { padding: 0.875rem; border-radius: var(--r-control); background: var(--fill); word-break: break-all; font-size: 0.8125rem; user-select: all; }
   .copy { justify-self: start; }
-  .buttons { display: flex; justify-content: flex-end; gap: 0.5rem; flex-wrap: wrap; }
-  @media (max-width: 639px) { .intro { flex-direction: column; } }
+  @media (max-width: 899px) { .stats { grid-template-columns: 1fr; } }
+  @media (max-width: 639px) {
+    .intro { flex-direction: column; }
+    .tabs { overflow-x: auto; }
+    .tabs :global(.seg) { min-width: 30rem; }
+  }
 </style>
