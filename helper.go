@@ -346,8 +346,12 @@ func (hc *helperClient) call(ctx context.Context, req helperRequest, onLog func(
 		}
 		return m.Data, nil
 	}
-	return nil, userError{"The helper stopped before the action finished. Check the helper log."}
+	return nil, errHelperStopped
 }
+
+// errHelperStopped: the helper went away mid-action (restart, redeploy). The job counts as
+// interrupted and the app can be retried.
+var errHelperStopped = userError{"The action was interrupted because the Box helper restarted. Try it again."}
 
 func writeReq(c net.Conn, req helperRequest) error {
 	b, _ := json.Marshal(req)

@@ -351,7 +351,9 @@ func (js *jobs) start(kind, app string, fn func(ctx context.Context, logf func(s
 		j.mu.Lock()
 		if j.Status == "running" { // the watchdog may have ended it already
 			j.Finished = time.Now().Unix()
-			if err != nil {
+			if errors.Is(err, errHelperStopped) {
+				j.Status, j.Error = "interrupted", friendly(err)
+			} else if err != nil {
 				j.Status, j.Error = "failed", friendly(err)
 			} else {
 				j.Status, j.Result = "done", res
