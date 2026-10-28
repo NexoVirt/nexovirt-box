@@ -269,7 +269,7 @@
     <JobLog {lines} />
   {:else if view === 'done'}
     <div class="done">
-      <span class="ok-ico"><CircleCheck size={28} /></span>
+      <span class="ico xl accent ok-ico"><CircleCheck /></span>
       <h3 class="t-title">{app.name} is installed</h3>
       <p class="t-sub">It runs now and starts again after a reboot.</p>
       <div class="done-creds"><Credentials id={app.id} {onSessionLost} /></div>
@@ -331,6 +331,6 @@
   .socket { padding: 0.75rem 0.875rem; border-radius: var(--r-control); background: var(--fill); }
   .done-creds { width: 100%; text-align: left; margin-top: 0.5rem; }
   .done { display: grid; justify-items: center; gap: 0.5rem; text-align: center; padding: 0.5rem 0 0.25rem; }
-  .ok-ico { display: grid; place-items: center; width: 3.5rem; height: 3.5rem; color: var(--accent); margin-bottom: 0.25rem; }
+  .ok-ico { margin-bottom: 0.25rem; }
   .buttons { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; margin-top: 0.75rem; }
 </style>

@@ -58,7 +58,7 @@
 <Dialog bind:open label="Share link" {origin}>
   {#if url}
     <div class="dlg">
-      <div class="head"><span class="ico accent"><Link size={16} /></span><h2 class="t-title">Link ready</h2></div>
+      <div class="head"><span class="ico md accent"><Link /></span><h2 class="t-title">Link ready</h2></div>
       <p class="t-sub">Anyone with this link can download {name}{dir ? ' as a zip file' : ''}. Copy it now: Box keeps only a fingerprint of it and cannot show it again.</p>
       <div class="url-row">
         <input class="input mono" value={url} readonly aria-label="Share link" onfocus={(e) => e.target.select()} />
@@ -71,7 +71,7 @@
     </div>
   {:else}
     <form class="dlg" onsubmit={create}>
-      <div class="head"><span class="ico accent"><Link size={16} /></span><h2 class="t-title">Share {dir ? 'folder' : 'file'}</h2></div>
+      <div class="head"><span class="ico md accent"><Link /></span><h2 class="t-title">Share {dir ? 'folder' : 'file'}</h2></div>
       <p class="t-sub truncate" title={path}>{name}</p>
       {#if error}<div class="notice" role="alert">{error}</div>{/if}
       <div class="field">
@@ -102,7 +102,6 @@
 
 <style>
   .head { display: flex; align-items: center; gap: 0.625rem; }
-  .ico.accent { background: var(--accent-fill); color: var(--accent); }
   .url-row { display: flex; gap: 0.5rem; }
   .url-row .input { flex: 1; min-width: 0; }
   @media (max-width: 479px) { .url-row { flex-direction: column; } }

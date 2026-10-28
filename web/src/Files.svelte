@@ -693,7 +693,7 @@
               {#each places as p (p.path)}
                 {@const used = pct(p.used, p.total)}
                 <button class="drive" ondblclick={() => open(p.path)} onclick={() => open(p.path)}>
-                  <span class="drive-ico">{#if p.drive}<HardDrive size={26} />{:else}<Folder size={26} />{/if}</span>
+                  <span class="ico lg accent">{#if p.drive}<HardDrive />{:else}<Folder />{/if}</span>
                   <span class="drive-text">
                     <span class="t-head truncate">{p.path}</span>
                     {#if p.total}
@@ -713,9 +713,9 @@
         {:else if !shown.length}
           <div class="empty">
             {#if query}
-              <Search size={30} /><p class="t-head">No items match "{query}"</p>
+              <span class="ico xl"><Search /></span><p class="t-head">No items match "{query}"</p>
             {:else}
-              <FolderUp size={34} /><p class="t-head">This folder is empty</p><p class="t-caption">Drop files or folders here, or use Upload.</p>
+              <span class="ico xl"><FolderUp /></span><p class="t-head">This folder is empty</p><p class="t-caption">Drop files or folders here, or use Upload.</p>
             {/if}
           </div>
         {:else if view === 'list'}
@@ -1034,7 +1034,6 @@
   .drive { display: flex; align-items: center; gap: 0.875rem; padding: 0.875rem 1rem; border: 0; border-radius: 1rem; background: var(--fill); color: inherit; font: inherit; text-align: left; cursor: pointer; transition: transform 100ms ease-out, background-color 150ms ease; }
   .drive:hover { background: var(--fill-2); }
   .drive:active { transform: scale(0.98); }
-  .drive-ico { display: grid; place-items: center; width: 3rem; height: 3rem; color: var(--accent); flex-shrink: 0; }
   .drive-text { flex: 1; min-width: 0; display: grid; gap: 0.375rem; }
 
   /* Status bar */

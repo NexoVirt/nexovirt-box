@@ -168,9 +168,11 @@
   .top { display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-start; }
   .top .grow { flex: 1; min-width: 12rem; }
   .icons { display: flex; flex-wrap: wrap; gap: 0.25rem; max-width: 20rem; }
-  .ic { display: grid; place-items: center; width: 2.25rem; height: 2.25rem; border: 0; border-radius: 0.625rem; background: var(--fill); color: var(--text-2); cursor: pointer; overflow: hidden; transition: transform 100ms ease-out, background-color 150ms ease; }
+  /* No plate around the icons: the chosen one is the accent colour and a little larger. */
+  .ic { display: grid; place-items: center; width: 2.25rem; height: 2.25rem; border: 0; background: none; color: var(--text-3); cursor: pointer; overflow: hidden; transition: transform 160ms var(--spring), color 150ms ease; }
+  .ic:hover { color: var(--text); }
   .ic:active { transform: scale(0.94); }
-  .ic.on { background: var(--accent); color: var(--on-accent); }
+  .ic.on { color: var(--accent); transform: scale(1.18); }
   .ic img { width: 100%; height: 100%; object-fit: cover; }
   .label-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
   .label-btns { display: flex; gap: 0.875rem; }

@@ -153,7 +153,7 @@
     <div bind:this={host} style:height="{height}px" class:hidden={status === 'reauth'}></div>
     {#if status === 'reauth'}
       <form class="unlock" onsubmit={unlock} style:height="{height}px">
-        <span class="lock"><LockKeyhole size={26} /></span>
+        <span class="ico xl accent lock"><LockKeyhole /></span>
         <h2 class="t-title">Confirm it is you</h2>
         <p class="t-sub">The console is a root shell. Enter your password{needsCode ? ' and a code from your authenticator app' : ''} to open it.</p>
         {#if reauthError}
@@ -188,8 +188,7 @@
   }
   .unlock h2, .unlock p { margin: 0; }
   .unlock .notice { width: 100%; text-align: left; }
-  .lock {
-    display: grid; place-items: center; width: 3.5rem; height: 3.5rem; color: var(--accent); margin-bottom: 0.25rem; }
+  .lock { margin-bottom: 0.25rem; }
   .unlock input {
     width: 100%; height: 2.75rem; padding: 0 0.875rem; border: 0; border-radius: var(--r-control);
     background: var(--fill); font-size: 0.9375rem; margin-top: 0.5rem;

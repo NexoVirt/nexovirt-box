@@ -183,7 +183,7 @@
         <div class="group-head"><h2 class="t-head">Network</h2></div>
         {#each snap.network as n (n.name)}
           <div class="row net">
-            <span class="row-icon"><Network size={16} /></span>
+            <span class="ico accent row-icon"><Network /></span>
             <div class="net-name">
               <span class="t-head truncate">{n.name}</span>
               <span class="rates num">
@@ -205,7 +205,7 @@
         {#each snap.disks as d (d.mountpoint)}
           {@const p = pct(d.used, d.total)}
           <div class="row disk">
-            <span class="row-icon"><HardDrive size={16} /></span>
+            <span class="ico accent row-icon"><HardDrive /></span>
             <div class="disk-main">
               <div class="disk-top">
                 <span class="disk-name">
@@ -268,10 +268,7 @@
   .net-name { display: grid; gap: 0.125rem; width: 14rem; min-width: 0; }
   .net-chart { flex: 1; min-width: 0; }
 
-  .row-icon {
-    display: grid; place-items: center; width: 1.875rem; height: 1.875rem; border-radius: 0.5rem; flex-shrink: 0;
-    background: var(--accent-fill); color: var(--accent); align-self: flex-start; margin-top: 0.125rem;
-  }
+  .row-icon { align-self: flex-start; margin-top: 0.125rem; }
   .disk-main { flex: 1; min-width: 0; display: grid; gap: 0.5rem; }
   .disk-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; }
   .rates { display: flex; gap: 0.875rem; color: var(--text-2); font-size: 0.8125rem; white-space: nowrap; }

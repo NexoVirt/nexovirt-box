@@ -39,7 +39,7 @@
 
 <Dialog bind:open label="Confirm your password" locked={busy}>
   <form class="dlg" onsubmit={submit}>
-    <span class="ico"><Lock size={20} /></span>
+    <span class="ico lg accent"><Lock /></span>
     <h2 class="t-title">Confirm it is you</h2>
     <p class="t-sub">This changes what runs on the server as root. Enter your password to continue.</p>
     {#if error}<div class="notice" role="alert">{error}</div>{/if}
@@ -55,6 +55,5 @@
 <style>
   h2, p { margin: 0; }
   .dlg { display: grid; gap: 0.875rem; padding: 1.5rem; }
-  .ico { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border-radius: 0.875rem; background: var(--accent-fill); color: var(--accent); }
   .buttons { display: flex; justify-content: flex-end; gap: 0.5rem; }
 </style>

@@ -257,7 +257,7 @@
             <button class:on={i === active} onmousedown={(e) => e.preventDefault()} onclick={() => choose(r)} onmouseenter={() => (active = i)}>
               {#if r.app}<AppIcon id={r.app.id} name={r.app.name} size={28} icon={r.app.icon} />
               {:else if r.store}<AppIcon id={r.store.id} name={r.store.name} size={28} />
-              {:else}<span class="r-ico"><Icon size={16} /></span>{/if}
+              {:else}<span class="ico r-ico"><Icon /></span>{/if}
               <span class="r-text"><span class="truncate">{r.label}</span><span class="t-caption truncate">{r.hint}</span></span>
               <span class="r-kind t-caption">{r.kind}</span>
             </button>
@@ -312,7 +312,7 @@
       {#each PLACES.slice(0, 7) as p (p.to)}
         {@const Icon = p.icon}
         <button class="shortcut" onclick={() => onNavigate(p.to)}>
-          <span class="s-ico"><Icon size={20} /></span>
+          <span class="ico md accent"><Icon /></span>
           <span class="s-text"><span class="t-head">{p.label}</span><span class="t-caption truncate">{p.hint}</span></span>
         </button>
       {/each}
@@ -405,7 +405,7 @@
   .results button { display: flex; align-items: center; gap: 0.75rem; width: 100%; min-height: 3rem; padding: 0.375rem 0.625rem; border: 0; border-radius: 0.75rem; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
   .results button.on { background: var(--accent); color: var(--on-accent); }
   .results button.on .t-caption { color: inherit; opacity: 0.85; }
-  .r-ico { display: grid; place-items: center; width: 28px; height: 28px; color: var(--text-2); flex-shrink: 0; }
+  .r-ico { margin: 0 4px; }
   .results button.on .r-ico { color: inherit; }
   .r-text { flex: 1; min-width: 0; display: grid; }
   .r-kind { flex-shrink: 0; }
@@ -437,7 +437,6 @@
   .shortcut { display: flex; align-items: center; gap: 0.75rem; min-height: 3.5rem; padding: 0.5rem 0.75rem; border: 0; border-radius: 0.875rem; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; transition: background-color 150ms ease, transform 120ms ease-out; }
   .shortcut:hover { background: var(--fill); }
   .shortcut:active { transform: scale(0.98); }
-  .s-ico { display: grid; place-items: center; width: 2.5rem; height: 2.5rem; color: var(--accent); flex-shrink: 0; }
   .s-text { display: grid; min-width: 0; }
   .widgets { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }
   .widgets > * { min-width: 0; }

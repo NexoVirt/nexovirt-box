@@ -39,7 +39,7 @@
 </script>
 
 <section class="tile setup">
-  <span class="ico"><Container size={22} /></span>
+  <span class="ico md accent"><Container /></span>
   <div class="text">
     {#if !docker.installed}
       <h2 class="t-head">Docker is not installed</h2>
@@ -80,7 +80,6 @@
 
 <style>
   .setup { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
-  .ico { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; color: var(--accent); }
   .text { flex: 1; min-width: 14rem; display: grid; gap: 0.125rem; }
   h2, p { margin: 0; }
   .dlg { display: grid; gap: 0.875rem; padding: 1.5rem; }
