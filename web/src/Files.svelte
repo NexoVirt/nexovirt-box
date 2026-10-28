@@ -1068,15 +1068,16 @@
   }
   @media (max-width: 899px) {
     .side-toggle { display: inline-grid; }
-    .side { position: absolute; z-index: 5; top: 0; bottom: 0; left: 0; transform: translateX(-105%); transition: transform var(--spring-t) var(--spring); background: var(--surface); box-shadow: var(--shadow-float); }
-    .side.open { transform: none; }
+    .side { position: absolute; z-index: 5; top: 0; bottom: 0; left: 0; transform: translateX(-105%); visibility: hidden; transition: transform var(--spring-t) var(--spring), visibility 0s linear var(--spring-t); background: var(--surface); box-shadow: var(--shadow-float); }
+    .side.open { transform: none; visibility: visible; transition: transform var(--spring-t) var(--spring); }
     .side-scrim { display: block; position: absolute; inset: 0; z-index: 4; background: var(--scrim); }
     .search { width: 8rem; }
   }
   @media (max-width: 639px) {
     .bar-top { flex-wrap: wrap; }
     .pathbar { order: 3; flex-basis: 100%; }
-    .search { flex: 1; width: auto; }
+    .search { flex: 1; width: auto; min-width: 0; }
+    .search input { width: 100%; }
     .tools { flex: 1; }
     .lbl { display: none; }
     .thead, .tr { grid-template-columns: minmax(0, 1fr) 5rem; }
