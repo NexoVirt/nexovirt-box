@@ -6,6 +6,7 @@
   import Auth from './Auth.svelte';
   import Dashboard from './Dashboard.svelte';
   import Console from './Console.svelte';
+  import Activity from './Activity.svelte';
   import Logo from '$lib/Logo.svelte';
   import Sheet from '$lib/Sheet.svelte';
   import Popover from '$lib/Popover.svelte';
@@ -13,6 +14,7 @@
   import Segmented from '$lib/Segmented.svelte';
   import Gauge from '@lucide/svelte/icons/gauge';
   import SquareTerminal from '@lucide/svelte/icons/square-terminal';
+  import History from '@lucide/svelte/icons/history';
   import Menu from '@lucide/svelte/icons/menu';
   import LogOut from '@lucide/svelte/icons/log-out';
   import RefreshCw from '@lucide/svelte/icons/refresh-cw';
@@ -24,6 +26,7 @@
   const pages = [
     { path: '/', title: 'Dashboard', icon: Gauge },
     { path: '/console', title: 'Console', icon: SquareTerminal },
+    { path: '/activity', title: 'Activity', icon: History },
   ];
   const themeModes = [
     { value: 'light', label: 'Light' },
@@ -179,6 +182,8 @@
       <main>
         {#if page.path === '/console'}
           <Console onSessionLost={sessionLost} />
+        {:else if page.path === '/activity'}
+          <Activity onSessionLost={sessionLost} />
         {:else}
           <Dashboard {system} onSessionLost={sessionLost} />
         {/if}

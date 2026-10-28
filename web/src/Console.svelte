@@ -8,6 +8,8 @@
   import RefreshCw from '@lucide/svelte/icons/refresh-cw';
   import Unplug from '@lucide/svelte/icons/unplug';
   import Loader from '@lucide/svelte/icons/loader-circle';
+  import LockKeyhole from '@lucide/svelte/icons/lock-keyhole';
+  import CircleAlert from '@lucide/svelte/icons/circle-alert';
 
   let { onSessionLost } = $props();
 
@@ -19,7 +21,11 @@
   };
 
   let host = $state(); // terminal container
-  let status = $state('connecting'); // connecting | connected | closed
+  let status = $state('checking'); // checking | reauth | connecting | connected | closed
+  let password = $state('');
+  let reauthError = $state('');
+  let reauthBusy = $state(false);
+  let pwInput = $state();
   let closedReason = $state('');
   let height = $state(480);
 
@@ -44,6 +50,35 @@
     await tick();
     fit.fit();
     sendResize();
+  }
+
+  // The console needs a password proof from the last few minutes (a root shell is the most
+  // powerful thing in Box). Ask for it first, then connect.
+  async function open() {
+    status = 'checking';
+    const res = await api('/api/console/ready');
+    if (res.status === 401) return onSessionLost();
+    if (res.ok && res.data.fresh) return connect();
+    status = 'reauth';
+    await tick();
+    pwInput?.focus();
+  }
+
+  async function unlock(e) {
+    e.preventDefault();
+    reauthError = '';
+    reauthBusy = true;
+    const res = await api('/api/auth/reauth', { method: 'POST', body: { password } });
+    reauthBusy = false;
+    if (res.status === 401 && /sign in/i.test(res.error)) return onSessionLost();
+    if (!res.ok) {
+      reauthError = res.error;
+      return;
+    }
+    password = '';
+    await tick();
+    await onWindowResize();
+    connect();
   }
 
   function connect() {
@@ -86,7 +121,7 @@
       if (ws && ws.readyState === WebSocket.OPEN) ws.send(enc.encode(d));
     });
     // Size the box first, then fit the terminal into it and connect with the real size.
-    onWindowResize().then(connect);
+    onWindowResize().then(open);
     addEventListener('resize', onWindowResize);
     return () => {
       removeEventListener('resize', onWindowResize);
@@ -105,11 +140,13 @@
     <div class="actions">
       {#if status === 'connected'}
         <span class="pill"><span class="dot ok"></span>Connected</span>
-      {:else if status === 'connecting'}
+      {:else if status === 'connecting' || status === 'checking'}
         <span class="pill"><Loader size={13} class="spinner" />Connecting</span>
+      {:else if status === 'reauth'}
+        <span class="pill"><LockKeyhole size={13} />Locked</span>
       {:else}
         <span class="pill"><span class="dot error"></span>Disconnected</span>
-        <button class="btn btn-tinted btn-sm" onclick={connect}><RefreshCw size={15} />Reconnect</button>
+        <button class="btn btn-tinted btn-sm" onclick={open}><RefreshCw size={15} />Reconnect</button>
       {/if}
     </div>
   </header>
@@ -119,7 +156,21 @@
   {/if}
 
   <div class="term tile">
-    <div bind:this={host} style:height="{height}px"></div>
+    <div bind:this={host} style:height="{height}px" class:hidden={status === 'reauth'}></div>
+    {#if status === 'reauth'}
+      <form class="unlock" onsubmit={unlock} style:height="{height}px">
+        <span class="lock"><LockKeyhole size={26} /></span>
+        <h2 class="t-title">Confirm it is you</h2>
+        <p class="t-sub">The console is a root shell. Enter your password to open it.</p>
+        {#if reauthError}
+          <div class="notice" role="alert"><CircleAlert size={18} /><span>{reauthError}</span></div>
+        {/if}
+        <input bind:this={pwInput} bind:value={password} type="password" autocomplete="current-password" placeholder="Password" aria-label="Password" required />
+        <button class="btn btn-primary btn-block" disabled={reauthBusy || !password}>
+          {#if reauthBusy}<Loader size={16} class="spinner" />Checking{:else}Open console{/if}
+        </button>
+      </form>
+    {/if}
   </div>
 </div>
 
@@ -129,5 +180,20 @@
   h1, p { margin: 0; }
   .page-head p { margin-top: 0.375rem; }
   .actions { display: flex; align-items: center; gap: 0.5rem; }
-  .term { padding: 0.875rem 0.5rem 0.5rem 1rem; background: var(--term-bg); overflow: hidden; }
+  .term { position: relative; padding: 0.875rem 0.5rem 0.5rem 1rem; background: var(--term-bg); overflow: hidden; }
+  .hidden { visibility: hidden; position: absolute; }
+  .unlock {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.75rem;
+    max-width: 22rem; margin: 0 auto; text-align: center;
+  }
+  .unlock h2, .unlock p { margin: 0; }
+  .unlock .notice { width: 100%; text-align: left; }
+  .lock {
+    display: grid; place-items: center; width: 3.5rem; height: 3.5rem; border-radius: 1.1rem;
+    background: var(--accent-fill); color: var(--accent); margin-bottom: 0.25rem;
+  }
+  .unlock input {
+    width: 100%; height: 2.75rem; padding: 0 0.875rem; border: 0; border-radius: var(--r-control);
+    background: var(--fill); font-size: 0.9375rem; margin-top: 0.5rem;
+  }
 </style>

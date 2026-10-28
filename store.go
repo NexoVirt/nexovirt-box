@@ -6,6 +6,9 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"errors"
+	"log"
+	"os"
+	"strings"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -38,10 +41,32 @@ func openStore(path string) (*Store, error) {
 			token_hash TEXT PRIMARY KEY,
 			user_id INTEGER NOT NULL,
 			expires_at INTEGER NOT NULL
+		);
+		CREATE TABLE IF NOT EXISTS attempts (key TEXT NOT NULL, at INTEGER NOT NULL);
+		CREATE INDEX IF NOT EXISTS attempts_key ON attempts (key, at);
+		CREATE TABLE IF NOT EXISTS audit (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			at INTEGER NOT NULL,
+			username TEXT NOT NULL,
+			ip TEXT NOT NULL,
+			action TEXT NOT NULL,
+			detail TEXT NOT NULL
 		);`)
+	if err == nil {
+		// Added after 0.1: when the session last proved the password (sign-in or re-entry).
+		if _, e := db.Exec(`ALTER TABLE sessions ADD COLUMN reauth_at INTEGER NOT NULL DEFAULT 0`); e != nil && !strings.Contains(e.Error(), "duplicate column") {
+			err = e
+		}
+	}
 	if err != nil {
 		db.Close()
 		return nil, err
+	}
+	// The database holds password hashes and session hashes: owner only.
+	for _, f := range []string{path, path + "-wal", path + "-shm"} {
+		if _, e := os.Stat(f); e == nil {
+			os.Chmod(f, 0o600)
+		}
 	}
 	return &Store{db: db}, nil
 }
@@ -102,8 +127,8 @@ func (s *Store) newSession(userID int64) (string, error) {
 	t := randomToken()
 	now := time.Now()
 	s.db.Exec(`DELETE FROM sessions WHERE expires_at < ?`, now.Unix())
-	_, err := s.db.Exec(`INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)`,
-		hashToken(t), userID, now.Add(sessionTTL).Unix())
+	_, err := s.db.Exec(`INSERT INTO sessions (token_hash, user_id, expires_at, reauth_at) VALUES (?, ?, ?, ?)`,
+		hashToken(t), userID, now.Add(sessionTTL).Unix(), now.Unix())
 	return t, err
 }
 
@@ -119,4 +144,72 @@ func (s *Store) sessionUser(token string) (int64, bool) {
 
 func (s *Store) deleteSession(token string) {
 	s.db.Exec(`DELETE FROM sessions WHERE token_hash = ?`, hashToken(token))
+}
+
+func (s *Store) markReauth(token string) {
+	s.db.Exec(`UPDATE sessions SET reauth_at = ? WHERE token_hash = ?`, time.Now().Unix(), hashToken(token))
+}
+
+// sessionFresh reports whether the session proved the password within the window.
+func (s *Store) sessionFresh(token string, within time.Duration) bool {
+	if token == "" {
+		return false
+	}
+	var at int64
+	err := s.db.QueryRow(`SELECT reauth_at FROM sessions WHERE token_hash = ? AND expires_at > ?`,
+		hashToken(token), time.Now().Unix()).Scan(&at)
+	return err == nil && time.Since(time.Unix(at, 0)) < within
+}
+
+// attempt records one try for key and reports whether it is within max per window.
+func (s *Store) attempt(key string, max int, window time.Duration) (bool, error) {
+	now := time.Now()
+	cutoff := now.Add(-window).Unix()
+	if _, err := s.db.Exec(`DELETE FROM attempts WHERE at <= ?`, cutoff); err != nil {
+		return false, err
+	}
+	var n int
+	if err := s.db.QueryRow(`SELECT COUNT(*) FROM attempts WHERE key = ? AND at > ?`, key, cutoff).Scan(&n); err != nil {
+		return false, err
+	}
+	if n >= max {
+		return false, nil
+	}
+	_, err := s.db.Exec(`INSERT INTO attempts (key, at) VALUES (?, ?)`, key, now.Unix())
+	return err == nil, err
+}
+
+type AuditEntry struct {
+	At       int64  `json:"at"`
+	Username string `json:"username"`
+	IP       string `json:"ip"`
+	Action   string `json:"action"`
+	Detail   string `json:"detail"`
+}
+
+// audit appends one entry; the log keeps the newest 5000.
+func (s *Store) audit(username, ip, action, detail string) {
+	if _, err := s.db.Exec(`INSERT INTO audit (at, username, ip, action, detail) VALUES (?, ?, ?, ?, ?)`,
+		time.Now().Unix(), username, ip, action, detail); err != nil {
+		log.Printf("audit: %v", err)
+		return
+	}
+	s.db.Exec(`DELETE FROM audit WHERE id <= (SELECT MAX(id) - 5000 FROM audit)`)
+}
+
+func (s *Store) recentAudit(limit int) ([]AuditEntry, error) {
+	rows, err := s.db.Query(`SELECT at, username, ip, action, detail FROM audit ORDER BY id DESC LIMIT ?`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []AuditEntry{}
+	for rows.Next() {
+		var e AuditEntry
+		if err := rows.Scan(&e.At, &e.Username, &e.IP, &e.Action, &e.Detail); err != nil {
+			return nil, err
+		}
+		out = append(out, e)
+	}
+	return out, rows.Err()
 }

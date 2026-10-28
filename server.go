@@ -13,7 +13,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -25,17 +24,60 @@ type App struct {
 	secure    bool
 	sampler   *sampler
 	tokenPath string
+	trusted   []*net.IPNet // reverse proxies allowed to set X-Forwarded-For
+	helper    *helperClient
+	consoles  *consoleRegistry
+	catalog   *catalogStore
+	jobs      *jobs
+}
+
+type route struct {
+	pattern string
+	public  bool
+	h       http.HandlerFunc
+}
+
+// routeTable lists every API route. Everything is private unless marked public, and the
+// test walks this table unauthenticated (deny by default).
+func (a *App) routeTable() []route {
+	return []route{
+		{"GET /api/auth/state", true, a.authState},
+		{"POST /api/setup", true, a.setup},
+		{"POST /api/login", true, a.login},
+		{"POST /api/logout", true, a.logout},
+		{"POST /api/auth/reauth", false, a.reauth},
+		{"GET /api/system", false, a.system},
+		{"GET /api/stats/stream", false, a.statsStream},
+		{"GET /api/console/ready", false, a.consoleReady},
+		{"GET /api/console", false, a.console},
+		{"GET /api/activity", false, a.activity},
+		{"GET /api/docker", false, a.dockerInfo},
+		{"POST /api/docker/install", false, a.dockerInstall},
+		{"GET /api/catalog", false, a.catalogList},
+		{"POST /api/catalog/sync", false, a.catalogSync},
+		{"GET /api/catalog/{id}/icon", false, a.catalogIcon},
+		{"GET /api/catalog/{id}/screenshot/{n}", false, a.catalogScreenshot},
+		{"GET /api/apps", false, a.appsList},
+		{"POST /api/apps/{id}/install", false, a.appInstall},
+		{"POST /api/apps/{id}/action", false, a.appAction},
+		{"POST /api/apps/{id}/uninstall", false, a.appUninstall},
+		{"GET /api/apps/{id}/logs", false, a.appLogs},
+		{"GET /api/jobs/{id}", false, a.jobStatus},
+	}
 }
 
 func (a *App) routes(ui fs.FS) http.Handler {
+	if a.consoles == nil {
+		a.consoles = newConsoleRegistry()
+	}
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /api/auth/state", a.authState)
-	mux.HandleFunc("POST /api/setup", a.setup)
-	mux.HandleFunc("POST /api/login", a.login)
-	mux.HandleFunc("POST /api/logout", a.logout)
-	mux.HandleFunc("GET /api/system", a.requireAuth(a.system))
-	mux.HandleFunc("GET /api/stats/stream", a.requireAuth(a.statsStream))
-	mux.HandleFunc("GET /api/console", a.requireAuth(a.console))
+	for _, rt := range a.routeTable() {
+		h := rt.h
+		if !rt.public {
+			h = a.requireAuth(h)
+		}
+		mux.HandleFunc(rt.pattern, h)
+	}
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "This page does not exist.")
 	})
@@ -104,22 +146,86 @@ func writeError(w http.ResponseWriter, status int, msg string) {
 	writeJSON(w, status, map[string]string{"error": msg})
 }
 
-func clientIP(r *http.Request) string {
+// clientIP is the TCP peer. X-Forwarded-For is only read when the peer is a configured
+// trusted proxy, and then the right-most address that is not itself a trusted proxy wins.
+// X-Real-IP and friends are never trusted.
+func (a *App) clientIP(r *http.Request) string {
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
-		return r.RemoteAddr
+		host = r.RemoteAddr
+	}
+	if !a.isTrusted(host) {
+		return host
+	}
+	parts := strings.Split(r.Header.Get("X-Forwarded-For"), ",")
+	for i := len(parts) - 1; i >= 0; i-- {
+		ip := strings.TrimSpace(parts[i])
+		if net.ParseIP(ip) == nil {
+			break
+		}
+		if !a.isTrusted(ip) {
+			return ip
+		}
 	}
 	return host
+}
+
+func (a *App) isTrusted(ip string) bool {
+	p := net.ParseIP(ip)
+	if p == nil {
+		return false
+	}
+	for _, n := range a.trusted {
+		if n.Contains(p) {
+			return true
+		}
+	}
+	return false
+}
+
+func parseCIDRs(list string) []*net.IPNet {
+	var out []*net.IPNet
+	for _, c := range strings.Split(list, ",") {
+		if c = strings.TrimSpace(c); c == "" {
+			continue
+		}
+		if !strings.Contains(c, "/") {
+			if strings.Contains(c, ":") {
+				c += "/128"
+			} else {
+				c += "/32"
+			}
+		}
+		if _, n, err := net.ParseCIDR(c); err == nil {
+			out = append(out, n)
+		} else {
+			log.Printf("trusted proxy %q ignored: %v", c, err)
+		}
+	}
+	return out
 }
 
 // ---- auth ----
 
 func (a *App) currentUser(r *http.Request) (int64, bool) {
+	return a.store.sessionUser(sessionToken(r))
+}
+
+func sessionToken(r *http.Request) string {
 	c, err := r.Cookie(sessionCookie)
 	if err != nil {
-		return 0, false
+		return ""
 	}
-	return a.store.sessionUser(c.Value)
+	return c.Value
+}
+
+// audit records who did what from where (never secrets).
+func (a *App) audit(r *http.Request, action, detail string) {
+	name := ""
+	if id, ok := a.currentUser(r); ok {
+		name = a.store.username(id)
+	}
+	a.store.audit(name, a.clientIP(r), action, detail)
 }
 
 func (a *App) requireAuth(h http.HandlerFunc) http.HandlerFunc {
@@ -189,7 +295,7 @@ func readCredentials(r *http.Request) (credentials, error) {
 }
 
 func (a *App) setup(w http.ResponseWriter, r *http.Request) {
-	if !a.limiter.allow("setup:" + clientIP(r)) {
+	if !a.limiter.allow("setup:" + a.clientIP(r)) {
 		writeError(w, http.StatusTooManyRequests, "Too many attempts. Wait a minute and try again.")
 		return
 	}
@@ -231,7 +337,7 @@ func (a *App) setup(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) login(w http.ResponseWriter, r *http.Request) {
-	if !a.limiter.allow("login:" + clientIP(r)) {
+	if !a.limiter.allow("login:" + a.clientIP(r)) {
 		writeError(w, http.StatusTooManyRequests, "Too many sign-in attempts. Wait a minute and try again.")
 		return
 	}
@@ -242,9 +348,11 @@ func (a *App) login(w http.ResponseWriter, r *http.Request) {
 	}
 	id, ok := a.store.checkLogin(c.Username, c.Password)
 	if !ok {
+		a.store.audit(c.Username, a.clientIP(r), "login.failed", "")
 		writeError(w, http.StatusUnauthorized, "The username or password is wrong.")
 		return
 	}
+	a.store.audit(c.Username, a.clientIP(r), "login.ok", "")
 	if err := a.startSession(w, id); err != nil {
 		log.Printf("login session: %v", err)
 		writeError(w, http.StatusInternalServerError, "You could not be signed in. Check the service log.")
@@ -254,11 +362,53 @@ func (a *App) login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) logout(w http.ResponseWriter, r *http.Request) {
-	if c, err := r.Cookie(sessionCookie); err == nil {
-		a.store.deleteSession(c.Value)
+	if t := sessionToken(r); t != "" {
+		if _, ok := a.currentUser(r); ok {
+			a.audit(r, "logout", "")
+		}
+		a.consoles.closeAll(hashToken(t)) // an open console ends with the session
+		a.store.deleteSession(t)
 	}
 	a.setCookie(w, "", -1)
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+}
+
+// reauthWindow is how long a password proof opens the console without asking again.
+const reauthWindow = 5 * time.Minute
+
+func (a *App) reauth(w http.ResponseWriter, r *http.Request) {
+	if !a.limiter.allow("reauth:" + a.clientIP(r)) {
+		writeError(w, http.StatusTooManyRequests, "Too many attempts. Wait a minute and try again.")
+		return
+	}
+	c, err := readCredentials(r)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	id, _ := a.currentUser(r)
+	if _, ok := a.store.checkLogin(a.store.username(id), c.Password); !ok {
+		a.audit(r, "reauth.failed", "")
+		writeError(w, http.StatusUnauthorized, "The password is wrong.")
+		return
+	}
+	a.store.markReauth(sessionToken(r))
+	a.audit(r, "reauth.ok", "")
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+}
+
+func (a *App) consoleReady(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]bool{"fresh": a.store.sessionFresh(sessionToken(r), reauthWindow)})
+}
+
+func (a *App) activity(w http.ResponseWriter, r *http.Request) {
+	items, err := a.store.recentAudit(200)
+	if err != nil {
+		log.Printf("activity: %v", err)
+		writeError(w, http.StatusInternalServerError, "The activity log could not be read.")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"items": items})
 }
 
 // ---- setup token ----
@@ -276,7 +426,7 @@ func (a *App) ensureSetupToken(state string) error {
 		return nil
 	}
 	if b, err := os.ReadFile(a.tokenPath); err == nil && len(strings.TrimSpace(string(b))) > 0 {
-		log.Printf("Setup code (also in %s): %s", a.tokenPath, strings.TrimSpace(string(b)))
+		log.Printf("Waiting for setup. The setup code is in %s.", a.tokenPath)
 		return nil
 	}
 	t := randomToken()[:12]
@@ -299,32 +449,23 @@ func (a *App) checkSetupToken(given string) bool {
 
 // ---- rate limit ----
 
+// limiter counts attempts per key in SQLite, so a restart does not reset it.
 type limiter struct {
-	mu     sync.Mutex
+	store  *Store
 	max    int
 	window time.Duration
-	hits   map[string][]time.Time
 }
 
-func newLimiter(max int, window time.Duration) *limiter {
-	return &limiter{max: max, window: window, hits: map[string][]time.Time{}}
+func newLimiter(store *Store, max int, window time.Duration) *limiter {
+	return &limiter{store: store, max: max, window: window}
 }
 
-// allow counts every attempt (ponytail: in memory, resets on restart; fine for one box).
+// allow counts every attempt; it fails closed when the database cannot be read.
 func (l *limiter) allow(key string) bool {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	now := time.Now()
-	kept := l.hits[key][:0]
-	for _, t := range l.hits[key] {
-		if now.Sub(t) < l.window {
-			kept = append(kept, t)
-		}
-	}
-	if len(kept) >= l.max {
-		l.hits[key] = kept
+	ok, err := l.store.attempt(key, l.max, l.window)
+	if err != nil {
+		log.Printf("rate limit: %v", err)
 		return false
 	}
-	l.hits[key] = append(kept, now)
-	return true
+	return ok
 }
