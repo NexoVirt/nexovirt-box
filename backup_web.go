@@ -25,6 +25,7 @@ type backupSchedule struct {
 	Keep    keepPolicy `json:"keep"`
 	Enabled bool       `json:"enabled"`
 	LastRun int64      `json:"last_run"`
+	NextRun int64      `json:"next_run,omitempty"` // filled for the UI, not stored
 }
 
 type backupRecord struct {
@@ -73,6 +74,15 @@ func (s backupSchedule) dueAt(now time.Time) time.Time {
 		t = t.AddDate(0, 0, -1)
 	}
 	return t
+}
+
+// nextAt is the first planned run after now.
+func (s backupSchedule) nextAt(now time.Time) time.Time {
+	step := 1
+	if s.Freq == "weekly" {
+		step = 7
+	}
+	return s.dueAt(now).AddDate(0, 0, step)
 }
 
 func (st *Store) schedules() []backupSchedule {
@@ -293,7 +303,13 @@ func (a *App) backupsGet(w http.ResponseWriter, r *http.Request) {
 	if n, _ := strconv.Atoi(r.URL.Query().Get("limit")); n > 0 && n <= 500 {
 		limit = n
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"key": key, "targets": targets, "schedules": a.store.schedules(),
+	scheds, now := a.store.schedules(), time.Now()
+	for i := range scheds {
+		if scheds[i].Enabled {
+			scheds[i].NextRun = scheds[i].nextAt(now).Unix()
+		}
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"key": key, "targets": targets, "schedules": scheds,
 		"history": a.store.backupHistory(r.URL.Query().Get("app"), limit)})
 }
 

@@ -229,6 +229,12 @@ func TestScheduleDue(t *testing.T) {
 	if !d.Equal(time.Date(2026, 10, 25, 2, 0, 0, 0, loc)) {
 		t.Fatalf("weekly: %v", d)
 	}
+	if n := (backupSchedule{Freq: "daily", Time: "23:00"}).nextAt(now); !n.Equal(time.Date(2026, 10, 28, 23, 0, 0, 0, loc)) {
+		t.Fatalf("next daily: %v", n)
+	}
+	if n := (backupSchedule{Freq: "weekly", Weekday: 0, Time: "02:00"}).nextAt(now); !n.Equal(time.Date(2026, 11, 1, 2, 0, 0, 0, loc)) {
+		t.Fatalf("next weekly: %v", n)
+	}
 }
 
 // Changing targets and deleting backups need the helper-checked password proof.
