@@ -219,11 +219,8 @@
   .nav a:hover { background: var(--fill); }
   .nav a:active { transform: scale(0.98); }
   .nav a[aria-current='page'] { background: var(--accent); color: var(--on-accent); }
-  .nav-icon {
-    display: grid; place-items: center; width: 1.875rem; height: 1.875rem; border-radius: 0.5rem;
-    background: var(--fill); color: var(--text-2);
-  }
-  .nav a[aria-current='page'] .nav-icon { background: rgba(255, 255, 255, 0.2); color: inherit; }
+  .nav-icon { display: grid; place-items: center; width: 1.25rem; color: var(--text-2); }
+  .nav a[aria-current='page'] .nav-icon { color: inherit; }
 
   .content { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 
