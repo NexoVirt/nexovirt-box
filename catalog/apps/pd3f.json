@@ -6,8 +6,7 @@
  "tagline": "PD3F",
  "icon": "https://cdn.jsdelivr.net/gh/bigbeartechworld/big-bear-universal-apps/apps/pd3f/logo.jpg",
  "architectures": [
-  "amd64",
-  "arm64"
+  "amd64"
  ],
  "attribution": {
   "store": "BigBearCasaOS",

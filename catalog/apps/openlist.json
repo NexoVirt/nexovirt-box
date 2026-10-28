@@ -7,7 +7,6 @@
  "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/OpenList/icon.svg",
  "architectures": [
   "amd64",
-  "arm",
   "arm64"
  ],
  "attribution": {

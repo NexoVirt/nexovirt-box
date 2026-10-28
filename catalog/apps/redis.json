@@ -7,9 +7,7 @@
  "icon": "https://cdn4.iconfinder.com/data/icons/redis-2/1451/Untitled-2-512.png",
  "architectures": [
   "amd64",
-  "arm64",
-  "armv7",
-  "i386"
+  "arm64"
  ],
  "attribution": {
   "store": "BigBearCasaOS",

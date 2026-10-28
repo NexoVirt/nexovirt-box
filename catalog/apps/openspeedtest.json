@@ -7,11 +7,7 @@
  "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/OpenSpeedTest/icon.svg",
  "architectures": [
   "amd64",
-  "arm64",
-  "ppc64le",
-  "s390x",
-  "386",
-  "arm"
+  "arm64"
  ],
  "attribution": {
   "store": "CasaOS App Store",

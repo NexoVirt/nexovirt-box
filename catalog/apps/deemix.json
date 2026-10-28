@@ -6,8 +6,8 @@
  "tagline": "deemix is a barebone deezer downloader library built from the ashes of Deezloader Remix.",
  "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/deemix/metadata/logo.jpg",
  "architectures": [
-  "arm64",
-  "amd64"
+  "amd64",
+  "arm64"
  ],
  "attribution": {
   "store": "Runtipi App Store",

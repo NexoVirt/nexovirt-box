@@ -6,8 +6,7 @@
  "tagline": "phpMyAdmin",
  "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/phpmyadmin.png",
  "architectures": [
-  "amd64",
-  "arm64"
+  "amd64"
  ],
  "attribution": {
   "store": "BigBearCasaOS",

@@ -6,8 +6,7 @@
  "tagline": "A third party companion app available to Plex server owners to allow their users to request, review and discover content.",
  "icon": "https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Petio/icon.svg",
  "architectures": [
-  "amd64",
-  "arm64"
+  "amd64"
  ],
  "attribution": {
   "store": "CasaOS App Store",

@@ -6,8 +6,8 @@
  "tagline": "Wizarr is an automatic user invitation system for Plex and Jellyfin.",
  "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/wizarr/metadata/logo.jpg",
  "architectures": [
-  "arm64",
-  "amd64"
+  "amd64",
+  "arm64"
  ],
  "attribution": {
   "store": "Runtipi App Store",

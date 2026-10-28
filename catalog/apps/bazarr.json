@@ -6,8 +6,8 @@
  "tagline": "A companion application to Sonarr and Radarr that manages and downloads subtitles",
  "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/bazarr/metadata/logo.jpg",
  "architectures": [
-  "arm64",
-  "amd64"
+  "amd64",
+  "arm64"
  ],
  "attribution": {
   "store": "Runtipi App Store",

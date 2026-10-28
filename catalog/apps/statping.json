@@ -7,7 +7,6 @@
  "icon": "https://raw.githubusercontent.com/xneo1/portainer_templates/master/Images/statping.png",
  "architectures": [
   "amd64",
-  "armv7",
   "arm64"
  ],
  "attribution": {

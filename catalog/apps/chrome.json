@@ -6,8 +6,7 @@
  "tagline": "chrome",
  "icon": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/google-chrome.png",
  "architectures": [
-  "amd64",
-  "arm64"
+  "amd64"
  ],
  "attribution": {
   "store": "BigBearCasaOS",

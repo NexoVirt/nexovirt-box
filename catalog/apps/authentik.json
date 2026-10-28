@@ -6,8 +6,8 @@
  "tagline": "The authentication glue you need.",
  "icon": "https://cdn.jsdelivr.net/gh/runtipi/runtipi-appstore@master/apps/authentik-1/metadata/logo.jpg",
  "architectures": [
-  "arm64",
-  "amd64"
+  "amd64",
+  "arm64"
  ],
  "docker_socket": true,
  "attribution": {
