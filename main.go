@@ -63,6 +63,7 @@ func main() {
 		helper:  &helperClient{socket: *socket},
 		catalog: newCatalogStore(*state, *catalogURL),
 		jobs:    newJobs(store),
+		state:   *state,
 	}
 	if u := store.setting("catalog_url"); u != "" {
 		app.catalog.setURL(u) // set in the UI; wins over -catalog-url
@@ -72,6 +73,8 @@ func main() {
 	}
 	go app.sampler.run()
 	go app.watchUpdates()
+	startNotifier(app)
+	go app.watchBackups()
 
 	ui, err := fs.Sub(webDist, "web/dist")
 	if err != nil {

@@ -213,3 +213,20 @@ func TestS3TargetValidation(t *testing.T) {
 		t.Fatal("secret returned")
 	}
 }
+
+func TestScheduleDue(t *testing.T) {
+	loc := time.UTC
+	now := time.Date(2026, 10, 28, 10, 0, 0, 0, loc) // a Wednesday
+	d := backupSchedule{Freq: "daily", Time: "03:30"}.dueAt(now)
+	if !d.Equal(time.Date(2026, 10, 28, 3, 30, 0, 0, loc)) {
+		t.Fatalf("daily: %v", d)
+	}
+	d = backupSchedule{Freq: "daily", Time: "23:00"}.dueAt(now)
+	if !d.Equal(time.Date(2026, 10, 27, 23, 0, 0, 0, loc)) {
+		t.Fatalf("daily later today: %v", d)
+	}
+	d = backupSchedule{Freq: "weekly", Weekday: 0, Time: "02:00"}.dueAt(now)
+	if !d.Equal(time.Date(2026, 10, 25, 2, 0, 0, 0, loc)) {
+		t.Fatalf("weekly: %v", d)
+	}
+}

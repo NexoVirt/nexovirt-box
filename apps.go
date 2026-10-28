@@ -193,6 +193,9 @@ func (c *catalogStore) sync(ctx context.Context) (int, error) {
 func (a *App) catalogIcon(w http.ResponseWriter, r *http.Request) {
 	cat, _ := a.catalog.get()
 	e, ok := cat.Entry(r.PathValue("id"))
+	if !ok && a.serveOwnIcon(w, r, r.PathValue("id")) {
+		return
+	}
 	if !ok || e.Icon == "" {
 		http.NotFound(w, r)
 		return
