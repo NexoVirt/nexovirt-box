@@ -191,6 +191,7 @@ func (s *Store) releaseAttempt(id int64) {
 }
 
 type AuditEntry struct {
+	ID       int64  `json:"id"`
 	At       int64  `json:"at"`
 	Username string `json:"username"`
 	IP       string `json:"ip"`
@@ -208,21 +209,92 @@ func (s *Store) audit(username, ip, action, detail string) {
 	s.db.Exec(`DELETE FROM audit WHERE id <= (SELECT MAX(id) - 5000 FROM audit)`)
 }
 
-func (s *Store) recentAudit(limit int) ([]AuditEntry, error) {
-	rows, err := s.db.Query(`SELECT at, username, ip, action, detail FROM audit ORDER BY id DESC LIMIT ?`, limit)
+// auditCategories map an Activity filter to action prefixes.
+var auditCategories = map[string][]string{
+	"signin":   {"login.", "logout", "reauth.", "2fa."},
+	"console":  {"console."},
+	"apps":     {"app.", "docker.", "catalog.", "images.", "proxy."},
+	"files":    {"files."},
+	"firewall": {"firewall."},
+	"system":   {"settings.", "box."},
+}
+
+type auditQuery struct {
+	Limit    int
+	Cursor   int64 // id to continue after (0 = start)
+	Asc      bool
+	Category string
+	User     string
+	Search   string
+}
+
+// queryAudit returns one page of the log, newest (or oldest) first, plus the total that matches.
+func (s *Store) queryAudit(q auditQuery) ([]AuditEntry, int, error) {
+	where, args := []string{"1=1"}, []any{}
+	if prefixes, ok := auditCategories[q.Category]; ok {
+		var or []string
+		for _, p := range prefixes {
+			or = append(or, "action LIKE ? ESCAPE '\\'")
+			args = append(args, likeEscape(p)+"%")
+		}
+		where = append(where, "("+strings.Join(or, " OR ")+")")
+	}
+	if q.User != "" {
+		where = append(where, "username = ?")
+		args = append(args, q.User)
+	}
+	if q.Search != "" {
+		where = append(where, "(action LIKE ? ESCAPE '\\' OR detail LIKE ? ESCAPE '\\' OR ip LIKE ? ESCAPE '\\' OR username LIKE ? ESCAPE '\\')")
+		like := "%" + likeEscape(q.Search) + "%"
+		args = append(args, like, like, like, like)
+	}
+	var total int
+	if err := s.db.QueryRow(`SELECT COUNT(*) FROM audit WHERE `+strings.Join(where, " AND "), args...).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+	order, cmp := "DESC", "<"
+	if q.Asc {
+		order, cmp = "ASC", ">"
+	}
+	if q.Cursor > 0 {
+		where = append(where, "id "+cmp+" ?")
+		args = append(args, q.Cursor)
+	}
+	args = append(args, q.Limit)
+	rows, err := s.db.Query(`SELECT id, at, username, ip, action, detail FROM audit WHERE `+strings.Join(where, " AND ")+` ORDER BY id `+order+` LIMIT ?`, args...)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 	out := []AuditEntry{}
 	for rows.Next() {
 		var e AuditEntry
-		if err := rows.Scan(&e.At, &e.Username, &e.IP, &e.Action, &e.Detail); err != nil {
-			return nil, err
+		if err := rows.Scan(&e.ID, &e.At, &e.Username, &e.IP, &e.Action, &e.Detail); err != nil {
+			return nil, 0, err
 		}
 		out = append(out, e)
 	}
-	return out, rows.Err()
+	return out, total, rows.Err()
+}
+
+func likeEscape(s string) string {
+	return strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(s)
+}
+
+func (s *Store) auditUsers() []string {
+	out := []string{}
+	rows, err := s.db.Query(`SELECT DISTINCT username FROM audit WHERE username != '' ORDER BY username LIMIT 100`)
+	if err != nil {
+		return out
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var u string
+		if rows.Scan(&u) == nil {
+			out = append(out, u)
+		}
+	}
+	return out
 }
 
 func (s *Store) setting(key string) string {

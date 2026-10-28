@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -187,5 +188,54 @@ func TestHistoryKeepsLastSamples(t *testing.T) {
 	}
 	if len(got) != historySize || got[0]["n"] != 5 || got[len(got)-1]["n"] != historySize+4 {
 		t.Fatalf("history: len %d first %v last %v", len(got), got[0], got[len(got)-1])
+	}
+}
+
+func TestActivityPagesAndFilters(t *testing.T) {
+	app, h, token := newTestApp(t)
+	sess := setupAndLogin(t, h, token)
+	for i := 0; i < 7; i++ {
+		app.store.audit("admin", "10.0.0.1", "files.upload", fmt.Sprintf("/srv/f%d_x%%", i))
+	}
+	app.store.audit("bob", "10.0.0.2", "console.open", "")
+	var page struct {
+		Items []AuditEntry
+		Total int
+		Next  int64
+	}
+	rec := get(h, "/api/activity?limit=3&type=files", sess)
+	json.Unmarshal(rec.Body.Bytes(), &page)
+	if rec.Code != 200 || page.Total != 7 || len(page.Items) != 3 || page.Next == 0 {
+		t.Fatalf("first page: %d %+v", rec.Code, page)
+	}
+	seen := map[int64]bool{}
+	for cur := page.Next; ; {
+		for _, it := range page.Items {
+			if seen[it.ID] || it.Action != "files.upload" {
+				t.Fatalf("bad item %+v", it)
+			}
+			seen[it.ID] = true
+		}
+		if cur == 0 {
+			break
+		}
+		json.Unmarshal(get(h, fmt.Sprintf("/api/activity?limit=3&type=files&cursor=%d", cur), sess).Body.Bytes(), &page)
+		cur = page.Next
+	}
+	if len(seen) != 7 {
+		t.Fatalf("paged through %d of 7", len(seen))
+	}
+	// LIKE wildcards in the search are literal.
+	json.Unmarshal(get(h, "/api/activity?q=f3_x%25", sess).Body.Bytes(), &page)
+	if page.Total != 1 {
+		t.Fatalf("search: %+v", page)
+	}
+	json.Unmarshal(get(h, "/api/activity?q=_", sess).Body.Bytes(), &page)
+	if page.Total != 7 {
+		t.Fatalf("underscore search matched %d", page.Total)
+	}
+	json.Unmarshal(get(h, "/api/activity?user=bob", sess).Body.Bytes(), &page)
+	if page.Total != 1 || page.Items[0].Action != "console.open" {
+		t.Fatalf("user filter: %+v", page)
 	}
 }

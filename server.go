@@ -493,14 +493,30 @@ func (a *App) consoleReady(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]bool{"fresh": a.consoleProof(sessionToken(r)) != "", "needs_code": a.store.totpSecret(uid) != ""})
 }
 
+// activity returns one page of the log: ?limit=50&cursor=<id>&order=asc|desc&type=&user=&q=.
 func (a *App) activity(w http.ResponseWriter, r *http.Request) {
-	items, err := a.store.recentAudit(200)
+	v := r.URL.Query()
+	limit, _ := strconv.Atoi(v.Get("limit"))
+	if limit < 1 || limit > 200 {
+		limit = 50
+	}
+	cursor, _ := strconv.ParseInt(v.Get("cursor"), 10, 64)
+	q := auditQuery{Limit: limit, Cursor: cursor, Asc: v.Get("order") == "asc", Category: v.Get("type"),
+		User: v.Get("user"), Search: strings.TrimSpace(v.Get("q"))}
+	if len(q.Search) > 100 {
+		q.Search = q.Search[:100]
+	}
+	items, total, err := a.store.queryAudit(q)
 	if err != nil {
 		log.Printf("activity: %v", err)
 		writeError(w, http.StatusInternalServerError, "The activity log could not be read.")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"items": items})
+	var next int64
+	if len(items) == limit {
+		next = items[len(items)-1].ID
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"items": items, "total": total, "next": next, "users": a.store.auditUsers()})
 }
 
 // ---- setup token ----
