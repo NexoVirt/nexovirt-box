@@ -69,7 +69,7 @@
         <div class="row">
           <span class="ico" class:error={tone === 'error'}><Icon size={16} /></span>
           <div class="main">
-            <span class="t-head">{text}{#if it.detail}<span class="t-sub detail"> {it.detail}</span>{/if}</span>
+            <span class="t-head">{text}{#if it.detail}<span class="t-sub detail">{'  ·  ' + it.detail}</span>{/if}</span>
             <span class="t-caption">{it.username || 'Unknown user'} from {it.ip}</span>
           </div>
           <span class="t-caption when" title={new Date(it.at * 1000).toLocaleString()}>{ago(it.at)}</span>

@@ -26,8 +26,14 @@ export function plainText(s = '') {
     .replace(/^#{1,6}\s*/gm, '')
     .replace(/[*_`]{1,3}([^*_`]+)[*_`]{1,3}/g, '$1')
     .replace(/<[^>]+>/g, '')
+    .replace(/[ \t]+\n/g, '\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
+}
+
+// "version-12.2" or "v1.2" read as "12.2" / "1.2".
+export function versionLabel(v = '') {
+  return v.replace(/^(version-|v(?=\d))/i, '');
 }
 
 export function appURL(app) {

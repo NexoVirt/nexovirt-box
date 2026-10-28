@@ -1,7 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import { api } from '$lib/api.js';
-  import { runJob, appURL } from '$lib/jobs.js';
+  import { runJob, appURL, versionLabel } from '$lib/jobs.js';
   import { toast } from '$lib/toast.svelte.js';
   import AppIcon from '$lib/AppIcon.svelte';
   import Dialog from '$lib/Dialog.svelte';
@@ -160,14 +160,14 @@
           <AppIcon id={app.id} name={app.name} size={42} />
           <div class="main">
             <span class="t-head truncate">{app.name}</span>
-            <span class="t-caption truncate">{[app.version && `Version ${app.version}`, app.main_port && `Port ${app.main_port}`].filter(Boolean).join('  ·  ')}</span>
+            <span class="t-caption truncate">{[app.version && `Version ${versionLabel(app.version)}`, app.main_port && `Port ${app.main_port}`].filter(Boolean).join('  ·  ')}</span>
+            <span class="state t-caption">
+              {#if busy[app.id]}<Loader size={14} class="spinner" />{busy[app.id] === 'update' ? 'Updating' : 'Working'}
+              {:else}<span class="dot {tone}"></span>{label}{/if}
+            </span>
           </div>
-          <span class="state t-caption">
-            {#if busy[app.id]}<Loader size={14} class="spinner" />{busy[app.id] === 'update' ? 'Updating' : 'Working'}
-            {:else}<span class="dot {tone}"></span>{label}{/if}
-          </span>
           {#if app.state === 'running' && appURL(app)}
-            <a class="btn btn-tinted btn-sm open" href={appURL(app)} target="_blank" rel="noopener noreferrer"><ExternalLink size={15} />Open</a>
+            <a class="btn btn-tinted btn-sm open" href={appURL(app)} target="_blank" rel="noopener noreferrer" aria-label="Open {app.name}"><ExternalLink size={15} /><span class="open-text">Open</span></a>
           {/if}
           <div class="more">
             <button class="icon-btn" onclick={() => (menu = menu === app.id ? null : app.id)} aria-haspopup="menu" aria-expanded={menu === app.id} aria-label="Actions for {app.name}" disabled={!!busy[app.id]}>
@@ -232,8 +232,9 @@
   .skeleton.line { display: block; width: 40%; height: 0.8rem; }
   .group { overflow: visible; }
   .app { gap: 0.875rem; }
-  .main { display: grid; min-width: 0; flex: 1; }
-  .state { display: inline-flex; align-items: center; gap: 0.4rem; white-space: nowrap; min-width: 6.5rem; }
+  .main { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 1rem; align-items: center; min-width: 0; flex: 1; }
+  .main > .t-head, .main > .t-caption { grid-column: 1; }
+  .state { grid-column: 2; grid-row: 1 / span 2; display: inline-flex; align-items: center; gap: 0.4rem; white-space: nowrap; min-width: 6.5rem; }
   .more { position: relative; }
   .pop-item {
     display: flex; align-items: center; gap: 0.625rem; width: 100%; min-height: 2.5rem; padding: 0 0.625rem;
@@ -258,8 +259,9 @@
   .buttons { display: flex; justify-content: flex-end; gap: 0.5rem; }
 
   @media (max-width: 639px) {
-    .app { flex-wrap: wrap; }
-    .state { min-width: 0; order: 3; margin-left: calc(42px + 0.875rem); }
-    .open { order: 4; }
+    .main { display: grid; grid-template-columns: minmax(0, 1fr); }
+    .state { grid-column: 1; grid-row: auto; min-width: 0; margin-top: 0.125rem; }
+    .open { width: 2.25rem; padding: 0; }
+    .open-text { display: none; }
   }
 </style>

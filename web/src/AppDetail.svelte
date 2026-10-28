@@ -1,7 +1,7 @@
 <script>
   // App details, the install form (typed questions) and the live install progress, in one dialog.
   import { api } from '$lib/api.js';
-  import { runJob, plainText, appURL } from '$lib/jobs.js';
+  import { runJob, plainText, appURL, versionLabel } from '$lib/jobs.js';
   import AppIcon from '$lib/AppIcon.svelte';
   import JobLog from '$lib/JobLog.svelte';
   import Loader from '@lucide/svelte/icons/loader-circle';
@@ -109,7 +109,7 @@
     <AppIcon id={summary.id} name={summary.name} size={56} />
     <div class="title">
       <h2 class="t-title truncate">{summary.name}</h2>
-      <p class="t-caption truncate">{[summary.version && `Version ${summary.version}`, summary.category].filter(Boolean).join('  ·  ')}</p>
+      <p class="t-caption truncate">{[summary.version && `Version ${versionLabel(summary.version)}`, summary.category].filter(Boolean).join('  ·  ')}</p>
     </div>
     <button class="icon-btn" data-close onclick={onClose} disabled={busy} aria-label="Close"><X size={20} /></button>
   </header>

@@ -53,7 +53,11 @@ func (a *App) console(w http.ResponseWriter, r *http.Request) {
 	defer remove()
 	started := time.Now()
 	a.audit(r, "console.open", "")
-	defer func() { a.audit(r, "console.close", "after "+time.Since(started).Round(time.Second).String()) }()
+	uid, _ := a.currentUser(r)
+	name, ip := a.store.username(uid), a.clientIP(r) // the session may be gone when it closes
+	defer func() {
+		a.store.audit(name, ip, "console.close", "after "+time.Since(started).Round(time.Second).String())
+	}()
 
 	// shell -> browser
 	go func() {
