@@ -21,7 +21,7 @@ export function duration(sec) {
   return `${m}m`;
 }
 
-// Status colour for a usage percentage.
+// Status colour class for a usage percentage (gauges and badges only).
 export function level(p) {
-  return p >= 90 ? 'red' : p >= 75 ? 'yellow' : 'green';
+  return p >= 90 ? 'bg-error' : p >= 75 ? 'bg-warn' : 'bg-ok';
 }

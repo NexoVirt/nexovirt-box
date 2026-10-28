@@ -46,8 +46,8 @@ on a reachable server) and `cd web && npm run dev` for the UI with hot reload.
 ## Tech
 
 Go (standard library HTTP server, SQLite via modernc.org/sqlite, gopsutil, creack/pty,
-coder/websocket) with a Svelte 5 UI styled with [Tabler](https://tabler.io) (MIT) and Tabler
-Icons (MIT), built into the binary.
+coder/websocket) with a Svelte 5 UI built on [shadcn-svelte](https://shadcn-svelte.com)
+(Tailwind CSS v4 + bits-ui, MIT) and [Lucide](https://lucide.dev) icons (ISC), built into the binary.
 
 ## License
 

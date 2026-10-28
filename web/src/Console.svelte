@@ -3,10 +3,23 @@
   import { Terminal } from '@xterm/xterm';
   import { FitAddon } from '@xterm/addon-fit';
   import '@xterm/xterm/css/xterm.css';
-  import { api } from './lib/api.js';
-  import Icon from './lib/Icon.svelte';
+  import { api } from '$lib/api.js';
+  import { theme } from '$lib/theme.svelte.js';
+  import { Button } from '$lib/components/ui/button/index.js';
+  import { Badge } from '$lib/components/ui/badge/index.js';
+  import * as Alert from '$lib/components/ui/alert/index.js';
+  import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+  import Unplug from '@lucide/svelte/icons/unplug';
+  import Loader from '@lucide/svelte/icons/loader-circle';
 
   let { onSessionLost } = $props();
+
+  // Terminal colours follow the app theme (zinc + the blue accent for the cursor).
+  const THEMES = {
+    dark: { background: '#18181b', foreground: '#e4e4e7', cursor: '#60a5fa', selectionBackground: '#3f3f46' },
+    light: { background: '#ffffff', foreground: '#18181b', cursor: '#2563eb', selectionBackground: '#d4d4d8',
+      black: '#18181b', white: '#71717a', brightWhite: '#3f3f46', yellow: '#a16207', brightYellow: '#a16207' },
+  };
 
   let host = $state(); // terminal container
   let status = $state('connecting'); // connecting | connected | closed
@@ -19,8 +32,8 @@
   // The terminal fills the window below the header (xterm needs a sized box to fit into).
   function measure() {
     if (!host) return;
-    const top = host.getBoundingClientRect().top;
-    height = Math.max(320, window.innerHeight - top - 56);
+    const top = host.getBoundingClientRect().top + window.scrollY;
+    height = Math.max(320, window.innerHeight - top - 40);
   }
 
   function sendResize() {
@@ -56,12 +69,18 @@
     };
   }
 
+  $effect(() => {
+    const t = THEMES[theme.current];
+    if (term) term.options.theme = t;
+  });
+
   onMount(() => {
     term = new Terminal({
       cursorBlink: true,
       fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace',
       fontSize: 14,
-      theme: { background: '#000000', foreground: '#e4e4e7', cursor: '#60a5fa' },
+      lineHeight: 1.2,
+      theme: THEMES[theme.current],
     });
     fit = new FitAddon();
     term.loadAddon(fit);
@@ -80,36 +99,32 @@
   });
 </script>
 
-<div class="page-header d-print-none">
-  <div class="container-fluid">
-    <div class="row g-2 align-items-center">
-      <div class="col">
-        <div class="page-pretitle">Root shell on this server</div>
-        <h2 class="page-title">Console</h2>
-      </div>
-      <div class="col-auto ms-auto d-flex align-items-center gap-2">
-        {#if status === 'connected'}
-          <span class="badge bg-green-lt"><span class="status-dot status-green me-1"></span>Connected</span>
-        {:else if status === 'connecting'}
-          <span class="badge bg-secondary-lt"><span class="spinner-border spinner-border-sm me-1" role="status"></span>Connecting</span>
-        {:else}
-          <span class="badge bg-red-lt"><Icon name="plug-connected-x" class="icon me-1" />Disconnected</span>
-          <button class="btn btn-primary" onclick={connect}><Icon name="refresh" />Reconnect</button>
-        {/if}
-      </div>
+<div class="mx-auto grid max-w-7xl gap-4">
+  <div class="flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight">Console</h1>
+      <p class="text-sm text-muted-foreground">Root shell on this server.</p>
+    </div>
+    <div class="flex items-center gap-2">
+      {#if status === 'connected'}
+        <Badge variant="outline" class="gap-1.5"><span class="size-2 rounded-full bg-ok"></span>Connected</Badge>
+      {:else if status === 'connecting'}
+        <Badge variant="outline" class="gap-1.5 text-muted-foreground"><Loader class="size-3 animate-spin" />Connecting</Badge>
+      {:else}
+        <Badge variant="outline" class="gap-1.5"><Unplug class="size-3 text-error" />Disconnected</Badge>
+        <Button size="sm" onclick={connect}><RefreshCw />Reconnect</Button>
+      {/if}
     </div>
   </div>
-</div>
 
-<div class="page-body">
-  <div class="container-fluid">
-    {#if status === 'closed'}
-      <div class="alert alert-warning" role="alert">{closedReason}</div>
-    {/if}
-    <div class="card bg-black overflow-hidden">
-      <div class="card-body p-2">
-        <div bind:this={host} style:height="{height}px"></div>
-      </div>
-    </div>
+  {#if status === 'closed'}
+    <Alert.Root>
+      <Unplug />
+      <Alert.Description>{closedReason}</Alert.Description>
+    </Alert.Root>
+  {/if}
+
+  <div class="overflow-hidden rounded-xl border bg-card p-3 shadow-xs">
+    <div bind:this={host} style:height="{height}px"></div>
   </div>
 </div>

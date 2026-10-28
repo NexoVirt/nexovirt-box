@@ -2,7 +2,7 @@
   let { size = 32 } = $props();
 </script>
 
-<svg class="nx-logo" viewBox="0 0 56 56" height={size} width={size} xmlns="http://www.w3.org/2000/svg" role="img" aria-label="NexoVirt Box">
+<svg viewBox="0 0 56 56" height={size} width={size} xmlns="http://www.w3.org/2000/svg" role="img" aria-label="NexoVirt Box">
   <g stroke="currentColor" stroke-width="2.5" stroke-opacity="0.45" stroke-linecap="round">
     <line x1="28" y1="19" x2="28" y2="13.5" />
     <line x1="36.56" y1="25.22" x2="41.79" y2="23.52" />

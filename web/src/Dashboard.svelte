@@ -1,49 +1,55 @@
 <script>
   import { onMount } from 'svelte';
-  import { api } from './lib/api.js';
-  import { bytes, rate, pct, duration, level } from './lib/format.js';
-  import Icon from './lib/Icon.svelte';
-  import Sparkline from './lib/Sparkline.svelte';
+  import { api } from '$lib/api.js';
+  import { bytes, rate, pct, duration, level } from '$lib/format.js';
+  import Sparkline from '$lib/Sparkline.svelte';
+  import * as Card from '$lib/components/ui/card/index.js';
+  import * as Table from '$lib/components/ui/table/index.js';
+  import { Badge } from '$lib/components/ui/badge/index.js';
+  import { Progress } from '$lib/components/ui/progress/index.js';
+  import { Skeleton } from '$lib/components/ui/skeleton/index.js';
+  import Cpu from '@lucide/svelte/icons/cpu';
+  import MemoryStick from '@lucide/svelte/icons/memory-stick';
+  import Activity from '@lucide/svelte/icons/activity';
+  import Clock from '@lucide/svelte/icons/clock';
+  import ArrowDown from '@lucide/svelte/icons/arrow-down';
+  import ArrowUp from '@lucide/svelte/icons/arrow-up';
+  import Network from '@lucide/svelte/icons/network';
+  import HardDrive from '@lucide/svelte/icons/hard-drive';
+  import Info from '@lucide/svelte/icons/info';
+  import Loader from '@lucide/svelte/icons/loader-circle';
 
-  let { onSessionLost } = $props();
+  let { system, onSessionLost } = $props();
 
   const HISTORY = 60; // 2 minutes at one sample every 2 s
 
-  let system = $state(null);
-  let systemError = $state('');
   let snap = $state(null);
   let live = $state('connecting'); // connecting | live | reconnecting
   let cpuHistory = $state([]);
   let memHistory = $state([]);
+  let netHistory = $state({}); // interface -> combined rx+tx rates
 
   let memPct = $derived(snap ? pct(snap.memory.used, snap.memory.total) : 0);
   let swapPct = $derived(snap ? pct(snap.memory.swap_used, snap.memory.swap_total) : 0);
   let loadPct = $derived(snap && system ? Math.round((snap.load[0] / system.cores) * 100) : 0);
 
-  function push(arr, v) {
+  function push(arr = [], v) {
     const next = [...arr, v];
     return next.length > HISTORY ? next.slice(next.length - HISTORY) : next;
   }
 
-  async function loadSystem() {
-    systemError = '';
-    const res = await api('/api/system');
-    if (res.status === 401) return onSessionLost();
-    if (!res.ok) systemError = res.error;
-    else system = res.data;
-  }
-
   onMount(() => {
-    loadSystem();
     const es = new EventSource('/api/stats/stream');
     es.onmessage = (e) => {
-      try {
-        const s = JSON.parse(e.data);
-        snap = s;
-        live = 'live';
-        cpuHistory = push(cpuHistory, s.cpu.total);
-        memHistory = push(memHistory, pct(s.memory.used, s.memory.total));
-      } catch { /* ignore a broken frame */ }
+      let s;
+      try { s = JSON.parse(e.data); } catch { return; } // ignore a broken frame
+      snap = s;
+      live = 'live';
+      cpuHistory = push(cpuHistory, s.cpu.total);
+      memHistory = push(memHistory, pct(s.memory.used, s.memory.total));
+      const next = {};
+      for (const n of s.network) next[n.name] = push(netHistory[n.name], n.rx_rate + n.tx_rate);
+      netHistory = next;
     };
     es.onerror = async () => {
       live = 'reconnecting';
@@ -57,219 +63,169 @@
   });
 </script>
 
-<div class="page-header d-print-none">
-  <div class="container-fluid">
-    <div class="row g-2 align-items-center">
-      <div class="col">
-        <div class="page-pretitle">{system ? system.hostname : 'Overview'}</div>
-        <h2 class="page-title">Dashboard</h2>
-      </div>
-      <div class="col-auto ms-auto">
-        {#if live === 'live'}
-          <span class="badge bg-green-lt"><span class="status-dot status-dot-animated status-green me-1"></span>Live</span>
-        {:else if live === 'reconnecting'}
-          <span class="badge bg-yellow-lt"><span class="spinner-border spinner-border-sm me-1" role="status"></span>Reconnecting</span>
-        {:else}
-          <span class="badge bg-secondary-lt"><span class="spinner-border spinner-border-sm me-1" role="status"></span>Connecting</span>
-        {/if}
-      </div>
-    </div>
+{#snippet statCard(Icon, label, value)}
+  <div class="flex items-center justify-between">
+    <span class="text-sm font-medium text-muted-foreground">{label}</span>
+    <Icon class="size-4 text-muted-foreground" />
   </div>
-</div>
+  <div class="mt-2 text-3xl font-semibold tracking-tight tabular-nums">{value}</div>
+{/snippet}
 
-<div class="page-body">
-  <div class="container-fluid">
-    {#if !snap}
-      <div class="card">
-        <div class="card-body text-center py-5">
-          <div class="spinner-border text-secondary" role="status"></div>
-          <div class="text-secondary mt-3">Reading the system...</div>
-        </div>
-      </div>
+<div class="mx-auto grid max-w-7xl gap-6">
+  <div class="flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight">Dashboard</h1>
+      <p class="text-sm text-muted-foreground">Live view of this server, updated every 2 seconds.</p>
+    </div>
+    {#if live === 'live'}
+      <Badge variant="outline" class="gap-1.5"><span class="size-2 animate-pulse rounded-full bg-ok"></span>Live</Badge>
     {:else}
-      <div class="row row-deck row-cards">
-        <!-- CPU -->
-        <div class="col-sm-6 col-xl-3">
-          <div class="card">
-            <div class="card-body">
-              <div class="d-flex align-items-center mb-2">
-                <span class="bg-blue-lt text-blue avatar me-3"><Icon name="cpu" class="icon icon-2" /></span>
-                <div>
-                  <div class="subheader">CPU</div>
-                  <div class="h2 mb-0">{snap.cpu.total.toFixed(1)} %</div>
-                </div>
-              </div>
-              <Sparkline values={cpuHistory} />
-              <div class="text-secondary small text-truncate">{system?.cpu_model || ''}</div>
-            </div>
-          </div>
-        </div>
-        <!-- Memory -->
-        <div class="col-sm-6 col-xl-3">
-          <div class="card">
-            <div class="card-body">
-              <div class="d-flex align-items-center mb-2">
-                <span class="bg-green-lt text-green avatar me-3"><Icon name="database" class="icon icon-2" /></span>
-                <div>
-                  <div class="subheader">Memory</div>
-                  <div class="h2 mb-0">{memPct} %</div>
-                </div>
-              </div>
-              <Sparkline values={memHistory} class="text-green" />
-              <div class="text-secondary small">{bytes(snap.memory.used)} of {bytes(snap.memory.total)}</div>
-              {#if snap.memory.swap_total > 0}
-                <div class="text-secondary small">Swap {bytes(snap.memory.swap_used)} of {bytes(snap.memory.swap_total)} ({swapPct} %)</div>
-              {:else}
-                <div class="text-secondary small">No swap</div>
-              {/if}
-            </div>
-          </div>
-        </div>
-        <!-- Load -->
-        <div class="col-sm-6 col-xl-3">
-          <div class="card">
-            <div class="card-body">
-              <div class="d-flex align-items-center mb-3">
-                <span class="bg-yellow-lt text-yellow avatar me-3"><Icon name="activity" class="icon icon-2" /></span>
-                <div>
-                  <div class="subheader">Load average</div>
-                  <div class="h2 mb-0">{snap.load[0].toFixed(2)}</div>
-                </div>
-              </div>
-              <div class="progress progress-sm mb-2">
-                <div class="progress-bar bg-{level(loadPct)}" style:width="{Math.min(100, loadPct)}%" role="progressbar" aria-valuenow={loadPct} aria-valuemin="0" aria-valuemax="100"></div>
-              </div>
-              <div class="text-secondary small">1, 5, 15 min: {snap.load.map((l) => l.toFixed(2)).join(', ')}</div>
-              <div class="text-secondary small">{system?.cores || '-'} CPU threads</div>
-            </div>
-          </div>
-        </div>
-        <!-- Uptime -->
-        <div class="col-sm-6 col-xl-3">
-          <div class="card">
-            <div class="card-body">
-              <div class="d-flex align-items-center mb-3">
-                <span class="bg-purple-lt text-purple avatar me-3"><Icon name="clock" class="icon icon-2" /></span>
-                <div>
-                  <div class="subheader">Uptime</div>
-                  <div class="h2 mb-0">{duration(snap.uptime)}</div>
-                </div>
-              </div>
-              <div class="text-secondary small text-truncate">{system?.os || ''}</div>
-              <div class="text-secondary small text-truncate">Kernel {system?.kernel || '-'}</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- System -->
-        <div class="col-lg-6">
-          <div class="card">
-            <div class="card-header"><h3 class="card-title">System</h3></div>
-            <div class="card-body">
-              {#if systemError}
-                <div class="alert alert-warning mb-0" role="alert">{systemError}</div>
-              {:else if !system}
-                <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
-              {:else}
-                <div class="datagrid">
-                  <div class="datagrid-item"><div class="datagrid-title">Hostname</div><div class="datagrid-content">{system.hostname}</div></div>
-                  <div class="datagrid-item"><div class="datagrid-title">Operating system</div><div class="datagrid-content">{system.os}</div></div>
-                  <div class="datagrid-item"><div class="datagrid-title">Kernel</div><div class="datagrid-content">{system.kernel}</div></div>
-                  <div class="datagrid-item"><div class="datagrid-title">Architecture</div><div class="datagrid-content">{system.arch}</div></div>
-                  <div class="datagrid-item"><div class="datagrid-title">Processor</div><div class="datagrid-content">{system.cpu_model || '-'}</div></div>
-                  <div class="datagrid-item"><div class="datagrid-title">Cores</div><div class="datagrid-content">{system.physical_cores || '-'} cores, {system.cores} threads</div></div>
-                  <div class="datagrid-item"><div class="datagrid-title">Virtualization</div><div class="datagrid-content">{system.virtualization || 'None detected'}</div></div>
-                </div>
-              {/if}
-            </div>
-          </div>
-        </div>
-
-        <!-- Cores -->
-        <div class="col-lg-6">
-          <div class="card">
-            <div class="card-header"><h3 class="card-title">CPU per thread</h3></div>
-            <div class="card-body">
-              <div class="row g-3">
-                {#each snap.cpu.cores as c, i}
-                  <div class="col-6 col-md-4">
-                    <div class="d-flex justify-content-between small mb-1">
-                      <span class="text-secondary">Thread {i}</span><span>{c.toFixed(0)} %</span>
-                    </div>
-                    <div class="progress progress-sm">
-                      <div class="progress-bar bg-{level(c)}" style:width="{c}%" role="progressbar" aria-valuenow={c} aria-valuemin="0" aria-valuemax="100"></div>
-                    </div>
-                  </div>
-                {/each}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Disks -->
-        <div class="col-12">
-          <div class="card">
-            <div class="card-header"><h3 class="card-title">Drives</h3></div>
-            {#if snap.disks.length === 0}
-              <div class="card-body text-secondary">No mounted drives found.</div>
-            {:else}
-              <div class="table-responsive">
-                <table class="table table-vcenter card-table">
-                  <thead>
-                    <tr><th>Mount point</th><th>Device</th><th>Filesystem</th><th class="text-end">Size</th><th class="text-end">Used</th><th class="text-end">Free</th><th class="w-25 text-nowrap">Usage</th></tr>
-                  </thead>
-                  <tbody>
-                    {#each snap.disks as d (d.mountpoint)}
-                      {@const p = pct(d.used, d.total)}
-                      <tr>
-                        <td class="fw-medium text-break">{d.mountpoint}</td>
-                        <td class="text-secondary">{d.device}</td>
-                        <td><span class="badge bg-secondary-lt">{d.fstype}</span></td>
-                        <td class="text-end text-nowrap">{bytes(d.total)}</td>
-                        <td class="text-end text-nowrap">{bytes(d.used)}</td>
-                        <td class="text-end text-nowrap">{bytes(d.free)}</td>
-                        <td>
-                          <div class="d-flex align-items-center gap-2">
-                            <div class="progress progress-sm flex-fill">
-                              <div class="progress-bar bg-{level(p)}" style:width="{p}%" role="progressbar" aria-valuenow={p} aria-valuemin="0" aria-valuemax="100"></div>
-                            </div>
-                            <span class="small text-secondary text-nowrap">{p} %</span>
-                          </div>
-                        </td>
-                      </tr>
-                    {/each}
-                  </tbody>
-                </table>
-              </div>
-            {/if}
-          </div>
-        </div>
-
-        <!-- Network -->
-        <div class="col-12">
-          <div class="card">
-            <div class="card-header"><h3 class="card-title">Network</h3></div>
-            {#if snap.network.length === 0}
-              <div class="card-body text-secondary">No network interfaces found.</div>
-            {:else}
-              <div class="table-responsive">
-                <table class="table table-vcenter card-table">
-                  <thead><tr><th>Interface</th><th class="text-end">Download</th><th class="text-end">Upload</th></tr></thead>
-                  <tbody>
-                    {#each snap.network as n (n.name)}
-                      <tr>
-                        <td class="fw-medium"><Icon name="network" class="icon text-secondary me-1" />{n.name}</td>
-                        <td class="text-end text-nowrap"><Icon name="arrow-down" class="icon text-green" /> {rate(n.rx_rate)}</td>
-                        <td class="text-end text-nowrap"><Icon name="arrow-up" class="icon text-blue" /> {rate(n.tx_rate)}</td>
-                      </tr>
-                    {/each}
-                  </tbody>
-                </table>
-              </div>
-            {/if}
-          </div>
-        </div>
-      </div>
+      <Badge variant="outline" class="gap-1.5 text-muted-foreground">
+        <Loader class="size-3 animate-spin" />{live === 'reconnecting' ? 'Reconnecting' : 'Connecting'}
+      </Badge>
     {/if}
   </div>
+
+  {#if !snap}
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      {#each Array(4) as _}
+        <Card.Root class="gap-3 p-6"><Skeleton class="h-4 w-20" /><Skeleton class="h-8 w-28" /><Skeleton class="h-9 w-full" /></Card.Root>
+      {/each}
+    </div>
+    <div class="grid gap-4 lg:grid-cols-2">
+      <Card.Root class="gap-3 p-6"><Skeleton class="h-5 w-24" /><Skeleton class="h-24 w-full" /></Card.Root>
+      <Card.Root class="gap-3 p-6"><Skeleton class="h-5 w-24" /><Skeleton class="h-24 w-full" /></Card.Root>
+    </div>
+  {:else}
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <Card.Root class="gap-0 p-6">
+        {@render statCard(Cpu, 'CPU', `${snap.cpu.total.toFixed(1)} %`)}
+        <Sparkline values={cpuHistory} class="mt-3 text-primary" />
+        <div class="mt-3 flex h-6 items-end gap-0.5" title="Load per CPU thread">
+          {#each snap.cpu.cores as c, i (i)}
+            <div class="flex h-full flex-1 items-end rounded-sm bg-muted">
+              <div class="w-full rounded-sm transition-all duration-500 {level(c)}" style:height="{Math.max(6, c)}%"></div>
+            </div>
+          {/each}
+        </div>
+        <p class="mt-2 truncate text-xs text-muted-foreground">{snap.cpu.cores.length} threads{system?.cpu_model ? `, ${system.cpu_model}` : ''}</p>
+      </Card.Root>
+
+      <Card.Root class="gap-0 p-6">
+        {@render statCard(MemoryStick, 'Memory', `${memPct} %`)}
+        <Sparkline values={memHistory} class="mt-3 text-primary" />
+        <Progress value={memPct} class="mt-3 h-1.5" indicatorClass={level(memPct)} />
+        <p class="mt-2 text-xs text-muted-foreground tabular-nums">{bytes(snap.memory.used)} of {bytes(snap.memory.total)}</p>
+        <p class="text-xs text-muted-foreground tabular-nums">
+          {snap.memory.swap_total > 0 ? `Swap ${bytes(snap.memory.swap_used)} of ${bytes(snap.memory.swap_total)} (${swapPct} %)` : 'No swap'}
+        </p>
+      </Card.Root>
+
+      <Card.Root class="gap-0 p-6">
+        {@render statCard(Activity, 'Load average', snap.load[0].toFixed(2))}
+        <Progress value={Math.min(100, loadPct)} class="mt-4 h-1.5" indicatorClass={level(loadPct)} />
+        <p class="mt-2 text-xs text-muted-foreground tabular-nums">1, 5, 15 min: {snap.load.map((l) => l.toFixed(2)).join(', ')}</p>
+        <p class="text-xs text-muted-foreground">{loadPct} % of {system?.cores ?? '-'} threads</p>
+      </Card.Root>
+
+      <Card.Root class="gap-0 p-6">
+        {@render statCard(Clock, 'Uptime', duration(snap.uptime))}
+        <p class="mt-4 truncate text-xs text-muted-foreground">{system?.os ?? ''}</p>
+        <p class="truncate text-xs text-muted-foreground">Kernel {system?.kernel ?? '-'}</p>
+      </Card.Root>
+    </div>
+
+    <div class="grid gap-4 lg:grid-cols-2">
+      <Card.Root>
+        <Card.Header>
+          <Card.Title class="flex items-center gap-2"><Network class="size-4 text-muted-foreground" />Network</Card.Title>
+          <Card.Description>Current throughput per interface.</Card.Description>
+        </Card.Header>
+        <Card.Content class="grid gap-4">
+          {#each snap.network as n (n.name)}
+            <div class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1">
+              <span class="truncate text-sm font-medium">{n.name}</span>
+              <span class="flex gap-4 text-sm tabular-nums">
+                <span class="flex items-center gap-1"><ArrowDown class="size-3.5 text-muted-foreground" />{rate(n.rx_rate)}</span>
+                <span class="flex items-center gap-1"><ArrowUp class="size-3.5 text-muted-foreground" />{rate(n.tx_rate)}</span>
+              </span>
+              <div class="col-span-2"><Sparkline values={netHistory[n.name] ?? []} max={0} class="text-primary" /></div>
+            </div>
+          {:else}
+            <p class="text-sm text-muted-foreground">No network interfaces found.</p>
+          {/each}
+        </Card.Content>
+      </Card.Root>
+
+      <Card.Root>
+        <Card.Header>
+          <Card.Title class="flex items-center gap-2"><Info class="size-4 text-muted-foreground" />System</Card.Title>
+          <Card.Description>Hardware and operating system.</Card.Description>
+        </Card.Header>
+        <Card.Content>
+          {#if !system}
+            <div class="grid gap-3">{#each Array(5) as _}<Skeleton class="h-4 w-full" />{/each}</div>
+          {:else}
+            <dl class="grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-3 text-sm">
+              {#each [
+                ['Hostname', system.hostname],
+                ['Operating system', system.os],
+                ['Kernel', system.kernel],
+                ['Architecture', system.arch],
+                ['Processor', system.cpu_model || '-'],
+                ['Cores', `${system.physical_cores || '-'} cores, ${system.cores} threads`],
+                ['Virtualization', system.virtualization || 'None detected'],
+              ] as [k, v] (k)}
+                <dt class="text-muted-foreground">{k}</dt>
+                <dd class="truncate font-medium" title={v}>{v}</dd>
+              {/each}
+            </dl>
+          {/if}
+        </Card.Content>
+      </Card.Root>
+    </div>
+
+    <Card.Root>
+      <Card.Header>
+        <Card.Title class="flex items-center gap-2"><HardDrive class="size-4 text-muted-foreground" />Drives</Card.Title>
+        <Card.Description>Mounted filesystems on real devices.</Card.Description>
+      </Card.Header>
+      <Card.Content>
+        {#if snap.disks.length === 0}
+          <p class="text-sm text-muted-foreground">No mounted drives found.</p>
+        {:else}
+          <Table.Root>
+            <Table.Header>
+              <Table.Row>
+                <Table.Head>Mount point</Table.Head>
+                <Table.Head class="hidden md:table-cell">Device</Table.Head>
+                <Table.Head class="hidden sm:table-cell">Filesystem</Table.Head>
+                <Table.Head class="text-right">Size</Table.Head>
+                <Table.Head class="hidden text-right md:table-cell">Free</Table.Head>
+                <Table.Head class="w-1/4 min-w-32">Usage</Table.Head>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
+              {#each snap.disks as d (d.mountpoint)}
+                {@const p = pct(d.used, d.total)}
+                <Table.Row>
+                  <Table.Cell class="font-medium">{d.mountpoint}</Table.Cell>
+                  <Table.Cell class="hidden text-muted-foreground md:table-cell">{d.device}</Table.Cell>
+                  <Table.Cell class="hidden sm:table-cell"><Badge variant="secondary" class="font-mono">{d.fstype}</Badge></Table.Cell>
+                  <Table.Cell class="text-right tabular-nums">{bytes(d.total)}</Table.Cell>
+                  <Table.Cell class="hidden text-right tabular-nums md:table-cell">{bytes(d.free)}</Table.Cell>
+                  <Table.Cell>
+                    <div class="flex items-center gap-3">
+                      <Progress value={p} class="h-1.5 flex-1" indicatorClass={level(p)} />
+                      <span class="w-12 text-right text-xs text-muted-foreground tabular-nums">{p} %</span>
+                    </div>
+                  </Table.Cell>
+                </Table.Row>
+              {/each}
+            </Table.Body>
+          </Table.Root>
+        {/if}
+      </Card.Content>
+    </Card.Root>
+  {/if}
 </div>
