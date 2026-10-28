@@ -253,7 +253,7 @@
     <div class="notice down" role="status">
       <CircleAlert size={18} />
       <div class="down-text">
-        <span><strong>{app.name}</strong> {app.state === 'not_created' ? 'was installed but never started.' : app.state === 'restarting' ? 'keeps restarting.' : app.exit_code ? `stopped unexpectedly (exit code ${app.exit_code}).` : 'is not running, but nobody stopped it.'}</span>
+        <span><strong>{app.name}</strong> {app.state === 'not_created' ? 'is not running yet.' : app.state === 'restarting' ? 'keeps restarting.' : app.exit_code ? `stopped unexpectedly (exit code ${app.exit_code}).` : 'is not running, but nobody stopped it.'}</span>
         {#if app.last_lines?.length}<pre class="tail mono">{app.last_lines.join('\n')}</pre>{/if}
         <span class="down-btns">
           <button class="btn btn-primary btn-sm" onclick={() => act(app, 'start')}><Play size={15} />Start</button>
