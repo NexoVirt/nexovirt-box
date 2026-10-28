@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"log"
 	"os"
@@ -52,6 +53,17 @@ func openStore(path string) (*Store, error) {
 			credential TEXT NOT NULL,
 			created_at INTEGER NOT NULL,
 			last_used_at INTEGER NOT NULL
+		);
+		CREATE TABLE IF NOT EXISTS jobs (
+			id TEXT PRIMARY KEY,
+			kind TEXT NOT NULL,
+			app TEXT NOT NULL,
+			status TEXT NOT NULL,
+			started INTEGER NOT NULL,
+			finished INTEGER NOT NULL DEFAULT 0,
+			error TEXT NOT NULL DEFAULT '',
+			lines TEXT NOT NULL DEFAULT '[]',
+			result TEXT NOT NULL DEFAULT 'null'
 		);
 		CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 		CREATE TABLE IF NOT EXISTS audit (
@@ -371,4 +383,41 @@ func (s *Store) setting(key string) string {
 func (s *Store) setSetting(key, value string) error {
 	_, err := s.db.Exec(`INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, key, value)
 	return err
+}
+
+// ---- jobs ----
+
+func (s *Store) saveJob(row []any) error {
+	_, err := s.db.Exec(`INSERT INTO jobs (id, kind, app, status, started, finished, error, lines, result)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT(id) DO UPDATE SET status = excluded.status, finished = excluded.finished,
+			error = excluded.error, lines = excluded.lines, result = excluded.result`, row...)
+	return err
+}
+
+func (s *Store) loadJob(id string) *job {
+	j := &job{}
+	var lines, res string
+	err := s.db.QueryRow(`SELECT id, kind, app, status, started, finished, error, lines, result FROM jobs WHERE id = ?`, id).
+		Scan(&j.ID, &j.Kind, &j.App, &j.Status, &j.Started, &j.Finished, &j.Error, &lines, &res)
+	if err != nil {
+		return nil
+	}
+	json.Unmarshal([]byte(lines), &j.Lines)
+	json.Unmarshal([]byte(res), &j.Result)
+	if j.Lines == nil {
+		j.Lines = []string{}
+	}
+	return j
+}
+
+// interruptJobs ends the jobs a previous run left running and drops old ones.
+func (s *Store) interruptJobs() (int64, error) {
+	now := time.Now().Unix()
+	res, err := s.db.Exec(`UPDATE jobs SET status = 'interrupted', error = ?, finished = ? WHERE status = 'running'`, interruptedMsg, now)
+	if err != nil {
+		return 0, err
+	}
+	s.db.Exec(`DELETE FROM jobs WHERE finished > 0 AND finished < ?`, now-7*24*3600)
+	return res.RowsAffected()
 }

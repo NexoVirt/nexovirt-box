@@ -49,13 +49,16 @@ type helperRequest struct {
 	Email      string            `json:"email,omitempty"`
 	Domain     string            `json:"domain,omitempty"`
 	DataDir    string            `json:"data_dir,omitempty"`
-	URL        string            `json:"url,omitempty"`
-	Rules      []fwRule          `json:"rules,omitempty"`
-	Confirm    string            `json:"confirm,omitempty"`
-	Path       string            `json:"path,omitempty"`
-	Path2      string            `json:"path2,omitempty"`
-	Offset     int64             `json:"offset,omitempty"`
-	Overwrite  bool              `json:"overwrite,omitempty"`
+	Retry      bool              `json:"retry,omitempty"`
+	// AllowDockerSocket: the admin confirmed the warning for an app marked docker_socket.
+	AllowDockerSocket bool     `json:"allow_docker_socket,omitempty"`
+	URL               string   `json:"url,omitempty"`
+	Rules             []fwRule `json:"rules,omitempty"`
+	Confirm           string   `json:"confirm,omitempty"`
+	Path              string   `json:"path,omitempty"`
+	Path2             string   `json:"path2,omitempty"`
+	Offset            int64    `json:"offset,omitempty"`
+	Overwrite         bool     `json:"overwrite,omitempty"`
 }
 
 type helperMsg struct {
@@ -80,6 +83,7 @@ type helperServer struct {
 	proofs   *proofKeeper
 	mu       sync.Mutex
 	appLocks map[string]*sync.Mutex
+	busy     map[string]string // app id -> long action running now
 }
 
 func (h *helperServer) peerAllowed(uid int) bool { return uid == 0 || uid == h.allowUID }
@@ -150,6 +154,22 @@ func (h *helperServer) handle(c *net.UnixConn) {
 		f.Close() // the web process holds its own copy now
 		return
 	}
+	if ca, ok := h.ctxActions()[req.Action]; ok {
+		// The action stops when the web process goes away (restart, redeploy, watchdog): the
+		// app is then free again and its job is marked interrupted.
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		go func() { io.Copy(io.Discard, r); cancel() }()
+		logf := func(s string) { writeMsg(c, helperMsg{Type: "log", Line: s}) }
+		data, err := ca(ctx, req, logf)
+		if err != nil {
+			writeMsg(c, helperMsg{Type: "result", Error: friendlyHelperErr(req.Action, err)})
+			return
+		}
+		raw, _ := json.Marshal(data)
+		writeMsg(c, helperMsg{Type: "result", OK: true, Data: raw})
+		return
+	}
 	act, ok := h.actions()[req.Action]
 	if !ok {
 		writeMsg(c, helperMsg{Type: "result", Error: "This action is not allowed."})
@@ -185,16 +205,23 @@ func (h *helperServer) fdActions() map[string]func(helperRequest) (any, *os.File
 	}
 }
 
-// actions is the complete allowlist (plus "console", handled separately).
+// ctxActions are the long app actions; they are cancelled when the caller disconnects.
+func (h *helperServer) ctxActions() map[string]func(context.Context, helperRequest, func(string)) (any, error) {
+	return map[string]func(context.Context, helperRequest, func(string)) (any, error){
+		"app_install":   h.appInstall,
+		"app_action":    h.appAction,
+		"app_uninstall": h.appUninstall,
+	}
+}
+
+// actions is the complete allowlist (plus "console" and ctxActions, handled separately).
 func (h *helperServer) actions() map[string]helperAction {
 	return map[string]helperAction{
 		"console_proof":    h.consoleProof,
 		"docker_info":      h.dockerInfo,
 		"docker_install":   h.dockerInstall,
 		"apps_status":      h.appsStatus,
-		"app_install":      h.appInstall,
-		"app_action":       h.appAction,
-		"app_uninstall":    h.appUninstall,
+		"app_credentials":  h.appCredentials,
 		"app_logs":         h.appLogs,
 		"app_domain":       h.appDomain,
 		"proxy_status":     h.proxyStatus,

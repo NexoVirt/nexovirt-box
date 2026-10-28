@@ -62,7 +62,7 @@ func main() {
 		trusted: parseCIDRs(*trusted),
 		helper:  &helperClient{socket: *socket},
 		catalog: newCatalogStore(*state, *catalogURL),
-		jobs:    newJobs(),
+		jobs:    newJobs(store),
 	}
 	if u := store.setting("catalog_url"); u != "" {
 		app.catalog.setURL(u) // set in the UI; wins over -catalog-url
@@ -120,6 +120,7 @@ func runHelper(args []string) {
 		log.Fatalf("helper: %v", err)
 	}
 	go restoreFirewall()
+	h.migrateShared()
 	log.Printf("NexoVirt Box helper %s listening on %s (allowed user %s)", version, *socket, *webUser)
 	h.serve(ln)
 }

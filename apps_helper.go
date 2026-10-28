@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"math/big"
 	"net"
 	"os"
@@ -38,20 +39,32 @@ type installedApp struct {
 	Domain      string `json:"domain,omitempty"`
 	TLS         string `json:"tls,omitempty"`
 	DataDir     string `json:"data_dir,omitempty"`
-	DataCreated bool   `json:"data_created,omitempty"` // Box created DataDir, so "delete data" may remove it
+	DataCreated bool   `json:"data_created,omitempty"`     // Box created DataDir, so "delete data" may remove it
+	SocketOK    bool   `json:"docker_socket_ok,omitempty"` // the admin agreed to give this app Docker access
+	Stopped     bool   `json:"stopped,omitempty"`          // stopped on purpose (desired state), no alert
 }
 
 type appStatus struct {
 	installedApp
-	State      string            `json:"state"` // running, partial, stopped, restarting, unknown
+	// running, partial, restarting, stopped (all exited cleanly), exited (a container failed),
+	// not_created (no containers), interrupted (an install did not finish), unknown
+	State      string            `json:"state"`
+	Busy       string            `json:"busy,omitempty"` // action running in the helper right now
+	ExitCode   int               `json:"exit_code,omitempty"`
+	LastLines  []string          `json:"last_lines,omitempty"` // newest log lines when it stopped unexpectedly
 	Containers []containerStatus `json:"containers"`
 }
 
 type containerStatus struct {
-	Service string `json:"service"`
-	State   string `json:"state"`
-	Status  string `json:"status"`
+	Service  string `json:"service"`
+	State    string `json:"state"`
+	Status   string `json:"status"`
+	ExitCode int    `json:"exit_code,omitempty"`
 }
+
+// installMarker exists from writing an app's files until its first `up` worked. Left behind
+// (helper restart, crash, failed download) it marks the install as interrupted: Retry resumes.
+const installMarker = ".installing"
 
 func (h *helperServer) appLock(id string) func() {
 	h.mu.Lock()
@@ -67,6 +80,60 @@ func (h *helperServer) appLock(id string) func() {
 	m.Lock()
 	return m.Unlock
 }
+
+// claim takes the app for a long action without waiting: a second action is refused while
+// one runs, and the running one is reported in apps_status.
+func (h *helperServer) claim(id, op string) (func(), error) {
+	h.mu.Lock()
+	if h.appLocks == nil {
+		h.appLocks = map[string]*sync.Mutex{}
+	}
+	if h.busy == nil {
+		h.busy = map[string]string{}
+	}
+	m := h.appLocks[id]
+	if m == nil {
+		m = &sync.Mutex{}
+		h.appLocks[id] = m
+	}
+	h.mu.Unlock()
+	if !m.TryLock() {
+		return nil, uerr("Another action for this app is still running. Wait until it has finished.")
+	}
+	h.mu.Lock()
+	h.busy[id] = op
+	h.mu.Unlock()
+	return func() {
+		h.mu.Lock()
+		delete(h.busy, id)
+		h.mu.Unlock()
+		m.Unlock()
+	}, nil
+}
+
+func (h *helperServer) busyOp(id string) string {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return h.busy[id]
+}
+
+func (h *helperServer) writeMeta(m installedApp) error {
+	b, _ := json.MarshalIndent(m, "", "  ")
+	return os.WriteFile(filepath.Join(h.appDir(m.ID), "app.json"), b, 0o600)
+}
+
+func (h *helperServer) base() string { return filepath.Dir(h.appsDir) }
+
+func (h *helperServer) policy(m installedApp) mountPolicy {
+	dir := h.appDir(m.ID)
+	allow := []string{dir, sharedDir(h.base())}
+	if m.DataDir != "" {
+		allow = append(allow, m.DataDir)
+	}
+	return mountPolicy{base: h.base(), allow: allow, allowSocket: m.SocketOK}
+}
+
+func exists(p string) bool { _, err := os.Stat(p); return err == nil }
 
 func validID(id string) error {
 	if !catalog.IDRe.MatchString(id) {
@@ -180,11 +247,15 @@ func (h *helperServer) dockerInstall(req helperRequest, logf func(string)) (any,
 
 // ---- apps ----
 
-func (h *helperServer) appInstall(req helperRequest, logf func(string)) (any, error) {
+func (h *helperServer) appInstall(ctx context.Context, req helperRequest, logf func(string)) (any, error) {
 	if err := validID(req.ID); err != nil {
 		return nil, err
 	}
-	defer h.appLock(req.ID)()
+	release, err := h.claim(req.ID, "install")
+	if err != nil {
+		return nil, err
+	}
+	defer release()
 	if err := needDocker(); err != nil {
 		return nil, err
 	}
@@ -200,8 +271,14 @@ func (h *helperServer) appInstall(req helperRequest, logf func(string)) (any, er
 		return nil, uerr("%s is not available for %s servers.", app.Name, runtime.GOARCH)
 	}
 	dir := h.appDir(app.ID)
-	if _, err := os.Stat(filepath.Join(dir, "compose.yaml")); err == nil {
+	if exists(filepath.Join(dir, "compose.yaml")) {
+		if req.Retry && exists(filepath.Join(dir, installMarker)) {
+			return h.resumeInstall(ctx, app.Name, dir, logf)
+		}
 		return nil, uerr("%s is already installed.", app.Name)
+	}
+	if app.DockerSocket && !req.AllowDockerSocket {
+		return nil, uerr("%s needs access to Docker. Confirm that in the install form first.", app.Name)
 	}
 	dataDir := filepath.Join(dir, "data")
 	customData := req.DataDir != "" && req.DataDir != dataDir
@@ -211,7 +288,7 @@ func (h *helperServer) appInstall(req helperRequest, logf func(string)) (any, er
 		}
 		dataDir = req.DataDir
 	}
-	env, port, err := buildEnv(app, req.Answers, dir, dataDir, filepath.Dir(h.appsDir))
+	env, port, err := buildEnv(app, req.Answers, dir, dataDir, h.base())
 	if err != nil {
 		return nil, err
 	}
@@ -226,6 +303,7 @@ func (h *helperServer) appInstall(req helperRequest, logf func(string)) (any, er
 		return nil, err
 	}
 	os.Chmod(dataDir, 0o755)
+	os.MkdirAll(sharedDir(h.base()), 0o755)
 	cleanup := func() {
 		if dataCreated {
 			os.RemoveAll(dataDir)
@@ -234,37 +312,67 @@ func (h *helperServer) appInstall(req helperRequest, logf func(string)) (any, er
 			os.RemoveAll(dir)
 			return
 		}
-		for _, f := range []string{"compose.yaml", ".env", "app.json"} {
+		for _, f := range []string{"compose.yaml", ".env", "app.json", installMarker} {
 			os.Remove(filepath.Join(dir, f))
 		}
 	}
 	meta := installedApp{ID: app.ID, Name: app.Name, Version: app.Version, MainPort: port, Scheme: app.Scheme,
-		Store: app.Attribution.Store, InstalledAt: time.Now().Unix(), DataDir: dataDir, DataCreated: dataCreated}
+		Store: app.Attribution.Store, InstalledAt: time.Now().Unix(), DataDir: dataDir, DataCreated: dataCreated,
+		SocketOK: app.DockerSocket && req.AllowDockerSocket}
 	metaJSON, _ := json.MarshalIndent(meta, "", "  ")
-	for name, body := range map[string][]byte{"compose.yaml": []byte(app.Compose), ".env": env, "app.json": metaJSON} {
+	for name, body := range map[string][]byte{installMarker: nil, "compose.yaml": []byte(app.Compose), ".env": env, "app.json": metaJSON} {
 		if err := os.WriteFile(filepath.Join(dir, name), body, 0o600); err != nil {
 			cleanup()
 			return nil, err
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 40*time.Minute)
+	ctx, cancel := context.WithTimeout(ctx, 40*time.Minute)
 	defer cancel()
-	logf("Checking ports")
-	if err := checkPorts(ctx, dir, app.ID); err != nil {
-		cleanup()
+	logf("Checking ports and folders")
+	if err := checkConfig(ctx, dir, app.ID, h.policy(meta), true); err != nil {
+		cleanup() // nothing was started yet
 		return nil, err
 	}
-	logf("Downloading and starting " + app.Name + ". The first download can take a few minutes.")
-	if err := runStream(ctx, compose(dir, app.ID, "up", "-d", "--remove-orphans"), logf); err != nil {
-		down, dcancel := context.WithTimeout(context.Background(), 2*time.Minute)
-		runStream(down, compose(dir, app.ID, "down", "--remove-orphans"), nil)
-		dcancel()
-		cleanup()
+	// From here on the files stay: a failed or interrupted download is resumed with Retry.
+	if err := h.up(ctx, app.Name, dir, app.ID, logf); err != nil {
 		return nil, err
 	}
-	logf(app.Name + " is running.")
 	return meta, nil
+}
+
+// resumeInstall finishes an interrupted install with the files that are already there (the
+// generated secrets stay the same).
+func (h *helperServer) resumeInstall(ctx context.Context, name, dir string, logf func(string)) (any, error) {
+	meta, err := h.readMeta(filepath.Base(dir))
+	if err != nil {
+		return nil, err
+	}
+	if err := fixLegacyEnv(dir, h.base()); err != nil {
+		return nil, err
+	}
+	ctx, cancel := context.WithTimeout(ctx, 40*time.Minute)
+	defer cancel()
+	logf("Resuming the install of " + name)
+	runStream(ctx, compose(dir, meta.ID, "down", "--remove-orphans"), nil) // half-created containers hold ports
+	logf("Checking ports and folders")
+	if err := checkConfig(ctx, dir, meta.ID, h.policy(meta), true); err != nil {
+		return nil, err
+	}
+	if err := h.up(ctx, name, dir, meta.ID, logf); err != nil {
+		return nil, err
+	}
+	return meta, nil
+}
+
+func (h *helperServer) up(ctx context.Context, name, dir, id string, logf func(string)) error {
+	logf("Downloading and starting " + name + ". The first download can take a few minutes.")
+	if err := runStream(ctx, compose(dir, id, "up", "-d", "--remove-orphans"), logf); err != nil {
+		return err
+	}
+	os.Remove(filepath.Join(dir, installMarker))
+	logf(name + " is running.")
+	return nil
 }
 
 var (
@@ -282,18 +390,23 @@ func buildEnv(app *catalog.App, answers map[string]string, dir, dataDir, base st
 		"APP_DOMAIN": ip, "APP_HOST": ip, "INTERNAL_IP": ip, "NETWORK_INTERFACE": ip, "APP_PROTOCOL": "http",
 		"LOCAL_DOMAIN": "local", "DNS_IP": "1.1.1.1", "APP_EXPOSED": "false",
 		"TZ": timezone(), "PUID": "1000", "PGID": "1000",
-		"SHARED_DIR": filepath.Join(base, "shared"), "ROOT_FOLDER_HOST": base,
+		// Never Box's state dir: apps only ever get the shared media folder (see appsafety.go).
+		"SHARED_DIR": sharedDir(base), "ROOT_FOLDER_HOST": sharedDir(base),
 	}
-	for _, q := range app.Questions {
+	for _, pq := range presentQuestions(app.Questions) {
+		q := pq.Question
 		if !envKeyRe.MatchString(q.Key) {
 			return nil, 0, uerr("The app definition is not valid.")
 		}
 		v := strings.TrimSpace(answers[q.Key])
+		if pq.Locked {
+			v = ""
+		}
 		if strings.ContainsAny(v, "'\r\n\x00") || strings.IndexFunc(v, func(r rune) bool { return r < 0x20 }) >= 0 {
 			return nil, 0, uerr("%s cannot contain single quotes or line breaks.", q.Label)
 		}
 		if v == "" && q.Generate {
-			v = randomSecret(max(q.Min, 32))
+			v = randomSecret(generatedLen(q))
 		}
 		if v == "" {
 			v = q.Default
@@ -406,10 +519,11 @@ func timezone() string {
 	return "UTC"
 }
 
-// checkPorts renders the compose config and refuses host ports that are already in use.
-func checkPorts(ctx context.Context, dir, id string) error {
+// checkConfig renders the compose config, refuses host folders the app must not see
+// (appsafety.go) and host ports that are already in use.
+func checkConfig(ctx context.Context, dir, id string, p mountPolicy, ports bool) error {
 	cmd := compose(dir, id, "config", "--format", "json")
-	out, err := cmd.Output()
+	out, err := exec.CommandContext(ctx, cmd.Path, cmd.Args[1:]...).Output()
 	if err != nil {
 		msg := ""
 		var ee *exec.ExitError
@@ -418,11 +532,17 @@ func checkPorts(ctx context.Context, dir, id string) error {
 		}
 		return uerr("The app definition could not be read by Docker: %s", msg)
 	}
-	ports, err := publishedPorts(out)
+	if err := checkMounts(out, p); err != nil {
+		return err
+	}
+	if !ports {
+		return nil
+	}
+	published, err := publishedPorts(out)
 	if err != nil {
 		return err
 	}
-	for _, p := range ports {
+	for _, p := range published {
 		if !portFree(p.proto, p.port) {
 			return uerr("Port %d (%s) is already used on this server. Pick another port or stop what uses it.", p.port, p.proto)
 		}
@@ -520,9 +640,17 @@ func (h *helperServer) appsStatus(req helperRequest, logf func(string)) (any, er
 		if err != nil {
 			continue
 		}
-		st := appStatus{installedApp: meta, State: "unknown", Containers: []containerStatus{}}
+		dir := h.appDir(meta.ID)
+		st := appStatus{installedApp: meta, State: "unknown", Containers: []containerStatus{}, Busy: h.busyOp(meta.ID)}
 		if haveDocker {
-			st.Containers, st.State = composeStatus(h.appDir(meta.ID), meta.ID)
+			st.Containers, st.State, st.ExitCode = composeStatus(dir, meta.ID)
+		}
+		if st.State == "not_created" && exists(filepath.Join(dir, installMarker)) {
+			st.State = "interrupted"
+		}
+		// Down although nobody stopped it: show why (the newest log lines).
+		if haveDocker && st.Busy == "" && !meta.Stopped && (st.State == "exited" || st.State == "restarting" || st.State == "partial") {
+			st.LastLines = lastLogLines(dir, meta.ID, 6)
 		}
 		out = append(out, st)
 	}
@@ -530,15 +658,39 @@ func (h *helperServer) appsStatus(req helperRequest, logf func(string)) (any, er
 	return out, nil
 }
 
-func composeStatus(dir, id string) ([]containerStatus, string) {
+func lastLogLines(dir, id string, n int) []string {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	cmd := compose(dir, id, "logs", "--no-color", "--no-log-prefix", "--tail", strconv.Itoa(n))
+	b, _ := exec.CommandContext(ctx, cmd.Path, cmd.Args[1:]...).CombinedOutput()
+	lines := []string{}
+	for _, l := range strings.Split(strings.TrimSpace(string(b)), "\n") {
+		if l = strings.TrimSpace(l); l != "" {
+			lines = append(lines, l)
+		}
+	}
+	if len(lines) > n {
+		lines = lines[len(lines)-n:]
+	}
+	return lines
+}
+
+func composeStatus(dir, id string) ([]containerStatus, string, int) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	cmd := compose(dir, id, "ps", "--all", "--format", "json")
 	out, err := exec.CommandContext(ctx, cmd.Path, cmd.Args[1:]...).Output()
 	if err != nil {
-		return []containerStatus{}, "unknown"
+		return []containerStatus{}, "unknown", 0
 	}
-	type psRow struct{ Service, State, Status string }
+	return parsePS(out)
+}
+
+func parsePS(out []byte) ([]containerStatus, string, int) {
+	type psRow struct {
+		Service, State, Status string
+		ExitCode               int
+	}
 	var rows []psRow
 	trimmed := strings.TrimSpace(string(out))
 	if strings.HasPrefix(trimmed, "[") {
@@ -552,35 +704,49 @@ func composeStatus(dir, id string) ([]containerStatus, string) {
 		}
 	}
 	cs := []containerStatus{}
-	running, restarting := 0, 0
+	running, restarting, code := 0, 0, 0
 	for _, r := range rows {
-		cs = append(cs, containerStatus{Service: r.Service, State: r.State, Status: r.Status})
+		cs = append(cs, containerStatus{Service: r.Service, State: r.State, Status: r.Status, ExitCode: r.ExitCode})
 		switch r.State {
 		case "running":
 			running++
 		case "restarting":
 			restarting++
+		default:
+			if r.ExitCode != 0 && code == 0 {
+				code = r.ExitCode
+			}
 		}
 	}
-	state := "stopped"
 	switch {
 	case len(rows) == 0:
-		state = "stopped"
+		return cs, "not_created", 0
 	case restarting > 0:
-		state = "restarting"
+		return cs, "restarting", code
 	case running == len(rows):
-		state = "running"
+		return cs, "running", 0
 	case running > 0:
-		state = "partial"
+		return cs, "partial", code
+	case code != 0:
+		return cs, "exited", code
 	}
-	return cs, state
+	return cs, "stopped", 0
 }
 
-func (h *helperServer) appAction(req helperRequest, logf func(string)) (any, error) {
+func (h *helperServer) appAction(ctx context.Context, req helperRequest, logf func(string)) (any, error) {
 	if err := validID(req.ID); err != nil {
 		return nil, err
 	}
-	defer h.appLock(req.ID)()
+	switch req.Op {
+	case "start", "stop", "restart", "update":
+	default:
+		return nil, uerr("This action is not allowed.")
+	}
+	release, err := h.claim(req.ID, req.Op)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
 	if err := needDocker(); err != nil {
 		return nil, err
 	}
@@ -589,11 +755,29 @@ func (h *helperServer) appAction(req helperRequest, logf func(string)) (any, err
 		return nil, err
 	}
 	dir := h.appDir(req.ID)
-	ctx, cancel := context.WithTimeout(context.Background(), 40*time.Minute)
+	ctx, cancel := context.WithTimeout(ctx, 40*time.Minute)
 	defer cancel()
+	// Desired state first, so a crash during the action is not reported as "stopped on purpose".
+	if meta.Stopped != (req.Op == "stop") {
+		meta.Stopped = req.Op == "stop"
+		h.writeMeta(meta)
+	}
+	up := func() error {
+		if err := fixLegacyEnv(dir, h.base()); err != nil {
+			return err
+		}
+		if err := checkConfig(ctx, dir, req.ID, h.policy(meta), false); err != nil {
+			return err
+		}
+		if err := runStream(ctx, compose(dir, req.ID, "up", "-d", "--remove-orphans"), logf); err != nil {
+			return err
+		}
+		os.Remove(filepath.Join(dir, installMarker))
+		return nil
+	}
 	switch req.Op {
 	case "start":
-		err = runStream(ctx, compose(dir, req.ID, "up", "-d", "--remove-orphans"), logf)
+		err = up()
 	case "stop":
 		err = runStream(ctx, compose(dir, req.ID, "stop"), logf)
 	case "restart":
@@ -601,30 +785,32 @@ func (h *helperServer) appAction(req helperRequest, logf func(string)) (any, err
 	case "update":
 		logf("Downloading the newest images of " + meta.Name)
 		if err = runStream(ctx, compose(dir, req.ID, "pull"), logf); err == nil {
-			err = runStream(ctx, compose(dir, req.ID, "up", "-d", "--remove-orphans"), logf)
+			err = up()
 		}
-	default:
-		return nil, uerr("This action is not allowed.")
 	}
 	if err != nil {
 		return nil, err
 	}
-	_, state := composeStatus(dir, req.ID)
+	_, state, _ := composeStatus(dir, req.ID)
 	return map[string]string{"state": state}, nil
 }
 
-func (h *helperServer) appUninstall(req helperRequest, logf func(string)) (any, error) {
+func (h *helperServer) appUninstall(ctx context.Context, req helperRequest, logf func(string)) (any, error) {
 	if err := validID(req.ID); err != nil {
 		return nil, err
 	}
-	defer h.appLock(req.ID)()
+	release, err := h.claim(req.ID, "uninstall")
+	if err != nil {
+		return nil, err
+	}
+	defer release()
 	meta, err := h.readMeta(req.ID)
 	if err != nil {
 		return nil, err
 	}
 	dir := h.appDir(req.ID)
 	if needDocker() == nil {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+		ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 		args := []string{"down", "--remove-orphans"}
 		if req.DeleteData {
 			args = append(args, "--volumes")
@@ -656,11 +842,62 @@ func (h *helperServer) appUninstall(req helperRequest, logf func(string)) (any, 
 		logf(meta.Name + " and its data were removed.")
 		return map[string]any{"data_kept": false}, nil
 	}
-	for _, f := range []string{"compose.yaml", ".env", "app.json"} {
+	for _, f := range []string{"compose.yaml", ".env", "app.json", installMarker} {
 		os.Remove(filepath.Join(dir, f))
 	}
 	logf(meta.Name + " was removed. Its data stays in " + dataDir + ".")
 	return map[string]any{"data_kept": true, "data_dir": dataDir}, nil
+}
+
+// appCredentials returns the answers of an installed app (login names, generated passwords)
+// so the admin can sign in to it. Box's own variables are never returned.
+func (h *helperServer) appCredentials(req helperRequest, logf func(string)) (any, error) {
+	if err := validID(req.ID); err != nil {
+		return nil, err
+	}
+	if _, err := h.readMeta(req.ID); err != nil {
+		return nil, err
+	}
+	b, err := os.ReadFile(filepath.Join(h.appDir(req.ID), ".env"))
+	if err != nil {
+		return nil, uerr("The settings of this app could not be read.")
+	}
+	env := parseEnv(b)
+	type cred struct {
+		Label  string `json:"label"`
+		Value  string `json:"value"`
+		Secret bool   `json:"secret"`
+		Locked bool   `json:"locked,omitempty"`
+	}
+	out := []cred{}
+	cat, _, err := loadCatalog(h.webState)
+	if err != nil {
+		return out, nil
+	}
+	app, err := cat.App(req.ID)
+	if err != nil {
+		return out, nil
+	}
+	for _, q := range presentQuestions(app.Questions) {
+		v := env[q.Key]
+		if v == "" || (q.Type != "password" && q.Type != "text" && q.Type != "email") {
+			continue
+		}
+		out = append(out, cred{Label: q.Label, Value: v, Secret: q.Type == "password", Locked: q.Locked})
+	}
+	return out, nil
+}
+
+// migrateShared moves media that apps wrote to the old ROOT_FOLDER_HOST (the state dir) into
+// the shared folder, once.
+func (h *helperServer) migrateShared() {
+	old, dst := filepath.Join(h.base(), "media"), filepath.Join(sharedDir(h.base()), "media")
+	if exists(old) && !exists(dst) {
+		os.MkdirAll(sharedDir(h.base()), 0o755)
+		if err := os.Rename(old, dst); err != nil {
+			log.Printf("helper: moving %s: %v", old, err)
+		}
+	}
 }
 
 func (h *helperServer) appLogs(req helperRequest, logf func(string)) (any, error) {
