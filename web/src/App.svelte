@@ -9,6 +9,7 @@
   import Activity from './Activity.svelte';
   import AppStore from './AppStore.svelte';
   import MyApps from './MyApps.svelte';
+  import Settings from './Settings.svelte';
   import Logo from '$lib/Logo.svelte';
   import Sheet from '$lib/Sheet.svelte';
   import Popover from '$lib/Popover.svelte';
@@ -26,6 +27,7 @@
   import Loader from '@lucide/svelte/icons/loader-circle';
   import Sun from '@lucide/svelte/icons/sun';
   import Moon from '@lucide/svelte/icons/moon';
+  import SettingsIcon from '@lucide/svelte/icons/settings';
 
   const pages = [
     { path: '/', title: 'Dashboard', icon: Gauge },
@@ -33,6 +35,7 @@
     { path: '/apps/installed', title: 'My Apps', icon: Boxes },
     { path: '/console', title: 'Console', icon: SquareTerminal },
     { path: '/activity', title: 'Activity', icon: History },
+    { path: '/settings', title: 'Settings', icon: SettingsIcon },
   ];
   const themeModes = [
     { value: 'light', label: 'Light' },
@@ -192,6 +195,8 @@
       <main>
         {#if page.path === '/console'}
           <Console onSessionLost={sessionLost} />
+        {:else if page.path === '/settings'}
+          <Settings onSessionLost={sessionLost} />
         {:else if page.path === '/activity'}
           <Activity onSessionLost={sessionLost} />
         {:else if page.path === '/apps'}

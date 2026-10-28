@@ -212,3 +212,21 @@ select.input { cursor: pointer; }
   :root { --hairline: rgba(9, 9, 11, 0.3); --text-2: #3f3f46; }
   :root.dark { --hairline: rgba(255, 255, 255, 0.35); --text-2: #d4d4d8; }
 }
+
+/* Dialog content (shared by pages that open a Dialog). */
+.dlg { display: grid; gap: 0.875rem; padding: 1.5rem; }
+.dlg h2, .dlg p { margin: 0; }
+.dlg-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.buttons { display: flex; justify-content: flex-end; gap: 0.5rem; flex-wrap: wrap; }
+.row-field { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.75rem 0.875rem; border-radius: var(--r-control); background: var(--fill); cursor: pointer; }
+.field-text { display: grid; gap: 0.125rem; }
+
+/* Page header shared by the list pages. */
+.page { display: grid; gap: 1.5rem; }
+.page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; padding-top: 0.5rem; }
+.page-head h1, .page-head p { margin: 0; }
+.page-head p { margin-top: 0.375rem; }
+.group-head { padding: 1rem 1.125rem 0.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.group-head h2 { margin: 0; }
+.ico { display: grid; place-items: center; width: 1.75rem; height: 1.75rem; border-radius: 0.5rem; background: var(--fill); color: var(--text-2); flex-shrink: 0; }
+.row .grow { flex: 1; min-width: 0; display: grid; gap: 0.125rem; }

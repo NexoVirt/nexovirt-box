@@ -25,6 +25,8 @@
   let password = $state('');
   let reauthError = $state('');
   let reauthBusy = $state(false);
+  let needsCode = $state(false);
+  let code = $state('');
   let pwInput = $state();
   let closedReason = $state('');
   let height = $state(480);
@@ -59,6 +61,7 @@
     const res = await api('/api/console/ready');
     if (res.status === 401) return onSessionLost();
     if (res.ok && res.data.fresh) return connect();
+    needsCode = !!res.data?.needs_code;
     status = 'reauth';
     await tick();
     pwInput?.focus();
@@ -68,7 +71,7 @@
     e.preventDefault();
     reauthError = '';
     reauthBusy = true;
-    const res = await api('/api/auth/reauth', { method: 'POST', body: { password } });
+    const res = await api('/api/auth/reauth', { method: 'POST', body: { password, code } });
     reauthBusy = false;
     if (res.status === 401 && /sign in/i.test(res.error)) return onSessionLost();
     if (!res.ok) {
@@ -76,6 +79,7 @@
       return;
     }
     password = '';
+    code = '';
     await tick();
     await onWindowResize();
     connect();
@@ -161,12 +165,15 @@
       <form class="unlock" onsubmit={unlock} style:height="{height}px">
         <span class="lock"><LockKeyhole size={26} /></span>
         <h2 class="t-title">Confirm it is you</h2>
-        <p class="t-sub">The console is a root shell. Enter your password to open it.</p>
+        <p class="t-sub">The console is a root shell. Enter your password{needsCode ? ' and a code from your authenticator app' : ''} to open it.</p>
         {#if reauthError}
           <div class="notice" role="alert"><CircleAlert size={18} /><span>{reauthError}</span></div>
         {/if}
         <input bind:this={pwInput} bind:value={password} type="password" autocomplete="current-password" placeholder="Password" aria-label="Password" required />
-        <button class="btn btn-primary btn-block" disabled={reauthBusy || !password}>
+        {#if needsCode}
+          <input bind:value={code} inputmode="numeric" autocomplete="one-time-code" maxlength="7" placeholder="Code from your authenticator app" aria-label="Authenticator code" required />
+        {/if}
+        <button class="btn btn-primary btn-block" disabled={reauthBusy || !password || (needsCode && !code)}>
           {#if reauthBusy}<Loader size={16} class="spinner" />Checking{:else}Open console{/if}
         </button>
       </form>
