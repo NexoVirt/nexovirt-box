@@ -101,6 +101,9 @@ func (a *App) routeTable() []route {
 		{"POST /api/files/rename", false, a.filesMutate("files_rename", "files.move")},
 		{"POST /api/files/delete", false, a.filesMutate("files_delete", "files.delete")},
 		{"POST /api/files/roots", false, a.filesRootsSet},
+		{"POST /api/files/copy", false, a.filesMutate("files_copy", "files.copy")},
+		{"GET /api/files/size", false, a.filesSize},
+		{"GET /api/files/zip", false, a.filesZip},
 		{"POST /api/settings", false, a.settingsSave},
 	}
 }

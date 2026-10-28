@@ -42,6 +42,7 @@ type filesBody struct {
 	Path  string `json:"path"`
 	To    string `json:"to"`
 	Roots string `json:"roots"`
+	Op    string `json:"op"`
 }
 
 func (a *App) filesMutate(action, audit string) http.HandlerFunc {
@@ -51,7 +52,11 @@ func (a *App) filesMutate(action, audit string) http.HandlerFunc {
 			writeError(w, http.StatusBadRequest, err.Error())
 			return
 		}
-		a.filesCall(w, r, helperRequest{Action: action, Path: in.Path, Path2: in.To}, audit)
+		op := ""
+		if in.Op == "exist_ok" {
+			op = in.Op
+		}
+		a.filesCall(w, r, helperRequest{Action: action, Path: in.Path, Path2: in.To, Op: op}, audit)
 	}
 }
 
@@ -143,4 +148,27 @@ func (a *App) filesUpload(w http.ResponseWriter, r *http.Request) {
 	}
 	a.filesCall(w, r, helperRequest{Action: "files_finish", Path: path, ID: id, Overwrite: q.Get("overwrite") == "1"},
 		"files.upload")
+}
+
+func (a *App) filesSize(w http.ResponseWriter, r *http.Request) {
+	a.filesCall(w, r, helperRequest{Action: "files_size", Path: r.URL.Query().Get("path")}, "")
+}
+
+// filesZip streams several files or folders as one zip: ?path=a&path=b.
+func (a *App) filesZip(w http.ResponseWriter, r *http.Request) {
+	paths := r.URL.Query()["path"]
+	raw, f, err := a.helper.openFile(helperRequest{Action: "files_zip", Path: strings.Join(paths, "\n")})
+	if err != nil {
+		writeError(w, http.StatusUnprocessableEntity, friendly(err))
+		return
+	}
+	defer f.Close()
+	var meta struct{ Name string }
+	json.Unmarshal(raw, &meta)
+	a.audit(r, "files.download", strings.Join(paths, ", "))
+	h := w.Header()
+	h.Set("Cache-Control", "no-store")
+	h.Set("Content-Type", "application/zip")
+	h.Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": meta.Name}))
+	io.Copy(w, f)
 }

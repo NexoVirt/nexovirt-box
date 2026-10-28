@@ -181,6 +181,7 @@ func (h *helperServer) fdActions() map[string]func(helperRequest) (any, *os.File
 	return map[string]func(helperRequest) (any, *os.File, error){
 		"files_open_read":  h.filesOpenRead,
 		"files_open_write": h.filesOpenWrite,
+		"files_zip":        h.filesZip,
 	}
 }
 
@@ -212,6 +213,8 @@ func (h *helperServer) actions() map[string]helperAction {
 		"files_delete":     h.filesDelete,
 		"files_finish":     h.filesUploadFinish,
 		"files_roots_set":  h.filesRootsSet,
+		"files_copy":       h.filesCopy,
+		"files_size":       h.filesSize,
 	}
 }
 

@@ -5,7 +5,9 @@ package main
 // descriptor to the web process (SCM_RIGHTS), so file contents never travel through JSON.
 
 import (
+	"archive/zip"
 	"errors"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -13,6 +15,7 @@ import (
 	"sort"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/shirou/gopsutil/v4/disk"
 )
@@ -108,7 +111,7 @@ func (h *helperServer) filesList(req helperRequest, logf func(string)) (any, err
 		for _, r := range roots {
 			out = append(out, r.path)
 		}
-		return map[string]any{"roots": out}, nil
+		return map[string]any{"roots": out, "places": placesFor(roots)}, nil
 	}
 	real, _, err := h.resolve(req.Path, true)
 	if err != nil {
@@ -173,6 +176,11 @@ func (h *helperServer) filesMkdir(req helperRequest, logf func(string)) (any, er
 		return nil, err
 	}
 	if err := os.Mkdir(real, 0o755); err != nil {
+		if errors.Is(err, fs.ErrExist) && req.Op == "exist_ok" {
+			if st, serr := os.Lstat(real); serr == nil && st.IsDir() {
+				return map[string]bool{"ok": true}, nil
+			}
+		}
 		if errors.Is(err, fs.ErrExist) {
 			return nil, uerr("Something with this name already exists.")
 		}
@@ -338,4 +346,193 @@ func (h *helperServer) filesRootsSet(req helperRequest, logf func(string)) (any,
 		return nil, err
 	}
 	return map[string]any{"roots": roots}, nil
+}
+
+// filesCopy copies a file or folder (Path) to a new path (Path2). Symlinks are copied as links,
+// never followed, so a copy can never pull in content from outside the allowed folders.
+func (h *helperServer) filesCopy(req helperRequest, logf func(string)) (any, error) {
+	if err := checkName(req.Path2); err != nil {
+		return nil, err
+	}
+	from, _, err := h.resolve(req.Path, true)
+	if err != nil {
+		return nil, err
+	}
+	to, _, err := h.resolve(req.Path2, false)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := os.Lstat(to); err == nil {
+		return nil, uerr("Something with this name already exists there.")
+	}
+	if to == from || strings.HasPrefix(to, from+"/") {
+		return nil, uerr("A folder cannot be copied into itself.")
+	}
+	err = filepath.WalkDir(from, func(p string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		dst := filepath.Join(to, strings.TrimPrefix(p, from))
+		info, err := d.Info()
+		if err != nil {
+			return err
+		}
+		switch {
+		case d.Type()&fs.ModeSymlink != 0:
+			link, err := os.Readlink(p)
+			if err != nil {
+				return err
+			}
+			return os.Symlink(link, dst)
+		case d.IsDir():
+			return os.Mkdir(dst, info.Mode().Perm())
+		case info.Mode().IsRegular():
+			return copyTreeFile(p, dst, info.Mode().Perm())
+		}
+		return nil // sockets, devices and pipes are skipped
+	})
+	if err != nil {
+		return nil, uerr("It could not be copied completely: %v", errors.Unwrap(err))
+	}
+	ownLikeParent(to)
+	return map[string]bool{"ok": true}, nil
+}
+
+func copyTreeFile(src, dst string, perm fs.FileMode) error {
+	in, err := os.OpenFile(src, os.O_RDONLY|syscall.O_NOFOLLOW, 0)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+	out, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_EXCL|syscall.O_NOFOLLOW, perm)
+	if err != nil {
+		return err
+	}
+	if _, err := io.Copy(out, in); err != nil {
+		out.Close()
+		return err
+	}
+	return out.Close()
+}
+
+// filesSize adds up a folder (for the info panel). It stops after 20 s or 2 million entries.
+func (h *helperServer) filesSize(req helperRequest, logf func(string)) (any, error) {
+	real, _, err := h.resolve(req.Path, true)
+	if err != nil {
+		return nil, err
+	}
+	var size, files, dirs int64
+	deadline := time.Now().Add(20 * time.Second)
+	partial := false
+	filepath.WalkDir(real, func(p string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+		if files+dirs > 2_000_000 || time.Now().After(deadline) {
+			partial = true
+			return filepath.SkipAll
+		}
+		if d.IsDir() {
+			dirs++
+			return nil
+		}
+		if info, err := d.Info(); err == nil && info.Mode().IsRegular() {
+			size += info.Size()
+			files++
+		}
+		return nil
+	})
+	return map[string]any{"size": size, "files": files, "dirs": max(dirs-1, 0), "partial": partial}, nil
+}
+
+// filesZip streams a zip of one or more paths (newline separated in Path) through a pipe.
+// Symlinks are left out of the archive, so it only ever contains files inside the allowed folders.
+func (h *helperServer) filesZip(req helperRequest) (any, *os.File, error) {
+	var paths []string
+	for _, p := range strings.Split(req.Path, "\n") {
+		if p = strings.TrimSpace(p); p == "" {
+			continue
+		}
+		real, _, err := h.resolve(p, true)
+		if err != nil {
+			return nil, nil, err
+		}
+		paths = append(paths, real)
+	}
+	if len(paths) == 0 || len(paths) > 1000 {
+		return nil, nil, uerr("Choose what to download.")
+	}
+	pr, pw, err := os.Pipe()
+	if err != nil {
+		return nil, nil, err
+	}
+	go func() {
+		defer pw.Close()
+		zw := zip.NewWriter(pw)
+		defer zw.Close()
+		for _, root := range paths {
+			base := filepath.Dir(root)
+			filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
+				if err != nil || d.Type()&fs.ModeSymlink != 0 {
+					return nil
+				}
+				name := strings.TrimPrefix(p, base+"/")
+				info, err := d.Info()
+				if err != nil {
+					return nil
+				}
+				if d.IsDir() {
+					_, err = zw.Create(name + "/")
+					return err
+				}
+				if !info.Mode().IsRegular() {
+					return nil
+				}
+				hdr, _ := zip.FileInfoHeader(info)
+				hdr.Name, hdr.Method = name, zip.Deflate
+				w, err := zw.CreateHeader(hdr)
+				if err != nil {
+					return err
+				}
+				f, err := os.OpenFile(p, os.O_RDONLY|syscall.O_NOFOLLOW, 0)
+				if err != nil {
+					return nil
+				}
+				_, err = io.Copy(w, f)
+				f.Close()
+				return err // a closed pipe (browser gone) stops the walk
+			})
+		}
+	}()
+	name := filepath.Base(paths[0])
+	if len(paths) > 1 {
+		name = filepath.Base(filepath.Dir(paths[0]))
+	}
+	return map[string]any{"name": name + ".zip"}, pr, nil
+}
+
+// placeInfo is a top folder with the usage of the drive it lives on (sidebar of the explorer).
+type placeInfo struct {
+	Path  string `json:"path"`
+	Total uint64 `json:"total"`
+	Used  uint64 `json:"used"`
+	Drive bool   `json:"drive"` // its own mounted drive
+}
+
+func placesFor(roots []rootInfo) []placeInfo {
+	mounts := map[string]bool{}
+	if parts, err := disk.Partitions(false); err == nil {
+		for _, p := range parts {
+			mounts[p.Mountpoint] = true
+		}
+	}
+	out := []placeInfo{}
+	for _, r := range roots {
+		pi := placeInfo{Path: r.path, Drive: mounts[r.real]}
+		if u, err := disk.Usage(r.real); err == nil {
+			pi.Total, pi.Used = u.Total, u.Used
+		}
+		out = append(out, pi)
+	}
+	return out
 }

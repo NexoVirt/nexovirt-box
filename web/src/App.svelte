@@ -122,6 +122,9 @@
   });
 
   let page = $derived(pages.find((p) => p.path === path) || pages[0]);
+  // These pages fill the window and scroll inside their own card.
+  const FILL = new Set(['/files', '/activity']);
+  let fill = $derived(FILL.has(page.path));
   let initials = $derived(state?.username ? state.username.slice(0, 2).toUpperCase() : '');
 </script>
 
@@ -155,7 +158,7 @@
 {:else if !state.logged_in}
   <Auth mode="login" onDone={loadState} />
 {:else}
-  <div class="shell">
+  <div class="shell" class:fill>
     <aside class="sidebar">
       <a href="/" class="brand" onclick={(e) => go(e, '/')}>
         <Logo size={30} />
@@ -169,7 +172,7 @@
     </aside>
 
     <div class="content">
-      <header class="toolbar" class:scrolled>
+      <header class="toolbar" class:scrolled class:titled={fill}>
         <button class="icon-btn menu-btn" onclick={() => (menuOpen = true)} aria-label="Open navigation"><Menu size={20} /></button>
         <span class="toolbar-title t-head">{page.title}</span>
         <div class="toolbar-end">
@@ -238,6 +241,9 @@
   .load-error { display: grid; gap: 1rem; width: min(24rem, 100%); }
 
   .shell { display: flex; min-height: 100svh; }
+  .shell.fill { height: 100svh; }
+  .shell.fill .content { min-height: 0; }
+  .shell.fill main { min-height: 0; display: flex; flex-direction: column; padding-bottom: 0.5rem; }
 
   /* Floating translucent sidebar: the heavier structural material. */
   .sidebar {
@@ -278,7 +284,7 @@
     -webkit-backdrop-filter: blur(40px) saturate(180%); backdrop-filter: blur(40px) saturate(180%);
   }
   .toolbar-title { opacity: 0; transform: translateY(4px); transition: opacity 200ms ease, transform 300ms var(--spring); }
-  .toolbar.scrolled .toolbar-title { opacity: 1; transform: none; }
+  .toolbar.scrolled .toolbar-title, .toolbar.titled .toolbar-title { opacity: 1; transform: none; }
   .toolbar-end { margin-left: auto; display: flex; align-items: center; }
   .menu-btn { display: none; margin-left: -0.5rem; }
 

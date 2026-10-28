@@ -100,3 +100,62 @@ func TestFilesUploadDownload(t *testing.T) {
 }
 
 func itoa(n int) string { b, _ := json.Marshal(n); return string(b) }
+
+func TestFilesCopyZipSizeStayInside(t *testing.T) {
+	h, sess, root := filesTestApp(t)
+	outside := t.TempDir()
+	os.WriteFile(filepath.Join(outside, "secret"), []byte("top secret"), 0o600)
+	os.MkdirAll(filepath.Join(root, "dir", "sub"), 0o755)
+	os.WriteFile(filepath.Join(root, "dir", "sub", "f.txt"), []byte("hello"), 0o644)
+	os.Symlink(outside, filepath.Join(root, "dir", "escape"))
+
+	// Copy keeps links as links, so the secret is never copied in.
+	if rec := fpost(h, "/api/files/copy", map[string]string{"path": filepath.Join(root, "dir"), "to": filepath.Join(root, "copy")}, sess); rec.Code != 200 {
+		t.Fatalf("copy: %d %s", rec.Code, rec.Body)
+	}
+	if b, _ := os.ReadFile(filepath.Join(root, "copy", "sub", "f.txt")); string(b) != "hello" {
+		t.Fatal("copied file missing")
+	}
+	if st, err := os.Lstat(filepath.Join(root, "copy", "escape")); err != nil || st.Mode()&os.ModeSymlink == 0 {
+		t.Fatal("the symlink was not copied as a link")
+	}
+	for _, c := range []map[string]string{
+		{"path": filepath.Join(root, "dir"), "to": filepath.Join(outside, "x")},
+		{"path": filepath.Join(outside, "secret"), "to": filepath.Join(root, "s")},
+		{"path": filepath.Join(root, "dir", "escape", "secret"), "to": filepath.Join(root, "s")},
+		{"path": filepath.Join(root, "dir"), "to": filepath.Join(root, "dir", "sub", "x")},
+		{"path": filepath.Join(root, "dir"), "to": filepath.Join(root, "copy")},
+	} {
+		if rec := fpost(h, "/api/files/copy", c, sess); rec.Code == 200 {
+			t.Fatalf("copy %v was allowed", c)
+		}
+	}
+
+	// Zip: inside works and never contains the linked secret; outside is refused.
+	rec := get(h, "/api/files/zip?path="+filepath.Join(root, "dir"), sess)
+	if rec.Code != 200 || !strings.Contains(rec.Body.String(), "f.txt") || strings.Contains(rec.Body.String(), "secret") {
+		t.Fatalf("zip: %d (%d bytes)", rec.Code, rec.Body.Len())
+	}
+	for _, p := range []string{outside, filepath.Join(root, "dir", "escape"), "/etc"} {
+		if rec := get(h, "/api/files/zip?path="+p, sess); rec.Code == 200 {
+			t.Fatalf("zipped %s", p)
+		}
+		if rec := get(h, "/api/files/size?path="+p, sess); rec.Code == 200 {
+			t.Fatalf("sized %s", p)
+		}
+	}
+	if rec := get(h, "/api/files/size?path="+filepath.Join(root, "dir"), sess); rec.Code != 200 || !strings.Contains(rec.Body.String(), `"files":1`) {
+		t.Fatalf("size: %d %s", rec.Code, rec.Body)
+	}
+
+	// Folder uploads create each level; an existing folder is fine with exist_ok, a file is not.
+	if rec := fpost(h, "/api/files/mkdir", map[string]string{"path": filepath.Join(root, "dir"), "op": "exist_ok"}, sess); rec.Code != 200 {
+		t.Fatalf("mkdir exist_ok: %d %s", rec.Code, rec.Body)
+	}
+	if rec := fpost(h, "/api/files/mkdir", map[string]string{"path": filepath.Join(root, "dir", "sub", "f.txt"), "op": "exist_ok"}, sess); rec.Code == 200 {
+		t.Fatal("exist_ok accepted a file")
+	}
+	if rec := fpost(h, "/api/files/mkdir", map[string]string{"path": filepath.Join(root, "dir", "escape", "new"), "op": "exist_ok"}, sess); rec.Code == 200 {
+		t.Fatal("created a folder through a link outside")
+	}
+}
