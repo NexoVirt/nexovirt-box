@@ -82,7 +82,7 @@
 <div class="page">
   <header class="page-head">
     <div>
-      <h1 class="t-large">Dashboard</h1>
+      <h1 class="t-large">Monitor</h1>
       <p class="t-sub">
         {#if system}{[system.hostname, system.os, snap ? `up ${duration(snap.uptime)}` : ''].filter(Boolean).join('  ·  ')}
         {:else}<span class="skeleton inline"></span>{/if}

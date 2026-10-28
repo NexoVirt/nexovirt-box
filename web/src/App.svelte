@@ -5,6 +5,7 @@
   import { toast } from '$lib/toast.svelte.js';
   import Auth from './Auth.svelte';
   import Dashboard from './Dashboard.svelte';
+  import Monitor from './Monitor.svelte';
   import Console from './Console.svelte';
   import Activity from './Activity.svelte';
   import AppStore from './AppStore.svelte';
@@ -18,6 +19,7 @@
   import Toaster from '$lib/Toaster.svelte';
   import Segmented from '$lib/Segmented.svelte';
   import Gauge from '@lucide/svelte/icons/gauge';
+  import House from '@lucide/svelte/icons/house';
   import SquareTerminal from '@lucide/svelte/icons/square-terminal';
   import History from '@lucide/svelte/icons/history';
   import LayoutGrid from '@lucide/svelte/icons/layout-grid';
@@ -34,7 +36,8 @@
   import Shield from '@lucide/svelte/icons/shield';
 
   const pages = [
-    { path: '/', title: 'Dashboard', icon: Gauge },
+    { path: '/', title: 'Home', icon: House },
+    { path: '/monitor', title: 'Monitor', icon: Gauge },
     { path: '/apps', title: 'App Store', icon: LayoutGrid },
     { path: '/apps/installed', title: 'My Apps', icon: Boxes },
     { path: '/files', title: 'Files', icon: FolderOpen },
@@ -85,14 +88,18 @@
     navigate(to);
   }
 
+  // to may carry a query or hash (/files?path=/srv, /settings#security) for the page to read.
   function navigate(to) {
     menuOpen = false;
-    if (to !== path) {
+    const p = to.split(/[?#]/)[0] || '/';
+    if (to !== location.pathname + location.search + location.hash) {
       history.pushState({}, '', to);
-      path = to;
+      if (p === path) pageKey++; // same page, new target: mount it again
+      path = p;
       scrollTo({ top: 0 });
     }
   }
+  let pageKey = $state(0);
 
   async function signOut() {
     userOpen = false;
@@ -205,19 +212,21 @@
         {#if page.path === '/console'}
           <Console onSessionLost={sessionLost} />
         {:else if page.path === '/files'}
-          <Files onSessionLost={sessionLost} />
+          {#key pageKey}<Files onSessionLost={sessionLost} />{/key}
         {:else if page.path === '/firewall'}
           <Firewall onSessionLost={sessionLost} />
         {:else if page.path === '/settings'}
-          <Settings onSessionLost={sessionLost} />
+          {#key pageKey}<Settings onSessionLost={sessionLost} />{/key}
         {:else if page.path === '/activity'}
           <Activity onSessionLost={sessionLost} />
         {:else if page.path === '/apps'}
-          <AppStore onSessionLost={sessionLost} />
+          {#key pageKey}<AppStore onSessionLost={sessionLost} />{/key}
         {:else if page.path === '/apps/installed'}
           <MyApps onSessionLost={sessionLost} onNavigate={navigate} />
+        {:else if page.path === '/monitor'}
+          <Monitor {system} onSessionLost={sessionLost} />
         {:else}
-          <Dashboard {system} onSessionLost={sessionLost} />
+          <Dashboard {system} username={state.username} onSessionLost={sessionLost} onNavigate={navigate} />
         {/if}
       </main>
     </div>

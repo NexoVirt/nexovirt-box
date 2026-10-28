@@ -575,7 +575,11 @@
   function sortBy(key) { sort = { key, dir: sort.key === key ? -sort.dir : 1 }; }
   const dateFmt = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 
-  onMount(() => { loadPlaces(); });
+  onMount(async () => {
+    await loadPlaces();
+    const want = new URLSearchParams(location.search).get('path');
+    if (want) open(want);
+  });
 </script>
 
 <svelte:window onkeydown={keydown} />

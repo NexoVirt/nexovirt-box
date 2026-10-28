@@ -52,6 +52,10 @@
     docker = d.ok ? d.data : { installed: false, error: d.error };
     if (!d.ok) toast(d.error, 'error');
     installed = new Set(i.ok ? i.data.map((a) => a.id) : []);
+    // Deep link from the home search: /apps?app=<id> opens that app.
+    const want = new URLSearchParams(location.search).get('app');
+    const hit = want && catalog.apps.find((x) => x.id === want);
+    if (hit) { selected = hit; open = true; }
   }
 
   async function sync() {
