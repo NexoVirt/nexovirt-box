@@ -7,8 +7,6 @@ package main
 
 import (
 	"bytes"
-	"crypto/ed25519"
-	"encoding/base64"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -19,7 +17,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/nexovirt/box/internal/catalog"
 	"gopkg.in/yaml.v3"
@@ -132,46 +129,11 @@ func main() {
 }
 
 func write(out, keyPath string, apps []*catalog.App, roots map[string]string) error {
-	seedB64, err := os.ReadFile(keyPath)
+	priv, err := catalog.LoadSigningKey(keyPath)
 	if err != nil {
 		return err
 	}
-	seed, err := base64.StdEncoding.DecodeString(strings.TrimSpace(string(seedB64)))
-	if err != nil || len(seed) != ed25519.SeedSize {
-		return fmt.Errorf("bad key in %s", keyPath)
-	}
-	priv := ed25519.NewKeyFromSeed(seed)
-	known := false
-	for _, p := range catalog.PublicKeys {
-		known = known || bytes.Equal(priv.Public().(ed25519.PublicKey), p)
-	}
-	if !known {
-		return fmt.Errorf("the key in %s does not match internal/catalog/key.go (dev key: build with -tags devkey)", keyPath)
-	}
-	os.RemoveAll(filepath.Join(out, "apps"))
-	if err := os.MkdirAll(filepath.Join(out, "apps"), 0o755); err != nil {
-		return err
-	}
-	idx := catalog.Index{Version: 1, GeneratedAt: time.Now().Unix()}
-	for _, a := range apps {
-		b, err := json.MarshalIndent(a, "", " ")
-		if err != nil {
-			return err
-		}
-		file := "apps/" + a.ID + ".json"
-		if err := os.WriteFile(filepath.Join(out, file), b, 0o644); err != nil {
-			return err
-		}
-		idx.Apps = append(idx.Apps, catalog.IndexEntry{Summary: a.Summary, File: file, SHA256: catalog.FileHash(b)})
-	}
-	raw, err := json.Marshal(idx)
-	if err != nil {
-		return err
-	}
-	if err := os.WriteFile(filepath.Join(out, "index.json"), raw, 0o644); err != nil {
-		return err
-	}
-	if err := os.WriteFile(filepath.Join(out, "index.sig"), []byte(catalog.Sign(priv, raw)+"\n"), 0o644); err != nil {
+	if err := catalog.WriteDir(out, priv, apps); err != nil {
 		return err
 	}
 	// License texts of the imported catalogs.
