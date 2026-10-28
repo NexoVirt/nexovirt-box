@@ -66,6 +66,31 @@ func openStore(path string) (*Store, error) {
 			result TEXT NOT NULL DEFAULT 'null'
 		);
 		CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+		CREATE TABLE IF NOT EXISTS backup_schedules (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			app TEXT NOT NULL,
+			target TEXT NOT NULL,
+			freq TEXT NOT NULL,
+			weekday INTEGER NOT NULL DEFAULT 0,
+			time TEXT NOT NULL,
+			keep TEXT NOT NULL DEFAULT '{}',
+			enabled INTEGER NOT NULL DEFAULT 1,
+			last_run INTEGER NOT NULL DEFAULT 0
+		);
+		CREATE TABLE IF NOT EXISTS backup_history (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			at INTEGER NOT NULL,
+			kind TEXT NOT NULL,
+			app TEXT NOT NULL,
+			target TEXT NOT NULL,
+			target_name TEXT NOT NULL DEFAULT '',
+			name TEXT NOT NULL DEFAULT '',
+			size INTEGER NOT NULL DEFAULT 0,
+			seconds INTEGER NOT NULL DEFAULT 0,
+			status TEXT NOT NULL,
+			error TEXT NOT NULL DEFAULT '',
+			source TEXT NOT NULL DEFAULT 'manual'
+		);
 		CREATE TABLE IF NOT EXISTS audit (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			at INTEGER NOT NULL,
@@ -290,10 +315,10 @@ func (s *Store) audit(username, ip, action, detail string) {
 var auditCategories = map[string][]string{
 	"signin":   {"login.", "logout", "reauth.", "2fa.", "account."},
 	"console":  {"console."},
-	"apps":     {"app.", "docker.", "catalog.", "images.", "proxy."},
+	"apps":     {"app.", "docker.", "catalog.", "images.", "proxy.", "backup."},
 	"files":    {"files."},
 	"firewall": {"firewall."},
-	"system":   {"settings.", "box."},
+	"system":   {"settings.", "box.", "notify."},
 }
 
 type auditQuery struct {

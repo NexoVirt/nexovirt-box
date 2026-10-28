@@ -59,6 +59,16 @@ type helperRequest struct {
 	Path2             string   `json:"path2,omitempty"`
 	Offset            int64    `json:"offset,omitempty"`
 	Overwrite         bool     `json:"overwrite,omitempty"`
+	// Backups and own apps.
+	Target   *backupTarget `json:"target,omitempty"`
+	TargetID string        `json:"target_id,omitempty"`
+	Name     string        `json:"name,omitempty"`
+	NewID    string        `json:"new_id,omitempty"`
+	Keep     keepPolicy    `json:"keep,omitempty"`
+	Key      string        `json:"key,omitempty"`
+	Compose  string        `json:"compose,omitempty"`
+	Env      string        `json:"env,omitempty"`
+	Icon     string        `json:"icon,omitempty"`
 }
 
 type helperMsg struct {
@@ -80,6 +90,7 @@ type helperServer struct {
 	allowUID int    // uid of the web user (root is always allowed)
 	appsDir  string // root-owned app directories
 	webState string // web state dir (database, synced catalog; read only here)
+	etcDir   string // /etc/nexovirt-box (backup key and targets live in backup/)
 	proofs   *proofKeeper
 	mu       sync.Mutex
 	appLocks map[string]*sync.Mutex
@@ -208,40 +219,52 @@ func (h *helperServer) fdActions() map[string]func(helperRequest) (any, *os.File
 // ctxActions are the long app actions; they are cancelled when the caller disconnects.
 func (h *helperServer) ctxActions() map[string]func(context.Context, helperRequest, func(string)) (any, error) {
 	return map[string]func(context.Context, helperRequest, func(string)) (any, error){
-		"app_install":   h.appInstall,
-		"app_action":    h.appAction,
-		"app_uninstall": h.appUninstall,
+		"app_install":     h.appInstall,
+		"app_action":      h.appAction,
+		"app_uninstall":   h.appUninstall,
+		"backup_run":      h.backupRun,
+		"backup_restore":  h.backupRestore,
+		"backup_verify":   h.backupVerify,
+		"custom_app_save": h.customAppSave,
 	}
 }
 
 // actions is the complete allowlist (plus "console" and ctxActions, handled separately).
 func (h *helperServer) actions() map[string]helperAction {
 	return map[string]helperAction{
-		"console_proof":    h.consoleProof,
-		"docker_info":      h.dockerInfo,
-		"docker_install":   h.dockerInstall,
-		"apps_status":      h.appsStatus,
-		"app_credentials":  h.appCredentials,
-		"app_logs":         h.appLogs,
-		"app_domain":       h.appDomain,
-		"proxy_status":     h.proxyStatus,
-		"proxy_setup":      h.proxySetup,
-		"proxy_remove":     h.proxyRemove,
-		"images_unused":    h.imagesUnused,
-		"images_prune":     h.imagesPrune,
-		"updates_check":    h.updatesCheck,
-		"self_update":      h.selfUpdate,
-		"firewall_status":  h.firewallStatus,
-		"firewall_apply":   h.firewallApply,
-		"firewall_confirm": h.firewallConfirm,
-		"files_list":       h.filesList,
-		"files_mkdir":      h.filesMkdir,
-		"files_rename":     h.filesRename,
-		"files_delete":     h.filesDelete,
-		"files_finish":     h.filesUploadFinish,
-		"files_roots_set":  h.filesRootsSet,
-		"files_copy":       h.filesCopy,
-		"files_size":       h.filesSize,
+		"console_proof":        h.consoleProof,
+		"docker_info":          h.dockerInfo,
+		"docker_install":       h.dockerInstall,
+		"apps_status":          h.appsStatus,
+		"app_credentials":      h.appCredentials,
+		"app_logs":             h.appLogs,
+		"app_domain":           h.appDomain,
+		"proxy_status":         h.proxyStatus,
+		"proxy_setup":          h.proxySetup,
+		"proxy_remove":         h.proxyRemove,
+		"images_unused":        h.imagesUnused,
+		"images_prune":         h.imagesPrune,
+		"updates_check":        h.updatesCheck,
+		"self_update":          h.selfUpdate,
+		"firewall_status":      h.firewallStatus,
+		"firewall_apply":       h.firewallApply,
+		"firewall_confirm":     h.firewallConfirm,
+		"files_list":           h.filesList,
+		"files_mkdir":          h.filesMkdir,
+		"files_rename":         h.filesRename,
+		"files_delete":         h.filesDelete,
+		"files_finish":         h.filesUploadFinish,
+		"files_roots_set":      h.filesRootsSet,
+		"files_copy":           h.filesCopy,
+		"files_size":           h.filesSize,
+		"backup_key":           h.backupKey,
+		"backup_targets":       h.backupTargets,
+		"backup_target_save":   h.backupTargetSave,
+		"backup_target_delete": h.backupTargetDelete,
+		"backup_list":          h.backupList,
+		"backup_delete":        h.backupDelete,
+		"backup_prune":         h.backupPrune,
+		"custom_app_get":       h.customAppGet,
 	}
 }
 

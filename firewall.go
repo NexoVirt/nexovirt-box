@@ -333,6 +333,13 @@ func (h *helperServer) firewallStatus(req helperRequest, logf func(string)) (any
 		st.Rules = []fwRule{}
 	}
 	res := map[string]any{"backend": backend, "rules": st.Rules, "foreign": foreignRules(backend), "policies": defaultPolicies(backend)}
+	var rb struct {
+		ID string `json:"id"`
+		At int64  `json:"at"`
+	}
+	if readJSONFile(fwPath("firewall.rollback.json"), &rb) {
+		res["last_rollback"] = rb
+	}
 	var p fwPending
 	if readJSONFile(fwPath("firewall.pending.json"), &p) {
 		res["pending"] = map[string]any{"id": p.ID, "seconds_left": max(0, p.Deadline-time.Now().Unix())}
@@ -400,6 +407,7 @@ func rollbackIfPending(id string) {
 		return
 	}
 	os.Remove(fwPath("firewall.pending.json"))
+	writeJSONFile(fwPath("firewall.rollback.json"), map[string]any{"id": p.ID, "at": time.Now().Unix()}) // for notifications
 	fmt.Fprintf(os.Stderr, "firewall: change %s was not confirmed, previous rules restored\n", p.ID)
 }
 
