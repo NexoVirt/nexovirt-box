@@ -28,7 +28,25 @@ Fields: `key` (env variable), `label`, `hint`, `placeholder`, `default`, `requir
 
 Variables Box always provides: `APP_ID`, `APP_DATA_DIR` (`/var/lib/nexovirt-box/apps/<id>/data`), `APP_PORT`,
 `APP_DOMAIN`/`APP_HOST` (server IP), `APP_PROTOCOL`, `TZ`, `PUID`, `PGID`, `SHARED_DIR` and `ROOT_FOLDER_HOST`
-(`/var/lib/nexovirt-box`, media lives in `media/`), `INTERNAL_IP`, `NETWORK_INTERFACE`.
+(both `/var/lib/nexovirt-box/shared`, a media folder apps share; never Box's state dir), `INTERNAL_IP`,
+`NETWORK_INTERFACE`.
+
+Passwords: every `password` question is generated (strong random) unless the admin sets one (with confirm);
+keys containing `SUDO` (a sudo password inside the container) are always generated. My Apps shows them under
+Login details (`GET /api/apps/{id}/credentials`, audited).
+
+Host folders: before install, retry, start and update the helper renders `docker compose config` and refuses binds
+(and local bind volumes) of Box's state outside the app's own folders, `/etc/nexovirt-box`, `/run/nexovirt-box`,
+`/` and `/etc`, `/root`, `/proc`, `/sys`, `/boot` (or a folder containing them), secret files (`/etc/shadow`,
+`/etc/ssh`, ...) and the Docker socket (only for apps marked `docker_socket` after the admin agreed in the form).
+Paths are resolved through symlinks (`appsafety.go`).
+
+Jobs: saved in SQLite (`jobs`, log tail). At web start unfinished jobs become `interrupted`; a helper restart marks
+the running job interrupted; a watchdog stops jobs with no output for 15 minutes; the helper cancels long app
+actions when the web process disconnects. `.installing` in an app folder marks an unfinished install
+(state `interrupted`, "Retry install" resumes with the same files). `GET /api/jobs` lists running jobs so the UI
+keeps showing progress after a reload. `app.json` `stopped` is the desired state (no alert for apps stopped on
+purpose).
 
 ## Install layout (root-owned, 0700)
 
