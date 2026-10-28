@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"sync"
@@ -142,4 +143,49 @@ func (a *App) appDomain(w http.ResponseWriter, r *http.Request) {
 	a.audit(r, "app.domain", id+" "+in.Domain)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(raw)
+}
+
+func (a *App) firewallStatus(w http.ResponseWriter, r *http.Request) {
+	a.helperJSON(w, r, helperRequest{Action: "firewall_status"})
+}
+
+// firewallApply applies a rule set; the browser must confirm it within 60 s with a NEW
+// connection (this response closes the current one), otherwise the helper rolls it back.
+func (a *App) firewallApply(w http.ResponseWriter, r *http.Request) {
+	var in struct {
+		Rules   []fwRule `json:"rules"`
+		Confirm string   `json:"confirm"`
+	}
+	if err := readJSON(r, &in); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 90*time.Second)
+	defer cancel()
+	raw, err := a.helper.call(ctx, helperRequest{Action: "firewall_apply", Rules: in.Rules, Confirm: in.Confirm, HTTPPort: a.port}, nil)
+	if err != nil {
+		a.audit(r, "firewall.apply_failed", "")
+		writeError(w, http.StatusUnprocessableEntity, friendly(err))
+		return
+	}
+	a.audit(r, "firewall.apply", fmt.Sprintf("%d rules", len(in.Rules)))
+	w.Header().Set("Connection", "close")
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(raw)
+}
+
+func (a *App) firewallConfirm(w http.ResponseWriter, r *http.Request) {
+	var in struct{ Change string }
+	if err := readJSON(r, &in); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
+	defer cancel()
+	if _, err := a.helper.call(ctx, helperRequest{Action: "firewall_confirm", ID: in.Change}, nil); err != nil {
+		writeError(w, http.StatusConflict, friendly(err))
+		return
+	}
+	a.audit(r, "firewall.confirm", "")
+	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }

@@ -119,6 +119,7 @@ func runHelper(args []string) {
 	if err != nil {
 		log.Fatalf("helper: %v", err)
 	}
+	go restoreFirewall()
 	log.Printf("NexoVirt Box helper %s listening on %s (allowed user %s)", version, *socket, *webUser)
 	h.serve(ln)
 }

@@ -50,6 +50,12 @@ type helperRequest struct {
 	Domain     string            `json:"domain,omitempty"`
 	DataDir    string            `json:"data_dir,omitempty"`
 	URL        string            `json:"url,omitempty"`
+	Rules      []fwRule          `json:"rules,omitempty"`
+	Confirm    string            `json:"confirm,omitempty"`
+	Path       string            `json:"path,omitempty"`
+	Path2      string            `json:"path2,omitempty"`
+	Offset     int64             `json:"offset,omitempty"`
+	Overwrite  bool              `json:"overwrite,omitempty"`
 }
 
 type helperMsg struct {
@@ -158,22 +164,25 @@ type helperAction func(req helperRequest, logf func(string)) (any, error)
 // actions is the complete allowlist (plus "console", handled separately).
 func (h *helperServer) actions() map[string]helperAction {
 	return map[string]helperAction{
-		"console_proof":  h.consoleProof,
-		"docker_info":    h.dockerInfo,
-		"docker_install": h.dockerInstall,
-		"apps_status":    h.appsStatus,
-		"app_install":    h.appInstall,
-		"app_action":     h.appAction,
-		"app_uninstall":  h.appUninstall,
-		"app_logs":       h.appLogs,
-		"app_domain":     h.appDomain,
-		"proxy_status":   h.proxyStatus,
-		"proxy_setup":    h.proxySetup,
-		"proxy_remove":   h.proxyRemove,
-		"images_unused":  h.imagesUnused,
-		"images_prune":   h.imagesPrune,
-		"updates_check":  h.updatesCheck,
-		"self_update":    h.selfUpdate,
+		"console_proof":    h.consoleProof,
+		"docker_info":      h.dockerInfo,
+		"docker_install":   h.dockerInstall,
+		"apps_status":      h.appsStatus,
+		"app_install":      h.appInstall,
+		"app_action":       h.appAction,
+		"app_uninstall":    h.appUninstall,
+		"app_logs":         h.appLogs,
+		"app_domain":       h.appDomain,
+		"proxy_status":     h.proxyStatus,
+		"proxy_setup":      h.proxySetup,
+		"proxy_remove":     h.proxyRemove,
+		"images_unused":    h.imagesUnused,
+		"images_prune":     h.imagesPrune,
+		"updates_check":    h.updatesCheck,
+		"self_update":      h.selfUpdate,
+		"firewall_status":  h.firewallStatus,
+		"firewall_apply":   h.firewallApply,
+		"firewall_confirm": h.firewallConfirm,
 	}
 }
 
