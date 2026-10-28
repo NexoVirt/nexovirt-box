@@ -6,7 +6,7 @@
   import { api } from '$lib/api.js';
   import { toast } from '$lib/toast.svelte.js';
   import { bytes, rate, pct, duration } from '$lib/format.js';
-  import { runJob, appURL } from '$lib/jobs.js';
+  import { runJob, appURL, jobFollower } from '$lib/jobs.js';
   import AppIcon from '$lib/AppIcon.svelte';
   import Ring from '$lib/Ring.svelte';
   import Sparkline from '$lib/Sparkline.svelte';
@@ -48,12 +48,14 @@
     { label: 'Settings: Updates', hint: 'Update NexoVirt Box', to: '/settings#updates', icon: Settings },
     { label: 'Settings: General', hint: 'Appearance and folders in Files', to: '/settings#general', icon: Settings },
   ];
-  const STATE = { running: 'ok', partial: 'warn', restarting: 'warn', stopped: '', exited: '' };
+  const STATE = { running: 'ok', partial: 'warn', restarting: 'warn', stopped: '', exited: 'error', interrupted: 'warn' };
 
   let apps = $state(null);
   let appsError = $state('');
   let proxy = $state(null);
   let busy = $state({});
+  let bg = $state({}); // actions still running after a reload
+  const follow = jobFollower(() => loadApps(), () => busy);
   let snap = $state(null);
   let cpuHist = $state([]), netHist = $state([]);
   let seq = $state(0);
@@ -74,10 +76,11 @@
   const running = $derived(apps ? apps.filter((a) => a.state === 'running').length : 0);
 
   async function loadApps() {
-    const [a, p] = await Promise.all([api('/api/apps'), api('/api/proxy')]);
+    const [a, p, j] = await Promise.all([api('/api/apps'), api('/api/proxy'), follow()]);
     if (a.status === 401) return onSessionLost();
     if (!a.ok) { appsError = a.error; apps = []; return; }
     apps = a.data;
+    bg = Object.fromEntries(a.data.filter((x) => x.busy).map((x) => [x.id, x.busy]).concat(Object.entries(j)));
     if (p.ok) proxy = p.data;
   }
 
@@ -106,9 +109,9 @@
       items: [
         { key: 'open', label: `Open ${app.name}`, icon: ExternalLink, disabled: !openURL(app) },
         'sep',
-        { key: 'start', label: 'Start', icon: Play, disabled: up || !!busy[app.id] },
-        { key: 'stop', label: 'Stop', icon: Square, disabled: !up || !!busy[app.id] },
-        { key: 'restart', label: 'Restart', icon: RotateCw, disabled: !up || !!busy[app.id] },
+        { key: 'start', label: 'Start', icon: Play, disabled: up || !!(busy[app.id] || bg[app.id]) },
+        { key: 'stop', label: 'Stop', icon: Square, disabled: !up || !!(busy[app.id] || bg[app.id]) },
+        { key: 'restart', label: 'Restart', icon: RotateCw, disabled: !up || !!(busy[app.id] || bg[app.id]) },
         'sep',
         { key: 'manage', label: 'Open in My Apps', icon: Boxes },
       ],
@@ -274,7 +277,7 @@
               title="{a.name}: click to open, right-click for more">
               <span class="icon-wrap">
                 <AppIcon id={a.id} name={a.name} size={64} />
-                {#if busy[a.id]}<span class="busy"><Loader size={18} class="spinner" /></span>{/if}
+                {#if busy[a.id] || bg[a.id]}<span class="busy"><Loader size={18} class="spinner" /></span>{/if}
                 <span class="dot state {STATE[a.state] ?? ''}" aria-label={a.state}></span>
               </span>
               <span class="app-name">{a.name}</span>
