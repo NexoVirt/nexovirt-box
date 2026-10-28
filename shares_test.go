@@ -35,7 +35,7 @@ func TestRenderSamba(t *testing.T) {
 	owner := func(string) (string, string) { return "bob", "users" }
 	out := renderSamba(shares, owner)
 	for _, want := range []string{"[media]", "path = /srv/media", "read only = yes", "valid users = alice bob", "force user = bob",
-		"force group = users", "wide links = no", "guest ok = no", "comment = Films", "[pub]", "guest ok = yes", "map to guest = Bad User"} {
+		"force group = users", "create mask = 0664", "directory mask = 0775", "wide links = no", "guest ok = no", "comment = Films", "[pub]", "guest ok = yes", "map to guest = Bad User"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("missing %q in:\n%s", want, out)
 		}

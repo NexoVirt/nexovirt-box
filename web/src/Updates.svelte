@@ -50,7 +50,7 @@
     if (!res.ok) return toast(res.error, 'error', 9000);
     status = res.data;
     refreshInfo = res.data.errors?.length ? res.data : null;
-    toast(res.data.packages.length ? `${res.data.packages.length} updates available.` : 'Everything is up to date.', res.data.errors?.length ? 'info' : 'success');
+    toast(res.data.packages.length ? `${res.data.packages.length} ${res.data.packages.length === 1 ? "update" : "updates"} available.` : 'Everything is up to date.', res.data.errors?.length ? 'info' : 'success');
   }
 
   const security = $derived(status ? status.packages.filter((p) => p.security).length : 0);

@@ -85,6 +85,9 @@ func TestAptErrors(t *testing.T) {
 			t.Fatalf("%q: reason %q lines %v, want %q", out, reason, lines, want)
 		}
 	}
+	if lines, _ := aptErrors("Err:10 file:/opt/repo ./ Translation-en\n  File not found - /opt/repo/./en.xz"); len(lines) != 0 {
+		t.Fatalf("missing translations reported: %v", lines)
+	}
 	if lines, reason := aptErrors("Hit:1 http://deb.debian.org trixie InRelease\nReading package lists..."); len(lines) != 0 || reason != "" {
 		t.Fatalf("clean output gave %v %q", lines, reason)
 	}

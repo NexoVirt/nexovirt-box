@@ -193,7 +193,8 @@ func renderSamba(shares []sambaShare, owner func(string) (string, string)) strin
 			fmt.Fprintf(&b, "   guest ok = no\n   valid users = %s\n", strings.Join(users, " "))
 		}
 		// Files are read and written as the folder's owner, so the share keeps its permissions.
-		fmt.Fprintf(&b, "   force user = %s\n   force group = %s\n", u, g)
+		// The masks drop setuid/setgid/sticky and execute bits from anything created over the share.
+		fmt.Fprintf(&b, "   force user = %s\n   force group = %s\n   create mask = 0664\n   directory mask = 0775\n", u, g)
 	}
 	return b.String()
 }

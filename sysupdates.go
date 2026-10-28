@@ -116,10 +116,16 @@ func parseSimulation(out string) aptSimulation {
 func aptErrors(out string) ([]string, string) {
 	var lines []string
 	reason := ""
+	seen := map[string]bool{}
 	ls := strings.Split(out, "\n")
 	for i, l := range ls {
 		t := strings.TrimSpace(l)
-		if !(strings.HasPrefix(t, "E:") || strings.HasPrefix(t, "W:") || strings.HasPrefix(t, "Err:")) {
+		if !(strings.HasPrefix(t, "E:") || strings.HasPrefix(t, "W:") || strings.HasPrefix(t, "Err:")) || seen[t] {
+			continue
+		}
+		seen[t] = true
+		// Missing translations (flat file repositories) are harmless: apt-get update still succeeds.
+		if strings.HasPrefix(t, "Err:") && strings.Contains(t, " Translation-") {
 			continue
 		}
 		lines = append(lines, t)
