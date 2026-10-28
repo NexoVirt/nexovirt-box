@@ -5,5 +5,5 @@
   if (t !== 'dark' && t !== 'light') {
     t = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   }
-  document.documentElement.setAttribute('data-bs-theme', t);
+  if (t === 'dark') document.documentElement.classList.add('dark');
 })();
