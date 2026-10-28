@@ -149,7 +149,7 @@ func (a *App) watchHealth() {
 	for {
 		time.Sleep(30 * time.Second)
 		a.checkApps(hs)
-		a.checkDisks(hs)
+		a.checkDiskSpace(hs)
 		a.checkFirewall(hs)
 	}
 }
@@ -197,7 +197,7 @@ func (a *App) checkApps(hs *healthState) {
 	}
 }
 
-func (a *App) checkDisks(hs *healthState) {
+func (a *App) checkDiskSpace(hs *healthState) {
 	thr, _ := strconv.Atoi(a.store.setting("notify_disk_threshold"))
 	if thr == 0 {
 		thr = 90
@@ -290,5 +290,18 @@ func startNotifier(a *App) {
 		return
 	}
 	a.notify = n
+	a.subscribeDiskEvents(diskNotifySink{a})
 	go a.watchHealth()
+}
+
+// diskNotifySink turns SMART health changes into notifications.
+type diskNotifySink struct{ a *App }
+
+func (s diskNotifySink) DiskHealthChanged(ev diskEvent) {
+	title := fmt.Sprintf("Disk %s health: %s", ev.Disk, ev.To)
+	body := fmt.Sprintf("%s (%s) changed from %s to %s.", ev.Model, ev.Disk, ev.From, ev.To)
+	if len(ev.Warnings) > 0 {
+		body += " " + strings.Join(ev.Warnings, " ")
+	}
+	s.a.notify.send(evDiskHealth, ev.Disk+"|"+ev.To, title, body)
 }

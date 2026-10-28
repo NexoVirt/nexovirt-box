@@ -22,22 +22,24 @@ import (
 const sessionCookie = "nxbox_session"
 
 type App struct {
-	store     *Store
-	limiter   *limiter
-	secure    bool
-	sampler   *sampler
-	tokenPath string
-	trusted   []*net.IPNet // reverse proxies allowed to set X-Forwarded-For
-	helper    *helperClient
-	consoles  *consoleRegistry
-	catalog   *catalogStore
-	jobs      *jobs
-	proofs    sync.Map // session hash -> console proof issued by the helper
-	tfa       *twoFactor
-	port      int // listen port (the helper checks it after a self-update)
-	updates   updateCache
-	state     string    // web state directory
-	notify    *notifier // nil until set up (tests)
+	store      *Store
+	limiter    *limiter
+	secure     bool
+	sampler    *sampler
+	tokenPath  string
+	trusted    []*net.IPNet // reverse proxies allowed to set X-Forwarded-For
+	helper     *helperClient
+	consoles   *consoleRegistry
+	catalog    *catalogStore
+	jobs       *jobs
+	proofs     sync.Map // session hash -> console proof issued by the helper
+	tfa        *twoFactor
+	port       int // listen port (the helper checks it after a self-update)
+	updates    updateCache
+	state      string    // web state directory
+	notify     *notifier // nil until set up (tests)
+	disks      diskCache
+	shareLimit *limiter // public share link hits per IP
 }
 
 type route struct {
@@ -132,6 +134,30 @@ func (a *App) routeTable() []route {
 		{"POST /api/notify/channels/{id}/delete", false, a.notifyChannelDelete},
 		{"POST /api/notify/channels/{id}/test", false, a.notifyChannelTest},
 		{"POST /api/notify/rules", false, a.notifyRulesSave},
+		{"GET /api/system-updates", false, a.sysUpdates},
+		{"POST /api/system-updates/refresh", false, a.sysUpdatesRefresh},
+		{"POST /api/system-updates/simulate", false, a.sysUpdatesSimulate},
+		{"POST /api/system-updates/start", false, a.sysUpdatesStart},
+		{"GET /api/system-updates/progress", false, a.sysUpdatesProgress},
+		{"POST /api/system-updates/auto", false, a.sysAutoUpdates},
+		{"POST /api/system/reboot", false, a.sysReboot},
+		{"POST /api/system/install", false, a.pkgInstall},
+		{"GET /api/disks", false, a.disksList},
+		{"GET /api/disks/summary", false, a.disksSummary},
+		{"POST /api/disks/selftest", false, a.diskSelftest},
+		{"GET /api/shares", false, a.sharesStatus},
+		{"POST /api/shares/samba", false, a.sambaShareSave},
+		{"POST /api/shares/samba/{id}/delete", false, a.sambaShareDelete},
+		{"POST /api/shares/samba-users", false, a.sambaUserSave},
+		{"POST /api/shares/samba/handover", false, a.sambaHandover},
+		{"POST /api/shares/samba-users/{name}/delete", false, a.sambaUserDelete},
+		{"POST /api/shares/nfs", false, a.nfsExportSave},
+		{"POST /api/shares/nfs/{id}/delete", false, a.nfsExportDelete},
+		{"GET /api/share-links", false, a.shareLinksList},
+		{"POST /api/share-links", false, a.shareLinkCreate},
+		{"POST /api/share-links/{id}/revoke", false, a.shareLinkRevoke},
+		{"GET /s/{token}", true, a.sharePublic},
+		{"POST /s/{token}", true, a.sharePublic},
 	}
 }
 
@@ -141,6 +167,9 @@ func (a *App) routes(ui fs.FS) http.Handler {
 	}
 	if a.tfa == nil {
 		a.tfa = newTwoFactor()
+	}
+	if a.shareLimit == nil {
+		a.shareLimit = newLimiter(a.store, 60, time.Minute)
 	}
 	mux := http.NewServeMux()
 	for _, rt := range a.routeTable() {

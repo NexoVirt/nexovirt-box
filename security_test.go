@@ -28,6 +28,8 @@ func TestEveryPrivateRouteNeedsAuth(t *testing.T) {
 		"POST /api/login/2fa":            true,
 		"POST /api/login/passkey/begin":  true,
 		"POST /api/login/passkey/finish": true,
+		"GET /s/{token}":                 true, // public share links
+		"POST /s/{token}":                true,
 	}
 	placeholder := regexp.MustCompile(`\{[^}]+\}`)
 	n := 0

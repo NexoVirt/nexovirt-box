@@ -75,6 +75,7 @@ func main() {
 	go app.watchUpdates()
 	startNotifier(app)
 	go app.watchBackups()
+	go app.watchDisks()
 
 	ui, err := fs.Sub(webDist, "web/dist")
 	if err != nil {

@@ -16,6 +16,12 @@
   import Backups from './Backups.svelte';
   import PasswordGate from '$lib/PasswordGate.svelte';
   import Archive from '@lucide/svelte/icons/archive';
+  import Updates from './Updates.svelte';
+  import Disks from './Disks.svelte';
+  import Shares from './Shares.svelte';
+  import PackageCheck from '@lucide/svelte/icons/package-check';
+  import HardDrive from '@lucide/svelte/icons/hard-drive';
+  import Share2 from '@lucide/svelte/icons/share-2';
   import Logo from '$lib/Logo.svelte';
   import Sheet from '$lib/Sheet.svelte';
   import Popover from '$lib/Popover.svelte';
@@ -45,6 +51,9 @@
     { path: '/apps/installed', title: 'My Apps', icon: Boxes },
     { path: '/backups', title: 'Backups', icon: Archive },
     { path: '/files', title: 'Files', icon: FolderOpen },
+    { path: '/shares', title: 'Shares', icon: Share2 },
+    { path: '/disks', title: 'Disks', icon: HardDrive },
+    { path: '/updates', title: 'Updates', icon: PackageCheck },
     { path: '/firewall', title: 'Firewall', icon: Shield },
     { path: '/console', title: 'Console', icon: SquareTerminal },
     { path: '/activity', title: 'Activity', icon: History },
@@ -225,6 +234,12 @@
           {#key pageKey}<Files onSessionLost={sessionLost} />{/key}
         {:else if page.path === '/backups'}
           {#key pageKey}<Backups onSessionLost={sessionLost} />{/key}
+        {:else if page.path === '/updates'}
+          <Updates onSessionLost={sessionLost} />
+        {:else if page.path === '/disks'}
+          <Disks onSessionLost={sessionLost} />
+        {:else if page.path === '/shares'}
+          {#key pageKey}<Shares onSessionLost={sessionLost} />{/key}
         {:else if page.path === '/firewall'}
           <Firewall onSessionLost={sessionLost} />
         {:else if page.path === '/settings'}

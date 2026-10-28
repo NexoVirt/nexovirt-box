@@ -4,6 +4,7 @@
   // a search that finds apps, settings, pages and folders.
   import { onMount } from 'svelte';
   import { api } from '$lib/api.js';
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
   import { toast } from '$lib/toast.svelte.js';
   import { bytes, rate, pct, duration } from '$lib/format.js';
   import { runJob, appURL, jobFollower } from '$lib/jobs.js';
@@ -185,8 +186,15 @@
     if (e.key === '/' || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k')) { e.preventDefault(); searchEl?.focus(); }
   }
 
+  let diskWarn = $state([]);
+  async function loadDiskWarn() {
+    const res = await api('/api/disks/summary');
+    if (res.ok) diskWarn = res.data.warnings;
+  }
+
   onMount(() => {
     loadApps();
+    loadDiskWarn();
     const tick = setInterval(() => (now = new Date()), 15000);
     const es = new EventSource('/api/stats/stream');
     const take = (s) => {
@@ -308,6 +316,12 @@
 
     <!-- Widgets -->
     <aside class="widgets">
+      {#if diskWarn.length}
+        <button class="tile widget diskwarn" onclick={() => onNavigate('/disks')} aria-label="Disk warning, open Disks">
+          <div class="w-head"><span class="t-head dw"><TriangleAlert size={16} />{diskWarn.length === 1 ? 'A disk needs attention' : `${diskWarn.length} disks need attention`}</span><span class="link">Disks<ChevronRight size={14} /></span></div>
+          {#each diskWarn as d}<p class="t-caption"><span class="dot" class:warn={d.verdict === 'warning'} class:error={d.verdict === 'failing'}></span> {d.model || d.disk}: {d.warnings[0] || (d.verdict === 'failing' ? 'SMART says it is failing.' : 'Check its health.')}</p>{/each}
+        </button>
+      {/if}
       <button class="tile widget sys" onclick={() => onNavigate('/monitor')} aria-label="System, open Monitor">
         <div class="w-head"><span class="t-head">System</span><span class="link">Monitor<ChevronRight size={14} /></span></div>
         {#if snap}
@@ -422,6 +436,7 @@
   .s-ico { display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border-radius: 0.75rem; background: var(--accent-fill); color: var(--accent); flex-shrink: 0; }
   .s-text { display: grid; min-width: 0; }
   .widgets { display: grid; gap: 1rem; }
+  .dw { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--warn); }
   .widget { display: grid; gap: 0.75rem; padding: 1rem 1.125rem; border: 0; color: inherit; font: inherit; text-align: left; }
   button.widget { cursor: pointer; transition: transform 120ms ease-out; }
   button.widget:active { transform: scale(0.98); }

@@ -69,6 +69,10 @@ type helperRequest struct {
 	Compose  string        `json:"compose,omitempty"`
 	Env      string        `json:"env,omitempty"`
 	Icon     string        `json:"icon,omitempty"`
+	// System updates, disks and shares.
+	Packages []string    `json:"packages,omitempty"`
+	Share    *sambaShare `json:"share,omitempty"`
+	Export   *nfsExport  `json:"export,omitempty"`
 }
 
 type helperMsg struct {
@@ -226,6 +230,8 @@ func (h *helperServer) ctxActions() map[string]func(context.Context, helperReque
 		"backup_restore":  h.backupRestore,
 		"backup_verify":   h.backupVerify,
 		"custom_app_save": h.customAppSave,
+		"pkg_install":     h.pkgInstall,
+		"auto_updates":    h.autoUpdatesSet,
 	}
 }
 
@@ -265,6 +271,24 @@ func (h *helperServer) actions() map[string]helperAction {
 		"backup_delete":        h.backupDelete,
 		"backup_prune":         h.backupPrune,
 		"custom_app_get":       h.customAppGet,
+		"files_stat":           h.filesStat,
+		// System updates, disks and shares (sysupdates.go, disks.go, shares.go).
+		"apt_status":         h.aptStatus,
+		"apt_refresh":        h.aptRefresh,
+		"apt_simulate":       h.aptSimulate,
+		"apt_upgrade_start":  h.aptUpgradeStart,
+		"apt_upgrade_status": h.aptUpgradeStatus,
+		"system_reboot":      h.systemReboot,
+		"disks_list":         h.disksList,
+		"smart_selftest":     h.smartSelftest,
+		"shares_status":      h.sharesStatus,
+		"samba_share_save":   h.sambaShareSave,
+		"samba_share_delete": h.sambaShareDelete,
+		"samba_user_save":    h.sambaUserSave,
+		"samba_user_delete":  h.sambaUserDelete,
+		"samba_handover":     h.sambaHandover,
+		"nfs_export_save":    h.nfsExportSave,
+		"nfs_export_delete":  h.nfsExportDelete,
 	}
 }
 

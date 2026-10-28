@@ -98,6 +98,19 @@ func openStore(path string) (*Store, error) {
 			ip TEXT NOT NULL,
 			action TEXT NOT NULL,
 			detail TEXT NOT NULL
+		);
+		CREATE TABLE IF NOT EXISTS share_links (
+			id TEXT PRIMARY KEY,
+			token_hash TEXT NOT NULL UNIQUE,
+			path TEXT NOT NULL,
+			name TEXT NOT NULL,
+			is_dir INTEGER NOT NULL,
+			created_at INTEGER NOT NULL,
+			expires_at INTEGER NOT NULL,
+			password_hash TEXT NOT NULL DEFAULT '',
+			max_downloads INTEGER NOT NULL DEFAULT 0,
+			downloads INTEGER NOT NULL DEFAULT 0,
+			revoked INTEGER NOT NULL DEFAULT 0
 		);`)
 	// Columns added after 0.1 (ALTER is a no-op when the column exists).
 	for _, alter := range []string{
