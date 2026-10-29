@@ -2,18 +2,14 @@
   let { size = 32 } = $props();
 </script>
 
-<svg viewBox="0 0 56 56" height={size} width={size} xmlns="http://www.w3.org/2000/svg" role="img" aria-label="NexoVirt Box">
-  <g stroke="currentColor" stroke-width="2.5" stroke-opacity="0.45" stroke-linecap="round">
-    <line x1="28" y1="19" x2="28" y2="13.5" />
-    <line x1="36.56" y1="25.22" x2="41.79" y2="23.52" />
-    <line x1="33.29" y1="35.28" x2="36.53" y2="39.73" />
-    <line x1="22.71" y1="35.28" x2="19.47" y2="39.73" />
-    <line x1="19.44" y1="25.22" x2="14.21" y2="23.52" />
-  </g>
-  <circle cx="28" cy="9" r="4" fill="currentColor" fill-opacity="0.35" />
-  <circle cx="46.07" cy="22.13" r="4" fill="currentColor" fill-opacity="0.35" />
-  <circle cx="39.17" cy="43.37" r="4" fill="currentColor" fill-opacity="0.35" />
-  <circle cx="16.83" cy="43.37" r="4" fill="currentColor" fill-opacity="0.35" />
-  <circle cx="9.93" cy="22.13" r="4" fill="currentColor" fill-opacity="0.35" />
-  <circle cx="28" cy="28" r="7" fill="var(--accent)" />
+<!-- NexoVirt Box mark (docs/branding/box-mark.svg), one colour via currentColor. -->
+<svg viewBox="0 0 100 100" height={size} width={size} fill="currentColor" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="NexoVirt Box">
+  <path d="M50 24.35L69.02 35.33L50 46.3L30.98 35.33ZM27.78 40.87L46.8 51.85L46.8 73.8L27.78 62.83ZM72.22 40.87L72.22 62.83L53.2 73.8L53.2 51.85Z" stroke="currentColor" stroke-width="3.2" stroke-linejoin="round"/>
+  <path d="M50 25.55L50 10M71.11 41.32L84.64 30M71.18 62.23L84.64 70M50 71.8L50 90M28.82 62.23L15.36 70M28.89 41.32L15.36 30" stroke="currentColor" stroke-width="4.2" fill="none"/>
+  <circle cx="50" cy="10" r="7.8"/>
+  <circle cx="84.64" cy="30" r="7.8"/>
+  <circle cx="84.64" cy="70" r="7.8"/>
+  <circle cx="50" cy="90" r="7.8"/>
+  <circle cx="15.36" cy="70" r="7.8"/>
+  <circle cx="15.36" cy="30" r="7.8"/>
 </svg>
