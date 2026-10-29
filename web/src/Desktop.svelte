@@ -218,11 +218,11 @@
     drag = { id: press.t.id, order: tiles.map((t) => t.id), x: e.clientX, y: e.clientY, dx: press.x0 - r.left, dy: press.y0 - r.top, w: r.width, h: r.height };
   }
   function reorderAt(x, y) {
-    const hit = document.elementsFromPoint(x, y).find((n) => n.dataset?.tile && n.dataset.tile !== drag.id);
+    const hit = document.elementsFromPoint(x, y).find((n) => n.dataset?.dtile && n.dataset.dtile !== drag.id);
     if (!hit) return;
     const order = drag.order.filter((id) => id !== drag.id);
-    const to = order.indexOf(hit.dataset.tile);
-    const from = drag.order.indexOf(drag.id), over = drag.order.indexOf(hit.dataset.tile);
+    const to = order.indexOf(hit.dataset.dtile);
+    const from = drag.order.indexOf(drag.id), over = drag.order.indexOf(hit.dataset.dtile);
     order.splice(over > from ? to + 1 : to, 0, drag.id);
     if (order.join() !== drag.order.join()) drag.order = order;
   }
@@ -286,7 +286,7 @@
   function choose(r) {
     searchOpen = false;
     query = '';
-    if (r.tile) return launch(r.tile, document.querySelector(`[data-tile="${r.tile.id}"]`));
+    if (r.dtile) return launch(r.dtile, document.querySelector(`[data-tile="${r.dtile.id}"]`));
     go(r.to, searchEl);
   }
   function searchKey(e) {
@@ -345,10 +345,10 @@
       {#if searchOpen && query}
         <ul class="results" id="desk-results" role="listbox">
           {#each results as r, i (r.kind + r.label)}
-            {@const Icon = r.icon || r.tile?.icon}
+            {@const Icon = r.icon || r.dtile?.icon}
             <li role="option" aria-selected={i === active}>
               <button class:on={i === active} onmousedown={(e) => e.preventDefault()} onclick={() => choose(r)} onmouseenter={() => (active = i)}>
-                {#if r.tile?.app}<AppIcon id={r.tile.app.id} name={r.tile.app.name} size={28} icon={r.tile.app.icon} />
+                {#if r.dtile?.app}<AppIcon id={r.dtile.app.id} name={r.dtile.app.name} size={28} icon={r.dtile.app.icon} />
                 {:else if r.store}<AppIcon id={r.store.id} name={r.store.name} size={28} />
                 {:else}<span class="ico r-ico"><Icon /></span>{/if}
                 <span class="r-text"><span class="truncate">{r.label}</span><span class="t-caption truncate">{r.hint}</span></span>
@@ -370,18 +370,18 @@
 
     <div class="grid" role="list" aria-label="Apps">
       {#if !apps || !prefs}
-        {#each Array(8) as _}<div class="tile glass skel"><span class="skeleton" style:width="52px" style:height="52px" style:border-radius="14px"></span><span class="skeleton" style:width="4rem" style:height="0.75rem"></span></div>{/each}
+        {#each Array(8) as _}<div class="dtile glass skel"><span class="skeleton" style:width="52px" style:height="52px" style:border-radius="14px"></span><span class="skeleton" style:width="4rem" style:height="0.75rem"></span></div>{/each}
       {:else}
         {#each shownTiles as t (t.id)}
           {@const Icon = t.icon}
           {@const work = t.app && (busy[t.id] || bg[t.id])}
           <div role="listitem" class="cell" animate:flip={{ duration: 260 }}>
-            <button class="tile glass" class:lifted={drag?.id === t.id} data-tile={t.id}
+            <button class="dtile glass" class:lifted={drag?.id === t.id} data-tile={t.id}
               onclick={(e) => click(e, t)} oncontextmenu={(e) => context(e, t)} onkeydown={(e) => tileKey(e, t)}
               onpointerdown={(e) => down(e, t)}
               title="{t.name}: click to open, right-click for more" aria-label="{t.name}{t.app ? `, ${STATE_TEXT[t.app.state] || 'not running'}` : ''}">
               <span class="icon-wrap">
-                {#if t.sys}<span class="ico tile accent"><Icon /></span>
+                {#if t.sys}<span class="ico app accent"><Icon /></span>
                 {:else}<AppIcon id={t.app.id} name={t.app.name} size={52} icon={t.app.icon} />{/if}
                 {#if work}<span class="busy"><Loader size={18} class="spinner" /></span>{/if}
               </span>
@@ -403,7 +403,7 @@
   {#if t}
     {@const Icon = t.icon}
     <div class="ghost glass" style:width="{drag.w}px" style:height="{drag.h}px" style:transform="translate({drag.x - drag.dx}px, {drag.y - drag.dy}px) scale(1.06)" aria-hidden="true">
-      <span class="icon-wrap">{#if t.sys}<span class="ico tile accent"><Icon /></span>{:else}<AppIcon id={t.app.id} name={t.app.name} size={52} icon={t.app.icon} />{/if}</span>
+      <span class="icon-wrap">{#if t.sys}<span class="ico app accent"><Icon /></span>{:else}<AppIcon id={t.app.id} name={t.app.name} size={52} icon={t.app.icon} />{/if}</span>
       <span class="name">{t.name}</span>
     </div>
   {/if}
@@ -456,7 +456,7 @@
     padding: calc(4.25rem + env(safe-area-inset-top, 0px)) max(1.75rem, env(safe-area-inset-right, 0px)) calc(2rem + env(safe-area-inset-bottom, 0px)) max(1.75rem, env(safe-area-inset-left, 0px));
     max-width: 110rem; margin-inline: auto;
   }
-  .left { position: sticky; top: calc(4.25rem + env(safe-area-inset-top, 0px)); }
+  .left { min-width: 0; }
   .skel-widget { height: 8rem; border-radius: 1.375rem; margin-bottom: 0.875rem; padding: 1rem; display: grid; }
   .right { display: grid; gap: 1rem; min-width: 0; align-content: start; }
 
@@ -499,16 +499,16 @@
 
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr)); gap: 0.875rem; }
   .cell { min-width: 0; }
-  .tile {
+  .dtile {
     position: relative; display: grid; justify-items: center; align-content: center; gap: 0.625rem; width: 100%; aspect-ratio: 1 / 1;
     padding: 0.75rem 0.5rem; border: 0; border-radius: 1.375rem; color: var(--text); font: inherit; cursor: pointer;
     user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: manipulation;
     transition: transform 140ms ease-out, opacity 150ms ease;
   }
-  .tile:hover { background: var(--glass-strong); }
-  .tile:active { transform: scale(0.95); }
-  .tile.lifted { opacity: 0.25; }
-  .tile.skel { cursor: default; }
+  .dtile:hover { background: var(--glass-strong); }
+  .dtile:active { transform: scale(0.95); }
+  .dtile.lifted { opacity: 0.25; }
+  .dtile.skel { cursor: default; }
   .icon-wrap { position: relative; display: grid; place-items: center; width: 52px; height: 52px; }
   .busy { position: absolute; inset: -4px; display: grid; place-items: center; border-radius: 14px; background: color-mix(in srgb, var(--glass-strong) 85%, transparent); }
   .name { font-size: 0.8125rem; font-weight: 550; line-height: 1.2; text-align: center; max-width: 100%; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; }
@@ -525,7 +525,7 @@
 
   @media (max-width: 999px) {
     .desk { grid-template-columns: 1fr; gap: 1.25rem; padding-top: calc(4rem + env(safe-area-inset-top, 0px)); }
-    .left { position: static; order: 0; }
+    .left { order: 0; }
     .left :global(.widgets) { grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); }
     .left :global(.widgets .edit) { grid-column: 1 / -1; }
   }

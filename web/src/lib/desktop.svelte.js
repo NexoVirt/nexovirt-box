@@ -6,7 +6,7 @@ import { toast } from './toast.svelte.js';
 // Built-in wallpapers: flat colours and two flat-shape pictures made for Box (no gradients, no
 // third-party images). tone says whether text on it should be light or dark.
 export const WALLPAPERS = [
-  { id: 'auto', label: 'Automatic', hint: 'Follows light and dark mode' },
+  { id: 'auto', label: 'Automatic', hint: 'Dunes in light mode, Night hills in dark mode' },
   { id: 'mist', label: 'Mist', color: '#d4d4d8', tone: 'light' },
   { id: 'sand', label: 'Sand', color: '#ddd5c7', tone: 'light' },
   { id: 'dunes', label: 'Dunes', color: '#e6d9c4', image: '/wallpapers/dunes.svg', tone: 'light' },
@@ -53,7 +53,7 @@ export async function saveDesktop(change) {
 export function wallpaperOf(prefs, dark) {
   const id = prefs?.wallpaper || 'auto';
   if (id === 'custom') return { id, image: `/api/desktop/wallpaper?v=${prefs.custom_v}`, color: '#27272a', tone: desktop.customTone };
-  if (id === 'auto') return dark ? { id, color: '#111113', tone: 'dark' } : { id, color: '#e4e4e7', tone: 'light' };
+  if (id === 'auto') return { ...WALLPAPERS.find((w) => w.id === (dark ? 'hills' : 'dunes')), id };
   return WALLPAPERS.find((w) => w.id === id) || WALLPAPERS[0];
 }
 

@@ -98,17 +98,19 @@
       <button class="glass widget" onclick={(e) => open(e, '/monitor')} aria-label="System status, open Monitor">
         <div class="w-head"><span class="t-head">System status</span><span class="t-caption num">{snap ? `Up ${duration(snap.uptime)}` : ''}</span></div>
         {#if snap}
-          <div class="rings">
-            <Ring value={snap.cpu.total} size={70} stroke={7} label="CPU" />
+          <div class="rings" class:two={!snap.temp}>
+            <Ring value={snap.cpu.total} size={70} stroke={7} label="CPU" caption={snap.cpu.cores?.length ? `${snap.cpu.cores.length} cores` : ''} />
             <Ring value={memPct} size={70} stroke={7} label="Memory" caption={bytes(snap.memory.used, 0)} />
-            <div class="temp" class:none={!snap.temp}>
+            {#if snap.temp}
+            <div class="temp">
               <span class="temp-face">
                 <span class="ico" class:warn={snap.temp >= 75} class:error={snap.temp >= 90}><Thermometer /></span>
                 <span class="temp-val num">{snap.temp ? `${Math.round(snap.temp)}°` : '-'}</span>
               </span>
               <span class="t-head">Temperature</span>
-              <span class="t-caption">{snap.temp ? 'CPU' : 'No sensor'}</span>
+              <span class="t-caption">CPU</span>
             </div>
+            {/if}
           </div>
           <div class="spark"><Sparkline values={cpuHist} {seq} capacity={60} height={30} /></div>
         {:else}
@@ -176,17 +178,18 @@
   .w-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; min-height: 1.75rem; }
 
   .clock { gap: 0.125rem; padding-block: 1.125rem; }
+  @media (max-width: 639px) { .clock .time { font-size: 2.75rem; } .clock .date { margin-top: 0.375rem; } }
   .time { font-size: 3.5rem; line-height: 1; font-weight: 250; letter-spacing: -0.045em; }
   .date { font-size: 1.0625rem; font-weight: 600; letter-spacing: -0.012em; margin-top: 0.5rem; }
   .greet { margin-top: 0.125rem; }
 
   .rings { display: flex; justify-content: space-between; gap: 0.25rem; }
+  .rings.two { justify-content: space-around; }
   .rings :global(.ring) { gap: 0.5rem; }
   .rings :global(.ring .value) { font-size: 1.25rem; }
   .temp { display: grid; justify-items: center; align-content: start; text-align: center; }
   .temp-face { display: grid; place-items: center; align-content: center; gap: 0.125rem; width: 70px; height: 70px; margin-bottom: 0.5rem; }
   .temp-val { font-size: 1.25rem; font-weight: 650; letter-spacing: -0.03em; line-height: 1; }
-  .temp.none .ico, .temp.none .temp-val { color: var(--text-3); }
   .spark { margin: 0 -0.25rem; }
   .chart { position: relative; }
   .overlay { position: absolute; inset: 0; }

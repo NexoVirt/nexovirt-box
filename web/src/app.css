@@ -282,5 +282,5 @@ select.input option { background: var(--surface); color: var(--text); }
   background: var(--glass); box-shadow: var(--glass-edge);
   -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
 }
-.ico.tile { width: var(--icon-tile); height: var(--icon-tile); }
-.ico.tile > svg { stroke-width: 1.5; }
+.ico.app { width: var(--icon-tile); height: var(--icon-tile); }
+.ico.app > svg { stroke-width: 1.5; }

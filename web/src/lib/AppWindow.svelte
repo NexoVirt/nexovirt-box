@@ -25,7 +25,7 @@
     const dx = from.left + from.width / 2 - W / 2, dy = from.top + from.height / 2 - H / 2;
     return {
       duration: 520, easing: spring,
-      css: (t, u) => `opacity:${Math.min(1, t * 3)};border-radius:${18 + u * 30}px;transform:translate(${dx * u}px,${dy * u}px) scale(${s + (1 - s) * t})`,
+      css: (t, u) => `opacity:${Math.min(1, t * 3)};border-radius:${Math.round(u * 40)}px;transform:translate(${dx * u}px,${dy * u}px) scale(${s + (1 - s) * t})`,
     };
   }
 

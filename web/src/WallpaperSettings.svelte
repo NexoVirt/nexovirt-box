@@ -15,7 +15,7 @@
   const prefs = $derived(desktop.prefs);
 
   function preview(w) {
-    if (w.id === 'auto') return { color: theme.current === 'dark' ? '#111113' : '#e4e4e7' };
+    if (w.id === 'auto') return WALLPAPERS.find((x) => x.id === (theme.current === 'dark' ? 'hills' : 'dunes'));
     return w;
   }
 

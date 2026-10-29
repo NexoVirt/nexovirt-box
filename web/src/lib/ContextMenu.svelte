@@ -12,8 +12,8 @@
     pos = { x: menu.x, y: menu.y };
     tick().then(() => {
       if (!el) return;
-      const r = el.getBoundingClientRect();
-      pos = { x: Math.min(menu.x, innerWidth - r.width - 8), y: Math.min(menu.y, innerHeight - r.height - 8) };
+      // offset sizes: the menu is still scaled down by its grow animation here
+      pos = { x: Math.max(8, Math.min(menu.x, innerWidth - el.offsetWidth - 8)), y: Math.max(8, Math.min(menu.y, innerHeight - el.offsetHeight - 8)) };
       el.querySelector('button:not(:disabled)')?.focus();
     });
   });
