@@ -43,7 +43,7 @@
 <svelte:window onkeydown={key} />
 
 <div class="window" bind:this={el} role="dialog" aria-modal="false" aria-label={title} tabindex="-1" transition:zoom>
-  <header class="bar">
+  <header class="titlebar">
     <button class="close" onclick={onClose} aria-label="Close {title} and go back to the desktop" title="Back to the desktop (Esc)">
       <X size={16} strokeWidth={2.4} />
     </button>
@@ -60,7 +60,7 @@
     position: fixed; inset: 0; z-index: 40; display: flex; flex-direction: column;
     background: var(--bg); overflow: hidden; outline: none; will-change: transform;
   }
-  .bar {
+  .titlebar {
     position: relative; z-index: 2; display: grid; grid-template-columns: 3rem 1fr 3rem; align-items: center;
     min-height: calc(3rem + env(safe-area-inset-top, 0px)); padding: env(safe-area-inset-top, 0px) max(0.75rem, env(safe-area-inset-right, 0px)) 0 max(0.75rem, env(safe-area-inset-left, 0px));
     background: var(--material-thick); box-shadow: 0 1px 0 var(--hairline);

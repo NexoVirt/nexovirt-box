@@ -75,6 +75,7 @@
   let menu = $state(null), menuTile = null;
   let searchEl = $state();
   let editOpen = $state(false);
+  let narrow = $state(matchMedia('(max-width: 639px)').matches);
 
   const prefs = $derived(desktop.prefs);
   const wall = $derived(wallpaperOf(prefs, theme.current === 'dark'));
@@ -338,7 +339,7 @@
       <label class="search glass" class:open={searchOpen && query}>
         <Search size={18} />
         <input bind:this={searchEl} bind:value={query} onfocus={() => { searchOpen = true; ensureCatalog(); }} onblur={() => setTimeout(() => (searchOpen = false), 150)}
-          onkeydown={searchKey} placeholder="Search apps, files, settings and the App Store" aria-label="Search" role="combobox"
+          onkeydown={searchKey} placeholder={narrow ? 'Search apps, files, settings' : 'Search apps, files, settings and the App Store'} aria-label="Search" role="combobox"
           aria-expanded={searchOpen && !!query} aria-controls="desk-results" spellcheck="false" autocomplete="off" />
         <kbd class="t-caption">/</kbd>
       </label>
@@ -533,6 +534,7 @@
     .desk { padding-inline: max(1rem, env(safe-area-inset-left, 0px)); }
     .left :global(.widgets) { grid-template-columns: 1fr; }
     .grid { grid-template-columns: repeat(auto-fill, minmax(6.25rem, 1fr)); gap: 0.625rem; }
+    .dtile { aspect-ratio: auto; padding: 0.875rem 0.375rem 0.75rem; gap: 0.5rem; }
     kbd { display: none; }
     .search input { font-size: 0.9375rem; }
   }
