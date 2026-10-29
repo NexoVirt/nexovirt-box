@@ -36,6 +36,7 @@
   import Settings from '@lucide/svelte/icons/settings';
   import Loader from '@lucide/svelte/icons/loader-circle';
   import CircleAlert from '@lucide/svelte/icons/circle-alert';
+  import Plus from '@lucide/svelte/icons/plus';
 
   let { system, username = '', onSessionLost, onNavigate, inert = false } = $props();
 
@@ -422,11 +423,16 @@
             </button>
           </div>
         {/each}
+        <!-- Always last: no data-tile, so it is never a drag target and never dragged. -->
+        <div role="listitem" class="cell">
+          <button class="dtile glass add" onclick={(e) => go('/apps', e.currentTarget)} title="Open the App Store">
+            <span class="icon-wrap add-ico"><Plus size={34} strokeWidth={1.75} /></span>
+            <span class="name">Add app</span>
+            {#if !apps.length}<span class="add-hint t-caption">Install your first app</span>{/if}
+          </button>
+        </div>
       {/if}
     </div>
-    {#if apps && !apps.length}
-      <p class="hint">No apps yet. Pick one from the App Store: 600+ apps install with one click.</p>
-    {/if}
   </section>
 </div>
 
@@ -551,7 +557,9 @@
   .busy { position: absolute; inset: -4px; display: grid; place-items: center; border-radius: 14px; background: color-mix(in srgb, var(--glass-strong) 85%, transparent); }
   .name { font-size: 0.8125rem; font-weight: 550; line-height: 1.2; text-align: center; max-width: 100%; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; }
   .dot.state { position: absolute; top: 0.75rem; right: 0.75rem; }
-  .hint { margin: 0 0.25rem; }
+  .add-ico { color: var(--text-2); }
+  .add:hover .add-ico { color: var(--accent); }
+  .add .add-hint { margin-top: -0.375rem; text-align: center; }
 
   .ghost.sys { gap: 0.375rem; border-radius: 1rem; }
   .ghost {
