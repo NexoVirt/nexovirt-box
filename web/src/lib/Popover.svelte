@@ -1,7 +1,7 @@
 <script>
   // Small menu that grows out of its trigger (transform-origin = trigger corner) and materializes
   // (scale + blur + opacity together). Click outside or Escape closes it.
-  let { open = $bindable(false), label = 'Menu', up = false, children } = $props();
+  let { open = $bindable(false), label = 'Menu', up = false, left = false, children } = $props();
   let el = $state();
 
   function outside(e) {
@@ -12,7 +12,7 @@
 
 <svelte:window onpointerdown={outside} onkeydown={key} />
 
-<div bind:this={el} class="pop" class:open class:up role="menu" aria-label={label} inert={!open}>
+<div bind:this={el} class="pop" class:open class:up class:left role="menu" aria-label={label} inert={!open}>
   {@render children()}
 </div>
 
@@ -27,5 +27,7 @@
   .pop.open { transform: scale(1); opacity: 1; filter: none; pointer-events: auto; }
   /* Opens upward from a trigger at the bottom (the sidebar account button). */
   .pop.up { top: auto; bottom: calc(100% + 1.125rem); left: 0; right: 0; width: auto; min-width: 13rem; transform-origin: bottom center; }
+  /* Grows from a trigger on the left edge (account button in the top bar). */
+  .pop.left { right: auto; left: 0; transform-origin: top left; }
   @media (prefers-reduced-motion: reduce) { .pop { transform: none; filter: none; } }
 </style>

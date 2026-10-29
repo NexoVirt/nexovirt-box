@@ -1,9 +1,9 @@
 <script>
   // Live history line. New samples scroll in from the right (one step per sample) instead of jumping.
   // SVG attributes + transform only, so it works under the strict CSP.
-  let { values = [], seq = 0, capacity = 60, max = 100, height = 40, fill = true, interval = 2000 } = $props();
+  let { values = [], seq = 0, capacity = 60, max = 100, height = 40, fill = true, interval = 2000, color = 'var(--accent)', top: fixedTop = 0 } = $props();
   const W = 300;
-  let top = $derived(max > 0 ? max : Math.max(1, ...values) * 1.15);
+  let top = $derived(fixedTop || (max > 0 ? max : Math.max(1, ...values) * 1.15));
   let step = $derived(W / Math.max(1, capacity - 1));
 
   // Newest sample sits on the right edge.
@@ -43,9 +43,9 @@
 
 <svg viewBox="0 0 {W} {height}" preserveAspectRatio="none" width="100%" {height} aria-hidden="true">
   <g bind:this={g}>
-    {#if fill && area}<path d={area} fill="var(--accent)" fill-opacity="0.1" />{/if}
+    {#if fill && area}<path d={area} fill={color} fill-opacity="0.1" />{/if}
     {#if line}
-      <path d={line} fill="none" stroke="var(--accent)" stroke-width="1.75" vector-effect="non-scaling-stroke"
+      <path d={line} fill="none" stroke={color} stroke-width="1.75" vector-effect="non-scaling-stroke"
         stroke-linejoin="round" stroke-linecap="round" />
     {/if}
   </g>

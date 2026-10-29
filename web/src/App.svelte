@@ -1,39 +1,30 @@
 <script>
+  // Shell: a slim translucent top bar over the desktop. Box apps (App Store, Files, Monitor,
+  // Terminal, My Apps, Logs, Backups) and Settings open as full-screen windows over it.
   import { onMount } from 'svelte';
   import { api } from '$lib/api.js';
   import { theme, setThemeMode } from '$lib/theme.svelte.js';
   import { toast } from '$lib/toast.svelte.js';
+  import { router } from '$lib/nav.js';
+  import { loadDesktop, setOrigin } from '$lib/desktop.svelte.js';
+  import { activityLabel } from '$lib/activityLabels.js';
+  import { ago } from '$lib/format.js';
+  import { resumeInstalls } from '$lib/installs.svelte.js';
   import Auth from './Auth.svelte';
-  import Dashboard from './Dashboard.svelte';
+  import Desktop from './Desktop.svelte';
   import Monitor from './Monitor.svelte';
   import Console from './Console.svelte';
-  import Activity from './Activity.svelte';
   import AppStore from './AppStore.svelte';
   import MyApps from './MyApps.svelte';
-  import Settings from './Settings.svelte';
   import Files from './Files.svelte';
-  import Firewall from './Firewall.svelte';
   import Backups from './Backups.svelte';
+  import AppLogs from './AppLogs.svelte';
+  import SettingsView from './SettingsView.svelte';
+  import AppWindow from '$lib/AppWindow.svelte';
   import PasswordGate from '$lib/PasswordGate.svelte';
-  import Archive from '@lucide/svelte/icons/archive';
-  import Updates from './Updates.svelte';
-  import Disks from './Disks.svelte';
-  import Shares from './Shares.svelte';
-  import PackageCheck from '@lucide/svelte/icons/package-check';
-  import HardDrive from '@lucide/svelte/icons/hard-drive';
-  import Share2 from '@lucide/svelte/icons/share-2';
-  import Logo from '$lib/Logo.svelte';
-  import Sheet from '$lib/Sheet.svelte';
   import Popover from '$lib/Popover.svelte';
   import Toaster from '$lib/Toaster.svelte';
   import Segmented from '$lib/Segmented.svelte';
-  import Gauge from '@lucide/svelte/icons/gauge';
-  import House from '@lucide/svelte/icons/house';
-  import SquareTerminal from '@lucide/svelte/icons/square-terminal';
-  import History from '@lucide/svelte/icons/history';
-  import LayoutGrid from '@lucide/svelte/icons/layout-grid';
-  import Boxes from '@lucide/svelte/icons/boxes';
-  import Menu from '@lucide/svelte/icons/menu';
   import LogOut from '@lucide/svelte/icons/log-out';
   import RefreshCw from '@lucide/svelte/icons/refresh-cw';
   import CircleAlert from '@lucide/svelte/icons/circle-alert';
@@ -41,54 +32,59 @@
   import Sun from '@lucide/svelte/icons/sun';
   import Moon from '@lucide/svelte/icons/moon';
   import SettingsIcon from '@lucide/svelte/icons/settings';
-  import FolderOpen from '@lucide/svelte/icons/folder-open';
-  import Shield from '@lucide/svelte/icons/shield';
-  import { router } from '$lib/nav.js';
-  import AppLogs from './AppLogs.svelte';
-  import { resumeInstalls } from '$lib/installs.svelte.js';
+  import SquareTerminal from '@lucide/svelte/icons/square-terminal';
+  import Bell from '@lucide/svelte/icons/bell';
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+  import ChevronRight from '@lucide/svelte/icons/chevron-right';
+  import UserRound from '@lucide/svelte/icons/user-round';
 
-  const pages = [
-    { path: '/', title: 'Home', icon: House },
-    { path: '/monitor', title: 'Monitor', icon: Gauge },
-    { path: '/apps', title: 'App Store', icon: LayoutGrid },
-    { path: '/apps/installed', title: 'My Apps', icon: Boxes },
-    { path: '/backups', title: 'Backups', icon: Archive },
-    { path: '/files', title: 'Files', icon: FolderOpen },
-    { path: '/shares', title: 'Shares', icon: Share2 },
-    { path: '/disks', title: 'Disks', icon: HardDrive },
-    { path: '/updates', title: 'Updates', icon: PackageCheck },
-    { path: '/firewall', title: 'Firewall', icon: Shield },
-    { path: '/console', title: 'Console', icon: SquareTerminal },
-    { path: '/activity', title: 'Activity', icon: History },
-    { path: '/settings', title: 'Settings', icon: SettingsIcon },
-  ];
   const themeModes = [
     { value: 'light', label: 'Light' },
     { value: 'dark', label: 'Dark' },
     { value: 'system', label: 'Auto' },
   ];
+  // Windows opened from tiles. Fill windows scroll inside their own card.
+  const WINDOWS = {
+    '/apps': { title: 'App Store' },
+    '/apps/installed': { title: 'My Apps' },
+    '/files': { title: 'Files', fill: true },
+    '/monitor': { title: 'Monitor' },
+    '/console': { title: 'Terminal' },
+    '/backups': { title: 'Backups', fill: true },
+  };
+  // Pages that were in the sidebar before the desktop: their old addresses still work.
+  const MOVED = { '/firewall': 'firewall', '/shares': 'shares', '/disks': 'disks', '/updates': 'system-updates', '/activity': 'activity' };
+  const OLD_TABS = { updates: 'box-updates' };
 
   let state = $state(null); // { setup_needed, logged_in, username, version }
   let loadError = $state('');
   let system = $state(null);
   let path = $state(location.pathname);
-  let menuOpen = $state(false);
-  let userOpen = $state(false);
+  let pageKey = $state(0);
+  let userOpen = $state(false), bellOpen = $state(false);
   let mode = $state(theme.mode);
+  let bell = $state(null), diskWarn = $state([]);
 
   $effect(() => { if (mode !== theme.mode) setThemeMode(mode); });
-
   function toggleTheme() { mode = theme.current === 'dark' ? 'light' : 'dark'; }
+
+  // Rewrites an old address (/firewall, /settings#security) to its place in the Settings window.
+  function canonical(to) {
+    const u = new URL(to, location.origin);
+    if (MOVED[u.pathname]) return '/settings/' + MOVED[u.pathname] + u.search + u.hash;
+    if (u.pathname === '/settings' && u.hash.length > 1) {
+      const k = u.hash.slice(1);
+      return '/settings/' + (OLD_TABS[k] || k);
+    }
+    return u.pathname + u.search + u.hash;
+  }
 
   async function loadState() {
     loadError = '';
     const res = await api('/api/auth/state');
-    if (!res.ok) {
-      loadError = res.error;
-      return;
-    }
+    if (!res.ok) { loadError = res.error; return; }
     state = res.data;
-    if (state.logged_in) { loadSystem(); resumeInstalls(); }
+    if (state.logged_in) { loadSystem(); resumeInstalls(); loadDesktop(); loadDiskWarn(); }
   }
 
   async function loadSystem() {
@@ -97,24 +93,31 @@
     if (!res.ok) toast(res.error, 'error');
     else system = res.data;
   }
-
-  function go(e, to) {
-    e.preventDefault();
-    navigate(to);
+  async function loadDiskWarn() {
+    const res = await api('/api/disks/summary');
+    if (res.ok) diskWarn = res.data.warnings;
   }
 
-  // to may carry a query or hash (/files?path=/srv, /settings#security) for the page to read.
+  // to may carry a query or hash (/files?path=/srv, /backups#targets) for the page to read.
   function navigate(to) {
-    menuOpen = false;
+    userOpen = bellOpen = false;
+    to = canonical(to);
     const p = to.split(/[?#]/)[0] || '/';
     if (to !== location.pathname + location.search + location.hash) {
-      history.pushState({}, '', to);
+      // deskDepth: how many steps back the desktop is, so closing a window can go back to it.
+      const depth = p === '/' ? 0 : (history.state?.deskDepth ?? (path === '/' ? 0 : -1)) + 1;
+      history.pushState({ deskDepth: depth > 0 ? depth : null }, '', to);
       if (p === path) pageKey++; // same page, new target: mount it again
       path = p;
-      scrollTo({ top: 0 });
     }
   }
-  let pageKey = $state(0);
+  function closeWindow() {
+    // Back to the desktop entry when the window was opened from it, else straight there (deep link).
+    const d = history.state?.deskDepth;
+    if (d > 0) history.go(-d);
+    else navigate('/');
+  }
+  function openFromBar(e, to) { setOrigin(e.currentTarget); navigate(to); }
 
   async function signOut() {
     userOpen = false;
@@ -124,80 +127,42 @@
     await loadState();
   }
 
-  // A page reports a lost session (401): show the sign-in again.
   function sessionLost() {
     state = { ...state, logged_in: false };
     system = null;
     toast('Your session ended. Please sign in again.');
   }
 
+  async function openBell() {
+    bellOpen = !bellOpen;
+    if (!bellOpen) return;
+    const res = await api('/api/activity?limit=6');
+    if (res.status === 401) return sessionLost();
+    bell = res.ok ? res.data.items : [];
+  }
+
   onMount(() => {
     router.go = navigate;
+    const fixed = canonical(location.pathname + location.search + location.hash);
+    if (fixed !== location.pathname + location.search + location.hash) {
+      history.replaceState({}, '', fixed);
+      path = fixed.split(/[?#]/)[0];
+    }
     loadState();
-    const onPop = () => (path = location.pathname);
+    const onPop = () => { path = location.pathname; userOpen = bellOpen = false; };
     addEventListener('popstate', onPop);
     return () => removeEventListener('popstate', onPop);
   });
 
-  // /apps/<id>/logs: the logs page of one app (shown under My Apps in the sidebar).
   let logsApp = $derived(path.match(/^\/apps\/([a-z0-9][a-z0-9-]{0,62})\/logs$/)?.[1] || '');
-  let page = $derived(pages.find((p) => p.path === (logsApp ? '/apps/installed' : path)) || pages[0]);
-  // These pages fill the window and scroll inside their own card.
-  const FILL = new Set(['/files', '/activity', '/backups']);
-  let fill = $derived(FILL.has(page.path) || !!logsApp);
+  let settingsSection = $derived(path.startsWith('/settings') ? path.slice('/settings'.length).replace(/^\//, '') : null);
+  let win = $derived(logsApp ? { title: 'Logs', fill: true } : WINDOWS[path] || null);
+  let windowOpen = $derived(!!win || settingsSection !== null);
   let initials = $derived(state?.username ? state.username.slice(0, 2).toUpperCase() : '');
 </script>
 
 <Toaster />
 <PasswordGate />
-
-{#snippet nav()}
-  <nav class="nav" aria-label="Main">
-    {#each pages as p (p.path)}
-      {@const Icon = p.icon}
-      <a href={p.path} onclick={(e) => go(e, p.path)} aria-current={p.path === page.path ? 'page' : undefined}>
-        <span class="nav-icon"><Icon size={17} strokeWidth={2.1} /></span>
-        {p.title}
-      </a>
-    {/each}
-  </nav>
-{/snippet}
-
-{#snippet account(inSheet)}
-  <div class="account">
-    <div class="user">
-      {#if inSheet}
-        <div class="account-btn static">
-          <span class="avatar">{initials}</span>
-          <span class="account-text"><span class="truncate">{state.username}</span><span class="t-caption">Version {state.version}</span></span>
-        </div>
-      {:else}
-        <button class="account-btn" onclick={() => (userOpen = !userOpen)} aria-haspopup="menu" aria-expanded={userOpen} aria-label="Account and appearance">
-          <span class="avatar">{initials}</span>
-          <span class="account-text"><span class="truncate">{state.username}</span><span class="t-caption">Version {state.version}</span></span>
-        </button>
-      {/if}
-    </div>
-    <button class="icon-btn theme-btn" onclick={toggleTheme} aria-label={theme.current === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} title={theme.current === 'dark' ? 'Light mode' : 'Dark mode'}>
-      {#if theme.current === 'dark'}<Sun size={18} />{:else}<Moon size={18} />{/if}
-    </button>
-    {#if !inSheet}
-      <Popover bind:open={userOpen} label="Account" up>
-        <div class="pop-section">
-          <span class="pop-label">Appearance</span>
-          <Segmented options={themeModes} bind:value={mode} label="Appearance" />
-        </div>
-        <button class="pop-item" role="menuitem" onclick={signOut}><LogOut size={16} />Sign out</button>
-      </Popover>
-    {/if}
-  </div>
-  {#if inSheet}
-    <div class="sheet-account">
-      <Segmented options={themeModes} bind:value={mode} label="Appearance" />
-      <button class="btn btn-gray btn-sm" onclick={signOut}><LogOut size={15} />Sign out</button>
-    </div>
-  {/if}
-{/snippet}
 
 {#if !state}
   <div class="center-screen">
@@ -215,69 +180,89 @@
 {:else if !state.logged_in}
   <Auth mode="login" onDone={loadState} />
 {:else}
-  <div class="shell" class:fill>
-    <aside class="sidebar">
-      <a href="/" class="brand" onclick={(e) => go(e, '/')}>
-        <Logo size={30} />
-        <span>
-          <span class="t-head">NexoVirt Box</span>
-          <span class="t-caption truncate">{system?.hostname ?? ' '}</span>
-        </span>
-      </a>
-      {@render nav()}
-      <div class="side-foot">{@render account(false)}</div>
-    </aside>
-
-    <div class="content">
-      <header class="mobile-bar">
-        <button class="icon-btn" onclick={() => (menuOpen = true)} aria-label="Open navigation"><Menu size={20} /></button>
-      </header>
-
-      <main>
-        {#if logsApp}
-          {#key logsApp}<AppLogs id={logsApp} onSessionLost={sessionLost} onNavigate={navigate} />{/key}
-        {:else if page.path === '/console'}
-          <Console onSessionLost={sessionLost} />
-        {:else if page.path === '/files'}
-          {#key pageKey}<Files onSessionLost={sessionLost} />{/key}
-        {:else if page.path === '/backups'}
-          {#key pageKey}<Backups onSessionLost={sessionLost} />{/key}
-        {:else if page.path === '/updates'}
-          <Updates onSessionLost={sessionLost} />
-        {:else if page.path === '/disks'}
-          <Disks onSessionLost={sessionLost} />
-        {:else if page.path === '/shares'}
-          {#key pageKey}<Shares onSessionLost={sessionLost} />{/key}
-        {:else if page.path === '/firewall'}
-          <Firewall onSessionLost={sessionLost} />
-        {:else if page.path === '/settings'}
-          {#key pageKey}<Settings onSessionLost={sessionLost} />{/key}
-        {:else if page.path === '/activity'}
-          <Activity onSessionLost={sessionLost} />
-        {:else if page.path === '/apps'}
-          {#key pageKey}<AppStore onSessionLost={sessionLost} />{/key}
-        {:else if page.path === '/apps/installed'}
-          <MyApps onSessionLost={sessionLost} onNavigate={navigate} />
-        {:else if page.path === '/monitor'}
-          <Monitor {system} onSessionLost={sessionLost} />
-        {:else}
-          <Dashboard {system} username={state.username} onSessionLost={sessionLost} onNavigate={navigate} />
-        {/if}
-      </main>
+  <header class="topbar glass" inert={windowOpen}>
+    <div class="side">
+      <div class="anchor">
+        <button class="bar-btn account" onclick={() => (userOpen = !userOpen)} aria-haspopup="menu" aria-expanded={userOpen} aria-label="Account: {state.username}">
+          <span class="avatar">{initials || '?'}</span>
+        </button>
+        <Popover bind:open={userOpen} label="Account" left>
+          <div class="who">
+            <span class="ico md accent"><UserRound /></span>
+            <span class="who-text"><span class="t-head truncate">{state.username}</span><span class="t-caption">{system?.hostname ? `${system.hostname}  ·  ` : ''}Box {state.version}</span></span>
+          </div>
+          <div class="pop-section">
+            <span class="pop-label">Appearance</span>
+            <Segmented options={themeModes} bind:value={mode} label="Appearance" />
+          </div>
+          <button class="pop-item" role="menuitem" onclick={(e) => openFromBar(e, '/settings/security')}><SettingsIcon size={16} />Account and security</button>
+          <button class="pop-item" role="menuitem" onclick={signOut}><LogOut size={16} />Sign out</button>
+        </Popover>
+      </div>
+      <button class="bar-btn" onclick={(e) => openFromBar(e, '/settings')} aria-label="Settings" title="Settings"><SettingsIcon size={18} /></button>
+      <button class="bar-btn" onclick={(e) => openFromBar(e, '/console')} aria-label="Terminal" title="Terminal"><SquareTerminal size={18} /></button>
     </div>
-  </div>
-
-  <Sheet bind:open={menuOpen} label="Navigation">
-    <div class="sheet-brand">
-      <Logo size={28} />
-      <span>
-        <span class="t-head">NexoVirt Box</span>
-        <span class="t-caption">{system?.hostname ?? ''}</span>
-      </span>
+    <div class="side">
+      <div class="anchor">
+        <button class="bar-btn" onclick={openBell} aria-haspopup="menu" aria-expanded={bellOpen} aria-label={diskWarn.length ? 'Activity, a disk needs attention' : 'Activity'} title="Activity">
+          <Bell size={18} />{#if diskWarn.length}<span class="dot warn badge"></span>{/if}
+        </button>
+        <Popover bind:open={bellOpen} label="Activity">
+          <div class="bell">
+            {#if diskWarn.length}
+              <button class="bell-row warn" onclick={(e) => openFromBar(e, '/settings/disks')}>
+                <span class="ico warn"><TriangleAlert /></span>
+                <span class="bell-text"><span class="truncate">{diskWarn.length === 1 ? 'A disk needs attention' : `${diskWarn.length} disks need attention`}</span><span class="t-caption truncate">{diskWarn[0].model || diskWarn[0].disk}</span></span>
+              </button>
+            {/if}
+            {#if !bell}
+              {#each Array(3) as _}<div class="bell-row"><span class="skeleton" style:height="2rem" style:flex="1"></span></div>{/each}
+            {:else}
+              {#each bell as it (it.id)}
+                {@const [text, Icon, tone] = activityLabel(it.action)}
+                <div class="bell-row">
+                  <span class="ico" class:error={tone === 'error'}><Icon /></span>
+                  <span class="bell-text"><span class="truncate">{text}</span><span class="t-caption truncate">{it.detail || it.username}  ·  {ago(it.at)}</span></span>
+                </div>
+              {:else}
+                <p class="t-caption bell-empty">Nothing happened yet.</p>
+              {/each}
+            {/if}
+            <button class="pop-item all" role="menuitem" onclick={(e) => openFromBar(e, '/settings/activity')}>All activity<ChevronRight size={15} /></button>
+          </div>
+        </Popover>
+      </div>
+      <button class="bar-btn" onclick={toggleTheme} aria-label={theme.current === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} title={theme.current === 'dark' ? 'Light mode' : 'Dark mode'}>
+        {#if theme.current === 'dark'}<Sun size={18} />{:else}<Moon size={18} />{/if}
+      </button>
     </div>
-    {@render nav()}
-    <div class="sheet-foot">{@render account(true)}</div>
-  </Sheet>
+  </header>
+
+  <Desktop {system} username={state.username} onSessionLost={sessionLost} onNavigate={navigate} inert={windowOpen} />
+
+  {#if settingsSection !== null}
+    <AppWindow title="Settings" onClose={closeWindow} flush>
+      <SettingsView section={settingsSection} {pageKey} onNavigate={navigate} onSessionLost={sessionLost} />
+    </AppWindow>
+  {:else if win}
+    <AppWindow title={win.title} onClose={closeWindow} fill={win.fill}>
+      {#if logsApp}
+        {#key logsApp}<AppLogs id={logsApp} onSessionLost={sessionLost} onNavigate={navigate} />{/key}
+      {:else if path === '/console'}
+        <Console onSessionLost={sessionLost} />
+      {:else if path === '/files'}
+        {#key pageKey}<Files onSessionLost={sessionLost} />{/key}
+      {:else if path === '/backups'}
+        {#key pageKey}<Backups onSessionLost={sessionLost} />{/key}
+      {:else if path === '/apps'}
+        {#key pageKey}<AppStore onSessionLost={sessionLost} />{/key}
+      {:else if path === '/apps/installed'}
+        {#key pageKey}<MyApps onSessionLost={sessionLost} onNavigate={navigate} />{/key}
+      {:else if path === '/monitor'}
+        <Monitor {system} onSessionLost={sessionLost} />
+      {/if}
+    </AppWindow>
+  {/if}
 {/if}
 
 <style>
@@ -285,79 +270,45 @@
   .loading { display: flex; align-items: center; gap: 0.625rem; }
   .load-error { display: grid; gap: 1rem; width: min(24rem, 100%); }
 
-  .shell { display: flex; min-height: 100svh; }
-  .shell.fill { height: 100svh; }
-  .shell.fill .content { min-height: 0; }
-  .shell.fill main { min-height: 0; display: flex; flex-direction: column; padding-bottom: 0.5rem; }
-
-  /* Floating translucent sidebar: the heavier structural material. */
-  .sidebar {
-    position: sticky; top: 0.5rem; align-self: flex-start; margin: 0.5rem 0 0.5rem 0.5rem;
-    height: calc(100svh - 1rem); width: 15.5rem; flex-shrink: 0; display: flex; flex-direction: column;
-    padding: 1rem 0.75rem; border-radius: 1.375rem; background: var(--material-thick);
-    box-shadow: 0 0 0 1px var(--hairline);
-    -webkit-backdrop-filter: blur(40px) saturate(180%); backdrop-filter: blur(40px) saturate(180%);
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between;
+    min-height: calc(3rem + env(safe-area-inset-top, 0px));
+    padding: env(safe-area-inset-top, 0px) max(0.75rem, env(safe-area-inset-right, 0px)) 0 max(0.75rem, env(safe-area-inset-left, 0px));
+    border-radius: 0; box-shadow: 0 1px 0 var(--hairline);
   }
-  .brand { display: flex; align-items: center; gap: 0.75rem; padding: 0.25rem 0.5rem 1.25rem; border-radius: 0.75rem; }
-  .brand > span, .sheet-brand > span { display: grid; min-width: 0; }
-
-  .nav { display: grid; gap: 0.125rem; }
-  .nav a {
-    display: flex; align-items: center; gap: 0.75rem; min-height: 2.75rem; padding: 0 0.5rem;
-    border-radius: 0.75rem; font-weight: 500; color: var(--text);
-    transition: background-color 150ms ease, transform 100ms ease-out;
+  .side { display: flex; align-items: center; gap: 0.125rem; }
+  .anchor { position: relative; }
+  .bar-btn {
+    position: relative; display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border: 0; border-radius: 50%;
+    background: none; color: var(--text); cursor: pointer; transition: background-color 150ms ease, transform 100ms ease-out;
   }
-  .nav a:hover { background: var(--fill); }
-  .nav a:active { transform: scale(0.98); }
-  .nav a[aria-current='page'] { background: var(--accent); color: var(--on-accent); }
-  .nav-icon { display: grid; place-items: center; width: 1.25rem; color: var(--text-2); }
-  .nav a[aria-current='page'] .nav-icon { color: inherit; }
-
-  .content { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-
-  .user { position: relative; }
-  .account { position: relative; display: flex; align-items: center; gap: 0.25rem; }
-  .account .user { flex: 1; min-width: 0; }
-  .account-btn {
-    display: flex; align-items: center; gap: 0.625rem; width: 100%; min-height: 3rem; padding: 0.375rem 0.5rem;
-    border: 0; border-radius: 0.875rem; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer;
-    transition: background-color 150ms ease, transform 100ms ease-out;
-  }
-  .account-btn:hover, .account-btn[aria-expanded='true'] { background: var(--fill); }
-  .account-btn:active { transform: scale(0.98); }
-  .account-btn.static { cursor: default; }
-  .account-btn.static:hover { background: none; }
-  .account-text { display: grid; min-width: 0; font-weight: 600; }
-  .theme-btn { flex-shrink: 0; }
-  .side-foot { margin-top: auto; padding-top: 0.75rem; border-top: 1px solid var(--hairline); }
-  .sheet-foot { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--hairline); }
-  .sheet-account { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.5rem 0.5rem 0; }
-  .mobile-bar { display: none; }
+  .bar-btn:hover, .bar-btn[aria-expanded='true'] { background: var(--fill); }
+  .bar-btn:active { transform: scale(0.92); }
   .avatar {
-    display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 999px;
-    background: var(--accent-fill); color: var(--accent); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.02em;
+    display: grid; place-items: center; width: 1.875rem; height: 1.875rem; border-radius: 50%;
+    background: var(--accent); color: var(--on-accent); font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.03em;
   }
-  .pop-section { display: grid; gap: 0.5rem; padding: 0.5rem 0.5rem 0.625rem; }
+  .badge { position: absolute; top: 0.6rem; right: 0.6rem; box-shadow: 0 0 0 2px var(--surface); }
+
+  .who { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0.5rem 0.75rem; }
+  .who-text { display: grid; min-width: 0; }
+  .topbar :global(.pop) { width: 17.5rem; }
+  .pop-section { display: grid; gap: 0.5rem; padding: 0.625rem 0.5rem; border-top: 1px solid var(--hairline); }
   .pop-label { font-size: 0.8125rem; font-weight: 500; color: var(--text-2); padding: 0 0.125rem; }
   .pop-item {
     display: flex; align-items: center; gap: 0.625rem; width: 100%; min-height: 2.75rem; padding: 0 0.625rem;
-    border: 0; border-top: 1px solid var(--hairline); background: none; cursor: pointer; text-align: left; font-weight: 500;
-    border-radius: 0 0 0.75rem 0.75rem; transition: background-color 150ms ease;
+    border: 0; border-top: 1px solid var(--hairline); background: none; color: var(--text); cursor: pointer; text-align: left; font-weight: 500;
+    transition: background-color 150ms ease;
   }
+  .pop-item:last-child { border-radius: 0 0 0.75rem 0.75rem; }
   .pop-item:hover { background: var(--fill); }
 
-  main { flex: 1; padding: 1.75rem 2rem 2.5rem; }
-
-  .sheet-brand { display: flex; align-items: center; gap: 0.75rem; padding: 0.25rem 0.5rem 1rem; }
-
-  @media (max-width: 899px) {
-    .sidebar { display: none; }
-    .mobile-bar {
-      position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 0.25rem;
-      min-height: 3.25rem; padding: env(safe-area-inset-top, 0px) 0.5rem 0 0.25rem;
-      background: color-mix(in srgb, var(--bg) 80%, transparent);
-      -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: blur(24px) saturate(180%);
-    }
-    main { padding: 0.5rem 1rem 2rem; }
-  }
+  .topbar :global(.pop:not(.left)) { width: 20rem; }
+  .bell { display: grid; }
+  .bell-row { display: flex; align-items: center; gap: 0.75rem; min-height: 3rem; padding: 0.375rem 0.5rem; border: 0; background: none; color: var(--text); font: inherit; text-align: left; border-radius: 0.625rem; }
+  button.bell-row { cursor: pointer; }
+  button.bell-row:hover { background: var(--fill); }
+  .bell-text { flex: 1; min-width: 0; display: grid; }
+  .bell-empty { margin: 0; padding: 0.75rem 0.5rem; }
+  .all { justify-content: space-between; margin-top: 0.25rem; }
 </style>

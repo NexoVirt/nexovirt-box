@@ -81,7 +81,7 @@
     const [a, d, j] = await Promise.all([api('/api/apps'), api('/api/docker'), followJobs()]);
     if (a.status === 401) return onSessionLost();
     if (!a.ok) error = a.error;
-    else { error = ''; apps = a.data; }
+    else { error = ''; apps = a.data; openWanted(); }
     if (d.ok) docker = d.data;
     bg = j;
   }
@@ -92,6 +92,24 @@
   function stateText(app) {
     if (app.state === 'exited' && app.exit_code) return `Stopped with an error (code ${app.exit_code})`;
     return (STATES[app.state] || STATES.unknown)[0];
+  }
+
+  // /apps/installed?app=<id>[&do=backups|uninstall]: from the desktop tile menu. Shows that app
+  // (scrolled to and marked) and opens the asked dialog once.
+  let wanted = new URLSearchParams(location.search);
+  let marked = $state('');
+  function openWanted() {
+    const id = wanted.get('app');
+    if (!id) return;
+    const app = apps.find((x) => x.id === id);
+    const what = wanted.get('do');
+    wanted = new URLSearchParams();
+    if (!app) return;
+    marked = id;
+    setTimeout(() => document.getElementById('app-' + id)?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 50);
+    const at = { clientX: innerWidth / 2, clientY: innerHeight / 2 };
+    if (what === 'backups') openBackups(at, app);
+    else if (what === 'uninstall') askRemove(at, app);
   }
 
   function openOwn(e, app) {
@@ -291,7 +309,7 @@
       {#each apps as app (app.id)}
         {@const [, tone] = STATES[app.state] || STATES.unknown}
         {@const working = busyOf(app)}
-        <div class="row app">
+        <div class="row app" class:marked={marked === app.id} id="app-{app.id}">
           <AppIcon id={app.id} name={app.name} size={42} icon={app.icon} />
           <div class="main">
             <span class="t-head truncate">{app.name}</span>
@@ -375,7 +393,7 @@
       <p class="t-sub">Turn on the reverse proxy in Settings first. It serves your apps with HTTPS under their own domain.</p>
       <div class="buttons">
         <button type="button" class="btn btn-gray" data-close onclick={() => (domainOpen = false)}>Close</button>
-        <button type="button" class="btn btn-primary" onclick={() => { domainOpen = false; onNavigate('/settings'); }}>Open Settings</button>
+        <button type="button" class="btn btn-primary" onclick={() => { domainOpen = false; onNavigate('/settings/network'); }}>Open Settings</button>
       </div>
     {:else}
       <p class="t-sub">Point a DNS record of the domain to this server, then save. Box gets a free Let's Encrypt certificate when it can, otherwise a local one.</p>
@@ -414,6 +432,7 @@
   .skeleton.line { display: block; width: 40%; height: 0.8rem; }
   .group { overflow: visible; }
   .app { gap: 0.875rem; }
+  .app.marked { background: var(--accent-fill); transition: background-color 600ms ease; }
   .main { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 1rem; align-items: center; min-width: 0; flex: 1; }
   .main > .t-head, .main > .t-caption { grid-column: 1; }
   .state { grid-column: 2; grid-row: 1 / span 2; display: inline-flex; align-items: center; gap: 0.4rem; white-space: nowrap; min-width: 6.5rem; }

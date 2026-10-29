@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice">
+  <!-- NexoVirt Box built-in wallpaper "Dunes" (flat colour layers, no gradients). Made for this project, AGPL-3.0. -->
+  <rect width="1600" height="1000" fill="#efe7da"/>
+  <circle cx="1210" cy="250" r="96" fill="#f6efe4"/>
+  <path d="M0 520 C 260 440 470 470 700 520 S 1180 600 1600 470 V1000 H0Z" fill="#e6d9c4"/>
+  <path d="M0 640 C 300 560 560 600 820 650 S 1300 690 1600 600 V1000 H0Z" fill="#dbc8aa"/>
+  <path d="M0 760 C 220 710 520 700 760 760 S 1280 860 1600 740 V1000 H0Z" fill="#cdb48f"/>
+  <path d="M0 880 C 340 820 620 840 900 880 S 1340 930 1600 870 V1000 H0Z" fill="#b99d76"/>
+</svg>

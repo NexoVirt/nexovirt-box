@@ -24,10 +24,6 @@
   import JobLog from '$lib/JobLog.svelte';
   import Segmented from '$lib/Segmented.svelte';
   import { theme, setThemeMode } from '$lib/theme.svelte.js';
-  import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
-  import ShieldCheck from '@lucide/svelte/icons/shield-check';
-  import Network from '@lucide/svelte/icons/network';
-  import Info from '@lucide/svelte/icons/info';
   import Server from '@lucide/svelte/icons/server';
   import Palette from '@lucide/svelte/icons/palette';
   import Lock from '@lucide/svelte/icons/lock';
@@ -36,22 +32,10 @@
   import Waypoints from '@lucide/svelte/icons/waypoints';
   import Scale from '@lucide/svelte/icons/scale';
   import FolderTree from '@lucide/svelte/icons/folder-tree';
-  import BellRing from '@lucide/svelte/icons/bell-ring';
   import NotifySettings from './NotifySettings.svelte';
+  import WallpaperSettings from './WallpaperSettings.svelte';
 
-  const TABS = [
-    { key: 'general', label: 'General', icon: SlidersHorizontal },
-    { key: 'security', label: 'Security', icon: ShieldCheck },
-    { key: 'apps', label: 'Apps and catalog', icon: Package },
-    { key: 'network', label: 'Network', icon: Network },
-    { key: 'notifications', label: 'Notifications', icon: BellRing },
-    { key: 'updates', label: 'Updates', icon: Sparkles },
-    { key: 'about', label: 'About', icon: Info },
-  ];
   const THEMES = [{ value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }, { value: 'system', label: 'Auto' }];
-  let tab = $state(TABS.some((t) => t.key === location.hash.slice(1)) ? location.hash.slice(1) : 'general');
-  function pickTab(k) { tab = k; history.replaceState(null, '', '#' + k); }
-  function hashTab() { const h = location.hash.slice(1); if (TABS.some((t) => t.key === h)) tab = h; }
   let mode = $state(theme.mode);
   $effect(() => { if (mode !== theme.mode) setThemeMode(mode); });
 
@@ -91,7 +75,10 @@
     return os ? `${b} on ${os}` : b;
   }
 
-  let { onSessionLost } = $props();
+  // One section of the Settings window (SettingsView picks it): general, security, apps, network,
+  // notifications, updates or about.
+  let { section = 'general', onSessionLost } = $props();
+  const tab = $derived(section);
 
   let tfa = $state(null);
   let settings = $state(null);
@@ -356,41 +343,19 @@
   ];
 </script>
 
-<svelte:window onhashchange={hashTab} />
 
 <div class="page">
-  <header class="page-head">
-    <div>
-      <h1 class="t-large">Settings</h1>
-      <p class="t-sub">Appearance, security, apps, HTTPS and updates.</p>
-    </div>
-  </header>
-
   {#if error}
     <div class="notice">{error}</div>
   {:else if !tfa}
-    <div class="layout">
-      <div class="group tabs-skel">{#each Array(6) as _}<div class="row"><span class="skeleton line"></span></div>{/each}</div>
-      <div class="group">{#each Array(4) as _}<div class="row"><span class="skeleton line"></span></div>{/each}</div>
-    </div>
+    <div class="group">{#each Array(4) as _}<div class="row"><span class="skeleton line"></span></div>{/each}</div>
   {:else}
-    <div class="layout">
-      <nav class="tabs" aria-label="Settings sections">
-        {#each TABS as t (t.key)}
-          {@const Icon = t.icon}
-          <button class="tab" class:on={tab === t.key} onclick={() => pickTab(t.key)} aria-current={tab === t.key ? 'page' : undefined}>
-            <span class="tab-ico"><Icon size={16} /></span>{t.label}
-          </button>
-        {/each}
-      </nav>
-
       <div class="pane">
         {#if tab === 'general'}
-          <h2 class="t-title pane-title">General</h2>
           <section class="group">
             <div class="row">
               <span class="ico"><Server size={16} /></span>
-              <div class="grow"><span>Server name</span><span class="t-caption">Shown in the sidebar. It is the hostname of this server.</span></div>
+              <div class="grow"><span>Server name</span><span class="t-caption">Shown on the desktop. It is the hostname of this server.</span></div>
               <span class="row-value mono">{system?.hostname ?? '-'}</span>
             </div>
             <div class="row">
@@ -399,6 +364,7 @@
               <Segmented options={THEMES} bind:value={mode} label="Appearance" />
             </div>
           </section>
+          <WallpaperSettings {onSessionLost} />
           <p class="t-section sub">Files</p>
           <section class="group">
             <form class="row stack" onsubmit={saveRoots}>
@@ -413,7 +379,6 @@
           </section>
 
         {:else if tab === 'security'}
-          <h2 class="t-title pane-title">Security</h2>
           <p class="t-section sub">Password</p>
           <section class="group">
             <div class="row">
@@ -498,7 +463,6 @@
           </section>
 
         {:else if tab === 'apps'}
-          <h2 class="t-title pane-title">Apps and catalog</h2>
           <section class="group">
             <form class="row stack" onsubmit={saveURL}>
               <span class="ico"><Package size={16} /></span>
@@ -533,11 +497,9 @@
           </section>
 
         {:else if tab === 'notifications'}
-          <h2 class="t-title pane-title">Notifications</h2>
           <NotifySettings {onSessionLost} />
 
         {:else if tab === 'network'}
-          <h2 class="t-title pane-title">Network</h2>
           <div class="sub-head">
             <p class="t-section sub">Reverse proxy and HTTPS</p>
             {#if proxy?.enabled}<span class="pill"><span class="dot {proxy.running ? 'ok' : 'warn'}"></span>{proxy.running ? 'Running' : 'Stopped'}</span>{/if}
@@ -582,7 +544,6 @@
           {/if}
 
         {:else if tab === 'updates'}
-          <h2 class="t-title pane-title">Updates</h2>
           <section class="group">
             <div class="row">
               <span class="ico"><Sparkles size={16} /></span>
@@ -614,7 +575,6 @@
           </section>
 
         {:else}
-          <h2 class="t-title pane-title">About</h2>
           <section class="group">
             <div class="row"><span class="row-label">NexoVirt Box</span><span class="row-value num">{updates?.box.current ?? '-'}</span></div>
             <div class="row"><span class="row-label">Server</span><span class="row-value">{system?.hostname ?? '-'}</span></div>
@@ -630,7 +590,6 @@
           </section>
         {/if}
       </div>
-    </div>
   {/if}
 </div>
 
@@ -697,17 +656,8 @@
   .sessions { margin-top: 1.25rem; }
   .who { display: flex; align-items: center; gap: 0.625rem; min-width: 0; max-width: 100%; }
   .muted { color: var(--text-2); }
-  .layout { display: grid; grid-template-columns: 14.5rem minmax(0, 1fr); gap: 1.5rem; align-items: start; }
-  .tabs { position: sticky; top: 5rem; display: grid; gap: 0.125rem; padding: 0.375rem; border-radius: var(--r-tile); background: var(--surface); box-shadow: var(--shadow-tile); }
-  .tab { display: flex; align-items: center; gap: 0.625rem; min-height: 2.5rem; padding: 0 0.5rem; border: 0; border-radius: 0.625rem; background: none; color: var(--text); font: inherit; font-weight: 500; text-align: left; cursor: pointer; transition: background-color 150ms ease, transform 100ms ease-out; }
-  .tab:hover { background: var(--fill); }
-  .tab:active { transform: scale(0.98); }
-  .tab.on { background: var(--accent); color: var(--on-accent); }
-  .tab-ico { display: grid; place-items: center; width: 1.75rem; height: 1.75rem; color: var(--text-2); }
-  .tab.on .tab-ico { color: inherit; }
   .pane { display: grid; gap: 0.75rem; min-width: 0; animation: fade 220ms ease; }
   @keyframes fade { from { opacity: 0; transform: translateY(4px); } }
-  .pane-title { margin: 0 0 0.25rem; }
   .sub { margin: 0.75rem 1.125rem 0; }
   .sub-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; }
   .sub-head .sub { margin-bottom: 0; }
@@ -724,12 +674,6 @@
   .qr { justify-self: center; border-radius: 0.75rem; background: #fff; padding: 0.5rem; }
   .secret { word-break: break-all; color: var(--text); }
   .codes { list-style: none; margin: 0; padding: 0.875rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.375rem 1rem; border-radius: var(--r-control); background: var(--fill); }
-  @media (max-width: 899px) {
-    .layout { grid-template-columns: 1fr; gap: 1rem; }
-    .tabs { position: static; display: flex; overflow-x: auto; scrollbar-width: none; }
-    .tab { flex-shrink: 0; white-space: nowrap; padding: 0 0.75rem 0 0.375rem; }
-    .tabs-skel { display: none; }
-  }
   @media (max-width: 639px) {
     .row { flex-wrap: wrap; }
     .key-name { max-width: none; flex: 1; }

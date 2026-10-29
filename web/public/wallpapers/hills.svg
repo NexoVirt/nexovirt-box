@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice">
+  <!-- NexoVirt Box built-in wallpaper "Night hills" (flat colour layers, no gradients). Made for this project, AGPL-3.0. -->
+  <rect width="1600" height="1000" fill="#0e1422"/>
+  <circle cx="1180" cy="230" r="70" fill="#d9dde6"/>
+  <circle cx="1206" cy="214" r="62" fill="#0e1422"/>
+  <path d="M0 560 C 240 480 420 500 640 560 S 1100 650 1600 500 V1000 H0Z" fill="#141d31"/>
+  <path d="M0 670 C 280 600 540 620 800 680 S 1280 720 1600 630 V1000 H0Z" fill="#19243d"/>
+  <path d="M0 780 C 240 730 520 720 780 780 S 1300 870 1600 760 V1000 H0Z" fill="#1f2c4a"/>
+  <path d="M0 890 C 320 840 640 850 920 895 S 1360 940 1600 880 V1000 H0Z" fill="#26365a"/>
+</svg>
