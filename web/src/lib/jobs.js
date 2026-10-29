@@ -70,11 +70,18 @@ export function plainText(s = '') {
 }
 
 // "version-12.2" or "v1.2" read as "12.2" / "1.2".
+// A digest reads as "latest" (the full value goes in a tooltip).
 export function versionLabel(v = '') {
+  if (isDigest(v)) return 'latest';
   return v.replace(/^(version-|v(?=\d))/i, '');
 }
 
 export function appURL(app) {
   if (!app?.main_port) return '';
   return `${app.scheme === 'https' ? 'https' : 'http'}://${location.hostname}:${app.main_port}`;
+}
+
+// An image pinned by digest (sha256:..., or a bare 64-character hex) instead of a version tag.
+export function isDigest(v = '') {
+  return /^(sha256:)?[0-9a-f]{40,}$/i.test(v);
 }

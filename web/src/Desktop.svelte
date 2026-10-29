@@ -1,6 +1,7 @@
 <script>
   // The desktop: wallpaper, frosted widgets on the left, search and the app grid on the right.
-  // Tiles are installed apps and the Box apps (App Store, Files, Monitor, Terminal, Backups).
+  // Tiles are the installed apps (once, in the Apps group, ending with the Manage apps tile that
+  // opens the Apps window) and the Box tools in the System dock (Files, Monitor, Terminal, Backups, Settings).
   // Click opens, right-click or long-press shows actions, dragging reorders (saved on the server).
   import { onMount, tick } from 'svelte';
   import { flip } from 'svelte/animate';
@@ -14,7 +15,6 @@
   import Dialog from '$lib/Dialog.svelte';
   import Widgets from './desktop/Widgets.svelte';
   import Search from '@lucide/svelte/icons/search';
-  import Plus from '@lucide/svelte/icons/plus';
   import ExternalLink from '@lucide/svelte/icons/external-link';
   import Play from '@lucide/svelte/icons/play';
   import Square from '@lucide/svelte/icons/square';
@@ -40,7 +40,6 @@
   let { system, username = '', onSessionLost, onNavigate, inert = false } = $props();
 
   const SYSTEM = [
-    { id: 'sys-store', name: 'App Store', icon: LayoutGrid, to: '/apps', hint: 'Install apps' },
     { id: 'sys-files', name: 'Files', icon: FolderOpen, to: '/files', hint: 'Browse and upload files' },
     { id: 'sys-monitor', name: 'Monitor', icon: Gauge, to: '/monitor', hint: 'Live charts for CPU, memory and network' },
     { id: 'sys-terminal', name: 'Terminal', icon: SquareTerminal, to: '/console', hint: 'Root shell in the browser' },
@@ -48,7 +47,8 @@
     { id: 'sys-settings', name: 'Settings', icon: Settings, to: '/settings', hint: 'Everything about this Box' },
   ];
   const PLACES = [
-    { label: 'My Apps', hint: 'Start, stop, update and logs', to: '/apps/installed', icon: Boxes },
+    { label: 'Apps: Installed', hint: 'Start, stop, update and logs', to: '/apps/installed', icon: Boxes },
+    { label: 'Apps: App Store', hint: 'Install new apps', to: '/apps', icon: LayoutGrid },
     { label: 'Settings: General', hint: 'Wallpaper, appearance and folders in Files', to: '/settings/general', icon: Settings },
     { label: 'Settings: Account and security', hint: 'Password, two-step sign-in, browsers', to: '/settings/security', icon: Settings },
     { label: 'Settings: Apps and catalog', hint: 'Catalog address, image cleanup', to: '/settings/apps', icon: Settings },
@@ -182,7 +182,7 @@
     busy = rest;
     if (job.http === 401) return onSessionLost();
     if (job.status === 'done') toast(`${app.name} ${key === 'start' ? 'started' : key === 'stop' ? 'stopped' : 'restarted'}.`, 'success');
-    else if (job.error?.startsWith('needs_docker_socket:')) { toast('Allow Docker access for this app in My Apps first.', 'info', 8000); go('/apps/installed'); }
+    else if (job.error?.startsWith('needs_docker_socket:')) { toast('Allow Docker access for this app in Apps first.', 'info', 8000); go('/apps/installed'); }
     else toast(job.error, 'error', 8000);
     loadApps();
   }
@@ -397,7 +397,6 @@
 
     <div class="sec-head apps-head">
       <h2 class="sec-title">Apps</h2>
-      <button class="add glass" onclick={(e) => go('/apps', e.currentTarget)} aria-label="Add an app from the App Store" title="Add an app"><Plus size={18} strokeWidth={2.2} /></button>
     </div>
     {#if appsError}<div class="notice"><CircleAlert size={18} /><span>{appsError}</span></div>{/if}
 
@@ -422,9 +421,9 @@
           </div>
         {/each}
         <div class="cell">
-          <button class="dtile add-tile" onclick={(e) => go('/apps', e.currentTarget)}>
-            <span class="icon-wrap"><Plus size={30} strokeWidth={1.75} /></span>
-            <span class="name">Add app</span>
+          <button class="dtile glass" onclick={(e) => go(apps.length ? '/apps/installed' : '/apps', e.currentTarget)} title="Installed apps and the App Store">
+            <span class="ico app accent"><LayoutGrid /></span>
+            <span class="name">Manage apps</span>
           </button>
         </div>
       {/if}
@@ -539,14 +538,6 @@
   .ditem:active { transform: scale(0.94); }
   .ditem.lifted { opacity: 0.25; }
   .dname { font-size: 0.75rem; font-weight: 550; line-height: 1.2; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-  .add-tile { background: none; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, currentColor 30%, transparent); color: #3f3f46; }
-  .on-dark .add-tile { color: #e4e4e7; }
-  .add-tile:hover { background: color-mix(in srgb, currentColor 8%, transparent); }
-  .add {
-    display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border: 0; border-radius: 50%; color: var(--text); cursor: pointer;
-    transition: transform 100ms ease-out;
-  }
-  .add:active { transform: scale(0.92); }
 
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr)); gap: 0.875rem; }
   .cell { min-width: 0; }

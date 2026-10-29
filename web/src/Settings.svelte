@@ -540,7 +540,7 @@
                   <a class="btn btn-gray btn-sm" href="https://{rt.domain}" target="_blank" rel="noopener noreferrer">Open</a>
                 </div>
               {:else}
-                <div class="row t-sub">No app has a domain yet. Give one under My Apps.</div>
+                <div class="row t-sub">No app has a domain yet. Give one in Apps, in the app's menu.</div>
               {/each}
             </section>
           {/if}

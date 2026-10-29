@@ -246,7 +246,7 @@
       {#if passwords.length}
         <section class="pw-group" aria-label="Passwords">
           <h3 class="t-section">Passwords</h3>
-          <p class="t-caption">Box creates strong passwords for you. You find them later in My Apps under Login details.</p>
+          <p class="t-caption">Box creates strong passwords for you. You find them later in Apps, Installed, under Login details.</p>
           {#each passwords as q (q.key)}{@render pwField(q)}{/each}
         </section>
       {/if}
@@ -265,7 +265,7 @@
     </form>
   {:else if view === 'progress'}
     <p class="t-sub busy"><Loader size={16} class="spinner" />Installing {app.name}. The first download can take a few minutes.</p>
-    <p class="t-caption">You can close this. The install goes on in the background and My Apps shows its progress.</p>
+    <p class="t-caption">You can close this. The install goes on in the background and Apps shows its progress.</p>
     <JobLog {lines} />
   {:else if view === 'done'}
     <div class="done">

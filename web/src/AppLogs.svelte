@@ -159,7 +159,7 @@
 <div class="page fill">
   <header class="page-head compact">
     <div>
-      <button class="back" onclick={() => onNavigate('/apps/installed')}><ChevronLeft size={16} />My Apps</button>
+      <button class="back" onclick={() => onNavigate('/apps/installed')}><ChevronLeft size={16} />Apps</button>
       <h1 class="t-large">Logs</h1>
       <p class="t-sub">{name || id}</p>
     </div>

@@ -1,7 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import { api } from '$lib/api.js';
-  import { runJob, appURL, versionLabel, jobFollower, BUSY_LABEL } from '$lib/jobs.js';
+  import { runJob, appURL, versionLabel, isDigest, jobFollower, BUSY_LABEL } from '$lib/jobs.js';
   import Credentials from '$lib/Credentials.svelte';
   import KeyRound from '@lucide/svelte/icons/key-round';
   import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
@@ -19,7 +19,6 @@
   import FileDiff from '@lucide/svelte/icons/file-diff';
   import Archive from '@lucide/svelte/icons/archive';
   import FilePen from '@lucide/svelte/icons/file-pen';
-  import Plus from '@lucide/svelte/icons/plus';
   import ExternalLink from '@lucide/svelte/icons/external-link';
   import Ellipsis from '@lucide/svelte/icons/ellipsis';
   import Play from '@lucide/svelte/icons/play';
@@ -32,7 +31,6 @@
   import CircleAlert from '@lucide/svelte/icons/circle-alert';
   import LayoutGrid from '@lucide/svelte/icons/layout-grid';
   import Globe from '@lucide/svelte/icons/globe';
-  import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 
   let { onSessionLost, onNavigate } = $props();
 
@@ -112,7 +110,7 @@
     else if (what === 'uninstall') askRemove(at, app);
   }
 
-  function openOwn(e, app) {
+  export function openOwn(e, app) {
     menu = null;
     origin = e ? { x: e.clientX, y: e.clientY } : null;
     ownId = app?.id || '';
@@ -152,7 +150,7 @@
     if (p.ok) proxy = p.data;
   }
 
-  async function checkUpdates() {
+  export async function checkUpdates() {
     checking = true;
     const res = await api('/api/updates/check', { method: 'POST' });
     checking = false;
@@ -261,19 +259,6 @@
 </script>
 
 <div class="page">
-  <header class="page-head">
-    <div>
-      <h1 class="t-large">My Apps</h1>
-      <p class="t-sub">Apps installed on this server.</p>
-    </div>
-    <div class="head-btns">
-      <button class="btn btn-gray btn-sm" onclick={checkUpdates} disabled={checking}>
-        {#if checking}<Loader size={15} class="spinner" />Checking{:else}<RefreshCw size={15} />Check for updates{/if}
-      </button>
-      <button class="btn btn-gray btn-sm" onclick={(e) => openOwn(e, null)}><Plus size={15} />Add your own app</button>
-      <button class="btn btn-tinted btn-sm" onclick={() => onNavigate('/apps')}><LayoutGrid size={15} />App Store</button>
-    </div>
-  </header>
 
   {#if docker && (!docker.installed || !docker.running)}
     <DockerSetup {docker} onDone={load} />
@@ -296,63 +281,66 @@
   {#if error}
     <div class="notice"><CircleAlert size={18} /><span>{error}</span></div>
   {:else if !apps}
-    <div class="group">{#each Array(3) as _}<div class="row"><span class="skeleton sq"></span><span class="skeleton line"></span></div>{/each}</div>
+    <div class="list">{#each Array(3) as _}<div class="row"><span class="skeleton sq"></span><span class="skeleton line"></span></div>{/each}</div>
   {:else if !apps.length}
-    <div class="tile empty">
-      <span class="ico xl accent empty-ico"><LayoutGrid /></span>
+    <div class="empty-state">
+      <span class="ico xl accent"><LayoutGrid /></span>
       <h2 class="t-title">No apps yet</h2>
       <p class="t-sub">Pick something from the App Store. It is ready in a minute.</p>
       <button class="btn btn-primary" onclick={() => onNavigate('/apps')}>Open the App Store</button>
     </div>
   {:else}
-    <div class="group">
+    <div class="list">
       {#each apps as app (app.id)}
         {@const [, tone] = STATES[app.state] || STATES.unknown}
         {@const working = busyOf(app)}
+        {@const facts = [app.custom ? 'Own app' : app.version && `Version ${versionLabel(app.version)}`, app.domain || (app.main_port && `Port ${app.main_port}`)].filter(Boolean).join('  ·  ')}
         <div class="row app" class:marked={marked === app.id} id="app-{app.id}">
           <AppIcon id={app.id} name={app.name} size={42} icon={app.icon} />
           <div class="main">
             <span class="t-head truncate">{app.name}</span>
-            <span class="t-caption truncate">{[app.custom ? 'Own app' : app.version && `Version ${versionLabel(app.version)}`, app.domain || (app.main_port && `Port ${app.main_port}`)].filter(Boolean).join('  ·  ')}</span>
-            <span class="state t-caption">
-              {#if working}<Loader size={14} class="spinner" />{BUSY_LABEL[working] || 'Working'}
-              {:else}<span class="dot {tone}"></span>{stateText(app)}{/if}
-            </span>
+            <span class="t-caption truncate" title={isDigest(app.version) ? `Image digest ${app.version}` : facts}>{facts}</span>
           </div>
-          {#if working === 'install' || working === 'retry'}
-            <button class="btn btn-tinted btn-sm" onclick={() => onNavigate(`/apps?app=${app.id}`)}><ScrollText size={15} /><span class="open-text">Show progress</span></button>
-          {/if}
-          {#if app.state === 'interrupted' && !working}
-            <button class="btn btn-primary btn-sm" onclick={() => retry(app)}><RotateCcw size={15} /><span class="open-text">Retry install</span></button>
-          {/if}
-          {#if updates.apps[app.id]?.available && !working}
-            <button class="btn btn-primary btn-sm" onclick={() => act(app, 'update')} title="A newer image is available: {updates.apps[app.id].images.join(', ')}"><Download size={15} /><span class="open-text">Update</span></button>
-          {/if}
-          {#if app.catalog_update && !working}
-            <button class="btn btn-tinted btn-sm" onclick={(e) => openCatalog(e, app)} title="The app store has a newer definition for this app"><FileDiff size={15} /><span class="open-text">Catalog update available</span></button>
-          {/if}
-          {#if app.state === 'running' && openURL(app)}
-            <a class="btn btn-tinted btn-sm open" href={openURL(app)} target="_blank" rel="noopener noreferrer" aria-label="Open {app.name}"><ExternalLink size={15} /><span class="open-text">Open</span></a>
-          {/if}
-          <div class="more">
-            <button class="icon-btn" onclick={() => (menu = menu === app.id ? null : app.id)} aria-haspopup="menu" aria-expanded={menu === app.id} aria-label="Actions for {app.name}" disabled={!!working}>
-              <Ellipsis size={19} />
-            </button>
-            <Popover open={menu === app.id} label="Actions for {app.name}">
-              {#if app.state === 'interrupted'}<button class="pop-item" role="menuitem" onclick={() => retry(app)}><RotateCcw size={16} />Retry install</button>
-              {:else if app.state !== 'running'}<button class="pop-item" role="menuitem" onclick={() => act(app, 'start')}><Play size={16} />Start</button>{/if}
-              {#if !['stopped', 'exited', 'not_created', 'interrupted'].includes(app.state)}<button class="pop-item" role="menuitem" onclick={() => act(app, 'stop')}><Square size={16} />Stop</button>{/if}
-              {#if app.state !== 'interrupted' && app.state !== 'not_created'}
-                <button class="pop-item" role="menuitem" onclick={() => act(app, 'restart')}><RotateCw size={16} />Restart</button>
-                <button class="pop-item" role="menuitem" onclick={() => act(app, 'update')}><Download size={16} />Update</button>
-              {/if}
-              {#if app.custom}<button class="pop-item" role="menuitem" onclick={(e) => openOwn(e, app)}><FilePen size={16} />Edit compose file</button>
-              {:else}<button class="pop-item" role="menuitem" onclick={(e) => showCreds(e, app)}><KeyRound size={16} />Login details</button>{/if}
-              <button class="pop-item" role="menuitem" onclick={(e) => openBackups(e, app)}><Archive size={16} />Backups</button>
-              <button class="pop-item" role="menuitem" onclick={(e) => showLogs(e, app)}><ScrollText size={16} />Logs</button>
-              <button class="pop-item" role="menuitem" onclick={(e) => editDomain(e, app)}><Globe size={16} />Domain and HTTPS</button>
-              <button class="pop-item danger" role="menuitem" onclick={(e) => askRemove(e, app)}><Trash2 size={16} />Uninstall</button>
-            </Popover>
+          <span class="state t-caption">
+            {#if working}<Loader size={14} class="spinner" />{BUSY_LABEL[working] || 'Working'}
+            {:else}<span class="dot {tone}"></span><span class="truncate">{stateText(app)}</span>{/if}
+          </span>
+          <div class="acts">
+            {#if working === 'install' || working === 'retry'}
+              <button class="btn btn-tinted btn-sm" onclick={() => onNavigate(`/apps?app=${app.id}`)}><ScrollText size={15} /><span class="open-text">Show progress</span></button>
+            {/if}
+            {#if app.state === 'interrupted' && !working}
+              <button class="btn btn-primary btn-sm" onclick={() => retry(app)}><RotateCcw size={15} /><span class="open-text">Retry install</span></button>
+            {/if}
+            {#if updates.apps[app.id]?.available && !working}
+              <button class="btn btn-primary btn-sm" onclick={() => act(app, 'update')} title="A newer image is available: {updates.apps[app.id].images.join(', ')}"><Download size={15} /><span class="open-text">Update</span></button>
+            {/if}
+            {#if app.catalog_update && !working}
+              <button class="btn btn-tinted btn-sm" onclick={(e) => openCatalog(e, app)} title="The app store has a newer definition for this app"><FileDiff size={15} /><span class="open-text">Catalog update available</span></button>
+            {/if}
+            {#if app.state === 'running' && openURL(app)}
+              <a class="btn btn-tinted btn-sm open" href={openURL(app)} target="_blank" rel="noopener noreferrer" aria-label="Open {app.name}"><ExternalLink size={15} /><span class="open-text">Open</span></a>
+            {/if}
+            <div class="more">
+              <button class="icon-btn" onclick={() => (menu = menu === app.id ? null : app.id)} aria-haspopup="menu" aria-expanded={menu === app.id} aria-label="Actions for {app.name}" disabled={!!working}>
+                <Ellipsis size={19} />
+              </button>
+              <Popover open={menu === app.id} label="Actions for {app.name}">
+                {#if app.state === 'interrupted'}<button class="pop-item" role="menuitem" onclick={() => retry(app)}><RotateCcw size={16} />Retry install</button>
+                {:else if app.state !== 'running'}<button class="pop-item" role="menuitem" onclick={() => act(app, 'start')}><Play size={16} />Start</button>{/if}
+                {#if !['stopped', 'exited', 'not_created', 'interrupted'].includes(app.state)}<button class="pop-item" role="menuitem" onclick={() => act(app, 'stop')}><Square size={16} />Stop</button>{/if}
+                {#if app.state !== 'interrupted' && app.state !== 'not_created'}
+                  <button class="pop-item" role="menuitem" onclick={() => act(app, 'restart')}><RotateCw size={16} />Restart</button>
+                  <button class="pop-item" role="menuitem" onclick={() => act(app, 'update')}><Download size={16} />Update</button>
+                {/if}
+                {#if app.custom}<button class="pop-item" role="menuitem" onclick={(e) => openOwn(e, app)}><FilePen size={16} />Edit compose file</button>
+                {:else}<button class="pop-item" role="menuitem" onclick={(e) => showCreds(e, app)}><KeyRound size={16} />Login details</button>{/if}
+                <button class="pop-item" role="menuitem" onclick={(e) => openBackups(e, app)}><Archive size={16} />Backups</button>
+                <button class="pop-item" role="menuitem" onclick={(e) => showLogs(e, app)}><ScrollText size={16} />Logs</button>
+                <button class="pop-item" role="menuitem" onclick={(e) => editDomain(e, app)}><Globe size={16} />Domain and HTTPS</button>
+                <button class="pop-item danger" role="menuitem" onclick={(e) => askRemove(e, app)}><Trash2 size={16} />Uninstall</button>
+              </Popover>
+            </div>
           </div>
         </div>
       {/each}
@@ -427,17 +415,19 @@
 </Dialog>
 
 <style>
-  h1, h2, p { margin: 0; }
+  h2, p { margin: 0; }
   .skeleton.sq { width: 42px; height: 42px; border-radius: 10px; }
   .skeleton.line { display: block; width: 40%; height: 0.8rem; }
-  .group { overflow: visible; }
-  .app { gap: 0.875rem; }
+  /* A plain list on the window surface: rows split by hairlines, nothing behind them. */
+  .list { display: grid; }
+  .list .row { padding: 0.75rem 0.25rem; min-height: 4.25rem; }
+  .list .row + .row::before { left: calc(42px + 1.125rem); }
+  .app { gap: 0.875rem; border-radius: var(--r-control); }
   .app.marked { background: var(--accent-fill); transition: background-color 600ms ease; }
-  .main { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 1rem; align-items: center; min-width: 0; flex: 1; }
-  .main > .t-head, .main > .t-caption { grid-column: 1; }
-  .state { grid-column: 2; grid-row: 1 / span 2; display: inline-flex; align-items: center; gap: 0.4rem; white-space: nowrap; min-width: 6.5rem; }
+  .main { display: grid; gap: 0.125rem; min-width: 0; flex: 1; }
+  .state { display: inline-flex; align-items: center; gap: 0.4rem; white-space: nowrap; width: 9.5rem; flex-shrink: 0; min-width: 0; }
+  .acts { display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem; flex-shrink: 0; }
   .more { position: relative; }
-  .head-btns { display: flex; gap: 0.5rem; flex-wrap: wrap; }
   .pop-item {
     display: flex; align-items: center; gap: 0.625rem; width: 100%; min-height: 2.5rem; padding: 0 0.625rem;
     border: 0; background: none; cursor: pointer; text-align: left; font-weight: 500; border-radius: 0.625rem;
@@ -445,9 +435,7 @@
   }
   .pop-item:hover { background: var(--fill); }
   .pop-item.danger { color: var(--error); }
-  .empty { display: grid; justify-items: center; gap: 0.5rem; text-align: center; padding: 2.5rem 1.25rem; }
-  .empty .btn { margin-top: 0.75rem; }
-  .empty-ico { margin-bottom: 0.25rem; }
+  .empty-state .btn { margin-top: 0.75rem; }
   .dlg { display: grid; gap: 0.875rem; padding: 1.5rem; }
   .dlg-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
   .busy { display: flex; align-items: center; gap: 0.5rem; }
@@ -460,8 +448,9 @@
   .buttons { display: flex; justify-content: flex-end; gap: 0.5rem; }
 
   @media (max-width: 639px) {
-    .main { display: grid; grid-template-columns: minmax(0, 1fr); }
-    .state { grid-column: 1; grid-row: auto; min-width: 0; margin-top: 0.125rem; }
+    .list .row { flex-wrap: wrap; }
+    .main { flex-basis: calc(100% - 42px - 0.875rem); }
+    .state { width: auto; flex: 1; margin-left: calc(42px + 0.875rem); }
     .open { width: 2.25rem; padding: 0; }
     .open-text { display: none; }
   }

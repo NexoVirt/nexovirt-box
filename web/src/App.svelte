@@ -1,12 +1,14 @@
 <script>
-  // Shell: a slim translucent top bar over the desktop. Box apps (App Store, Files, Monitor,
-  // Terminal, My Apps, Logs, Backups) and Settings open as full-screen windows over it.
+  // Shell: a slim translucent top bar over the desktop. Box apps (Apps, Files, Monitor, Terminal,
+  // Logs, Backups) and Settings open as floating windows over it, several at once. The address bar
+  // shows the window in front, so a link opens (or brings forward) that window.
   import { onMount } from 'svelte';
   import { api } from '$lib/api.js';
   import { theme, setThemeMode } from '$lib/theme.svelte.js';
   import { toast } from '$lib/toast.svelte.js';
   import { router } from '$lib/nav.js';
   import { desktop, loadDesktop, setOrigin } from '$lib/desktop.svelte.js';
+  import { wm, place, topWindow } from '$lib/windows.svelte.js';
   import { applyTheme } from '$lib/themes.js';
   import { activityLabel } from '$lib/activityLabels.js';
   import { ago } from '$lib/format.js';
@@ -37,18 +39,27 @@
     { value: 'dark', label: 'Dark' },
     { value: 'system', label: 'Auto' },
   ];
-  // Windows opened from tiles; each page is its own chunk, loaded when first opened. Fill windows
-  // scroll inside their own card; floating windows float over the desktop (Files).
-  const WINDOWS = {
-    '/apps': { title: 'App Store', load: () => import('./AppStore.svelte') },
-    '/apps/installed': { title: 'My Apps', load: () => import('./MyApps.svelte'), nav: true },
-    '/files': { title: 'Files', fill: true, floating: true, load: () => import('./Files.svelte') },
-    '/monitor': { title: 'Monitor', load: () => import('./Monitor.svelte'), system: true },
-    '/console': { title: 'Terminal', load: () => import('./Console.svelte') },
-    '/backups': { title: 'Backups', fill: true, load: () => import('./Backups.svelte') },
+  // Window kinds; each page is its own chunk, loaded when first opened. Fill windows scroll inside
+  // their own content; size is the default (centred, remembered once moved or resized).
+  const KINDS = {
+    apps: { title: 'Apps', fill: true, flush: true, size: [1100, 740], load: () => import('./AppManager.svelte') },
+    files: { title: 'Files', fill: true, size: [1120, 720], load: () => import('./Files.svelte') },
+    monitor: { title: 'Monitor', size: [1040, 720], load: () => import('./Monitor.svelte') },
+    console: { title: 'Terminal', size: [940, 600], load: () => import('./Console.svelte') },
+    backups: { title: 'Backups', fill: true, size: [1080, 720], load: () => import('./Backups.svelte') },
+    settings: { title: 'Settings', fill: true, flush: true, size: [1080, 720], load: () => import('./SettingsView.svelte') },
+    logs: { title: 'Logs', fill: true, size: [1000, 660], load: () => import('./AppLogs.svelte') },
   };
-  const LOGS = { title: 'Logs', fill: true, load: () => import('./AppLogs.svelte'), nav: true };
-  const loadSettings = () => import('./SettingsView.svelte');
+  const SIMPLE = { '/files': 'files', '/monitor': 'monitor', '/console': 'console', '/backups': 'backups' };
+  // Which window a path belongs to, and the props its page gets from the path.
+  function resolve(p) {
+    if (p === '/apps' || p === '/apps/installed') return { key: 'apps', kind: KINDS.apps, props: { tab: p === '/apps' ? 'store' : 'installed' } };
+    const logs = p.match(/^\/apps\/([a-z0-9][a-z0-9-]{0,62})\/logs$/)?.[1];
+    if (logs) return { key: 'logs-' + logs, kind: KINDS.logs, title: 'Logs: ' + logs, props: { id: logs } };
+    if (p === '/settings' || p.startsWith('/settings/')) return { key: 'settings', kind: KINDS.settings, props: { section: p.slice(10) } };
+    return SIMPLE[p] ? { key: SIMPLE[p], kind: KINDS[SIMPLE[p]], props: {} } : null;
+  }
+  const pathOf = (u) => u.split(/[?#]/)[0] || '/';
   // Pages that were in the sidebar before the desktop: their old addresses still work.
   const MOVED = { '/firewall': 'firewall', '/shares': 'shares', '/disks': 'disks', '/updates': 'system-updates', '/activity': 'activity' };
   const OLD_TABS = { updates: 'box-updates' };
@@ -56,8 +67,7 @@
   let state = $state(null); // { setup_needed, logged_in, username, version }
   let loadError = $state('');
   let system = $state(null);
-  let path = $state(location.pathname);
-  let pageKey = $state(0);
+  let phone = $state(matchMedia('(max-width: 699px)').matches);
   let userOpen = $state(false), bellOpen = $state(false);
   let mode = $state(theme.mode);
   let bell = $state(null), diskWarn = $state([]);
@@ -97,25 +107,47 @@
     if (res.ok) diskWarn = res.data.warnings;
   }
 
-  // to may carry a query or hash (/files?path=/srv, /backups#targets) for the page to read.
+  // ---- windows ----
+  const here = () => location.pathname + location.search + location.hash;
+  function setURL(u) { if (u !== here()) history.replaceState(null, '', u); }
+  // The page in front may have put its tab into the address (#targets): keep it for later.
+  function keepFrontURL() {
+    const t = topWindow();
+    if (t && resolve(location.pathname)?.key === t.key) t.url = here();
+  }
+  // Opens the window a path belongs to, or brings it forward. A query or hash (/files?path=/srv,
+  // /apps/installed?app=x&do=backups, /backups#targets) is read by the page, so it mounts again.
   function navigate(to) {
     userOpen = bellOpen = false;
     to = canonical(to);
-    const p = to.split(/[?#]/)[0] || '/';
-    if (to !== location.pathname + location.search + location.hash) {
-      // deskDepth: how many steps back the desktop is, so closing a window can go back to it.
-      const depth = p === '/' ? 0 : (history.state?.deskDepth ?? (path === '/' ? 0 : -1)) + 1;
-      history.pushState({ deskDepth: depth > 0 ? depth : null }, '', to);
-      if (p === path) pageKey++; // same page, new target: mount it again
-      path = p;
+    const r = resolve(pathOf(to));
+    if (!r) return setURL('/');
+    keepFrontURL();
+    let w = wm.list.find((x) => x.key === r.key);
+    if (w) {
+      if (to.length > pathOf(to).length) w.gen++;
+      w.url = to;
+    } else {
+      wm.list.push({ key: r.key, url: to, gen: 0, z: 0, min: false, ...place(r.key, r.kind.size, wm.list.filter((x) => !x.min).length) });
+      w = wm.list[wm.list.length - 1];
     }
+    focusWindow(w);
   }
-  function closeWindow() {
-    parked = null;
-    // Back to the desktop entry when the window was opened from it, else straight there (deep link).
-    const d = history.state?.deskDepth;
-    if (d > 0) history.go(-d);
-    else navigate('/');
+  function focusWindow(w) {
+    if (topWindow() !== w) keepFrontURL();
+    w.min = false;
+    w.z = ++wm.seq;
+    setURL(w.url);
+  }
+  function closeWindow(w) {
+    keepFrontURL();
+    wm.list = wm.list.filter((x) => x !== w);
+    setURL(topWindow()?.url || '/');
+  }
+  function minimizeWindow(w) {
+    keepFrontURL();
+    w.min = true;
+    setURL(topWindow()?.url || '/');
   }
   function openFromBar(e, to) { setOrigin(e.currentTarget); navigate(to); }
 
@@ -143,30 +175,23 @@
 
   onMount(() => {
     router.go = navigate;
-    const fixed = canonical(location.pathname + location.search + location.hash);
-    if (fixed !== location.pathname + location.search + location.hash) {
-      history.replaceState({}, '', fixed);
-      path = fixed.split(/[?#]/)[0];
-    }
+    if (location.pathname !== '/') navigate(here()); // a deep link opens its window
     loadState();
-    const onPop = () => { path = location.pathname; userOpen = bellOpen = false; };
+    const onPop = () => { userOpen = bellOpen = false; if (location.pathname !== '/') navigate(here()); };
     addEventListener('popstate', onPop);
-    return () => removeEventListener('popstate', onPop);
+    const mq = matchMedia('(max-width: 699px)');
+    const onMq = () => (phone = mq.matches);
+    mq.addEventListener('change', onMq);
+    return () => { removeEventListener('popstate', onPop); mq.removeEventListener('change', onMq); };
   });
 
-  let logsApp = $derived(path.match(/^\/apps\/([a-z0-9][a-z0-9-]{0,62})\/logs$/)?.[1] || '');
-  let settingsSection = $derived(path.startsWith('/settings') ? path.slice('/settings'.length).replace(/^\//, '') : null);
-  // A minimised floating window stays alive (hidden) while the desktop is shown.
-  let parked = $state(null); // { path, url, title }
-  $effect(() => { if (parked && path !== '/' && path !== parked.path) parked = null; });
-  let winPath = $derived(logsApp || WINDOWS[path] ? path : path === '/' && parked ? parked.path : null);
-  let win = $derived(winPath ? (winPath === path && logsApp ? LOGS : WINDOWS[winPath]) : null);
-  let minimized = $derived(!!win && winPath !== path);
-  let windowOpen = $derived((!!win && !minimized && !win.floating) || settingsSection !== null);
-  function minimize() {
-    parked = { path, url: location.pathname + location.search + location.hash, title: win.title };
-    navigate('/');
-  }
+  const front = $derived(topWindow());
+  // z-order as small numbers (front = highest), so dialogs and menus always stay above windows.
+  const ranks = $derived(new Map([...wm.list].sort((a, b) => a.z - b.z).map((w, i) => [w.key, i])));
+  const docked = $derived(wm.list.filter((w) => w.min));
+  // The desktop is hidden (and its polling paused) behind a maximised window or on a phone.
+  const covered = $derived(wm.list.some((w) => !w.min && (w.max || phone)));
+  const titleOf = (w) => { const r = resolve(pathOf(w.url)); return r?.title || r?.kind.title || ''; };
   let initials = $derived(state?.username ? state.username.slice(0, 2).toUpperCase() : '');
 </script>
 
@@ -189,7 +214,7 @@
 {:else if !state.logged_in}
   <Auth mode="login" onDone={loadState} />
 {:else}
-  <header class="topbar glass blur" inert={windowOpen}>
+  <header class="topbar glass blur" inert={covered && phone}>
     <div class="side">
       <div class="anchor">
         <button class="bar-btn account" onclick={() => (userOpen = !userOpen)} aria-haspopup="menu" aria-expanded={userOpen} aria-label="Account: {state.username}">
@@ -247,26 +272,25 @@
     </div>
   </header>
 
-  <Desktop {system} username={state.username} onSessionLost={sessionLost} onNavigate={navigate} inert={windowOpen} />
+  <Desktop {system} username={state.username} onSessionLost={sessionLost} onNavigate={navigate} inert={covered} />
 
-  {#if settingsSection !== null}
-    <AppWindow title="Settings" onClose={closeWindow} flush>
-      <Lazy load={loadSettings} section={settingsSection} {pageKey} onNavigate={navigate} onSessionLost={sessionLost} />
-    </AppWindow>
-  {:else if win}
-    {#key winPath + ':' + (logsApp || '')}
-      <AppWindow title={win.title} name={winPath.slice(1)} onClose={closeWindow} fill={win.fill} floating={win.floating}
-        onMinimize={win.floating ? minimize : null} {minimized}>
-        {#key pageKey}
-          <Lazy load={win.load} id={logsApp || undefined} {system} onSessionLost={sessionLost} onNavigate={navigate} />
+  {#each wm.list as w (w.key)}
+    {@const r = resolve(pathOf(w.url))}
+    {#if r}
+      <AppWindow {w} title={titleOf(w)} rank={ranks.get(w.key) ?? 0} focused={front === w} {phone} fill={r.kind.fill} flush={r.kind.flush}
+        onClose={() => closeWindow(w)} onMinimize={() => minimizeWindow(w)} onFocus={() => focusWindow(w)}>
+        {#key w.gen}
+          <Lazy load={r.kind.load} {...r.props} pageKey={w.gen} {system} onSessionLost={sessionLost} onNavigate={navigate} />
         {/key}
       </AppWindow>
-    {/key}
-  {/if}
-  {#if parked && path === '/'}
-    <button class="parked" onclick={() => navigate(parked.url)} aria-label="Show {parked.title} again">
-      <span class="dot ok"></span>{parked.title}
-    </button>
+    {/if}
+  {/each}
+  {#if docked.length}
+    <nav class="dockrow" aria-label="Minimised windows">
+      {#each docked as w (w.key)}
+        <button class="parked" onclick={() => focusWindow(w)} aria-label="Show {titleOf(w)} again"><span class="dot ok"></span>{titleOf(w)}</button>
+      {/each}
+    </nav>
   {/if}
 {/if}
 
@@ -316,12 +340,15 @@
   .bell-text { flex: 1; min-width: 0; display: grid; }
   .bell-empty { margin: 0; padding: 0.75rem 0.5rem; }
   .all { justify-content: space-between; margin-top: 0.25rem; }
-  .parked {
+  .dockrow {
     position: fixed; left: 50%; bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); z-index: 25; transform: translateX(-50%);
-    display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.75rem; padding: 0 1.125rem; border: 0; border-radius: 999px;
+    display: flex; gap: 0.5rem; max-width: calc(100vw - 2rem); overflow-x: auto; padding: 0.25rem; scrollbar-width: none;
+  }
+  .parked {
+    flex-shrink: 0; display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.75rem; padding: 0 1.125rem; border: 0; border-radius: 999px;
     background: var(--material); color: var(--text); font: inherit; font-weight: 600; cursor: pointer; box-shadow: var(--shadow-float);
     animation: rise 320ms var(--spring);
   }
-  .parked:active { transform: translateX(-50%) scale(0.96); }
-  @keyframes rise { from { opacity: 0; transform: translateX(-50%) translateY(12px); } }
+  .parked:active { transform: scale(0.96); }
+  @keyframes rise { from { opacity: 0; transform: translateY(12px); } }
 </style>

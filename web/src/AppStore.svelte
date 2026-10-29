@@ -175,14 +175,15 @@
   h1, p { margin: 0; }
   .skeleton.inline { display: inline-block; width: 16rem; height: 0.9rem; vertical-align: middle; }
 
-  /* Sticks to the very top of the window body (its 1.5rem top padding included) on a solid background
-  that runs edge to edge, so cards never show through or above it. */
+  /* Sticks to the very top of its scroll area (the area's top padding --pane-top included) on the
+  window's own surface, edge to edge, so cards never show through or above it. */
   .controls {
-    display: grid; gap: 0.875rem; position: sticky; top: -1.5rem; z-index: 5;
-    margin-top: -1.5rem; padding: 1.5rem 0 0.875rem; background: var(--bg);
-    box-shadow: 0 0 0 100vmax var(--bg), 0 1px 0 100vmax var(--hairline); clip-path: inset(0 -100vmax -1px);
+    --pt: var(--pane-top, 1.25rem);
+    display: grid; gap: 0.875rem; position: sticky; top: calc(-1 * var(--pt)); z-index: 5;
+    margin-top: calc(-1 * var(--pt)); padding: var(--pt) 0 0.875rem; background: var(--win-bg, var(--bg));
+    box-shadow: 0 0 0 100vmax var(--win-bg, var(--bg)), 0 1px 0 100vmax var(--hairline); clip-path: inset(0 -100vmax -1px);
   }
-  .search { display: flex; align-items: center; gap: 0.625rem; height: 2.75rem; padding: 0 0.875rem; border-radius: var(--r-control); background: var(--surface); box-shadow: var(--shadow-tile); color: var(--text-3); max-width: 32rem; }
+  .search { display: flex; align-items: center; gap: 0.625rem; height: 2.75rem; padding: 0 0.875rem; border-radius: var(--r-control); background: var(--fill); color: var(--text-3); max-width: 32rem; }
   .search:focus-within { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent); }
   .search input { flex: 1; min-width: 0; border: 0; background: none; height: 100%; font-size: 0.9375rem; color: var(--text); outline: none; }
   .chips { display: flex; gap: 0.375rem; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
@@ -198,10 +199,10 @@
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); gap: 1rem; }
   .card {
     display: flex; gap: 0.875rem; align-items: flex-start; text-align: left; padding: 1rem; border: 0; cursor: pointer;
-    background: var(--surface); border-radius: var(--r-tile); box-shadow: var(--shadow-tile);
-    transition: transform 100ms ease-out, box-shadow 200ms ease;
+    background: var(--surface-2); border-radius: var(--r-tile); box-shadow: 0 0 0 1px var(--hairline);
+    transition: transform 100ms ease-out, background-color 150ms ease;
   }
-  .card:hover { box-shadow: var(--shadow-float); }
+  .card:hover { background: var(--fill); }
   .card:active { transform: scale(0.98); }
   .card-text { display: grid; gap: 0.25rem; min-width: 0; flex: 1; }
   .tagline { display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.05em; }
