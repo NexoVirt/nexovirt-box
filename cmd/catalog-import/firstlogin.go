@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/nexovirt/box/internal/catalog"
+	"github.com/NexoVirt/nexovirt-box/internal/catalog"
 )
 
 // knownFirstLogin is how to sign in to an app the first time, written by hand and only where

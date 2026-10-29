@@ -4,6 +4,17 @@ Open-source (AGPL-3.0) web UI that installs on top of a normal Linux server: liv
 root console in the browser and an activity log. One Go binary with the Svelte UI and the signed app catalog
 embedded.
 
+## Layout
+
+- `cmd/nexovirt-box/main.go`: the thin entry point (`box.Run(version)`, `-X main.version` stamps the version).
+- `internal/box/`: the whole program (web UI, root helper, apps, backups, files, ...). File names below without a
+  directory live here.
+- `internal/catalog/`: catalog format, signature check, compose shapes. `catalog/`: the signed catalog data plus
+  `embed.go` (package `catalog`, imported as `catalogdata`). `web/`: the Svelte UI plus `embed.go` (`web.Dist`).
+- `cmd/catalog-import`, `cmd/catalog-check`, `cmd/catalog-resign`, `cmd/release-sign`: tools.
+- `deploy/` (install.sh, get.sh), `docs/`, `keys/` (dev catalog key only), `.github/` (workflows, lint config
+  `golangci.yml`, CONTRIBUTING, SECURITY, CODE_OF_CONDUCT, CLA).
+
 ## Design rules (hard)
 
 - Own **Apple-inspired design system**. **No shadcn, no Tabler, no Tailwind, no UI component framework.**
@@ -162,19 +173,19 @@ embedded.
 
 - `make build`: UI (`web`, `npm ci && npm run build`) then Go for linux/amd64 + linux/arm64 into `bin/`.
 - `make test`: `go vet` + `go test` (includes the importer and the catalog signature checks).
-- Dev: `go run . -dev -listen 127.0.0.1:8080` and `cd web && npm run dev` (Vite proxies `/api`).
+- Dev: `go run ./cmd/nexovirt-box -dev -listen 127.0.0.1:8080` and `cd web && npm run dev` (Vite proxies `/api`).
 - Install or upgrade on a server: copy `bin/nexovirt-box-linux-<arch>` + `deploy/install.sh`, run the script as
   root. It creates the `nexovirt-box` user and both units and moves a 0.1 root-only install into the new layout.
-- Dev with the helper on a Mac: `go run . helper -socket /tmp/nxb.sock -user $USER -apps /tmp/nxb-apps` and
-  `go run . -dev -listen 127.0.0.1:8080 -helper /tmp/nxb.sock -state /tmp/nxb-web`.
+- Dev with the helper on a Mac: `go run ./cmd/nexovirt-box helper -socket /tmp/nxb.sock -user $USER -apps /tmp/nxb-apps` and
+  `go run ./cmd/nexovirt-box -dev -listen 127.0.0.1:8080 -helper /tmp/nxb.sock -state /tmp/nxb-web`.
 
 ## GitHub, CI and releases
 
 - Repository: `github.com/NexoVirt/nexovirt-box` (private until the owner makes it public). Only `main`
   is pushed; work on `feat/*` / `fix/*` branches and merge through pull requests once CI is green.
 - CI (`.github/workflows/ci.yml`, every push to main and every PR): `go vet` + `go test ./...` (race
-  detector on `internal/` and `cmd/` only: the root package tests swap package-level paths in cleanups),
-  golangci-lint (`.golangci.yml`), catalog and key checks (built-in catalog verifies with the release
+  detector on `internal/` and `cmd/` except `internal/box`, whose tests swap package-level paths in cleanups),
+  golangci-lint (`.github/golangci.yml`, locally `golangci-lint run -c .github/golangci.yml`), catalog and key checks (built-in catalog verifies with the release
   catalog key, release builds do not trust `keys/catalog-dev.key`, `deploy/get.sh` carries the release
   key), `svelte-check` + Vite build, linux/amd64 + linux/arm64 binaries as artifacts.
 - Release (`.github/workflows/release.yml`): push an annotated tag `vX.Y.Z` (a `-suffix` makes it a
@@ -185,9 +196,11 @@ embedded.
   signature with openssl like get.sh, writes `SHA256SUMS` and publishes the GitHub release with
   `nexovirt-box-linux-{amd64,arm64}-<ver>`, `install.sh`, `get.sh`, `latest.json`, `latest.json.sig`,
   `SHA256SUMS`. `latest.json` lists both binaries and `install.sh` (url + sha256) under their tag URLs.
-- Update address for Box (Settings > Box updates): `https://github.com/NexoVirt/nexovirt-box/releases/latest/download`
+- Update address for Box (Settings > Box updates, built-in default `defaultReleaseURL` in `settings.go`; a saved
+  value wins, an empty one means the default): `https://github.com/NexoVirt/nexovirt-box/releases/latest/download`
   (Box fetches `latest.json` + `latest.json.sig` there; GitHub redirects to the newest non-pre-release).
-- Catalog URL for Box (Settings > Apps and catalog > Online catalog address): `https://raw.githubusercontent.com/NexoVirt/nexovirt-box/main/catalog`
+- Catalog URL for Box (Settings > Apps and catalog > Online catalog address, built-in default `defaultCatalogURL`;
+  saved value > `-catalog-url` > default): `https://raw.githubusercontent.com/NexoVirt/nexovirt-box/main/catalog`
   (index.json, index.sig and apps/ straight from `main`, signed with the catalog key; works once the
   repository is public). Re-sign the catalog locally with `go run ./cmd/catalog-check` (key in
   `~/.config/nexovirt/box-catalog.key`) and push.
@@ -195,7 +208,7 @@ embedded.
   (Debian 12/13, Ubuntu 22.04/24.04, amd64/arm64; verifies the manifest signature with openssl and the
   sha256 of binary and install.sh, then runs install.sh; idempotent; `NEXOVIRT_BOX_VERSION` pins,
   `GITHUB_TOKEN` reads assets through the API while the repository is private).
-- Contributions need the CLA (`CLA.md`, bot in `.github/workflows/cla.yml`, signatures in
+- Contributions need the CLA (`.github/CLA.md`, bot in `.github/workflows/cla.yml`, signatures in
   `signatures/cla.json` on the `cla-signatures` branch). Dependabot watches gomod, npm and actions.
 - Keep the repository clean for the public: no private keys (only public keys and the dev key),
   no internal hosts or IPs, no build output (`bin/`, `web/dist/*`, the `box` dev binary), and no

@@ -9,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/nexovirt/box/internal/catalog"
+	"github.com/NexoVirt/nexovirt-box/internal/catalog"
 )
 
 func main() {

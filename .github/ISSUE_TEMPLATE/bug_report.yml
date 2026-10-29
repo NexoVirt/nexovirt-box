@@ -4,7 +4,7 @@ labels: [bug]
 body:
   - type: markdown
     attributes:
-      value: "Security problems: please do not file them here, see SECURITY.md."
+      value: "Security problems: please do not file them here, see .github/SECURITY.md."
   - type: input
     id: version
     attributes:

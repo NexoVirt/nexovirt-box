@@ -1,4 +1,4 @@
-module github.com/nexovirt/box
+module github.com/NexoVirt/nexovirt-box
 
 go 1.26.0
 

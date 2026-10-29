@@ -57,8 +57,9 @@ The first page asks for the **setup code** printed by the installer (also in
 `/var/lib/nexovirt-box/web/setup-token`), then you create the admin account. The code is deleted
 once the account exists, so nobody else on the network can claim a fresh Box.
 
-To get update notices inside Box, set Settings > Box updates > Update address to
-`https://github.com/NexoVirt/nexovirt-box/releases/latest/download`.
+Box checks `https://github.com/NexoVirt/nexovirt-box/releases/latest/download` for new versions and
+syncs the app catalog from `https://raw.githubusercontent.com/NexoVirt/nexovirt-box/main/catalog` by
+default. Both addresses can be changed in Settings (an empty field means the default).
 
 ## Build from source
 
@@ -69,7 +70,7 @@ make build   # builds the UI, then bin/nexovirt-box-linux-{amd64,arm64}
 make test    # go vet + go test
 ```
 
-Development: `go run . -dev -listen 127.0.0.1:8080 -state ./tmp` (plain HTTP, never use `-dev`
+Development: `go run ./cmd/nexovirt-box -dev -listen 127.0.0.1:8080 -state ./tmp` (plain HTTP, never use `-dev`
 on a reachable server) and `cd web && npm run dev` for the UI with hot reload. More in
 [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
@@ -102,7 +103,7 @@ on a reachable server) and `cd web && npm run dev` for the UI with hot reload. M
 - Passwords are bcrypt hashes; sessions SHA-256 hashes of random tokens; the database is readable
   by the web user only.
 
-Report security problems privately, see [SECURITY.md](SECURITY.md).
+Report security problems privately, see [SECURITY.md](.github/SECURITY.md).
 
 ## Releases
 
@@ -129,8 +130,8 @@ and [Lucide](https://lucide.dev) icons (ISC), built into the binary.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Contributions need a signed [CLA](CLA.md) (the CLA bot asks
-on your first pull request). Please follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+See [CONTRIBUTING.md](.github/CONTRIBUTING.md). Contributions need a signed [CLA](.github/CLA.md) (the CLA bot asks
+on your first pull request). Please follow the [Code of Conduct](.github/CODE_OF_CONDUCT.md).
 
 ## License
 

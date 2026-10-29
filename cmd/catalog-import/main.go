@@ -18,7 +18,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/nexovirt/box/internal/catalog"
+	"github.com/NexoVirt/nexovirt-box/internal/catalog"
 	"gopkg.in/yaml.v3"
 )
 

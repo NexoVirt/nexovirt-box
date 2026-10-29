@@ -58,7 +58,7 @@ jobs:
           VERSION: ${{ steps.v.outputs.version }}
         run: |
           for arch in amd64 arm64; do
-            GOOS=linux GOARCH=$arch go build -trimpath -ldflags "-s -w -X main.version=$VERSION" -o bin/nexovirt-box-linux-$arch .
+            GOOS=linux GOARCH=$arch go build -trimpath -ldflags "-s -w -X main.version=$VERSION" -o bin/nexovirt-box-linux-$arch ./cmd/nexovirt-box
           done
           test "$(bin/nexovirt-box-linux-amd64 version)" = "$VERSION"
       - name: Sign the release manifest

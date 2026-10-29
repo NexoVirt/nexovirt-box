@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nexovirt/box/internal/catalog"
+	"github.com/NexoVirt/nexovirt-box/internal/catalog"
 )
 
 func TestParseRefAndVars(t *testing.T) {
