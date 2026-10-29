@@ -2,27 +2,54 @@
 
 A web UI on top of a normal Linux server, part of the [NexoVirt](https://nexovirt.com) family.
 Your server stays a normal server (SSH, your own services and config keep working); Box adds a
-dashboard in the browser.
+desktop in the browser.
 
-**Status: test version.** It shows the live system load (CPU per thread, memory, swap, load
-average, uptime, the last 10 minutes as charts), the mounted drives and the network throughput,
-and has:
+**Status: early test version (0.x).** It shows the live system load (CPU per thread, memory, swap,
+load average, uptime, the last 10 minutes as charts), the mounted drives and the network
+throughput, and has:
 
-- an **app store** with 625 Docker apps (install with your own data folder, open, start, stop,
-  restart, update notices, logs, uninstall),
+- an **app store** with 600+ Docker apps (install with your own data folder, open, start, stop,
+  restart, update notices, logs, backups, uninstall) and your own compose apps,
 - **HTTPS for apps** under their own domain through a reverse proxy (Caddy, Let's Encrypt when the
   domain points to the server),
-- a **file explorer** (browse, upload, download, preview, rename, move, delete),
+- a **file explorer** (browse, upload, download, preview, rename, move, delete, share links),
+- **backups** of apps to a local folder, S3-compatible storage or Proxmox Backup Server (encrypted), **Samba/NFS shares**, **disk health** (SMART),
+  **system updates** (apt) and **notifications**,
 - **firewall** rules with automatic undo when a change locks you out,
 - a root **console** in the browser, an **activity log**, two-step sign-in (authenticator app,
   passkeys, recovery codes) and signed self-updates.
 
+## Screenshots
+
+![Desktop](docs/screenshots/hero-desktop-dark.webp)
+
+![App Store](docs/screenshots/appstore.webp)
+
+![Several windows](docs/screenshots/multi-window.webp)
+
+## Requirements
+
+- Debian 12 or 13, or Ubuntu 22.04 or 24.04, with systemd
+- amd64 or arm64
+- Docker is optional: Box offers to install it the first time you open the App Store
+
 ## Install
 
-Debian or Ubuntu with systemd, amd64 or arm64:
+As root, with the latest release:
 
 ```sh
-sudo sh deploy/install.sh ./nexovirt-box-linux-amd64
+curl -fsSL https://raw.githubusercontent.com/NexoVirt/nexovirt-box/main/deploy/get.sh | sudo sh
+```
+
+`get.sh` checks the system and CPU, downloads the release manifest, verifies its Ed25519 signature
+(openssl) and the sha256 of the binary and of `install.sh`, then installs. Run it again to upgrade;
+it does nothing when the newest version is already installed. `NEXOVIRT_BOX_VERSION=0.2.0` pins a
+version. (While the repository is private, release files need `GITHUB_TOKEN=<token with repo read>`.)
+
+From a local build instead:
+
+```sh
+sudo sh deploy/install.sh ./bin/nexovirt-box-linux-amd64
 ```
 
 Open `https://<server-ip>:8443`. The browser warns once about the self-signed certificate.
@@ -30,9 +57,12 @@ The first page asks for the **setup code** printed by the installer (also in
 `/var/lib/nexovirt-box/web/setup-token`), then you create the admin account. The code is deleted
 once the account exists, so nobody else on the network can claim a fresh Box.
 
-## Build
+To get update notices inside Box, set Settings > Box updates > Update address to
+`https://github.com/NexoVirt/nexovirt-box/releases/latest/download`.
 
-Needs Go 1.25+ and Node 20+.
+## Build from source
+
+Needs Go (version in `go.mod`) and Node 22+.
 
 ```sh
 make build   # builds the UI, then bin/nexovirt-box-linux-{amd64,arm64}
@@ -40,9 +70,10 @@ make test    # go vet + go test
 ```
 
 Development: `go run . -dev -listen 127.0.0.1:8080 -state ./tmp` (plain HTTP, never use `-dev`
-on a reachable server) and `cd web && npm run dev` for the UI with hot reload.
+on a reachable server) and `cd web && npm run dev` for the UI with hot reload. More in
+[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
-## Security notes
+## Security model
 
 - The web UI runs as the unprivileged user `nexovirt-box`. Root work (console, Docker, firewall,
   files, reverse proxy, updates) goes through `nexovirt-box helper`, a root service on a unix
@@ -71,11 +102,14 @@ on a reachable server) and `cd web && npm run dev` for the UI with hot reload.
 - Passwords are bcrypt hashes; sessions SHA-256 hashes of random tokens; the database is readable
   by the web user only.
 
+Report security problems privately, see [SECURITY.md](SECURITY.md).
+
 ## Releases
 
-`go run ./cmd/release-sign -version X -base <public URL> -out dist bin/nexovirt-box-linux-*`
-writes `latest.json` and `latest.json.sig` (signed with `~/.config/nexovirt/box-release.key`,
-kept outside the repository). Upload the folder to the update address set in Settings.
+Pushing a tag `v*` runs `.github/workflows/release.yml`: it builds both binaries with the version
+stamped, writes `SHA256SUMS`, signs `latest.json` with the release key (a repository secret) and
+publishes a GitHub release with all files. Box's self-updater and `get.sh` read
+`latest.json` + `latest.json.sig` from `https://github.com/NexoVirt/nexovirt-box/releases/latest/download`.
 
 ## App catalog
 
@@ -92,6 +126,11 @@ Go (standard library HTTP server, SQLite via modernc.org/sqlite, gopsutil, creac
 coder/websocket, go-webauthn, go-qrcode, yaml.v3 in the catalog importer; apps run with
 `docker compose`, the reverse proxy is the official Caddy image) with a Svelte 5 UI using its own Apple-inspired design system (plain CSS, no UI framework)
 and [Lucide](https://lucide.dev) icons (ISC), built into the binary.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Contributions need a signed [CLA](CLA.md) (the CLA bot asks
+on your first pull request). Please follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## License
 

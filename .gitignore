@@ -5,3 +5,15 @@
 *.db
 .DS_Store
 .catalog-check-cache.json*
+/box
+/nexovirt-box
+/dist/
+CLAUDE.md
+.claude/
+.env
+.env.*
+*.key
+!keys/catalog-dev.key
+*.secret
+*.pem
+coverage.out

@@ -1,0 +1,19 @@
+name: Feature request
+description: Suggest an idea or an app for the catalog
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What do you want to do?
+      description: The problem or use case, not only the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: How could Box help?
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered

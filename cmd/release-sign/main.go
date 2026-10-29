@@ -1,7 +1,7 @@
 // release-sign writes the signed self-update manifest for a Box release:
 //
 //	go run ./cmd/release-sign -version 0.2.0 -base https://example.com/box -out dist \
-//	    bin/nexovirt-box-linux-amd64 bin/nexovirt-box-linux-arm64
+//	    bin/nexovirt-box-linux-amd64 bin/nexovirt-box-linux-arm64 deploy/install.sh
 //
 // It copies the binaries into -out, writes latest.json with their sha256 and URLs under -base,
 // and latest.json.sig signed with the release key (kept outside the repository).
@@ -54,13 +54,17 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		arch := p[strings.LastIndex(p, "-")+1:]
-		name := filepath.Base(p) + "-" + *ver
+		// Binaries (nexovirt-box-linux-<arch>) are keyed by arch and get the version in their
+		// name; any other file (install.sh) is keyed by its name, so get.sh can verify it too.
+		key, name := filepath.Base(p), filepath.Base(p)
+		if strings.HasPrefix(name, "nexovirt-box-linux-") {
+			key, name = name[strings.LastIndex(name, "-")+1:], name+"-"+*ver
+		}
 		if err := os.WriteFile(filepath.Join(*out, name), b, 0o644); err != nil {
 			log.Fatal(err)
 		}
 		sum := sha256.Sum256(b)
-		files[arch] = map[string]string{"url": strings.TrimRight(*base, "/") + "/" + name, "sha256": hex.EncodeToString(sum[:])}
+		files[key] = map[string]string{"url": strings.TrimRight(*base, "/") + "/" + name, "sha256": hex.EncodeToString(sum[:])}
 	}
 	m, _ := json.MarshalIndent(map[string]any{"version": *ver, "notes": *notes, "published_at": time.Now().Unix(), "files": files}, "", "  ")
 	os.WriteFile(filepath.Join(*out, "latest.json"), m, 0o644)

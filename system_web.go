@@ -131,7 +131,6 @@ type diskCache struct {
 	disks   []diskInfo
 	verdict map[string]string // serial or path -> last verdict
 	sinks   []diskEventSink
-	running bool
 }
 
 func (a *App) subscribeDiskEvents(s diskEventSink) {

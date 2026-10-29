@@ -46,7 +46,7 @@ func socketGate(meta *installedApp, app *catalog.App, allow bool, proofOK func()
 	return true, nil
 }
 
-// ponytail: one cached catalog for status polls (60 s), the update itself loads it fresh.
+// Simplification: one cached catalog for status polls (60 s), the update itself loads it fresh.
 var catCache struct {
 	sync.Mutex
 	at  time.Time

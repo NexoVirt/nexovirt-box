@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  go:
+    name: Go vet and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - run: go vet ./...
+      - run: go test ./...
+      # The root package tests swap package-level paths in cleanups while helper goroutines run,
+      # so the race detector runs on the libraries and tools only.
+      - run: go test -race ./internal/... ./cmd/...
+      - run: go test -tags devkey ./internal/catalog/
+
+  lint:
+    name: golangci-lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.15.0
+
+  catalog:
+    name: Catalog and release key checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      # The built-in catalog must verify with the release catalog key (a dev-signed catalog fails),
+      # release builds must not trust the dev key, and get.sh must carry the release key.
+      - run: go test -v -run 'TestBuiltinCatalogVerifies|TestTamperedCatalogRefused|TestSyncedCatalogMustNotBeOlder|TestEveryCatalogFirstLoginIsValid|TestGetShUsesTheReleaseKey' .
+      - run: go test -v -run 'TestReleaseBuildDoesNotTrustDevKey' ./internal/catalog/
+      - run: sh -n deploy/get.sh && sh -n deploy/install.sh
+
+  web:
+    name: Web check and build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm run check
+      - run: npm run build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: web-dist
+          path: web/dist
+          retention-days: 3
+
+  build:
+    name: Build linux/${{ matrix.arch }}
+    needs: web
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - uses: actions/download-artifact@v8
+        with:
+          name: web-dist
+          path: web/dist
+      - name: Build
+        env:
+          CGO_ENABLED: "0"
+          GOOS: linux
+          GOARCH: ${{ matrix.arch }}
+        run: go build -trimpath -ldflags "-s -w -X main.version=0.0.0-ci.${GITHUB_SHA::7}" -o bin/nexovirt-box-linux-${{ matrix.arch }} .
+      - if: matrix.arch == 'amd64'
+        run: test "$(bin/nexovirt-box-linux-amd64 version)" = "0.0.0-ci.${GITHUB_SHA::7}"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: nexovirt-box-linux-${{ matrix.arch }}
+          path: bin/nexovirt-box-linux-${{ matrix.arch }}
+          retention-days: 7

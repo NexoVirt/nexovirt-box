@@ -1,0 +1,38 @@
+name: Bug report
+description: Something in Box does not work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "Security problems: please do not file them here, see SECURITY.md."
+  - type: input
+    id: version
+    attributes:
+      label: Box version
+      description: Settings > About, or `nexovirt-box version`
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: OS and architecture
+      placeholder: Debian 13, amd64
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: "1. Open the App Store\n2. Install ...\n3. ..."
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: "`journalctl -u nexovirt-box -u nexovirt-box-helper --since -1h` (remove anything private)"
+      render: text

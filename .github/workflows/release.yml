@@ -1,0 +1,95 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build, sign and publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Check the release key secret
+        env:
+          BOX_RELEASE_KEY: ${{ secrets.BOX_RELEASE_KEY }}
+        run: |
+          if [ -z "$BOX_RELEASE_KEY" ]; then
+            echo "::error::The repository secret BOX_RELEASE_KEY is missing. Set it with: gh secret set BOX_RELEASE_KEY < ~/.config/nexovirt/box-release.key"
+            exit 1
+          fi
+      - name: Version from tag
+        id: v
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          ver="${tag#v}"
+          echo "$ver" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$' || { echo "::error::Tag $tag is not vMAJOR.MINOR.PATCH[-pre]"; exit 1; }
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=$ver" >> "$GITHUB_OUTPUT"
+          case "$ver" in *-*) echo "prerelease=true" >> "$GITHUB_OUTPUT" ;; *) echo "prerelease=false" >> "$GITHUB_OUTPUT" ;; esac
+          # Release notes: the annotated tag message (shown in Box's update notice too).
+          git tag -l --format='%(contents)' "$tag" | sed '/-----BEGIN PGP SIGNATURE-----/,$d' > "$RUNNER_TEMP/notes.md"
+          [ -s "$RUNNER_TEMP/notes.md" ] || echo "NexoVirt Box $ver" > "$RUNNER_TEMP/notes.md"
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Test
+        run: go vet ./... && go test ./...
+      - name: Build UI
+        working-directory: web
+        run: npm ci && npm run build
+      - name: Build binaries
+        env:
+          CGO_ENABLED: "0"
+          VERSION: ${{ steps.v.outputs.version }}
+        run: |
+          for arch in amd64 arm64; do
+            GOOS=linux GOARCH=$arch go build -trimpath -ldflags "-s -w -X main.version=$VERSION" -o bin/nexovirt-box-linux-$arch .
+          done
+          test "$(bin/nexovirt-box-linux-amd64 version)" = "$VERSION"
+      - name: Sign the release manifest
+        env:
+          BOX_RELEASE_KEY: ${{ secrets.BOX_RELEASE_KEY }}
+          VERSION: ${{ steps.v.outputs.version }}
+          TAG: ${{ steps.v.outputs.tag }}
+        run: |
+          umask 077
+          key="$RUNNER_TEMP/box-release.key"
+          printf '%s\n' "$BOX_RELEASE_KEY" > "$key"
+          go run ./cmd/release-sign -version "$VERSION" -key "$key" -out dist \
+            -notes "$(cat "$RUNNER_TEMP/notes.md")" \
+            -base "https://github.com/${GITHUB_REPOSITORY}/releases/download/$TAG" \
+            bin/nexovirt-box-linux-amd64 bin/nexovirt-box-linux-arm64 deploy/install.sh
+          rm -f "$key"
+          cp deploy/get.sh dist/get.sh
+          (cd dist && sha256sum nexovirt-box-linux-* install.sh get.sh latest.json > SHA256SUMS)
+          ls -l dist
+      - name: Verify the manifest like get.sh does
+        run: |
+          awk '/BEGIN PUBLIC KEY/,/END PUBLIC KEY/' deploy/get.sh | sed "s/^RELEASE_PUB='//; s/'$//" > "$RUNNER_TEMP/release.pem"
+          base64 -d < dist/latest.json.sig > "$RUNNER_TEMP/sig.bin"
+          openssl pkeyutl -verify -pubin -inkey "$RUNNER_TEMP/release.pem" -rawin -in dist/latest.json -sigfile "$RUNNER_TEMP/sig.bin"
+      - name: Publish the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.v.outputs.tag }}
+          VERSION: ${{ steps.v.outputs.version }}
+          PRERELEASE: ${{ steps.v.outputs.prerelease }}
+        run: |
+          flags=""
+          [ "$PRERELEASE" = "true" ] && flags="--prerelease"
+          gh release create "$TAG" $flags --verify-tag --title "NexoVirt Box $VERSION" --notes-file "$RUNNER_TEMP/notes.md" dist/*

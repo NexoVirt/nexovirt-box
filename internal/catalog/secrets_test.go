@@ -27,14 +27,14 @@ func mustContain(t *testing.T, c string, want ...string) {
 	}
 }
 
-// The claude-code-container case: a UUID password, used in a guard script and shared by a
+// A UUID password, used in a guard script and shared by a
 // Caddy sidecar config, with the store's own "still the catalog value" refusal.
 func TestStrongLiteralReplacedEverywhereAndGuardDropped(t *testing.T) {
 	a, lits := fix(t, `services:
-  claude:
+  app:
     image: x
     environment:
-      ANTHROPIC_API_KEY: ""
+      EXTERNAL_API_KEY: ""
       AUTH_PASSWORD: "9c93e0aa-ebe4-4737-b222-d6445c64da29"
     entrypoint:
       - /bin/sh
@@ -60,7 +60,7 @@ configs:
 		t.Fatalf("question %+v", q)
 	}
 	mustContain(t, a.Compose, "AUTH_PASSWORD: ${SECRET_AUTH_PASSWORD}", `if [ -z "$$AUTH_PASSWORD" ]; then`,
-		`basic_auth { admin ${SECRET_AUTH_PASSWORD} }`, `ANTHROPIC_API_KEY: ""`)
+		`basic_auth { admin ${SECRET_AUTH_PASSWORD} }`, `EXTERNAL_API_KEY: ""`)
 	if strings.Contains(a.Compose, "9c93e0aa") {
 		t.Fatalf("literal left:\n%s", a.Compose)
 	}
@@ -110,7 +110,7 @@ func TestWeakLiteralOnlySecretSpots(t *testing.T) {
 func TestSettingsAboutSecretsAreNotSecrets(t *testing.T) {
 	for _, kv := range [][2]string{{"AUTH_MODE", "local"}, {"AUTH_ENABLED", "true"}, {"NEXTAUTH_URL", "http://x:1"},
 		{"POSTGRES_HOST_AUTH_METHOD", "trust"}, {"JWT_EXP", "1"}, {"APIKEY_PATH", "/root/.x"}, {"AUTH_USERNAME", "admin"},
-		{"S3_ACCESS_KEY", "indelible"}, {"MARIADB_RANDOM_ROOT_PASSWORD", "true"}, {"ANTHROPIC_API_KEY", ""},
+		{"S3_ACCESS_KEY", "indelible"}, {"MARIADB_RANDOM_ROOT_PASSWORD", "true"}, {"EXTERNAL_API_KEY", ""},
 		{"SECRET_KEY", "${X}"}, {"BASIC_AUTH", "true"}, {"ALLOW_PASSWORD_RESET", "false"}, {"REFRESH_TOKEN_EXPIRY", "(1000 * 60) * 7"},
 		{"ACCESS_TOKEN_LIFETIME_MIN", "5"}, {"OIDC_TOKEN_URI", "http://x/t"}, {"API_ACCESS_TOKEN_TTL", "604800"},
 		{"POSTGRES_HOST_AUTH_METHODL", "trust"}, {"PASSWORD_FILE", "run/secrets/x"}, {"MINIO_ACCESS_KEY_ID", "minioadmin"}} {
