@@ -25,6 +25,8 @@ throughput, and has:
 
 ![App Store](docs/screenshots/appstore.webp)
 
+![Files](docs/screenshots/files.webp)
+
 ![Several windows](docs/screenshots/multi-window.webp)
 
 ## Requirements
