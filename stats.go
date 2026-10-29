@@ -15,6 +15,7 @@ import (
 	"github.com/shirou/gopsutil/v4/load"
 	"github.com/shirou/gopsutil/v4/mem"
 	"github.com/shirou/gopsutil/v4/net"
+	"github.com/shirou/gopsutil/v4/sensors"
 )
 
 type Snapshot struct {
@@ -25,6 +26,7 @@ type Snapshot struct {
 	Uptime  uint64     `json:"uptime"`
 	Network []NetRate  `json:"network"`
 	Disks   []Disk     `json:"disks"`
+	Temp    float64    `json:"temp,omitempty"` // CPU temperature in °C, 0 when the server has no sensor
 }
 
 type CPUStats struct {
@@ -135,6 +137,7 @@ func (s *sampler) sample() Snapshot {
 	}
 	snap.Uptime, _ = host.Uptime()
 	snap.Network = s.netRates()
+	snap.Temp = cpuTemp()
 	if parts, err := disk.Partitions(false); err == nil {
 		for _, p := range filterPartitions(parts) {
 			u, err := disk.Usage(p.Mountpoint)
@@ -293,4 +296,25 @@ func (a *App) statsStream(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+}
+
+// cpuTemp returns the CPU package temperature (or the hottest sensor when no CPU sensor is named).
+// Virtual machines usually have none: then 0 and the UI hides the value.
+func cpuTemp() float64 {
+	list, _ := sensors.SensorsTemperatures() // partial results come with an error, use what is there
+	var cpuT, anyT float64
+	for _, t := range list {
+		if t.Temperature <= 0 || t.Temperature > 150 {
+			continue
+		}
+		k := strings.ToLower(t.SensorKey)
+		if hasAnyPrefix(k, "coretemp_package", "k10temp", "zenpower", "cpu", "x86_pkg", "soc") && t.Temperature > cpuT {
+			cpuT = t.Temperature
+		}
+		anyT = max(anyT, t.Temperature)
+	}
+	if cpuT == 0 {
+		cpuT = anyT
+	}
+	return round1(cpuT)
 }

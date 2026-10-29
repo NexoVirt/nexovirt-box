@@ -119,6 +119,7 @@ func openStore(path string) (*Store, error) {
 		`ALTER TABLE sessions ADD COLUMN created_at INTEGER NOT NULL DEFAULT 0`,
 		`ALTER TABLE sessions ADD COLUMN ip TEXT NOT NULL DEFAULT ''`,
 		`ALTER TABLE sessions ADD COLUMN agent TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE users ADD COLUMN desktop TEXT NOT NULL DEFAULT '{}'`,
 	} {
 		if err != nil {
 			break
@@ -177,6 +178,18 @@ func (s *Store) username(id int64) string {
 	var name string
 	s.db.QueryRow(`SELECT username FROM users WHERE id = ?`, id).Scan(&name)
 	return name
+}
+
+// desktop returns the user's desktop layout as stored (JSON, validated on save).
+func (s *Store) desktop(id int64) string {
+	var v string
+	s.db.QueryRow(`SELECT desktop FROM users WHERE id = ?`, id).Scan(&v)
+	return v
+}
+
+func (s *Store) setDesktop(id int64, v string) error {
+	_, err := s.db.Exec(`UPDATE users SET desktop = ? WHERE id = ?`, v, id)
+	return err
 }
 
 func hashToken(t string) string {
