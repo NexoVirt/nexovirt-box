@@ -175,7 +175,13 @@
   h1, p { margin: 0; }
   .skeleton.inline { display: inline-block; width: 16rem; height: 0.9rem; vertical-align: middle; }
 
-  .controls { display: grid; gap: 0.875rem; position: sticky; top: 3.75rem; z-index: 5; padding: 0.25rem 0 0.5rem; background: color-mix(in srgb, var(--bg) 88%, transparent); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); }
+  /* Sticks to the very top of the window body (its 1.5rem top padding included) on a solid background
+  that runs edge to edge, so cards never show through or above it. */
+  .controls {
+    display: grid; gap: 0.875rem; position: sticky; top: -1.5rem; z-index: 5;
+    margin-top: -1.5rem; padding: 1.5rem 0 0.875rem; background: var(--bg);
+    box-shadow: 0 0 0 100vmax var(--bg), 0 1px 0 100vmax var(--hairline); clip-path: inset(0 -100vmax -1px);
+  }
   .search { display: flex; align-items: center; gap: 0.625rem; height: 2.75rem; padding: 0 0.875rem; border-radius: var(--r-control); background: var(--surface); box-shadow: var(--shadow-tile); color: var(--text-3); max-width: 32rem; }
   .search:focus-within { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent); }
   .search input { flex: 1; min-width: 0; border: 0; background: none; height: 100%; font-size: 0.9375rem; color: var(--text); outline: none; }
