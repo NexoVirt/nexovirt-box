@@ -10,12 +10,13 @@ import (
 )
 
 // backupProblems returns the failures that are still current (hist newest first). Only the latest
-// backup per app and target counts, a later successful backup of the same app clears it, and
-// failures of deleted apps or targets or dismissed by the admin are not current. apps == nil means
+// backup per app and target counts (a later success to the SAME target clears a failure; a success
+// to another target does not hide it), and failures of deleted apps or targets or dismissed by the
+// admin are not current. apps == nil means
 // the installed apps are unknown (helper down): then no failure is hidden for that reason.
 func backupProblems(hist []backupRecord, apps, targets map[string]bool) []backupRecord {
 	out := []backupRecord{}
-	seen, okLater := map[string]bool{}, map[string]bool{}
+	seen := map[string]bool{}
 	for _, r := range hist {
 		if r.Kind != "backup" {
 			continue
@@ -24,10 +25,9 @@ func backupProblems(hist []backupRecord, apps, targets map[string]bool) []backup
 		latest := !seen[pair]
 		seen[pair] = true
 		if r.Status == "ok" {
-			okLater[r.App] = true
 			continue
 		}
-		if !latest || okLater[r.App] || r.Dismissed || !targets[r.Target] || (apps != nil && !apps[r.App]) {
+		if !latest || r.Dismissed || !targets[r.Target] || (apps != nil && !apps[r.App]) {
 			continue
 		}
 		out = append(out, r)

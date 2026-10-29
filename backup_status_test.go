@@ -13,7 +13,7 @@ func TestBackupProblemsOnlyCurrent(t *testing.T) {
 	hist := []backupRecord{
 		{ID: 9, At: now, Kind: "backup", App: "nextcloud", Target: "pbs", Status: "failed", Error: "pbs down"},
 		{ID: 8, At: now - 10, Kind: "backup", App: "gitea", Target: "local", Status: "ok"},
-		{ID: 7, At: now - 20, Kind: "backup", App: "gitea", Target: "pbs", Status: "failed"},       // later success of gitea clears it
+		{ID: 7, At: now - 20, Kind: "backup", App: "gitea", Target: "pbs", Status: "failed"},       // gitea to local works, but pbs still fails: stays visible
 		{ID: 6, At: now - 30, Kind: "backup", App: "whoami-copy", Target: "pbs", Status: "failed"}, // app deleted
 		{ID: 5, At: now - 40, Kind: "backup", App: "box", Target: "gone", Status: "failed"},        // target deleted
 		{ID: 4, At: now - 50, Kind: "backup", App: "nextcloud", Target: "local", Status: "ok"},
@@ -24,12 +24,17 @@ func TestBackupProblemsOnlyCurrent(t *testing.T) {
 	apps := map[string]bool{"nextcloud": true, "gitea": true, "box": true}
 	targets := map[string]bool{"pbs": true, "local": true}
 	got := backupProblems(hist, apps, targets)
-	if len(got) != 1 || got[0].ID != 9 {
-		t.Fatalf("want only #9, got %+v", got)
+	if len(got) != 2 || got[0].ID != 9 || got[1].ID != 7 {
+		t.Fatalf("want #9 and #7, got %+v", got)
 	}
 	// Unknown app list (helper down): do not hide failures because of it.
-	if got := backupProblems(hist, nil, targets); len(got) != 2 {
-		t.Fatalf("nil apps: want #9 and #6, got %+v", got)
+	if got := backupProblems(hist, nil, targets); len(got) != 3 {
+		t.Fatalf("nil apps: want #9, #7 and #6, got %+v", got)
+	}
+	// A later success to the same target clears its failure.
+	fixed := append([]backupRecord{{ID: 10, At: now + 10, Kind: "backup", App: "gitea", Target: "pbs", Status: "ok"}}, hist...)
+	if got := backupProblems(fixed, apps, targets); len(got) != 1 || got[0].ID != 9 {
+		t.Fatalf("after gitea/pbs success: want only #9, got %+v", got)
 	}
 }
 
