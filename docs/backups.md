@@ -28,6 +28,10 @@
   `app.json`; data and `.env` come from the backup. "As a new app" restores under another id (Box variables in `.env`
   are repointed, domains are not taken over). Box settings: Box stops, the database is replaced, Box starts, everyone
   signs in again.
+- **Overview problems** (`backup_status.go` `backupProblems`): only the latest backup per app and target counts; a
+  later successful backup of the same app clears it; failures of deleted apps or targets are not shown. Each one can
+  be dismissed (`POST /api/backups/history/{id}/dismiss`, stored in `backup_history.dismissed`). "Clear history" in
+  Activity (`POST /api/backups/history/clear`, `older_than_days` 0 = all) needs a fresh password proof and is audited.
 - **Verify** downloads, decrypts and unpacks an archive and checks its contents list.
 
 ## Own apps

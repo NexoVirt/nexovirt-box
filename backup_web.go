@@ -41,6 +41,7 @@ type backupRecord struct {
 	Status     string `json:"status"` // ok, failed
 	Error      string `json:"error"`
 	Source     string `json:"source"` // manual, schedule
+	Dismissed  bool   `json:"dismissed,omitempty"`
 }
 
 var hhmmRe = regexp.MustCompile(`^([01]\d|2[0-3]):[0-5]\d$`)
@@ -128,7 +129,7 @@ func (st *Store) addBackupRecord(r backupRecord) {
 
 func (st *Store) backupHistory(app string, limit int) []backupRecord {
 	out := []backupRecord{}
-	q, args := `SELECT id, at, kind, app, target, target_name, name, size, seconds, status, error, source FROM backup_history`, []any{}
+	q, args := `SELECT id, at, kind, app, target, target_name, name, size, seconds, status, error, source, dismissed FROM backup_history`, []any{}
 	if app != "" {
 		q += ` WHERE app = ?`
 		args = append(args, app)
@@ -140,7 +141,7 @@ func (st *Store) backupHistory(app string, limit int) []backupRecord {
 	defer rows.Close()
 	for rows.Next() {
 		var r backupRecord
-		if rows.Scan(&r.ID, &r.At, &r.Kind, &r.App, &r.Target, &r.TargetName, &r.Name, &r.Size, &r.Seconds, &r.Status, &r.Error, &r.Source) == nil {
+		if rows.Scan(&r.ID, &r.At, &r.Kind, &r.App, &r.Target, &r.TargetName, &r.Name, &r.Size, &r.Seconds, &r.Status, &r.Error, &r.Source, &r.Dismissed) == nil {
 			out = append(out, r)
 		}
 	}
@@ -310,7 +311,7 @@ func (a *App) backupsGet(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"key": key, "targets": targets, "schedules": scheds,
-		"history": a.store.backupHistory(r.URL.Query().Get("app"), limit)})
+		"history": a.store.backupHistory(r.URL.Query().Get("app"), limit), "problems": a.currentBackupProblems(r, targets)})
 }
 
 func (a *App) backupKeySet(w http.ResponseWriter, r *http.Request) {

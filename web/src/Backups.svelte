@@ -215,7 +215,32 @@
   let lastOk = $derived(backups.find((r) => r.status === 'ok'));
   let nextSched = $derived((data?.schedules || []).filter((s) => s.enabled && s.next_run).sort((a, b) => a.next_run - b.next_run)[0]);
   let weekAgo = $derived(Date.now() / 1000 - 7 * 86400);
-  let recentFailed = $derived((data?.history || []).filter((r) => r.status === 'failed' && r.at > weekAgo));
+  // Current problems come from the server: latest run per app and target, existing apps and targets only.
+  let problems = $derived(data?.problems || []);
+  let dismissing = $state({});
+  async function dismiss(r) {
+    dismissing = { ...dismissing, [r.id]: true };
+    const res = await api(`/api/backups/history/${r.id}/dismiss`, { method: 'POST' });
+    dismissing = { ...dismissing, [r.id]: false };
+    if (res.status === 401) return onSessionLost();
+    if (!res.ok) return toast(res.error, 'error');
+    load();
+  }
+  // clear history
+  let clearOpen = $state(false), clearAge = $state('30'), clearBusy = $state(false), clearError = $state('');
+  function openClear(e) { at(e); clearAge = '30'; clearError = ''; clearOpen = true; }
+  async function clearHistory(e) {
+    e.preventDefault();
+    clearBusy = true;
+    clearError = '';
+    const res = await withProof(() => api('/api/backups/history/clear', { method: 'POST', body: { older_than_days: +clearAge } }));
+    clearBusy = false;
+    if (res.cancelled) return;
+    if (!res.ok) { clearError = res.error; return; }
+    clearOpen = false;
+    toast(res.data.deleted === 1 ? 'Removed 1 entry.' : `Removed ${res.data.deleted} entries.`, 'success');
+    load();
+  }
   let histRows = $derived(histStatus ? (data?.history || []).filter((r) => r.status === histStatus) : data?.history || []);
 
   const ARCH_COLS = [
@@ -335,17 +360,18 @@
           <span class="stat-text">
             <span class="t-caption">Last 7 days</span>
             <span class="t-head num">{backups.filter((r) => r.at > weekAgo && r.status === 'ok').length} backups</span>
-            <span class="t-caption">{recentFailed.length ? `${recentFailed.length} failed` : 'Nothing failed'}</span>
+            <span class="t-caption">{problems.length ? `${problems.length} failed (latest)` : 'Nothing failing'}</span>
           </span>
         </div>
       </div>
 
-      {#if recentFailed.length}
-        <div class="notice" role="alert">
+      {#each problems as p (p.id)}
+        <div class="notice problem" role="alert">
           <CircleAlert size={18} />
-          <span><strong>{appName(recentFailed[0].app)}</strong>: {recentFailed[0].error || 'The last run failed.'} <button class="link" onclick={() => { histStatus = 'failed'; tab = 'activity'; }}>Show what failed</button></span>
+          <span class="grow"><strong>{appName(p.app)}</strong> to {p.target_name || targetName(p.target)}, {ago(p.at)}: {p.error || 'The last run failed.'} <button class="link" onclick={() => { histStatus = 'failed'; tab = 'activity'; }}>Show history</button></span>
+          <button class="btn btn-gray btn-sm" onclick={() => dismiss(p)} disabled={dismissing[p.id]}>{#if dismissing[p.id]}<Loader size={14} class="spinner" />{/if}Dismiss</button>
         </div>
-      {/if}
+      {/each}
 
       {#if data.key.configured}
         <section class="group">
@@ -441,6 +467,7 @@
         <select class="input" bind:value={histStatus} aria-label="Result">
           <option value="">All results</option><option value="ok">Done</option><option value="failed">Failed</option>
         </select>
+        <button class="btn btn-gray btn-sm" onclick={openClear} disabled={!data.history.length}><Trash2 size={15} />Clear history</button>
       {/snippet}
       {#snippet cell(r, c)}
         {#if c.key === 'at'}<span title={full(r.at)}>{ago(r.at)}</span>
@@ -555,6 +582,26 @@
   </div>
 </Dialog>
 
+<Dialog bind:open={clearOpen} label="Clear history" {origin} locked={clearBusy}>
+  <form class="dlg" onsubmit={clearHistory}>
+    <h2 class="t-title">Clear backup history</h2>
+    <p class="t-sub">Removes finished entries from this list. Stored backups are not touched.</p>
+    <label class="field"><span class="field-label">Remove</span>
+      <select class="input" bind:value={clearAge}>
+        <option value="7">Entries older than 7 days</option>
+        <option value="30">Entries older than 30 days</option>
+        <option value="90">Entries older than 90 days</option>
+        <option value="0">All entries</option>
+      </select>
+    </label>
+    {#if clearError}<div class="notice" role="alert">{clearError}</div>{/if}
+    <div class="buttons">
+      <button type="button" class="btn btn-gray" data-close onclick={() => (clearOpen = false)} disabled={clearBusy}>Cancel</button>
+      <button class="btn btn-danger" disabled={clearBusy}>{#if clearBusy}<Loader size={16} class="spinner" />{/if}Clear</button>
+    </div>
+  </form>
+</Dialog>
+
 <RestoreDialog bind:open={restoreOpen} preset={restorePreset} {targets} {apps} {origin} {onSessionLost} onDone={load} />
 
 <style>
@@ -583,6 +630,8 @@
   .cols .field { flex: 1; min-width: 8rem; }
   .secret { padding: 0.875rem; border-radius: var(--r-control); background: var(--fill); word-break: break-all; font-size: 0.8125rem; user-select: all; }
   .copy { justify-self: start; }
+  .problem { align-items: center; }
+  .problem .grow { flex: 1; min-width: 0; }
   @media (max-width: 899px) { .stats { grid-template-columns: 1fr; } }
   @media (max-width: 639px) {
     .intro { flex-direction: column; }

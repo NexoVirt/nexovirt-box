@@ -57,14 +57,14 @@ func TestValidateCompose(t *testing.T) {
 		t.Fatalf("valid compose refused: %v", errs)
 	}
 	bad := map[string]string{
-		"env list of maps": "services:\n  a:\n    image: x\n    environment:\n      - A: 1\n",
-		"env map nested":   "services:\n  a:\n    image: x\n    environment:\n      A: {b: c}\n",
-		"ports scalar":     "services:\n  a:\n    image: x\n    ports: 80:80\n",
+		"env list of maps":  "services:\n  a:\n    image: x\n    environment:\n      - A: 1\n",
+		"env map nested":    "services:\n  a:\n    image: x\n    environment:\n      A: {b: c}\n",
+		"ports scalar":      "services:\n  a:\n    image: x\n    ports: 80:80\n",
 		"ports nested list": "services:\n  a:\n    image: x\n    ports: [[80]]\n",
-		"volumes map":      "services:\n  a:\n    image: x\n    volumes: {a: b}\n",
-		"no services":      "x: 1\n",
-		"service scalar":   "services:\n  a: x\n",
-		"labels nested":    "services:\n  a:\n    image: x\n    labels: [{a: b}]\n",
+		"volumes map":       "services:\n  a:\n    image: x\n    volumes: {a: b}\n",
+		"no services":       "x: 1\n",
+		"service scalar":    "services:\n  a: x\n",
+		"labels nested":     "services:\n  a:\n    image: x\n    labels: [{a: b}]\n",
 	}
 	for name, c := range bad {
 		if errs := ValidateCompose(c); len(errs) == 0 {

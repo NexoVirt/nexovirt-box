@@ -120,6 +120,7 @@ func openStore(path string) (*Store, error) {
 		`ALTER TABLE sessions ADD COLUMN ip TEXT NOT NULL DEFAULT ''`,
 		`ALTER TABLE sessions ADD COLUMN agent TEXT NOT NULL DEFAULT ''`,
 		`ALTER TABLE users ADD COLUMN desktop TEXT NOT NULL DEFAULT '{}'`,
+		`ALTER TABLE backup_history ADD COLUMN dismissed INTEGER NOT NULL DEFAULT 0`,
 	} {
 		if err != nil {
 			break
