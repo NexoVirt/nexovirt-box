@@ -160,7 +160,7 @@
             <input class="mono" bind:value={token} required autocomplete="off" spellcheck="false" placeholder="from the install" />
           </label>
         </div>
-        <p class="hint t-caption">Missed it? Run <code class="mono">cat /var/lib/nexovirt-box/setup-token</code> on the server.</p>
+        <p class="hint t-caption">Missed it? Run <code class="mono">sudo cat /var/lib/nexovirt-box/web/setup-token</code> on the server.</p>
       {/if}
 
       <div class="group fields">
