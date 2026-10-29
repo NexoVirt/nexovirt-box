@@ -129,6 +129,12 @@ manifest, and the config blob for single-arch images). 8 workers, retries with b
 and resumes. Results are cached in `.catalog-check-cache.json` (gitignored, 7 days for definite answers, errors are
 always re-checked), so reruns are cheap.
 
+- Compose shapes are repaired and then validated (`internal/catalog/shape.go`): `- KEY: value` environment items
+  become `KEY=value`, `network-mode` style typos become the real attribute, depends_on entries naming a missing
+  service are dropped, an env_file other than `.env` becomes optional. Any remaining shape error (unknown service
+  attribute, environment/labels not a map of values or list of strings, ports/volumes not a list) fails the run, so
+  nothing Docker would refuse gets signed. An app that a fix reveals as host network/privileged is dropped (`host`).
+  The importer runs the same repair and validation.
 - Apps with a missing or private image are dropped.
 - `architectures` becomes what every image really ships (`amd64`, `arm64`); Box refuses to install an app on an
   architecture outside that list, and the catalog list API returns `supported` per app for this server.

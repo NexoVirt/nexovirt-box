@@ -364,6 +364,7 @@ func processCompose(a *catalog.App, src []byte, flavor string, mainPort int, all
 	if services == nil || services.Kind != yaml.MappingNode {
 		return fmt.Errorf("%s: no services", a.Name)
 	}
+	catalog.FixShapesNode(doc) // before the privilege check: `network-mode: host` is host network too
 	for i := 1; i < len(services.Content); i += 2 {
 		svc := services.Content[i]
 		if svc.Kind != yaml.MappingNode {
@@ -419,6 +420,9 @@ func processCompose(a *catalog.App, src []byte, flavor string, mainPort int, all
 		return err
 	}
 	a.Compose = buf.String()
+	if errs := catalog.ValidateCompose(a.Compose); len(errs) > 0 {
+		return fmt.Errorf("%s: compose shape: %s", a.Name, strings.Join(errs, "; "))
+	}
 	if a.MainPort > 0 && strings.Contains(a.Compose, "APP_PORT") {
 		a.Questions = append([]catalog.Question{{Key: "APP_PORT", Label: "Web port", Type: "port",
 			Default: strconv.Itoa(a.MainPort), Required: true, Hint: "The port on this server that opens the app."}}, a.Questions...)

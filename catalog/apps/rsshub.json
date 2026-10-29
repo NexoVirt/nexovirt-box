@@ -36,5 +36,5 @@
    "max": 256
   }
  ],
- "compose": "services:\n  rsshub:\n    image: diygod/rsshub:2026-04-17\n    container_name: rsshub\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:1200\n    environment:\n      TZ: ${TZ}\n    env_file:\n      - ${APP_DATA_DIR}/data/app.env\n    depends_on:\n      - redis\n      - browserless\n  browserless:\n    image: browserless/chrome\n    container_name: rsshub_browserless\n    restart: unless-stopped\n    ulimits:\n      core:\n        hard: 0\n        soft: 0\n  redis:\n    image: redis:alpine\n    container_name: rsshub_redis\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/data/redis:/data\n"
+ "compose": "services:\n  rsshub:\n    image: diygod/rsshub:2026-04-17\n    container_name: rsshub\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:1200\n    environment:\n      TZ: ${TZ}\n    env_file:\n      - path: ${APP_DATA_DIR}/data/app.env\n        required: false\n    depends_on:\n      - redis\n      - browserless\n  browserless:\n    image: browserless/chrome\n    container_name: rsshub_browserless\n    restart: unless-stopped\n    ulimits:\n      core:\n        hard: 0\n        soft: 0\n  redis:\n    image: redis:alpine\n    container_name: rsshub_redis\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/data/redis:/data\n"
 }

@@ -57,11 +57,18 @@ func main() {
 		log.Fatal(err)
 	}
 	var reports []*appReport
+	shapeFixed := 0
 	unique := map[string]ref{}
 	for _, e := range cat.Index.Apps {
 		a, err := cat.App(e.ID)
 		if err != nil {
 			log.Fatalf("%s: %v", e.ID, err)
+		}
+		if n, err := catalog.FixShapes(a); err != nil {
+			log.Fatal(err)
+		} else if n > 0 {
+			fmt.Printf("shapes: %s: %d shape fix(es) (env syntax, typos, missing depends_on, optional env_file)\n", a.ID, n)
+			shapeFixed++
 		}
 		if lits, err := catalog.FixSecrets(a); err != nil {
 			log.Fatal(err)
@@ -97,6 +104,9 @@ func main() {
 			}
 		}
 		decide(rep)
+		if rep.Drop == "" && catalog.NeedsHost(rep.App.Compose) {
+			rep.Drop, rep.Why = "host", "needs privileged mode, the host network or the host PID namespace"
+		}
 		if rep.Drop == "" {
 			kept = append(kept, rep.App)
 		}
@@ -111,6 +121,19 @@ func main() {
 	}
 	if bad > 0 {
 		log.Fatalf("%d apps still carry a literal secret", bad)
+	}
+	// Docker refuses a compose with the wrong shapes at install time: never sign one.
+	for _, a := range kept {
+		if errs := catalog.ValidateCompose(a.Compose); len(errs) > 0 {
+			log.Printf("%s: compose shape: %s", a.ID, strings.Join(errs, "; "))
+			bad++
+		}
+	}
+	if bad > 0 {
+		log.Fatalf("%d apps have a compose Docker would refuse", bad)
+	}
+	if shapeFixed > 0 {
+		fmt.Printf("shapes: fixed %d apps\n", shapeFixed)
 	}
 	if err := os.WriteFile(*reportPath, []byte(render(reports, len(unique))), 0o644); err != nil {
 		log.Fatal(err)
