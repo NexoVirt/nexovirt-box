@@ -1,14 +1,14 @@
 <script>
   // Segmented control with a sliding thumb (critically damped spring, interruptible: it animates
   // from wherever it is when you click again).
-  let { options, value = $bindable(), label = '' } = $props();
+  let { options, value = $bindable(), label = '', onchange } = $props();
   let index = $derived(Math.max(0, options.findIndex((o) => o.value === value)));
 </script>
 
 <div class="seg" role="radiogroup" aria-label={label} style:--n={options.length} style:--i={index}>
   <span class="thumb" aria-hidden="true"></span>
   {#each options as o (o.value)}
-    <button type="button" role="radio" aria-checked={o.value === value} onclick={() => (value = o.value)}>{o.label}</button>
+    <button type="button" role="radio" aria-checked={o.value === value} onclick={() => { value = o.value; onchange?.(o.value); }}>{o.label}</button>
   {/each}
 </div>
 

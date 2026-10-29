@@ -96,7 +96,6 @@
     position: fixed; z-index: 41; left: 0.5rem; right: 0.5rem; bottom: 0.5rem;
     padding-bottom: env(safe-area-inset-bottom, 0px);
     border-radius: 1.75rem; background: var(--material); box-shadow: var(--shadow-float);
-    -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: blur(30px) saturate(180%);
     touch-action: none; will-change: transform;
   }
   .handle { display: grid; place-items: center; height: 1.75rem; cursor: grab; }

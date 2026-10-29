@@ -20,7 +20,6 @@
   .pop {
     position: absolute; right: 0; top: calc(100% + 0.5rem); z-index: 30; width: 15rem; padding: 0.375rem;
     border-radius: 1rem; background: var(--material); box-shadow: var(--shadow-float);
-    -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: blur(30px) saturate(180%);
     transform-origin: top right; transform: scale(0.92); opacity: 0; filter: blur(4px); pointer-events: none;
     transition: transform 280ms var(--spring), opacity 180ms ease, filter 220ms ease;
   }

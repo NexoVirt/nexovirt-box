@@ -32,7 +32,6 @@
   .toast {
     pointer-events: auto; display: grid; gap: 0.5rem; text-align: left;
     padding: 0.8rem 1rem; border: 0; border-radius: 1.125rem; background: var(--material); box-shadow: var(--shadow-float);
-    -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: blur(30px) saturate(180%);
     font-weight: 500; letter-spacing: 0;
   }
   .msg { display: flex; align-items: flex-start; gap: 0.625rem; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }

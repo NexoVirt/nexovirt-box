@@ -45,6 +45,7 @@
     { id: 'sys-monitor', name: 'Monitor', icon: Gauge, to: '/monitor', hint: 'Live charts for CPU, memory and network' },
     { id: 'sys-terminal', name: 'Terminal', icon: SquareTerminal, to: '/console', hint: 'Root shell in the browser' },
     { id: 'sys-backups', name: 'Backups', icon: Archive, to: '/backups', hint: 'Back up and restore apps' },
+    { id: 'sys-settings', name: 'Settings', icon: Settings, to: '/settings', hint: 'Everything about this Box' },
   ];
   const PLACES = [
     { label: 'My Apps', hint: 'Start, stop, update and logs', to: '/apps/installed', icon: Boxes },
@@ -64,7 +65,7 @@
   const STATE = { running: 'ok', partial: 'warn', restarting: 'warn', stopped: '', exited: 'error', interrupted: 'warn' };
   const STATE_TEXT = { running: 'Running', partial: 'Partly running', restarting: 'Restarting', stopped: 'Stopped', exited: 'Stopped with an error', interrupted: 'Install interrupted' };
 
-  let apps = $state(null);
+  let apps = $state(null), lastApps = '';
   let appsError = $state('');
   let proxy = $state(null);
   let busy = $state({});
@@ -82,25 +83,31 @@
   const onDark = $derived(wall.tone === 'dark' || (prefs?.dim ?? 0) >= 45);
   $effect(() => { if (wall.id === 'custom') measureTone(wall.image); });
 
-  // Tiles in the saved order; new apps go to the end, system tiles first by default.
-  const tiles = $derived.by(() => {
+  // Two groups in the saved order: Box's own tools (System) and the installed apps. New ones go last.
+  const pos = $derived(new Map((prefs?.order || []).map((id, i) => [id, i])));
+  const sorted = (list) => list.map((t, i) => ({ t, k: pos.has(t.id) ? pos.get(t.id) : 10000 + i })).sort((a, b) => a.k - b.k).map((x) => x.t);
+  const sysTiles = $derived.by(() => {
     const hidden = new Set(prefs?.hidden || []);
-    const all = [
-      ...SYSTEM.filter((s) => !hidden.has(s.id)).map((s) => ({ ...s, sys: true })),
-      ...(apps || []).map((a) => ({ id: a.id, name: a.name, app: a })),
-    ];
-    const pos = new Map((prefs?.order || []).map((id, i) => [id, i]));
-    return all.map((t, i) => ({ t, k: pos.has(t.id) ? pos.get(t.id) : 10000 + i })).sort((a, b) => a.k - b.k).map((x) => x.t);
+    return sorted(SYSTEM.filter((s) => !hidden.has(s.id)).map((s) => ({ ...s, sys: true, group: 'sys' })));
   });
-  let drag = $state(null); // { id, order, x, y, dx, dy, w, h }
-  const shownTiles = $derived(drag ? drag.order.map((id) => tiles.find((t) => t.id === id)).filter(Boolean) : tiles);
+  const appTiles = $derived(sorted((apps || []).map((a) => ({ id: a.id, name: a.name, app: a, group: 'apps' }))));
+  const tiles = $derived([...sysTiles, ...appTiles]);
+  const groupOf = (g) => (g === 'sys' ? sysTiles : appTiles);
+  let drag = $state(null); // { id, group, order, x, y, dx, dy, w, h }
+  const shownOf = (g) => (drag?.group === g ? drag.order.map((id) => groupOf(g).find((t) => t.id === id)).filter(Boolean) : groupOf(g));
+  const shownSys = $derived(shownOf('sys'));
+  const shownApps = $derived(shownOf('apps'));
+  function saveOrder(group, order) {
+    saveDesktop({ order: group === 'sys' ? [...order, ...appTiles.map((t) => t.id)] : [...sysTiles.map((t) => t.id), ...order] });
+  }
 
   async function loadApps() {
     const [a, p, j] = await Promise.all([api('/api/apps'), api('/api/proxy'), follow()]);
     if (a.status === 401) return onSessionLost();
     if (!a.ok) { appsError = a.error; apps = apps || []; return; }
     appsError = '';
-    apps = a.data;
+    const next = JSON.stringify(a.data);
+    if (next !== lastApps) { lastApps = next; apps = a.data; } // unchanged polls do not touch the grid
     bg = Object.fromEntries(a.data.filter((x) => x.busy).map((x) => [x.id, x.busy]).concat(Object.entries(j)));
     if (p.ok) proxy = p.data;
   }
@@ -129,10 +136,11 @@
   // ---- context menu ----
   function tileMenu(x, y, t, el) {
     menuTile = { t, el };
-    const i = tiles.findIndex((x) => x.id === t.id);
+    const list = groupOf(t.group);
+    const i = list.findIndex((x) => x.id === t.id);
     const move = [
       { key: 'left', label: 'Move earlier', icon: ArrowLeft, disabled: i <= 0 },
-      { key: 'right', label: 'Move later', icon: ArrowRight, disabled: i >= tiles.length - 1 },
+      { key: 'right', label: 'Move later', icon: ArrowRight, disabled: i >= list.length - 1 },
     ];
     if (t.sys) {
       menu = { x, y, items: [{ key: 'open', label: `Open ${t.name}`, icon: ExternalLink }, 'sep', ...move, 'sep', { key: 'hide', label: 'Hide from desktop', icon: EyeOff }] };
@@ -161,7 +169,7 @@
     const { t, el } = menuTile || {};
     if (!t) return;
     if (key === 'open') return t.sys ? go(t.to, el) : window.open(openURL(t.app), '_blank', 'noopener,noreferrer');
-    if (key === 'left' || key === 'right') return moveTile(t.id, key === 'left' ? -1 : 1);
+    if (key === 'left' || key === 'right') return moveTile(t, key === 'left' ? -1 : 1);
     if (key === 'hide') return saveDesktop({ hidden: [...(prefs.hidden || []), t.id] });
     const app = t.app;
     if (key === 'logs') return go(`/apps/${app.id}/logs`, el);
@@ -179,12 +187,12 @@
     loadApps();
   }
 
-  function moveTile(id, by) {
-    const order = tiles.map((t) => t.id);
-    const i = order.indexOf(id), j = i + by;
+  function moveTile(t, by) {
+    const order = groupOf(t.group).map((x) => x.id);
+    const i = order.indexOf(t.id), j = i + by;
     if (i < 0 || j < 0 || j >= order.length) return;
     [order[i], order[j]] = [order[j], order[i]];
-    saveDesktop({ order });
+    saveOrder(t.group, order);
   }
 
   // ---- drag to reorder ----
@@ -216,25 +224,25 @@
     if (dist < 7) return;
     menu = null;
     const r = press.el.getBoundingClientRect();
-    drag = { id: press.t.id, order: tiles.map((t) => t.id), x: e.clientX, y: e.clientY, dx: press.x0 - r.left, dy: press.y0 - r.top, w: r.width, h: r.height };
+    drag = { id: press.t.id, group: press.t.group, order: groupOf(press.t.group).map((t) => t.id), x: e.clientX, y: e.clientY, dx: press.x0 - r.left, dy: press.y0 - r.top, w: r.width, h: r.height };
   }
   function reorderAt(x, y) {
-    const hit = document.elementsFromPoint(x, y).find((n) => n.dataset?.dtile && n.dataset.dtile !== drag.id);
+    const hit = document.elementsFromPoint(x, y).find((n) => n.dataset?.tile && n.dataset.tile !== drag.id && n.dataset.group === drag.group);
     if (!hit) return;
     const order = drag.order.filter((id) => id !== drag.id);
-    const to = order.indexOf(hit.dataset.dtile);
-    const from = drag.order.indexOf(drag.id), over = drag.order.indexOf(hit.dataset.dtile);
+    const to = order.indexOf(hit.dataset.tile);
+    const from = drag.order.indexOf(drag.id), over = drag.order.indexOf(hit.dataset.tile);
     order.splice(over > from ? to + 1 : to, 0, drag.id);
     if (order.join() !== drag.order.join()) drag.order = order;
   }
   function up() {
     if (press) clearTimeout(press.timer);
     if (drag) {
-      const order = drag.order;
+      const { order, group } = drag;
       drag = null;
       suppressClick = true;
       setTimeout(() => (suppressClick = false), 50);
-      if (order.join() !== tiles.map((t) => t.id).join()) saveDesktop({ order });
+      if (order.join() !== groupOf(group).map((t) => t.id).join()) saveOrder(group, order);
     }
     press = null;
   }
@@ -264,8 +272,10 @@
     catalogLoading = false;
     if (res.ok) { catalog = res.data.apps; catalogApps = catalog; }
   }
+  // The list follows the typing with a short pause, so fast typing does not filter 600 apps per key.
+  let q = $state('');
+  $effect(() => { const v = query.trim().toLowerCase(); const t = setTimeout(() => (q = v), v ? 110 : 0); return () => clearTimeout(t); });
   const results = $derived.by(() => {
-    const q = query.trim().toLowerCase();
     if (!q) return [];
     const out = [];
     if (q.startsWith('/')) out.push({ kind: 'Folder', label: query.trim(), hint: 'Open in Files', icon: FolderOpen, to: '/files?path=' + encodeURIComponent(query.trim().replace(/\/+$/, '') || '/') });
@@ -312,7 +322,8 @@
 
   onMount(() => {
     loadApps();
-    const t = setInterval(loadApps, 15000);
+    // Poll only while the desktop is visible (not behind a full window, not in a background tab).
+    const t = setInterval(() => { if (!inert && !document.hidden) loadApps(); }, 15000);
     addEventListener('touchmove', holdScroll, { passive: false });
     return () => { clearInterval(t); removeEventListener('touchmove', holdScroll); };
   });
@@ -328,7 +339,7 @@
 <div class="desk" class:on-dark={onDark} {inert}>
   <aside class="left">
     {#if prefs}
-      <Widgets {system} {username} widgets={prefs.widgets} {onNavigate} {onSessionLost} onEdit={() => (editOpen = true)} />
+      <Widgets {system} {username} widgets={prefs.widgets} clock={prefs.clock} paused={inert} {onNavigate} {onSessionLost} onEdit={() => (editOpen = true)} />
     {:else}
       {#each Array(3) as _}<div class="glass skel-widget"><span class="skeleton"></span></div>{/each}
     {/if}
@@ -363,38 +374,63 @@
       {/if}
     </div>
 
-    <div class="apps-head">
-      <h2 class="t-title">Apps</h2>
+    <div class="sec-head">
+      <h2 class="sec-title">System</h2>
+    </div>
+    <div class="dock glass" role="list" aria-label="System">
+      {#if !prefs}
+        {#each Array(6) as _}<div class="ditem"><span class="skeleton" style:width="28px" style:height="28px" style:border-radius="8px"></span></div>{/each}
+      {:else}
+        {#each shownSys as t (t.id)}
+          {@const Icon = t.icon}
+          <div role="listitem" class="dcell" animate:flip={{ duration: 220 }}>
+            <button class="ditem" class:lifted={drag?.id === t.id} data-tile={t.id} data-group="sys"
+              onclick={(e) => click(e, t)} oncontextmenu={(e) => context(e, t)} onkeydown={(e) => tileKey(e, t)} onpointerdown={(e) => down(e, t)}
+              title="{t.name}: {t.hint}">
+              <span class="ico md accent"><Icon /></span>
+              <span class="dname">{t.name}</span>
+            </button>
+          </div>
+        {/each}
+      {/if}
+    </div>
+
+    <div class="sec-head apps-head">
+      <h2 class="sec-title">Apps</h2>
       <button class="add glass" onclick={(e) => go('/apps', e.currentTarget)} aria-label="Add an app from the App Store" title="Add an app"><Plus size={18} strokeWidth={2.2} /></button>
     </div>
     {#if appsError}<div class="notice"><CircleAlert size={18} /><span>{appsError}</span></div>{/if}
 
     <div class="grid" role="list" aria-label="Apps">
       {#if !apps || !prefs}
-        {#each Array(8) as _}<div class="dtile glass skel"><span class="skeleton" style:width="52px" style:height="52px" style:border-radius="14px"></span><span class="skeleton" style:width="4rem" style:height="0.75rem"></span></div>{/each}
+        {#each Array(6) as _}<div class="dtile glass skel"><span class="skeleton" style:width="52px" style:height="52px" style:border-radius="14px"></span><span class="skeleton" style:width="4rem" style:height="0.75rem"></span></div>{/each}
       {:else}
-        {#each shownTiles as t (t.id)}
-          {@const Icon = t.icon}
-          {@const work = t.app && (busy[t.id] || bg[t.id])}
+        {#each shownApps as t (t.id)}
+          {@const work = busy[t.id] || bg[t.id]}
           <div role="listitem" class="cell" animate:flip={{ duration: 260 }}>
-            <button class="dtile glass" class:lifted={drag?.id === t.id} data-tile={t.id}
+            <button class="dtile glass" class:lifted={drag?.id === t.id} data-tile={t.id} data-group="apps"
               onclick={(e) => click(e, t)} oncontextmenu={(e) => context(e, t)} onkeydown={(e) => tileKey(e, t)}
               onpointerdown={(e) => down(e, t)}
-              title="{t.name}: click to open, right-click for more" aria-label="{t.name}{t.app ? `, ${STATE_TEXT[t.app.state] || 'not running'}` : ''}">
+              title="{t.name}: click to open, right-click for more" aria-label="{t.name}, {STATE_TEXT[t.app.state] || 'not running'}">
               <span class="icon-wrap">
-                {#if t.sys}<span class="ico app accent"><Icon /></span>
-                {:else}<AppIcon id={t.app.id} name={t.app.name} size={52} icon={t.app.icon} />{/if}
+                <AppIcon id={t.app.id} name={t.app.name} size={52} icon={t.app.icon} />
                 {#if work}<span class="busy"><Loader size={18} class="spinner" /></span>{/if}
               </span>
               <span class="name">{t.name}</span>
-              {#if t.app}<span class="dot state {STATE[t.app.state] ?? ''}" aria-hidden="true"></span>{/if}
+              <span class="dot state {STATE[t.app.state] ?? ''}" aria-hidden="true"></span>
             </button>
           </div>
         {/each}
+        <div class="cell">
+          <button class="dtile add-tile" onclick={(e) => go('/apps', e.currentTarget)}>
+            <span class="icon-wrap"><Plus size={30} strokeWidth={1.75} /></span>
+            <span class="name">Add app</span>
+          </button>
+        </div>
       {/if}
     </div>
     {#if apps && !apps.length}
-      <p class="hint">No apps yet. Press + to pick one from the App Store: 600+ apps install with one click.</p>
+      <p class="hint">No apps yet. Pick one from the App Store: 600+ apps install with one click.</p>
     {/if}
   </section>
 </div>
@@ -403,9 +439,9 @@
   {@const t = tiles.find((x) => x.id === drag.id)}
   {#if t}
     {@const Icon = t.icon}
-    <div class="ghost glass" style:width="{drag.w}px" style:height="{drag.h}px" style:transform="translate({drag.x - drag.dx}px, {drag.y - drag.dy}px) scale(1.06)" aria-hidden="true">
-      <span class="icon-wrap">{#if t.sys}<span class="ico app accent"><Icon /></span>{:else}<AppIcon id={t.app.id} name={t.app.name} size={52} icon={t.app.icon} />{/if}</span>
-      <span class="name">{t.name}</span>
+    <div class="ghost" class:sys={t.sys} style:width="{drag.w}px" style:height="{drag.h}px" style:transform="translate({drag.x - drag.dx}px, {drag.y - drag.dy}px) scale(1.06)" aria-hidden="true">
+      {#if t.sys}<span class="ico md accent"><Icon /></span><span class="dname">{t.name}</span>
+      {:else}<span class="icon-wrap"><AppIcon id={t.app.id} name={t.app.name} size={52} icon={t.app.icon} /></span><span class="name">{t.name}</span>{/if}
     </div>
   {/if}
 {/if}
@@ -462,8 +498,8 @@
   .right { display: grid; gap: 1rem; min-width: 0; align-content: start; }
 
   /* Text that sits right on the wallpaper. */
-  .apps-head h2, .hint { color: #18181b; }
-  .on-dark .apps-head h2, .on-dark .hint { color: #fafafa; text-shadow: 0 1px 12px rgba(0, 0, 0, 0.35); }
+  .sec-title, .hint { color: #27272a; }
+  .on-dark .sec-title, .on-dark .hint { color: #f4f4f5; text-shadow: 0 1px 10px rgba(0, 0, 0, 0.4); }
 
   .search-wrap { position: relative; z-index: 15; }
   .search {
@@ -477,8 +513,7 @@
   kbd { display: grid; place-items: center; min-width: 1.5rem; height: 1.5rem; padding: 0 0.375rem; border-radius: 0.375rem; background: var(--fill); font-family: var(--mono); }
   .results {
     position: absolute; left: 0; right: 0; top: calc(100% + 0.5rem); margin: 0; padding: 0.375rem; list-style: none;
-    max-height: 26rem; overflow-y: auto; border-radius: 1.25rem; background: var(--glass-strong); box-shadow: var(--shadow-float);
-    -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+    max-height: 26rem; overflow-y: auto; border-radius: 1.25rem; background: var(--material); box-shadow: var(--shadow-float);
     transform-origin: top center; animation: drop 220ms var(--spring);
   }
   @keyframes drop { from { opacity: 0; transform: scale(0.98) translateY(-4px); filter: blur(3px); } }
@@ -490,8 +525,23 @@
   .r-kind { flex-shrink: 0; }
   .r-empty { padding: 0.75rem 0.875rem; }
 
-  .apps-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 0.5rem; }
-  .apps-head h2 { margin: 0 0 0 0.25rem; }
+  .sec-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 2.5rem; margin: 0.5rem 0 -0.25rem 0.25rem; }
+  .apps-head { margin-top: 1rem; }
+  .sec-title { margin: 0; font-size: 0.75rem; line-height: 1.3; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 650; }
+  .dock { display: flex; flex-wrap: wrap; gap: 0.25rem; padding: 0.5rem; border-radius: 1.375rem; }
+  .dcell { min-width: 0; }
+  .ditem {
+    display: grid; justify-items: center; gap: 0.375rem; width: 5.75rem; padding: 0.75rem 0.25rem 0.625rem; border: 0; border-radius: 1rem;
+    background: none; color: var(--text); font: inherit; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+    touch-action: manipulation; transition: background-color 150ms ease, transform 120ms ease-out, opacity 150ms ease;
+  }
+  .ditem:hover { background: var(--fill); }
+  .ditem:active { transform: scale(0.94); }
+  .ditem.lifted { opacity: 0.25; }
+  .dname { font-size: 0.75rem; font-weight: 550; line-height: 1.2; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .add-tile { background: none; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, currentColor 30%, transparent); color: #3f3f46; }
+  .on-dark .add-tile { color: #e4e4e7; }
+  .add-tile:hover { background: color-mix(in srgb, currentColor 8%, transparent); }
   .add {
     display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border: 0; border-radius: 50%; color: var(--text); cursor: pointer;
     transition: transform 100ms ease-out;
@@ -516,9 +566,10 @@
   .dot.state { position: absolute; top: 0.75rem; right: 0.75rem; }
   .hint { margin: 0 0.25rem; }
 
+  .ghost.sys { gap: 0.375rem; border-radius: 1rem; }
   .ghost {
     position: fixed; left: 0; top: 0; z-index: 70; display: grid; justify-items: center; align-content: center; gap: 0.625rem;
-    padding: 0.75rem 0.5rem; border-radius: 1.375rem; pointer-events: none; color: var(--text);
+    padding: 0.75rem 0.5rem; border-radius: 1.375rem; pointer-events: none; color: var(--text); will-change: transform;
     background: var(--glass-strong); box-shadow: var(--glass-edge), 0 24px 50px rgba(0, 0, 0, 0.25);
   }
   .icon-btn.sm { width: 2.25rem; height: 2.25rem; }
@@ -534,6 +585,7 @@
     .desk { padding-inline: max(1rem, env(safe-area-inset-left, 0px)); }
     .left :global(.widgets) { grid-template-columns: 1fr; }
     .grid { grid-template-columns: repeat(auto-fill, minmax(6.25rem, 1fr)); gap: 0.625rem; }
+    .ditem { width: 4.75rem; }
     .dtile { aspect-ratio: auto; padding: 0.875rem 0.375rem 0.75rem; gap: 0.5rem; }
     kbd { display: none; }
     .search input { font-size: 0.9375rem; }

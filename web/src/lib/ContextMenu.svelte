@@ -56,7 +56,6 @@
   .ctx {
     position: fixed; z-index: 60; min-width: 13.5rem; padding: 0.3125rem; border-radius: 0.875rem;
     background: var(--material); box-shadow: var(--shadow-float);
-    -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: blur(30px) saturate(180%);
     transform-origin: top left; animation: grow 220ms var(--spring);
   }
   @keyframes grow { from { transform: scale(0.94); opacity: 0; filter: blur(3px); } }

@@ -23,7 +23,7 @@
   --error-fill: rgba(220, 38, 38, 0.1);
   /* Materials: the sidebar is the heavier structural layer, bars and popovers lighter. */
   --material-thick: rgba(250, 250, 250, 0.78);
-  --material: rgba(255, 255, 255, 0.72);
+  --material: #ffffff; /* menus, popovers, toasts: solid and readable */
   --scrim: rgba(9, 9, 11, 0.28);
   --shadow-tile: 0 1px 2px rgba(9, 9, 11, 0.04), 0 6px 24px rgba(9, 9, 11, 0.04);
   --shadow-float: 0 2px 6px rgba(9, 9, 11, 0.06), 0 18px 48px rgba(9, 9, 11, 0.14);
@@ -70,7 +70,7 @@
   --error: #f87171;
   --error-fill: rgba(248, 113, 113, 0.12);
   --material-thick: rgba(24, 24, 27, 0.72);
-  --material: rgba(39, 39, 42, 0.66);
+  --material: #222226;
   --scrim: rgba(0, 0, 0, 0.5);
   --shadow-tile: 0 0 0 1px var(--hairline);
   --shadow-float: 0 0 0 1px var(--hairline), 0 24px 60px rgba(0, 0, 0, 0.55);
@@ -261,26 +261,25 @@ select.input option { background: var(--surface); color: var(--text); }
 .empty-state .ico { color: var(--text-3); margin-bottom: 0.25rem; }
 .row .grow { flex: 1; min-width: 0; display: grid; gap: 0.125rem; }
 
-/* Desktop glass: the frosted material of widgets, tiles, the search and the top bar on the wallpaper.
-   One layer only: never put glass on glass. */
+/* Desktop surfaces on the wallpaper. Widgets, tiles and the search are near-solid (no blur: many
+   blurred layers at once make the desktop slow); only the top bar (.glass.blur) blurs, with a small radius. */
 :root {
-  --glass: rgba(255, 255, 255, 0.58);
-  --glass-strong: rgba(255, 255, 255, 0.74);
-  --glass-edge: inset 0 0 0 1px rgba(255, 255, 255, 0.45), 0 1px 2px rgba(9, 9, 11, 0.06), 0 10px 30px rgba(9, 9, 11, 0.1);
-  --glass-blur: blur(28px) saturate(170%);
+  --glass: rgba(255, 255, 255, 0.86);
+  --glass-strong: rgba(255, 255, 255, 0.96);
+  --glass-edge: 0 0 0 1px rgba(9, 9, 11, 0.05), 0 1px 2px rgba(9, 9, 11, 0.06), 0 8px 24px rgba(9, 9, 11, 0.08);
+  --glass-blur: blur(14px) saturate(160%);
   --icon-tile: 52px;
 }
 :root.dark {
-  --glass: rgba(30, 30, 34, 0.52);
-  --glass-strong: rgba(30, 30, 34, 0.74);
-  --glass-edge: inset 0 0 0 1px rgba(255, 255, 255, 0.09), 0 10px 30px rgba(0, 0, 0, 0.35);
+  --glass: rgba(28, 28, 32, 0.86);
+  --glass-strong: rgba(36, 36, 40, 0.96);
+  --glass-edge: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 @media (prefers-reduced-transparency: reduce) {
   :root { --glass: var(--surface); --glass-strong: var(--surface); }
+  .glass.blur { -webkit-backdrop-filter: none; backdrop-filter: none; }
 }
-.glass {
-  background: var(--glass); box-shadow: var(--glass-edge);
-  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
-}
+.glass { background: var(--glass); box-shadow: var(--glass-edge); }
+.glass.blur { -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); }
 .ico.app { width: var(--icon-tile); height: var(--icon-tile); }
 .ico.app > svg { stroke-width: 1.5; }

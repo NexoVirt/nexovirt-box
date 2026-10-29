@@ -6,6 +6,7 @@
   import { bytes, rate, pct, duration } from '$lib/format.js';
   import { setOrigin } from '$lib/desktop.svelte.js';
   import Ring from '$lib/Ring.svelte';
+  import ClockWidget from './ClockWidget.svelte';
   import Sparkline from '$lib/Sparkline.svelte';
   import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
   import ArrowDown from '@lucide/svelte/icons/arrow-down';
@@ -14,22 +15,18 @@
   import ChevronRight from '@lucide/svelte/icons/chevron-right';
   import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
 
-  let { system, username = '', widgets = [], onNavigate, onEdit, onSessionLost } = $props();
+  let { system, username = '', widgets = [], clock, paused = false, onNavigate, onEdit, onSessionLost } = $props();
 
   let snap = $state(null);
   let cpuHist = $state([]);
   let rxHist = $state([]), txHist = $state([]);
   let seq = $state(0);
-  let now = $state(new Date());
   let diskWarn = $state([]);
   let iface = $state(readIface());
 
   function readIface() { try { return localStorage.getItem('nxbox-net-iface') || ''; } catch { return ''; } }
   $effect(() => { try { localStorage.setItem('nxbox-net-iface', iface); } catch { /* storage blocked */ } });
 
-  const greeting = $derived(now.getHours() < 5 ? 'Good night' : now.getHours() < 12 ? 'Good morning' : now.getHours() < 18 ? 'Good afternoon' : 'Good evening');
-  const timeText = $derived(now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }));
-  const dateText = $derived(now.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' }));
   const memPct = $derived(snap ? pct(snap.memory.used, snap.memory.total) : 0);
   const ifaces = $derived(snap ? snap.network.map((n) => n.name) : []);
   const netOf = (s) => {
@@ -53,10 +50,12 @@
 
   function open(e, to) { setOrigin(e.currentTarget); onNavigate(to); }
 
-  onMount(() => {
-    api('/api/disks/summary').then((res) => { if (res.ok) diskWarn = res.data.warnings; });
-    const tick = setInterval(() => (now = new Date()), 10000);
-    const es = new EventSource('/api/stats/stream');
+  // The live stream runs only while the desktop is on screen: closed behind a full window and in a
+  // background tab, opened again (with its history) when it comes back.
+  let es = null;
+  function connect() {
+    if (es) return;
+    es = new EventSource('/api/stats/stream');
     const take = (s) => {
       snap = s;
       history = [...history, s].slice(-60);
@@ -80,20 +79,25 @@
     es.onmessage = (e) => { try { const s = JSON.parse(e.data); if (!snap || s.time !== snap.time) take(s); } catch { /* ignore */ } };
     es.onerror = async () => {
       const res = await api('/api/auth/state');
-      if (res.ok && !res.data.logged_in) { es.close(); onSessionLost(); }
+      if (res.ok && !res.data.logged_in) { disconnect(); onSessionLost(); }
     };
-    return () => { clearInterval(tick); es.close(); };
+  }
+  function disconnect() { es?.close(); es = null; }
+  let hidden = $state(document.hidden);
+  $effect(() => { if (paused || hidden) disconnect(); else connect(); });
+
+  onMount(() => {
+    api('/api/disks/summary').then((res) => { if (res.ok) diskWarn = res.data.warnings; });
+    const vis = () => (hidden = document.hidden);
+    document.addEventListener('visibilitychange', vis);
+    return () => { document.removeEventListener('visibilitychange', vis); disconnect(); };
   });
 </script>
 
 <div class="widgets">
   {#each shown as w (w.id)}
     {#if w.id === 'clock'}
-      <section class="glass widget clock" aria-label="Clock">
-        <div class="time num">{timeText}</div>
-        <div class="date">{dateText}</div>
-        <div class="t-caption greet">{greeting}{username ? `, ${username}` : ''}{system?.hostname ? `  ·  ${system.hostname}` : ''}</div>
-      </section>
+      <ClockWidget {clock} {username} hostname={system?.hostname || ''} />
     {:else if w.id === 'system'}
       <button class="glass widget" onclick={(e) => open(e, '/monitor')} aria-label="System status, open Monitor">
         <div class="w-head"><span class="t-head">System status</span><span class="t-caption num">{snap ? `Up ${duration(snap.uptime)}` : ''}</span></div>
@@ -177,11 +181,6 @@
   .widget p { margin: 0; }
   .w-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; min-height: 1.75rem; }
 
-  .clock { gap: 0.125rem; padding-block: 1.125rem; }
-  @media (max-width: 639px) { .clock .time { font-size: 2.75rem; } .clock .date { margin-top: 0.375rem; } }
-  .time { font-size: 3.5rem; line-height: 1; font-weight: 250; letter-spacing: -0.045em; }
-  .date { font-size: 1.0625rem; font-weight: 600; letter-spacing: -0.012em; margin-top: 0.5rem; }
-  .greet { margin-top: 0.125rem; }
 
   .rings { display: flex; justify-content: space-between; gap: 0.25rem; }
   .rings.two { justify-content: space-around; }

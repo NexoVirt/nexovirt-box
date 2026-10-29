@@ -2,13 +2,7 @@
   // Settings window (System Settings style): groups on the left, the section on the right.
   // Every former sidebar page lives here as a section; the URL is /settings/<section>.
   // Phones show the list first and drill down into a section.
-  import Settings from './Settings.svelte';
-  import Firewall from './Firewall.svelte';
-  import Shares from './Shares.svelte';
-  import Disks from './Disks.svelte';
-  import Updates from './Updates.svelte';
-  import Backups from './Backups.svelte';
-  import Activity from './Activity.svelte';
+  import Lazy from '$lib/Lazy.svelte';
   import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
   import ShieldCheck from '@lucide/svelte/icons/shield-check';
   import Package from '@lucide/svelte/icons/package';
@@ -52,6 +46,12 @@
     ],
   ];
   const ALL = GROUPS.flat();
+  // Each section is its own chunk, loaded when it is first opened.
+  const LOAD = {
+    settings: () => import('./Settings.svelte'), firewall: () => import('./Firewall.svelte'), shares: () => import('./Shares.svelte'),
+    disks: () => import('./Disks.svelte'), 'system-updates': () => import('./Updates.svelte'), backups: () => import('./Backups.svelte'),
+    activity: () => import('./Activity.svelte'),
+  };
   // Sections that come from the tabs of Settings.svelte.
   const TAB = { general: 'general', security: 'security', apps: 'apps', network: 'network', notifications: 'notifications', 'box-updates': 'updates', about: 'about' };
 
@@ -103,21 +103,7 @@
         {/if}
         <h2 class="t-large pane-title">{current.label}</h2>
         {#key current.key + ':' + pageKey}
-          {#if TAB[current.key]}
-            <Settings section={TAB[current.key]} {onSessionLost} />
-          {:else if current.key === 'firewall'}
-            <Firewall {onSessionLost} />
-          {:else if current.key === 'shares'}
-            <Shares {onSessionLost} />
-          {:else if current.key === 'disks'}
-            <Disks {onSessionLost} />
-          {:else if current.key === 'system-updates'}
-            <Updates {onSessionLost} />
-          {:else if current.key === 'backups'}
-            <Backups {onSessionLost} />
-          {:else if current.key === 'activity'}
-            <Activity {onSessionLost} />
-          {/if}
+          <Lazy load={LOAD[TAB[current.key] ? 'settings' : current.key]} section={TAB[current.key]} {onSessionLost} />
         {/key}
       </div>
     </div>

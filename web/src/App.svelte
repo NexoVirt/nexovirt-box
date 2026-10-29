@@ -12,15 +12,8 @@
   import { resumeInstalls } from '$lib/installs.svelte.js';
   import Auth from './Auth.svelte';
   import Desktop from './Desktop.svelte';
-  import Monitor from './Monitor.svelte';
-  import Console from './Console.svelte';
-  import AppStore from './AppStore.svelte';
-  import MyApps from './MyApps.svelte';
-  import Files from './Files.svelte';
-  import Backups from './Backups.svelte';
-  import AppLogs from './AppLogs.svelte';
-  import SettingsView from './SettingsView.svelte';
   import AppWindow from '$lib/AppWindow.svelte';
+  import Lazy from '$lib/Lazy.svelte';
   import PasswordGate from '$lib/PasswordGate.svelte';
   import Popover from '$lib/Popover.svelte';
   import Toaster from '$lib/Toaster.svelte';
@@ -43,15 +36,18 @@
     { value: 'dark', label: 'Dark' },
     { value: 'system', label: 'Auto' },
   ];
-  // Windows opened from tiles. Fill windows scroll inside their own card.
+  // Windows opened from tiles; each page is its own chunk, loaded when first opened. Fill windows
+  // scroll inside their own card; floating windows float over the desktop (Files).
   const WINDOWS = {
-    '/apps': { title: 'App Store' },
-    '/apps/installed': { title: 'My Apps' },
-    '/files': { title: 'Files', fill: true },
-    '/monitor': { title: 'Monitor' },
-    '/console': { title: 'Terminal' },
-    '/backups': { title: 'Backups', fill: true },
+    '/apps': { title: 'App Store', load: () => import('./AppStore.svelte') },
+    '/apps/installed': { title: 'My Apps', load: () => import('./MyApps.svelte'), nav: true },
+    '/files': { title: 'Files', fill: true, floating: true, load: () => import('./Files.svelte') },
+    '/monitor': { title: 'Monitor', load: () => import('./Monitor.svelte'), system: true },
+    '/console': { title: 'Terminal', load: () => import('./Console.svelte') },
+    '/backups': { title: 'Backups', fill: true, load: () => import('./Backups.svelte') },
   };
+  const LOGS = { title: 'Logs', fill: true, load: () => import('./AppLogs.svelte'), nav: true };
+  const loadSettings = () => import('./SettingsView.svelte');
   // Pages that were in the sidebar before the desktop: their old addresses still work.
   const MOVED = { '/firewall': 'firewall', '/shares': 'shares', '/disks': 'disks', '/updates': 'system-updates', '/activity': 'activity' };
   const OLD_TABS = { updates: 'box-updates' };
@@ -112,6 +108,7 @@
     }
   }
   function closeWindow() {
+    parked = null;
     // Back to the desktop entry when the window was opened from it, else straight there (deep link).
     const d = history.state?.deskDepth;
     if (d > 0) history.go(-d);
@@ -156,8 +153,17 @@
 
   let logsApp = $derived(path.match(/^\/apps\/([a-z0-9][a-z0-9-]{0,62})\/logs$/)?.[1] || '');
   let settingsSection = $derived(path.startsWith('/settings') ? path.slice('/settings'.length).replace(/^\//, '') : null);
-  let win = $derived(logsApp ? { title: 'Logs', fill: true } : WINDOWS[path] || null);
-  let windowOpen = $derived(!!win || settingsSection !== null);
+  // A minimised floating window stays alive (hidden) while the desktop is shown.
+  let parked = $state(null); // { path, url, title }
+  $effect(() => { if (parked && path !== '/' && path !== parked.path) parked = null; });
+  let winPath = $derived(logsApp || WINDOWS[path] ? path : path === '/' && parked ? parked.path : null);
+  let win = $derived(winPath ? (winPath === path && logsApp ? LOGS : WINDOWS[winPath]) : null);
+  let minimized = $derived(!!win && winPath !== path);
+  let windowOpen = $derived((!!win && !minimized && !win.floating) || settingsSection !== null);
+  function minimize() {
+    parked = { path, url: location.pathname + location.search + location.hash, title: win.title };
+    navigate('/');
+  }
   let initials = $derived(state?.username ? state.username.slice(0, 2).toUpperCase() : '');
 </script>
 
@@ -180,7 +186,7 @@
 {:else if !state.logged_in}
   <Auth mode="login" onDone={loadState} />
 {:else}
-  <header class="topbar glass" inert={windowOpen}>
+  <header class="topbar glass blur" inert={windowOpen}>
     <div class="side">
       <div class="anchor">
         <button class="bar-btn account" onclick={() => (userOpen = !userOpen)} aria-haspopup="menu" aria-expanded={userOpen} aria-label="Account: {state.username}">
@@ -242,26 +248,22 @@
 
   {#if settingsSection !== null}
     <AppWindow title="Settings" onClose={closeWindow} flush>
-      <SettingsView section={settingsSection} {pageKey} onNavigate={navigate} onSessionLost={sessionLost} />
+      <Lazy load={loadSettings} section={settingsSection} {pageKey} onNavigate={navigate} onSessionLost={sessionLost} />
     </AppWindow>
   {:else if win}
-    <AppWindow title={win.title} onClose={closeWindow} fill={win.fill}>
-      {#if logsApp}
-        {#key logsApp}<AppLogs id={logsApp} onSessionLost={sessionLost} onNavigate={navigate} />{/key}
-      {:else if path === '/console'}
-        <Console onSessionLost={sessionLost} />
-      {:else if path === '/files'}
-        {#key pageKey}<Files onSessionLost={sessionLost} />{/key}
-      {:else if path === '/backups'}
-        {#key pageKey}<Backups onSessionLost={sessionLost} />{/key}
-      {:else if path === '/apps'}
-        {#key pageKey}<AppStore onSessionLost={sessionLost} />{/key}
-      {:else if path === '/apps/installed'}
-        {#key pageKey}<MyApps onSessionLost={sessionLost} onNavigate={navigate} />{/key}
-      {:else if path === '/monitor'}
-        <Monitor {system} onSessionLost={sessionLost} />
-      {/if}
-    </AppWindow>
+    {#key winPath + ':' + (logsApp || '')}
+      <AppWindow title={win.title} name={winPath.slice(1)} onClose={closeWindow} fill={win.fill} floating={win.floating}
+        onMinimize={win.floating ? minimize : null} {minimized}>
+        {#key pageKey}
+          <Lazy load={win.load} id={logsApp || undefined} {system} onSessionLost={sessionLost} onNavigate={navigate} />
+        {/key}
+      </AppWindow>
+    {/key}
+  {/if}
+  {#if parked && path === '/'}
+    <button class="parked" onclick={() => navigate(parked.url)} aria-label="Show {parked.title} again">
+      <span class="dot ok"></span>{parked.title}
+    </button>
   {/if}
 {/if}
 
@@ -311,4 +313,12 @@
   .bell-text { flex: 1; min-width: 0; display: grid; }
   .bell-empty { margin: 0; padding: 0.75rem 0.5rem; }
   .all { justify-content: space-between; margin-top: 0.25rem; }
+  .parked {
+    position: fixed; left: 50%; bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); z-index: 25; transform: translateX(-50%);
+    display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.75rem; padding: 0 1.125rem; border: 0; border-radius: 999px;
+    background: var(--material); color: var(--text); font: inherit; font-weight: 600; cursor: pointer; box-shadow: var(--shadow-float);
+    animation: rise 320ms var(--spring);
+  }
+  .parked:active { transform: translateX(-50%) scale(0.96); }
+  @keyframes rise { from { opacity: 0; transform: translateX(-50%) translateY(12px); } }
 </style>
