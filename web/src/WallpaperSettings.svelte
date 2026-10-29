@@ -42,7 +42,7 @@
   onMount(() => { if (!desktop.prefs) loadDesktop(); });
 </script>
 
-<p class="t-section sub">Wallpaper</p>
+<p class="t-section sub" id="wallpaper-settings">Wallpaper</p>
 <section class="group">
   <div class="row walls">
     {#if !prefs}

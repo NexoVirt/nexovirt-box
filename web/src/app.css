@@ -264,15 +264,15 @@ select.input option { background: var(--surface); color: var(--text); }
 /* Desktop surfaces on the wallpaper. Widgets, tiles and the search are near-solid (no blur: many
    blurred layers at once make the desktop slow); only the top bar (.glass.blur) blurs, with a small radius. */
 :root {
-  --glass: rgba(255, 255, 255, 0.86);
-  --glass-strong: rgba(255, 255, 255, 0.96);
+  --glass: color-mix(in srgb, var(--surface) 88%, transparent);
+  --glass-strong: color-mix(in srgb, var(--surface) 97%, transparent);
   --glass-edge: 0 0 0 1px rgba(9, 9, 11, 0.05), 0 1px 2px rgba(9, 9, 11, 0.06), 0 8px 24px rgba(9, 9, 11, 0.08);
   --glass-blur: blur(14px) saturate(160%);
   --icon-tile: 52px;
 }
 :root.dark {
-  --glass: rgba(28, 28, 32, 0.86);
-  --glass-strong: rgba(36, 36, 40, 0.96);
+  --glass: color-mix(in srgb, var(--surface) 86%, transparent);
+  --glass-strong: color-mix(in srgb, var(--surface-2) 96%, transparent);
   --glass-edge: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 @media (prefers-reduced-transparency: reduce) {
@@ -283,3 +283,15 @@ select.input option { background: var(--surface); color: var(--text); }
 .glass.blur { -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); }
 .ico.app { width: var(--icon-tile); height: var(--icon-tile); }
 .ico.app > svg { stroke-width: 1.5; }
+
+/* Theme options (Settings > General > Theme): compact density and the subtle glass surface. */
+:root[data-density='compact'] .row { min-height: 2.5rem; padding-block: 0.5rem; }
+:root[data-density='compact'] .btn { min-height: 2.375rem; }
+:root[data-density='compact'] .btn-sm { min-height: 2rem; }
+:root[data-density='compact'] .input { height: 2.375rem; }
+:root[data-surface='glass'] { --glass: color-mix(in srgb, var(--surface) 68%, transparent); }
+:root[data-surface='glass'] .glass { -webkit-backdrop-filter: blur(12px) saturate(150%); backdrop-filter: blur(12px) saturate(150%); }
+@media (prefers-reduced-transparency: reduce) {
+  :root[data-surface='glass'] { --glass: var(--surface); }
+  :root[data-surface='glass'] .glass { -webkit-backdrop-filter: none; backdrop-filter: none; }
+}

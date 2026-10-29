@@ -24,7 +24,8 @@ export const WIDGETS = {
   disks: 'Disk health (only when a disk needs attention)',
 };
 
-export const desktop = $state({ prefs: null, loading: false, customTone: 'dark' });
+// preview: a theme being edited in Settings, shown live until it is saved or left.
+export const desktop = $state({ prefs: null, loading: false, customTone: 'dark', preview: null });
 
 export async function loadDesktop() {
   if (desktop.loading) return;

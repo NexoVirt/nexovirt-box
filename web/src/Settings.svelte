@@ -34,6 +34,7 @@
   import FolderTree from '@lucide/svelte/icons/folder-tree';
   import NotifySettings from './NotifySettings.svelte';
   import WallpaperSettings from './WallpaperSettings.svelte';
+  import ThemeSettings from './ThemeSettings.svelte';
 
   const THEMES = [{ value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }, { value: 'system', label: 'Auto' }];
   let mode = $state(theme.mode);
@@ -364,6 +365,7 @@
               <Segmented options={THEMES} bind:value={mode} label="Appearance" />
             </div>
           </section>
+          <ThemeSettings />
           <WallpaperSettings {onSessionLost} />
           <p class="t-section sub">Files</p>
           <section class="group">

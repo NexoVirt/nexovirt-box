@@ -6,7 +6,8 @@
   import { theme, setThemeMode } from '$lib/theme.svelte.js';
   import { toast } from '$lib/toast.svelte.js';
   import { router } from '$lib/nav.js';
-  import { loadDesktop, setOrigin } from '$lib/desktop.svelte.js';
+  import { desktop, loadDesktop, setOrigin } from '$lib/desktop.svelte.js';
+  import { applyTheme } from '$lib/themes.js';
   import { activityLabel } from '$lib/activityLabels.js';
   import { ago } from '$lib/format.js';
   import { resumeInstalls } from '$lib/installs.svelte.js';
@@ -62,6 +63,8 @@
   let bell = $state(null), diskWarn = $state([]);
 
   $effect(() => { if (mode !== theme.mode) setThemeMode(mode); });
+  // The user's theme (or the one being edited) as CSS tokens, again on every light/dark switch.
+  $effect(() => { const t = desktop.preview || desktop.prefs?.theme; if (desktop.prefs) applyTheme(t, theme.current === 'dark'); });
   function toggleTheme() { mode = theme.current === 'dark' ? 'light' : 'dark'; }
 
   // Rewrites an old address (/firewall, /settings#security) to its place in the Settings window.
