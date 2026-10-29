@@ -50,3 +50,32 @@ func TestDesktopPrefsAndWallpaper(t *testing.T) {
 		t.Fatalf("no auth: %d", rec.Code)
 	}
 }
+
+func TestDesktopClockAndTheme(t *testing.T) {
+	app, h, token := newTestApp(t)
+	app.state = t.TempDir()
+	c := sessionFrom(post(h, "/api/setup", `{"token":"`+token+`","username":"admin","password":"long-enough-pw"}`, ""))
+
+	// A layout saved before the clock existed keeps its order and gets the default clock.
+	app.store.setDesktop(1, `{"wallpaper":"sand","order":["sys-files"]}`)
+	if body := get(h, "/api/desktop", c).Body.String(); !strings.Contains(body, `"order":["sys-files"]`) || !strings.Contains(body, `"style":"large"`) {
+		t.Fatalf("old layout: %s", body)
+	}
+	theme := `"theme":{"preset":"forest","accent":"#16a34a","neutral":"warm","surface":"glass","radius":"large","density":"compact","scale":110,"saved":[{"name":"Mine","preset":"rose","accent":"","neutral":"cool","surface":"solid","radius":"small","density":"comfortable","scale":100}]}`
+	ok := `{"wallpaper":"auto","clock":{"style":"analog","hours":"24","date":"short","greeting":false,"tz2":"America/New_York"},` + theme + `}`
+	if rec := post(h, "/api/desktop", ok, c); rec.Code != http.StatusOK {
+		t.Fatalf("save: %d %s", rec.Code, rec.Body)
+	}
+	for _, bad := range []string{
+		strings.Replace(ok, `"analog"`, `"sundial"`, 1),
+		strings.Replace(ok, `America/New_York`, `../../etc/passwd`, 1),
+		strings.Replace(ok, `#16a34a`, `red;}`, 1),
+		strings.Replace(ok, `"scale":110`, `"scale":300`, 1),
+		strings.Replace(ok, `"name":"Mine"`, `"name":" "`, 1),
+		strings.Replace(ok, `"preset":"forest"`, `"preset":"neon"`, 1),
+	} {
+		if rec := post(h, "/api/desktop", bad, c); rec.Code != http.StatusUnprocessableEntity {
+			t.Fatalf("accepted (%d): %s", rec.Code, bad)
+		}
+	}
+}

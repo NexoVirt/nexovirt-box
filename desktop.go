@@ -21,6 +21,14 @@ type widgetPref struct {
 	On bool   `json:"on"`
 }
 
+type clockPrefs struct {
+	Style    string `json:"style"`    // large, seconds, analog, minimal
+	Hours    string `json:"hours"`    // auto, 12, 24
+	Date     string `json:"date"`     // long, short, numeric, off
+	Greeting bool   `json:"greeting"` // greeting line under the date
+	TZ2      string `json:"tz2"`      // optional second time zone (IANA name), "" = off
+}
+
 type desktopPrefs struct {
 	Wallpaper string       `json:"wallpaper"`
 	Dim       int          `json:"dim"`  // 0..80 % darkening over the wallpaper
@@ -28,6 +36,8 @@ type desktopPrefs struct {
 	Widgets   []widgetPref `json:"widgets"`
 	Order     []string     `json:"order"`  // tile ids: app ids and sys-* tiles
 	Hidden    []string     `json:"hidden"` // hidden system tiles
+	Clock     clockPrefs   `json:"clock"`
+	Theme     *themePrefs  `json:"theme,omitempty"`
 	CustomV   int64        `json:"custom_v"`
 }
 
@@ -35,12 +45,19 @@ var (
 	wallpapers = map[string]bool{"auto": true, "graphite": true, "midnight": true, "mist": true, "sand": true, "forest": true, "dunes": true, "hills": true, "custom": true}
 	widgetIDs  = map[string]bool{"clock": true, "system": true, "storage": true, "network": true, "disks": true}
 	tileID     = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,62}$`)
+	tzName     = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9_+-]*(/[A-Za-z0-9_+-]+){0,2}$`)
+	clockEnums = map[string]map[string]bool{
+		"style": {"large": true, "seconds": true, "analog": true, "minimal": true},
+		"hours": {"auto": true, "12": true, "24": true},
+		"date":  {"long": true, "short": true, "numeric": true, "off": true},
+	}
 )
 
 const maxWallpaper = 8 << 20
 
 func defaultDesktop() desktopPrefs {
 	return desktopPrefs{Wallpaper: "auto", Dim: 0, Blur: 0, Order: []string{}, Hidden: []string{},
+		Clock:   clockPrefs{Style: "large", Hours: "auto", Date: "long", Greeting: true},
 		Widgets: []widgetPref{{"clock", true}, {"system", true}, {"storage", true}, {"network", true}, {"disks", true}}}
 }
 
@@ -50,6 +67,18 @@ func (p *desktopPrefs) validate() error {
 	}
 	if p.Dim < 0 || p.Dim > 80 || p.Blur < 0 || p.Blur > 40 {
 		return userError{"Dim goes from 0 to 80 and blur from 0 to 40."}
+	}
+	c := p.Clock
+	if !clockEnums["style"][c.Style] || !clockEnums["hours"][c.Hours] || !clockEnums["date"][c.Date] {
+		return userError{"Pick one of the clock options."}
+	}
+	if c.TZ2 != "" && (len(c.TZ2) > 64 || !tzName.MatchString(c.TZ2)) {
+		return userError{"Pick a time zone from the list."}
+	}
+	if p.Theme != nil {
+		if err := p.Theme.validate(); err != nil {
+			return err
+		}
 	}
 	seen := map[string]bool{}
 	for _, w := range p.Widgets {
@@ -74,7 +103,7 @@ func (p *desktopPrefs) validate() error {
 func (a *App) loadDesktop(id int64) desktopPrefs {
 	p := defaultDesktop()
 	if raw := a.store.desktop(id); raw != "" && raw != "{}" {
-		var saved desktopPrefs
+		saved := defaultDesktop() // fields saved by an older version keep their defaults
 		if json.Unmarshal([]byte(raw), &saved) == nil && saved.validate() == nil {
 			p = saved
 		}
@@ -105,7 +134,13 @@ func (a *App) desktopGet(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) desktopSave(w http.ResponseWriter, r *http.Request) {
 	id, _ := a.currentUser(r)
-	var in desktopPrefs
+	cur := a.loadDesktop(id)
+	in := cur // fields left out of the request keep their saved value
+	in.Theme = nil
+	if cur.Theme != nil {
+		t := *cur.Theme
+		in.Theme = &t
+	}
 	r.Body = http.MaxBytesReader(nil, r.Body, 64<<10)
 	dec := json.NewDecoder(r.Body)
 	dec.DisallowUnknownFields()
@@ -117,7 +152,7 @@ func (a *App) desktopSave(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err.Error())
 		return
 	}
-	in.CustomV = a.loadDesktop(id).CustomV // only an upload changes it
+	in.CustomV = cur.CustomV // only an upload changes it
 	if in.Wallpaper == "custom" && in.CustomV == 0 {
 		writeError(w, http.StatusUnprocessableEntity, "Upload a picture first.")
 		return
