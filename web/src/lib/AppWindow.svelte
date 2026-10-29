@@ -44,6 +44,7 @@
   let grab = null;
   function barDown(e) {
     if (!isFloat || e.button !== 0 || e.target.closest('button')) return;
+    e.preventDefault(); // no text selection while dragging
     grab = { dx: e.clientX - w.rect.x, dy: e.clientY - w.rect.y };
     e.currentTarget.setPointerCapture(e.pointerId);
   }
@@ -59,6 +60,7 @@
   let size = null;
   function sizeDown(e, dir) {
     if (e.button !== 0) return;
+    e.preventDefault();
     size = { dir, x: e.clientX, y: e.clientY, w: w.rect.w, h: w.rect.h };
     e.currentTarget.setPointerCapture(e.pointerId);
   }
@@ -75,6 +77,7 @@
     const t = e.target;
     if (t?.closest?.('input, textarea, select, [contenteditable], .xterm')) return;
     if (document.querySelector('[aria-modal="true"], .ctx, .pop.open')) return;
+    e.preventDefault(); // one Escape closes one window, not the next one that comes to the front
     onClose();
   }
 

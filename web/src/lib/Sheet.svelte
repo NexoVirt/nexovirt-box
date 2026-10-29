@@ -88,12 +88,12 @@
 
 <style>
   .scrim {
-    position: fixed; inset: 0; z-index: 40; background: var(--scrim); opacity: 0;
+    position: fixed; inset: 0; z-index: 50; background: var(--scrim); opacity: 0;
     transition: opacity 300ms ease;
   }
   .scrim.open { opacity: 1; }
   .sheet {
-    position: fixed; z-index: 41; left: 0.5rem; right: 0.5rem; bottom: 0.5rem;
+    position: fixed; z-index: 51; left: 0.5rem; right: 0.5rem; bottom: 0.5rem;
     padding-bottom: env(safe-area-inset-bottom, 0px);
     border-radius: 1.75rem; background: var(--material); box-shadow: var(--shadow-float);
     touch-action: none; will-change: transform;

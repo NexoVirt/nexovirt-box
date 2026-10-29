@@ -1,7 +1,7 @@
 <script>
   // The desktop: wallpaper, frosted widgets on the left, search and the app grid on the right.
-  // Tiles are the installed apps (once, in the Apps group, ending with the Manage apps tile that
-  // opens the Apps window) and the Box tools in the System dock (Files, Monitor, Terminal, Backups, Settings).
+  // Tiles are the installed apps (once, in the Apps group) and the Box tools in the System dock
+  // (Apps window with Installed and App Store, Files, Monitor, Terminal, Backups, Settings).
   // Click opens, right-click or long-press shows actions, dragging reorders (saved on the server).
   import { onMount, tick } from 'svelte';
   import { flip } from 'svelte/animate';
@@ -40,6 +40,7 @@
   let { system, username = '', onSessionLost, onNavigate, inert = false } = $props();
 
   const SYSTEM = [
+    { id: 'sys-apps', name: 'Apps', icon: LayoutGrid, to: '/apps/installed', hint: 'Installed apps and the App Store' },
     { id: 'sys-files', name: 'Files', icon: FolderOpen, to: '/files', hint: 'Browse and upload files' },
     { id: 'sys-monitor', name: 'Monitor', icon: Gauge, to: '/monitor', hint: 'Live charts for CPU, memory and network' },
     { id: 'sys-terminal', name: 'Terminal', icon: SquareTerminal, to: '/console', hint: 'Root shell in the browser' },
@@ -83,9 +84,10 @@
   const onDark = $derived(wall.tone === 'dark' || (prefs?.dim ?? 0) >= 45);
   $effect(() => { if (wall.id === 'custom') measureTone(wall.image); });
 
-  // Two groups in the saved order: Box's own tools (System) and the installed apps. New ones go last.
+  // Two groups in the saved order: Box's own tools (System) and the installed apps. New ones go last,
+  // except the Apps window tile, which leads the dock until it is moved.
   const pos = $derived(new Map((prefs?.order || []).map((id, i) => [id, i])));
-  const sorted = (list) => list.map((t, i) => ({ t, k: pos.has(t.id) ? pos.get(t.id) : 10000 + i })).sort((a, b) => a.k - b.k).map((x) => x.t);
+  const sorted = (list) => list.map((t, i) => ({ t, k: pos.has(t.id) ? pos.get(t.id) : t.id === 'sys-apps' ? -1 : 10000 + i })).sort((a, b) => a.k - b.k).map((x) => x.t);
   const sysTiles = $derived.by(() => {
     const hidden = new Set(prefs?.hidden || []);
     return sorted(SYSTEM.filter((s) => !hidden.has(s.id)).map((s) => ({ ...s, sys: true, group: 'sys' })));
@@ -420,12 +422,6 @@
             </button>
           </div>
         {/each}
-        <div class="cell">
-          <button class="dtile glass" onclick={(e) => go(apps.length ? '/apps/installed' : '/apps', e.currentTarget)} title="Installed apps and the App Store">
-            <span class="ico app accent"><LayoutGrid /></span>
-            <span class="name">Manage apps</span>
-          </button>
-        </div>
       {/if}
     </div>
     {#if apps && !apps.length}

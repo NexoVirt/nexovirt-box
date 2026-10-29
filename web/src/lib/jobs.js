@@ -72,7 +72,7 @@ export function plainText(s = '') {
 // "version-12.2" or "v1.2" read as "12.2" / "1.2".
 // A digest reads as "latest" (the full value goes in a tooltip).
 export function versionLabel(v = '') {
-  if (isDigest(v)) return 'latest';
+  if (isDigest(v)) return 'sha256:' + v.replace(/^sha256:/i, '').slice(0, 12);
   return v.replace(/^(version-|v(?=\d))/i, '');
 }
 

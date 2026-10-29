@@ -216,7 +216,7 @@
   let nextSched = $derived((data?.schedules || []).filter((s) => s.enabled && s.next_run).sort((a, b) => a.next_run - b.next_run)[0]);
   let weekAgo = $derived(Date.now() / 1000 - 7 * 86400);
   let recentFailed = $derived((data?.history || []).filter((r) => r.status === 'failed' && r.at > weekAgo));
-  let history = $derived(histStatus ? (data?.history || []).filter((r) => r.status === histStatus) : data?.history || []);
+  let histRows = $derived(histStatus ? (data?.history || []).filter((r) => r.status === histStatus) : data?.history || []);
 
   const ARCH_COLS = [
     { key: 'app', label: 'App', primary: true, sortable: true, value: (a) => appName(a.app) },
@@ -434,7 +434,7 @@
       {/snippet}
     </DataTable>
   {:else}
-    <DataTable fill label="Backup activity" columns={HIST_COLS} rows={history} key="id" bind:sort={histSort}
+    <DataTable fill label="Backup activity" columns={HIST_COLS} rows={histRows} key="id" bind:sort={histSort}
       searchable placeholder="Search activity" actions={histActions}
       empty={{ icon: History, title: histStatus ? 'Nothing failed' : 'Nothing happened yet', text: histStatus ? '' : 'Backups, restores and checks show up here.' }}>
       {#snippet toolbar()}

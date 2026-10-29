@@ -24,17 +24,9 @@
   let code = $state('');
   let pwInput = $state();
   let closedReason = $state('');
-  let height = $state(480);
 
   let term, fit, ws;
   const enc = new TextEncoder();
-
-  // The terminal fills the window below the header (xterm needs a sized box to fit into).
-  function measure() {
-    if (!host) return;
-    const top = host.getBoundingClientRect().top + window.scrollY;
-    height = Math.max(320, window.innerHeight - top - 48);
-  }
 
   function sendResize() {
     if (ws && ws.readyState === WebSocket.OPEN) {
@@ -42,9 +34,10 @@
     }
   }
 
+  // The terminal fills its window; a resize of the window (or of the browser) refits it.
   async function onWindowResize() {
-    measure();
     await tick();
+    if (!host?.clientHeight) return;
     fit.fit();
     sendResize();
   }
@@ -116,16 +109,19 @@
     });
     // Size the box first, then fit the terminal into it and connect with the real size.
     onWindowResize().then(open);
-    addEventListener('resize', onWindowResize);
+    let raf = 0;
+    const ro = new ResizeObserver(() => { cancelAnimationFrame(raf); raf = requestAnimationFrame(onWindowResize); });
+    ro.observe(host);
     return () => {
-      removeEventListener('resize', onWindowResize);
+      ro.disconnect();
+      cancelAnimationFrame(raf);
       ws && ws.close();
       term.dispose();
     };
   });
 </script>
 
-<div class="page">
+<div class="page fill console">
   <header class="page-head">
     <div>
       <h1 class="t-large">Console</h1>
@@ -149,10 +145,10 @@
     <div class="notice neutral"><Unplug size={18} /><span>{closedReason}</span></div>
   {/if}
 
-  <div class="term tile">
-    <div bind:this={host} style:height="{height}px" class:hidden={status === 'reauth'}></div>
+  <div class="term">
+    <div class="host" bind:this={host} class:hidden={status === 'reauth'}></div>
     {#if status === 'reauth'}
-      <form class="unlock" onsubmit={unlock} style:height="{height}px">
+      <form class="unlock" onsubmit={unlock}>
         <span class="ico xl accent lock"><LockKeyhole /></span>
         <h2 class="t-title">Confirm it is you</h2>
         <p class="t-sub">The console is a root shell. Enter your password{needsCode ? ' and a code from your authenticator app' : ''} to open it.</p>
@@ -175,16 +171,22 @@
   h2, p { margin: 0; }
   .actions { display: flex; align-items: center; gap: 0.5rem; }
   /* Always a dark card: the dark tokens apply inside it in both modes. */
+  /* Edge to edge in its window: a slim header, then the dark terminal down to the window's edges. */
+  .console { gap: 0; }
+  .console .page-head { padding: 0.625rem 1.25rem; align-items: center; box-shadow: 0 1px 0 var(--hairline); }
+  .console .notice { margin: 0.75rem 1.25rem; }
   .term {
-    position: relative; padding: 0.875rem 0.5rem 0.5rem 1rem; overflow: hidden; color-scheme: dark;
+    position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column;
+    padding: 0.75rem 0.5rem 0.5rem 1rem; overflow: hidden; color-scheme: dark;
     --surface: #18181b; --text: #fafafa; --text-2: #a1a1aa; --text-3: #71717a; --fill: rgba(161, 161, 170, 0.14);
     --accent: #60a5fa; --accent-fill: rgba(96, 165, 250, 0.16); --on-accent: #09090b; --error: #f87171; --error-fill: rgba(248, 113, 113, 0.12);
-    background: #18181b; color: var(--text); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), var(--shadow-tile);
+    background: #18181b; color: var(--text);
   }
+  .host { flex: 1; min-height: 0; }
   .hidden { visibility: hidden; position: absolute; }
   .unlock {
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.75rem;
-    max-width: 22rem; margin: 0 auto; text-align: center;
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.75rem;
+    width: min(22rem, 100%); margin: 0 auto; text-align: center;
   }
   .unlock h2, .unlock p { margin: 0; }
   .unlock .notice { width: 100%; text-align: left; }

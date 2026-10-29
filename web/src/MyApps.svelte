@@ -294,12 +294,17 @@
       {#each apps as app (app.id)}
         {@const [, tone] = STATES[app.state] || STATES.unknown}
         {@const working = busyOf(app)}
-        {@const facts = [app.custom ? 'Own app' : app.version && `Version ${versionLabel(app.version)}`, app.domain || (app.main_port && `Port ${app.main_port}`)].filter(Boolean).join('  ·  ')}
+        {@const where = app.domain || (app.main_port && `Port ${app.main_port}`) || ''}
+        {@const version = !app.custom && app.version ? versionLabel(app.version) : ''}
         <div class="row app" class:marked={marked === app.id} id="app-{app.id}">
           <AppIcon id={app.id} name={app.name} size={42} icon={app.icon} />
           <div class="main">
             <span class="t-head truncate">{app.name}</span>
-            <span class="t-caption truncate" title={isDigest(app.version) ? `Image digest ${app.version}` : facts}>{facts}</span>
+            <span class="t-caption facts">
+              {#if app.custom}<span>Own app</span>{:else if version}<span class="ver" title={isDigest(app.version) ? `Image digest ${app.version}` : `Version ${app.version}`}>Version {version}</span>{/if}
+              {#if where && (app.custom || version)}<span aria-hidden="true">·</span>{/if}
+              {#if where}<span class="truncate">{where}</span>{/if}
+            </span>
           </div>
           <span class="state t-caption">
             {#if working}<Loader size={14} class="spinner" />{BUSY_LABEL[working] || 'Working'}
@@ -419,13 +424,19 @@
   .skeleton.sq { width: 42px; height: 42px; border-radius: 10px; }
   .skeleton.line { display: block; width: 40%; height: 0.8rem; }
   /* A plain list on the window surface: rows split by hairlines, nothing behind them. */
-  .list { display: grid; }
-  .list .row { padding: 0.75rem 0.25rem; min-height: 4.25rem; }
+  /* One grid for all rows (subgrid), so states and actions line up even when a row has no Open. */
+  .list { display: grid; grid-template-columns: 42px minmax(0, 1fr) 9.5rem max-content; column-gap: 0.875rem; }
+  .list .row { grid-column: 1 / -1; padding: 0.75rem 0.25rem; min-height: 4.25rem; }
+  .list .row.app { display: grid; grid-template-columns: subgrid; align-items: center; }
   .list .row + .row::before { left: calc(42px + 1.125rem); }
+  .facts { display: flex; align-items: center; gap: 0.375rem; min-width: 0; white-space: nowrap; }
+  .facts > span { flex-shrink: 0; }
+  .facts > .truncate { flex-shrink: 1; min-width: 0; }
+  .ver { flex-shrink: 1 !important; min-width: 0; max-width: 18rem; overflow: hidden; text-overflow: ellipsis; }
   .app { gap: 0.875rem; border-radius: var(--r-control); }
   .app.marked { background: var(--accent-fill); transition: background-color 600ms ease; }
   .main { display: grid; gap: 0.125rem; min-width: 0; flex: 1; }
-  .state { display: inline-flex; align-items: center; gap: 0.4rem; white-space: nowrap; width: 9.5rem; flex-shrink: 0; min-width: 0; }
+  .state { display: inline-flex; align-items: center; gap: 0.4rem; white-space: nowrap; min-width: 0; }
   .acts { display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem; flex-shrink: 0; }
   .more { position: relative; }
   .pop-item {
@@ -448,9 +459,9 @@
   .buttons { display: flex; justify-content: flex-end; gap: 0.5rem; }
 
   @media (max-width: 639px) {
-    .list .row { flex-wrap: wrap; }
-    .main { flex-basis: calc(100% - 42px - 0.875rem); }
-    .state { width: auto; flex: 1; margin-left: calc(42px + 0.875rem); }
+    .list { grid-template-columns: 42px minmax(0, 1fr) max-content; row-gap: 0.375rem; }
+    .main { grid-column: 2 / -1; }
+    .state { grid-column: 2; }
     .open { width: 2.25rem; padding: 0; }
     .open-text { display: none; }
   }

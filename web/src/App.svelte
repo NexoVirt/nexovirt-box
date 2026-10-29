@@ -43,9 +43,9 @@
   // their own content; size is the default (centred, remembered once moved or resized).
   const KINDS = {
     apps: { title: 'Apps', fill: true, flush: true, size: [1100, 740], load: () => import('./AppManager.svelte') },
-    files: { title: 'Files', fill: true, size: [1120, 720], load: () => import('./Files.svelte') },
+    files: { title: 'Files', fill: true, flush: true, size: [1120, 720], load: () => import('./Files.svelte') },
     monitor: { title: 'Monitor', size: [1040, 720], load: () => import('./Monitor.svelte') },
-    console: { title: 'Terminal', size: [940, 600], load: () => import('./Console.svelte') },
+    console: { title: 'Terminal', fill: true, flush: true, size: [940, 600], load: () => import('./Console.svelte') },
     backups: { title: 'Backups', fill: true, size: [1080, 720], load: () => import('./Backups.svelte') },
     settings: { title: 'Settings', fill: true, flush: true, size: [1080, 720], load: () => import('./SettingsView.svelte') },
     logs: { title: 'Logs', fill: true, size: [1000, 660], load: () => import('./AppLogs.svelte') },
@@ -341,11 +341,11 @@
   .bell-empty { margin: 0; padding: 0.75rem 0.5rem; }
   .all { justify-content: space-between; margin-top: 0.25rem; }
   .dockrow {
-    position: fixed; left: 50%; bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); z-index: 25; transform: translateX(-50%);
-    display: flex; gap: 0.5rem; max-width: calc(100vw - 2rem); overflow-x: auto; padding: 0.25rem; scrollbar-width: none;
+    position: fixed; left: 50%; bottom: env(safe-area-inset-bottom, 0px); z-index: 49; transform: translateX(-50%);
+    display: flex; gap: 0.5rem; max-width: 100vw; overflow-x: auto; padding: 1rem 1rem 1.25rem; scrollbar-width: none; pointer-events: none;
   }
   .parked {
-    flex-shrink: 0; display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.75rem; padding: 0 1.125rem; border: 0; border-radius: 999px;
+    flex-shrink: 0; display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.75rem; padding: 0 1.125rem; border: 0; border-radius: 999px; pointer-events: auto;
     background: var(--material); color: var(--text); font: inherit; font-weight: 600; cursor: pointer; box-shadow: var(--shadow-float);
     animation: rise 320ms var(--spring);
   }
