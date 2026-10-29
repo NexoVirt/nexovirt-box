@@ -36,6 +36,8 @@ embedded.
 - Tables: every table is `lib/DataTable.svelte` (card, sticky header, sortable columns, search + toolbar snippet, row
   actions menu, selection, expandable rows, client or server paging, loading/error/empty states, stacked rows on
   phones; `fill` inside `FILL` pages). Never write ad-hoc `<table>` markup in a page.
+- Logo: `docs/branding/` (mark `box-mark.svg` in currentColor, app icon `box-icon.svg` = favicon, PNGs, social card).
+  In the UI only the mark is used (`lib/Logo.svelte`: sign-in, top bar, Settings > About), never the tile on a plate.
 - Colours: zinc neutrals with ONE blue accent `--accent` (#2563eb light, #60a5fa dark, same as the NexoVirt panel).
   Status colours `--ok`/`--warn`/`--error` only for gauges, bars and dots (gauges use the accent until 75 %).
 - No gradients. No coloured card status strips or borders. No em dashes anywhere (code, UI, docs, commits).

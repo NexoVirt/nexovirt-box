@@ -21,6 +21,7 @@
   import Popover from '$lib/Popover.svelte';
   import Toaster from '$lib/Toaster.svelte';
   import Segmented from '$lib/Segmented.svelte';
+  import Logo from '$lib/Logo.svelte';
   import LogOut from '@lucide/svelte/icons/log-out';
   import RefreshCw from '@lucide/svelte/icons/refresh-cw';
   import CircleAlert from '@lucide/svelte/icons/circle-alert';
@@ -216,6 +217,7 @@
 {:else}
   <header class="topbar glass blur" inert={covered && phone}>
     <div class="side">
+      <span class="brand"><Logo size={20} /></span>
       <div class="anchor">
         <button class="bar-btn account" onclick={() => (userOpen = !userOpen)} aria-haspopup="menu" aria-expanded={userOpen} aria-label="Account: {state.username}">
           <span class="avatar">{initials || '?'}</span>
@@ -307,6 +309,7 @@
   }
   .side { display: flex; align-items: center; gap: 0.125rem; }
   .anchor { position: relative; }
+  .brand { display: grid; place-items: center; width: 2.25rem; height: 2.75rem; color: var(--text); }
   .bar-btn {
     position: relative; display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border: 0; border-radius: 50%;
     background: none; color: var(--text); cursor: pointer; transition: background-color 150ms ease, transform 100ms ease-out;

@@ -1,6 +1,9 @@
 <div align="center">
 
-<img src="web/public/favicon.svg" width="72" alt="">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/branding/box-mark-white.svg">
+  <img src="docs/branding/box-mark-dark.svg" width="72" alt="NexoVirt Box">
+</picture>
 
 # NexoVirt Box
 

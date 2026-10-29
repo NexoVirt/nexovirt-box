@@ -6,6 +6,7 @@
   import { createPasskey, friendly, passkeysSupported } from '$lib/webauthn.js';
   import { ago } from '$lib/format.js';
   import Dialog from '$lib/Dialog.svelte';
+  import Logo from '$lib/Logo.svelte';
   import Smartphone from '@lucide/svelte/icons/smartphone';
   import KeyRound from '@lucide/svelte/icons/key-round';
   import LifeBuoy from '@lucide/svelte/icons/life-buoy';
@@ -577,6 +578,11 @@
           </section>
 
         {:else}
+          <div class="about-head">
+            <Logo size={64} />
+            <span class="t-title">NexoVirt Box</span>
+            <span class="t-caption">A web desktop for your own server</span>
+          </div>
           <section class="group">
             <div class="row"><span class="row-label">NexoVirt Box</span><span class="row-value num">{updates?.box.current ?? '-'}</span></div>
             <div class="row"><span class="row-label">Server</span><span class="row-value">{system?.hostname ?? '-'}</span></div>
@@ -655,6 +661,8 @@
 </Dialog>
 
 <style>
+  .about-head { display: grid; justify-items: center; gap: 0.375rem; padding: 1rem 0 0.75rem; text-align: center; color: var(--text); }
+  .about-head .t-title { margin-top: 0.375rem; }
   .sessions { margin-top: 1.25rem; }
   .who { display: flex; align-items: center; gap: 0.625rem; min-width: 0; max-width: 100%; }
   .muted { color: var(--text-2); }
