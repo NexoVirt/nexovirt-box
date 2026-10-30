@@ -560,7 +560,7 @@ func (h *helperServer) systemReboot(req helperRequest, logf func(string)) (any, 
 // installable is the fixed list of packages Box may install on request.
 var installable = map[string]string{
 	"smart": "smartmontools", "samba": "samba", "nfs": "nfs-kernel-server", "unattended": "unattended-upgrades",
-	"avahi": "avahi-daemon avahi-utils",
+	"avahi": "avahi-daemon avahi-utils", "wireguard": "wireguard-tools",
 }
 
 func (h *helperServer) pkgInstall(ctx context.Context, req helperRequest, logf func(string)) (any, error) {
