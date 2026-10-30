@@ -74,8 +74,9 @@ func bindYAML(configJSON []byte, port int) ([]byte, bool, error) {
 			if n == port && proto(p) == "tcp" {
 				ip = "127.0.0.1"
 			}
-			if ip == "" {
-				ip = "0.0.0.0"
+			if ip == "" { // every address, IPv4 and IPv6, as Docker does without one
+				fmt.Fprintf(&b, "      - \"%d:%d/%s\"\n", n, p.Target, proto(p))
+				continue
 			}
 			if net.ParseIP(ip) == nil {
 				return nil, false, nil
@@ -99,7 +100,7 @@ func proto(p portEntry) string {
 
 var (
 	bindServiceLine = regexp.MustCompile(`^  [a-zA-Z0-9][a-zA-Z0-9_.-]{0,62}:$`)
-	bindPortLine    = regexp.MustCompile(`^      - "(?:\d{1,3}(?:\.\d{1,3}){3}|\[[0-9a-fA-F:.]+\]):\d{1,5}:\d{1,5}/(?:tcp|udp)"$`)
+	bindPortLine    = regexp.MustCompile(`^      - "(?:(?:\d{1,3}(?:\.\d{1,3}){3}|\[[0-9a-fA-F:.]+\]):)?\d{1,5}:\d{1,5}/(?:tcp|udp)"$`)
 )
 
 // checkBindFile makes sure a bind.yaml (it can come back from a backup) only rebinds ports.

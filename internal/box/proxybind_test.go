@@ -14,7 +14,7 @@ func TestBindYAMLLoopbackOnlyForTheProtectedPort(t *testing.T) {
 	if err != nil || !ok {
 		t.Fatal(ok, err)
 	}
-	want := "services:\n  web:\n    ports: !override\n      - \"127.0.0.1:8080:80/tcp\"\n      - \"0.0.0.0:8443:443/tcp\"\n"
+	want := "services:\n  web:\n    ports: !override\n      - \"127.0.0.1:8080:80/tcp\"\n      - \"8443:443/tcp\"\n"
 	if !strings.HasSuffix(string(b), want) || strings.Contains(string(b), "db:") {
 		t.Fatalf("got\n%s", b)
 	}

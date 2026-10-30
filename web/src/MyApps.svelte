@@ -33,6 +33,7 @@
   import Globe from '@lucide/svelte/icons/globe';
   import Undo2 from '@lucide/svelte/icons/undo-2';
   import Gauge from '@lucide/svelte/icons/gauge';
+  import Copy from '@lucide/svelte/icons/copy';
   import CalendarClock from '@lucide/svelte/icons/calendar-clock';
 
   let { onSessionLost, onNavigate } = $props();
@@ -42,7 +43,7 @@
     stopped: ['Stopped', ''], exited: ['Stopped with an error', 'error'], not_created: ['Not started yet', ''],
     interrupted: ['Install interrupted', 'warn'], unknown: ['Unknown', ''],
   };
-  const DONE = { start: 'started', stop: 'stopped', restart: 'restarted', update: 'updated', install: 'installed', retry: 'installed', uninstall: 'removed', backup: 'backed up', restore: 'restored', verify: 'backup checked', edit: 'redeployed', rollback: 'rolled back' };
+  const DONE = { start: 'started', stop: 'stopped', restart: 'restarted', update: 'updated', install: 'installed', retry: 'installed', uninstall: 'removed', backup: 'backed up', restore: 'restored', verify: 'backup checked', edit: 'redeployed', rollback: 'rolled back', clone: 'cloned' };
   // Down although nobody stopped it.
   const DOWN = ['exited', 'partial', 'restarting', 'stopped', 'not_created'];
 
@@ -69,6 +70,7 @@
   let catFor = $state(null), catOpen = $state(false);
   let socketFor = $state(null), socketOpen = $state(false), socketBusy = $state(false); // { app, op }
   let rollFor = $state(null), rollOpen = $state(false);
+  let cloneFor = $state(null), cloneOpen = $state(false), cloneName = $state(''), clonePort = $state(''), cloneBusy = $state(false), cloneLines = $state([]), cloneError = $state('');
   let limFor = $state(null), limOpen = $state(false), limCpu = $state(''), limMem = $state(''), limBusy = $state(false), limLines = $state([]), limError = $state('');
   let noCopyFor = $state(null), noCopyOpen = $state(false), noCopyMsg = $state('');
   let auto = $state({}), autoFor = $state(null), autoOpen = $state(false), autoForm = $state({ on: false, from: '03:00', to: '05:00' }), autoBusy = $state(false);
@@ -179,6 +181,25 @@
     if (job.status !== 'done') { limError = job.error; return; }
     limOpen = false;
     toast(`Limits for ${limFor.name} saved.`, 'success');
+    load();
+  }
+
+  function openClone(e, app) {
+    menu = null;
+    origin = { x: e.clientX, y: e.clientY };
+    cloneFor = app; cloneName = app.name + ' 2'; clonePort = ''; cloneError = ''; cloneLines = [];
+    cloneOpen = true;
+  }
+
+  async function saveClone(e) {
+    e.preventDefault();
+    cloneBusy = true; cloneError = '';
+    const job = await runJob(`/api/apps/${cloneFor.id}/clone`, { name: cloneName, port: Number(clonePort) || 0 }, (j) => (cloneLines = j.lines));
+    cloneBusy = false;
+    if (job.http === 401) return onSessionLost();
+    if (job.status !== 'done') { cloneError = job.error; return; }
+    cloneOpen = false;
+    toast(`${cloneName} is installed and running.`, 'success');
     load();
   }
 
@@ -406,6 +427,7 @@
                 {:else}<button class="pop-item" role="menuitem" onclick={(e) => showCreds(e, app)}><KeyRound size={16} />Login details</button>{/if}
                 <button class="pop-item" role="menuitem" onclick={(e) => openBackups(e, app)}><Archive size={16} />Backups</button>
                 <button class="pop-item" role="menuitem" onclick={(e) => openLimits(e, app)}><Gauge size={16} />Resource limits</button>
+                <button class="pop-item" role="menuitem" onclick={(e) => openClone(e, app)}><Copy size={16} />Clone</button>
                 <button class="pop-item" role="menuitem" onclick={(e) => showLogs(e, app)}><ScrollText size={16} />Logs</button>
                 <button class="pop-item" role="menuitem" onclick={(e) => editDomain(e, app)}><Globe size={16} />Domain and HTTPS</button>
                 <button class="pop-item danger" role="menuitem" onclick={(e) => askRemove(e, app)}><Trash2 size={16} />Uninstall</button>
@@ -432,6 +454,21 @@
       <button class="btn btn-primary" onclick={allowSocket} disabled={socketBusy}>{#if socketBusy}<Loader size={16} class="spinner" />Starting{:else}Allow and start{/if}</button>
     </div>
   </div>
+</Dialog>
+
+<Dialog bind:open={cloneOpen} label="Clone" {origin} locked={cloneBusy}>
+  <form class="dlg" onsubmit={saveClone}>
+    <h2 class="t-title">Clone {cloneFor?.name}</h2>
+    <p class="t-sub">A second, independent instance: its own name, its own data (empty, not copied) and its own ports. Settings like passwords are taken over from the original.</p>
+    {#if cloneError}<div class="notice" role="alert">{cloneError}</div>{/if}
+    <label class="field"><span class="field-label">Name</span><input class="input" bind:value={cloneName} maxlength="60" required disabled={cloneBusy} /></label>
+    <label class="field"><span class="field-label">Web port (optional)</span><input class="input" type="number" min="1" max="65535" bind:value={clonePort} placeholder="Box picks a free one" disabled={cloneBusy} /></label>
+    {#if cloneBusy}<JobLog lines={cloneLines} />{/if}
+    <div class="buttons">
+      <button type="button" class="btn btn-gray" data-close onclick={() => (cloneOpen = false)} disabled={cloneBusy}>Cancel</button>
+      <button class="btn btn-primary" disabled={cloneBusy}>{#if cloneBusy}<Loader size={16} class="spinner" />Cloning{:else}Clone{/if}</button>
+    </div>
+  </form>
 </Dialog>
 
 <Dialog bind:open={limOpen} label="Resource limits" {origin} locked={limBusy}>

@@ -580,6 +580,29 @@ func (a *App) appAction(w http.ResponseWriter, r *http.Request) {
 	a.runJob(w, r, b.Op, id, "app."+b.Op, req)
 }
 
+func (a *App) appClone(w http.ResponseWriter, r *http.Request) {
+	var in struct {
+		Name string
+		Port int
+	}
+	if err := readJSON(r, &in); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	id, newID := r.PathValue("id"), slugID(in.Name)
+	if validID(id) != nil || validID(newID) != nil || newID == "box" {
+		writeError(w, http.StatusUnprocessableEntity, "Give the clone a name with at least one letter or digit.")
+		return
+	}
+	if cat, _ := a.catalog.get(); cat != nil {
+		if _, ok := cat.Entry(newID); ok {
+			writeError(w, http.StatusUnprocessableEntity, "An app in the store already uses this name. Pick another name.")
+			return
+		}
+	}
+	a.runJob(w, r, "clone", newID, "app.clone", helperRequest{Action: "app_clone", ID: id, NewID: newID, Name: in.Name, Port: in.Port})
+}
+
 func (a *App) appUninstall(w http.ResponseWriter, r *http.Request) {
 	b, err := readAppBody(r)
 	if err != nil {
