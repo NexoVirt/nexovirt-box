@@ -10,6 +10,7 @@
   import Shield from '@lucide/svelte/icons/shield';
   import Share2 from '@lucide/svelte/icons/share-2';
   import HardDrive from '@lucide/svelte/icons/hard-drive';
+  import HeartPulse from '@lucide/svelte/icons/heart-pulse';
   import PackageCheck from '@lucide/svelte/icons/package-check';
   import Sparkles from '@lucide/svelte/icons/sparkles';
   import Archive from '@lucide/svelte/icons/archive';
@@ -32,7 +33,8 @@
       { key: 'network', label: 'Network and domains', icon: Network, hint: 'Reverse proxy, HTTPS, domains' },
       { key: 'firewall', label: 'Firewall', icon: Shield, hint: 'Open or block ports' },
       { key: 'shares', label: 'Shares', icon: Share2, hint: 'Samba, NFS and links', fill: false },
-      { key: 'disks', label: 'Disks', icon: HardDrive, hint: 'Health and SMART' },
+      { key: 'health', label: 'Health', icon: HeartPulse, hint: 'Disks, temperatures, UPS, backups' },
+      { key: 'disks', label: 'Disks', icon: HardDrive, hint: 'SMART and self-tests' },
     ],
     [
       { key: 'system-updates', label: 'System updates', icon: PackageCheck, hint: 'Operating system packages' },
@@ -49,7 +51,7 @@
   // Each section is its own chunk, loaded when it is first opened.
   const LOAD = {
     settings: () => import('./Settings.svelte'), firewall: () => import('./Firewall.svelte'), shares: () => import('./Shares.svelte'),
-    disks: () => import('./Disks.svelte'), 'system-updates': () => import('./Updates.svelte'), backups: () => import('./Backups.svelte'),
+    disks: () => import('./Disks.svelte'), health: () => import('./Health.svelte'), 'system-updates': () => import('./Updates.svelte'), backups: () => import('./Backups.svelte'),
     activity: () => import('./Activity.svelte'),
   };
   // Sections that come from the tabs of Settings.svelte.
@@ -103,7 +105,7 @@
         {/if}
         <h2 class="t-large pane-title">{current.label}</h2>
         {#key current.key + ':' + pageKey}
-          <Lazy load={LOAD[TAB[current.key] ? 'settings' : current.key]} section={TAB[current.key]} {onSessionLost} />
+          <Lazy load={LOAD[TAB[current.key] ? 'settings' : current.key]} section={TAB[current.key]} {onSessionLost} {onNavigate} />
         {/key}
       </div>
     </div>

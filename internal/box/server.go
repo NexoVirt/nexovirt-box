@@ -157,6 +157,7 @@ func (a *App) routeTable() []route {
 		{"POST /api/system/install", false, a.pkgInstall},
 		{"GET /api/disks", false, a.disksList},
 		{"GET /api/disks/summary", false, a.disksSummary},
+		{"GET /api/health", false, a.healthGet},
 		{"POST /api/disks/selftest", false, a.diskSelftest},
 		{"GET /api/shares", false, a.sharesStatus},
 		{"POST /api/shares/samba", false, a.sambaShareSave},

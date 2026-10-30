@@ -63,7 +63,7 @@ embedded.
   hidden (the title bar names it); pages put no background, border or max-width of their own on the window surface.
   Apps, Files, Terminal and Settings are `flush` (edge to edge); the terminal refits with a ResizeObserver.
 - Settings window (`SettingsView.svelte`, macOS System Settings style, list left, section right; phones drill down):
-  `/settings/<section>` for general, security, apps, network, firewall, shares, disks, system-updates, box-updates,
+  `/settings/<section>` for general, security, apps, network, firewall, shares, health, disks, system-updates, box-updates,
   backups, notifications, activity, about. `Settings.svelte` renders one section (`section` prop). Old paths redirect in
   `App.svelte` `canonical()` (/firewall, /shares, /disks, /updates, /activity, /settings#tab).
 - Performance rules: pages are separate chunks (`lib/Lazy.svelte` + dynamic import in App/SettingsView; initial JS
@@ -147,6 +147,14 @@ embedded.
   only for a device lsblk lists right now. The web side re-checks every 6 h (`watchDisks`), Home shows a warning tile
   (`GET /api/disks/summary`, cached only), and worse verdicts raise a `diskEvent` to `diskEventSink`s
   (TODO: the notifications feature registers one with `app.subscribeDiskEvents`).
+- Health (`health.go`, Settings > Health, `GET /api/health`): SMART verdicts and disk temperatures from the cached
+  `watchDisks` result, sensor temperatures (gopsutil hwmon, read by the web user), UPS through NUT (helper `ups_status`:
+  `upsc -l` then `upsc <name>`, names `^[A-Za-z0-9_.-]{1,64}$`; without upsc it says so, Box never installs NUT), and
+  the last successful backup per app (`backup_history`) plus whether it has a schedule. `healthProblems` (pure) flags
+  failing/warning disks, disks at 60 °C, sensors within 5 °C of their critical/high limit, UPS on battery/low
+  battery/replace battery, and scheduled apps without a successful backup for 8 days. `watchSystemHealth` (every 10
+  min) sends them as the `health` notification (backup problems once a day; SMART changes keep `disk_health`).
+  smartmontools is installed only from the Disks banner (the admin's click, `pkg_install`).
 - Shares (`shares.go`, state /etc/nexovirt-box/shares.json): Samba writes ONLY /etc/samba/nexovirt-box.conf plus one
   include line appended to smb.conf once; testparm failure restores the previous file. Share users are Linux system users
   Box created (nologin, no home; a name that already exists is refused) with smbpasswd. Shares use force user/group = the
