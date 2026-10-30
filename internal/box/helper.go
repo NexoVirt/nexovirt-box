@@ -63,17 +63,18 @@ type helperRequest struct {
 	Offset            int64    `json:"offset,omitempty"`
 	Overwrite         bool     `json:"overwrite,omitempty"`
 	// Backups and own apps.
-	Target   *backupTarget `json:"target,omitempty"`
-	TargetID string        `json:"target_id,omitempty"`
-	Name     string        `json:"name,omitempty"`
-	NewID    string        `json:"new_id,omitempty"`
-	Keep     keepPolicy    `json:"keep,omitempty"`
-	Key      string        `json:"key,omitempty"`
-	Compose  string        `json:"compose,omitempty"`
-	Env      string        `json:"env,omitempty"`
-	Icon     string        `json:"icon,omitempty"`
-	Allow    []string      `json:"allow,omitempty"` // own apps: confirmed risk findings
-	Limits   *appLimits    `json:"limits,omitempty"`
+	Target   *backupTarget  `json:"target,omitempty"`
+	TargetID string         `json:"target_id,omitempty"`
+	Name     string         `json:"name,omitempty"`
+	NewID    string         `json:"new_id,omitempty"`
+	Keep     keepPolicy     `json:"keep,omitempty"`
+	Key      string         `json:"key,omitempty"`
+	Compose  string         `json:"compose,omitempty"`
+	Env      string         `json:"env,omitempty"`
+	Icon     string         `json:"icon,omitempty"`
+	Allow    []string       `json:"allow,omitempty"` // own apps: confirmed risk findings
+	Limits   *appLimits     `json:"limits,omitempty"`
+	AutoCfg  *autoUpdateCfg `json:"auto_cfg,omitempty"`
 	// System updates, disks and shares.
 	Packages []string    `json:"packages,omitempty"`
 	Share    *sambaShare `json:"share,omitempty"`

@@ -123,9 +123,13 @@
     toast('The server restarts now. This page comes back when it is up again.', 'info', 12000);
   }
 
+  let autoCfg = $state(null);
+  $effect(() => { if (status?.auto?.config && !autoCfg) autoCfg = { ...status.auto.config }; });
+  const fmtRun = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+
   async function setAuto(on) {
     autoBusy = true;
-    const done = await runJob('/api/system-updates/auto', { op: on ? 'on' : 'off' });
+    const done = await runJob('/api/system-updates/auto', { op: on ? 'on' : 'off', auto: on ? autoCfg : null });
     autoBusy = false;
     if (done.http === 401) return onSessionLost();
     if (done.status !== 'done') toast(done.error || 'It could not be changed.', 'error', 9000);
@@ -230,13 +234,26 @@
           <span class="t-head">Install security updates automatically</span>
           <span class="t-caption">
             {#if status.auto.enabled && !status.auto.box}On through the server's own unattended-upgrades setup. Box leaves it as it is.
-            {:else}Uses unattended-upgrades once a day (installed when you turn it on). Only security updates, no restarts.{/if}
+            {:else}Uses unattended-upgrades once a day in the window below (installed when you turn it on). Only security updates; a restart only when you allow it.{/if}
           </span>
         </span>
         {#if autoBusy}<Loader size={18} class="spinner" />{/if}
         <input type="checkbox" class="switch" checked={status.auto.enabled} disabled={autoBusy || (status.auto.enabled && !status.auto.box)}
           onchange={(e) => setAuto(e.target.checked)} aria-label="Automatic security updates" />
       </label>
+      {#if status.auto.box && status.auto.enabled && autoCfg}
+        <div class="row auto-cfg">
+          <label class="field"><span class="field-label">Install between</span><input class="input" type="time" bind:value={autoCfg.from} disabled={autoBusy} /></label>
+          <label class="field"><span class="field-label">and</span><input class="input" type="time" bind:value={autoCfg.to} disabled={autoBusy} /></label>
+          <label class="field"><span class="field-label">Restart when needed</span>
+            <select class="input" bind:value={autoCfg.reboot} disabled={autoBusy}><option value="never">Never (I restart myself)</option><option value="needed">Yes, at the time on the right</option></select></label>
+          <label class="field"><span class="field-label">Restart at</span><input class="input" type="time" bind:value={autoCfg.reboot_at} disabled={autoBusy || autoCfg.reboot !== 'needed'} /></label>
+          <button class="btn btn-tinted btn-sm" onclick={() => setAuto(true)} disabled={autoBusy}>Save</button>
+        </div>
+      {/if}
+      {#if status.auto.enabled}
+        <div class="row t-caption">{status.auto.last?.at ? `Last automatic run: ${fmtRun.format(status.auto.last.at * 1000)}${status.auto.last.result ? ' · ' + status.auto.last.result : ''}` : 'No automatic run yet.'}{status.reboot_required ? ' A restart is needed to finish updates.' : ''}</div>
+      {/if}
     </section>
   {/if}
 </div>
@@ -307,5 +324,7 @@
   .save-bar .t-sub { margin-right: auto; }
 
   .auto { cursor: pointer; }
+  .auto-cfg { flex-wrap: wrap; align-items: flex-end; gap: 0.75rem; }
+  .auto-cfg .field { display: grid; gap: 0.25rem; }
   .plan { max-height: 10rem; overflow: auto; padding: 0.75rem 0.875rem; border-radius: var(--r-control); background: var(--fill); font-size: 0.75rem; line-height: 1.6; word-break: break-word; }
 </style>

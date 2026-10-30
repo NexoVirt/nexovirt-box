@@ -168,9 +168,99 @@ var aptReasons = map[string]string{
 	"other":   "apt reported a problem with the package sources.",
 }
 
-func autoUpdatesDropIn() string {
-	return "// Managed by NexoVirt Box (Settings: automatic security updates). Remove it there.\n" +
+// autoUpdateCfg is the time window and restart policy of automatic updates (Box's own files).
+type autoUpdateCfg struct {
+	From     string `json:"from"`      // HH:MM, start of the install window
+	To       string `json:"to"`        // HH:MM, end of the window
+	Reboot   string `json:"reboot"`    // never | needed
+	RebootAt string `json:"reboot_at"` // HH:MM, when a needed restart happens
+}
+
+var (
+	autoTimerDropIn = "/etc/systemd/system/apt-daily-upgrade.timer.d/52nexovirt-box.conf"
+	autoCfgPath     = "/etc/nexovirt-box/auto-updates.json"
+)
+
+func defaultAutoCfg() autoUpdateCfg {
+	return autoUpdateCfg{From: "04:00", To: "05:00", Reboot: "never", RebootAt: "04:30"}
+}
+
+func (c autoUpdateCfg) validate() error {
+	if !hhmmRe.MatchString(c.From) || !hhmmRe.MatchString(c.To) || c.From == c.To || !hhmmRe.MatchString(c.RebootAt) {
+		return uerr("Use times like 04:00 for the update window and the restart.")
+	}
+	if c.Reboot != "never" && c.Reboot != "needed" {
+		return uerr("Choose when the server may restart.")
+	}
+	return nil
+}
+
+// windowMinutes is the length of [from, to), across midnight when to <= from.
+func (c autoUpdateCfg) windowMinutes() int {
+	f, t := minutes(c.From), minutes(c.To)
+	if t <= f {
+		t += 24 * 60
+	}
+	return t - f
+}
+
+func autoUpdatesDropIn(c autoUpdateCfg) string {
+	s := "// Managed by NexoVirt Box (Settings: automatic security updates). Remove it there.\n" +
 		"APT::Periodic::Update-Package-Lists \"1\";\nAPT::Periodic::Unattended-Upgrade \"1\";\n"
+	if c.Reboot == "needed" {
+		s += "Unattended-Upgrade::Automatic-Reboot \"true\";\nUnattended-Upgrade::Automatic-Reboot-Time \"" + c.RebootAt + "\";\n"
+	} else {
+		s += "Unattended-Upgrade::Automatic-Reboot \"false\";\n"
+	}
+	return s
+}
+
+// autoTimer moves apt-daily-upgrade (which runs unattended-upgrades) into the window.
+func autoTimer(c autoUpdateCfg) string {
+	return "# Managed by NexoVirt Box: automatic updates run in this window.\n[Timer]\nOnCalendar=\nOnCalendar=*-*-* " + c.From +
+		":00\nRandomizedDelaySec=" + strconv.Itoa(max(c.windowMinutes()-5, 1)) + "m\nPersistent=true\n"
+}
+
+// lastAutoRun reads when unattended-upgrades last ran and how it ended.
+func lastAutoRun() map[string]any {
+	out := map[string]any{"at": int64(0), "result": ""}
+	if st, err := os.Stat("/var/lib/apt/periodic/unattended-upgrades-stamp"); err == nil {
+		out["at"] = st.ModTime().Unix()
+	}
+	b, err := os.ReadFile("/var/log/unattended-upgrades/unattended-upgrades.log")
+	if err != nil {
+		return out
+	}
+	if len(b) > 256<<10 {
+		b = b[len(b)-256<<10:]
+	}
+	out["result"] = lastAutoResult(string(b))
+	return out
+}
+
+// lastAutoResult picks the outcome of the newest run from the unattended-upgrades log.
+func lastAutoResult(log string) string {
+	lines := strings.Split(strings.TrimSpace(log), "\n")
+	for i := len(lines) - 1; i >= 0; i-- {
+		l := lines[i]
+		_, msg, ok := strings.Cut(l, " INFO ")
+		if !ok {
+			if _, m, ok2 := strings.Cut(l, " ERROR "); ok2 {
+				return "Error: " + strings.TrimSpace(m)
+			}
+			if _, m, ok2 := strings.Cut(l, " WARNING "); ok2 {
+				return "Warning: " + strings.TrimSpace(m)
+			}
+			continue
+		}
+		msg = strings.TrimSpace(msg)
+		switch {
+		case strings.HasPrefix(msg, "All upgrades installed"), strings.HasPrefix(msg, "No packages found that can be upgraded"),
+			strings.HasPrefix(msg, "Packages that will be upgraded"), strings.HasPrefix(msg, "Starting unattended upgrades"):
+			return msg
+		}
+	}
+	return ""
 }
 
 func aptCmd(ctx context.Context, args ...string) *exec.Cmd {
@@ -403,7 +493,9 @@ func autoUpdatesState() map[string]any {
 	out, _ := exec.Command("apt-config", "dump", "APT::Periodic::Unattended-Upgrade").Output()
 	on := strings.Contains(string(out), `"1"`)
 	_, installed := os.Stat("/usr/bin/unattended-upgrade")
-	return map[string]any{"enabled": on, "box": own == nil, "installed": installed == nil}
+	cfg := defaultAutoCfg()
+	readJSONFile(autoCfgPath, &cfg)
+	return map[string]any{"enabled": on, "box": own == nil, "installed": installed == nil, "config": cfg, "last": lastAutoRun()}
 }
 
 // autoUpdatesSet turns Box's own drop-in on or off. The server's own unattended-upgrades setup
@@ -420,12 +512,30 @@ func (h *helperServer) autoUpdatesSet(ctx context.Context, req helperRequest, lo
 				return nil, err
 			}
 		}
-		if err := writeFileAtomic(autoDropIn, []byte(autoUpdatesDropIn()), 0o644); err != nil {
+		cfg := defaultAutoCfg()
+		if req.AutoCfg != nil {
+			cfg = *req.AutoCfg
+		}
+		if err := cfg.validate(); err != nil {
 			return nil, err
 		}
+		if err := writeFileAtomic(autoDropIn, []byte(autoUpdatesDropIn(cfg)), 0o644); err != nil {
+			return nil, err
+		}
+		os.MkdirAll(filepath.Dir(autoTimerDropIn), 0o755)
+		if err := writeFileAtomic(autoTimerDropIn, []byte(autoTimer(cfg)), 0o644); err != nil {
+			return nil, err
+		}
+		writeJSONFile(autoCfgPath, cfg)
+		exec.CommandContext(ctx, "systemctl", "daemon-reload").Run()
+		exec.CommandContext(ctx, "systemctl", "restart", "apt-daily-upgrade.timer").Run()
 	case "off":
 		if err := os.Remove(autoDropIn); err != nil && !errors.Is(err, os.ErrNotExist) {
 			return nil, err
+		}
+		if os.Remove(autoTimerDropIn) == nil {
+			exec.CommandContext(ctx, "systemctl", "daemon-reload").Run()
+			exec.CommandContext(ctx, "systemctl", "restart", "apt-daily-upgrade.timer").Run()
 		}
 	default:
 		return nil, uerr("Choose on or off.")

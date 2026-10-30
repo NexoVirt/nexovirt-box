@@ -203,7 +203,11 @@ embedded.
   `apt_upgrade_start` (re-simulates, refuses removals, runs DETACHED as unit `nexovirt-box-apt` via systemd-run, log +
   exit code in /var/log/nexovirt-box/apt-upgrade.{log,exit}), `apt_upgrade_status` (log by byte offset),
   `system_reboot` (confirm "REBOOT", 3 s delay), ctx actions `auto_updates` (only Box's drop-in
-  /etc/apt/apt.conf.d/52nexovirt-box-auto-updates; the server's own unattended-upgrades config is read only) and
+  /etc/apt/apt.conf.d/52nexovirt-box-auto-updates with the restart policy `Unattended-Upgrade::Automatic-Reboot` and
+  `-Time`, plus a timer drop-in /etc/systemd/system/apt-daily-upgrade.timer.d/52nexovirt-box.conf that moves the run into
+  the chosen window (`OnCalendar` = start, `RandomizedDelaySec` = window length); settings in
+  /etc/nexovirt-box/auto-updates.json; the status shows the last run from the unattended-upgrades stamp and log; the
+  server's own unattended-upgrades config is read only) and
   `pkg_install` (fixed map `installable`: smartmontools, samba, nfs-kernel-server, unattended-upgrades). Package
   names: `^[a-z0-9][a-z0-9+.-]{0,127}$`, max 500, passed as separate argv after `--`.
 - Disks (`disks.go`): `disks_list` = lsblk -J -d + `smartctl --json=c -a -n standby` per disk, `parseSmart` verdict
