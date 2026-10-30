@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/fs"
 	"log"
+	"mime"
 	"net"
 	"net/http"
 	"net/url"
@@ -240,6 +241,7 @@ func (a *App) routes(ui fs.FS) http.Handler {
 
 // spa serves the built UI and falls back to index.html so client routes reload fine.
 func spa(ui fs.FS) http.Handler {
+	mime.AddExtensionType(".webmanifest", "application/manifest+json") // the installable web app
 	files := http.FileServerFS(ui)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		p := strings.TrimPrefix(r.URL.Path, "/")

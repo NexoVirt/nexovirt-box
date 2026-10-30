@@ -36,7 +36,9 @@
   import ChevronRight from '@lucide/svelte/icons/chevron-right';
   import UserRound from '@lucide/svelte/icons/user-round';
   import SearchIcon from '@lucide/svelte/icons/search';
+  import Smartphone from '@lucide/svelte/icons/smartphone';
   import CommandPalette from '$lib/CommandPalette.svelte';
+  import MobileHome from './MobileHome.svelte';
 
   const themeModes = [
     { value: 'light', label: 'Light' },
@@ -77,6 +79,8 @@
   let mode = $state(theme.mode);
   let bell = $state(null), diskWarn = $state([]);
   let paletteOpen = $state(false);
+  // The phone view (/mobile, where the installed web app starts); Desktop leaves it.
+  let mobile = $state(location.pathname === '/mobile');
   // Ctrl+K / Cmd+K opens the command palette (not while the terminal has the keys).
   function paletteKey(e) {
     if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 'k' && state?.logged_in && !e.target.closest?.('.xterm')) {
@@ -188,7 +192,7 @@
 
   onMount(() => {
     router.go = navigate;
-    if (location.pathname !== '/') navigate(here()); // a deep link opens its window
+    if (location.pathname !== '/' && !mobile) navigate(here()); // a deep link opens its window
     loadState();
     const onPop = () => { userOpen = bellOpen = false; if (location.pathname !== '/') navigate(here()); };
     addEventListener('popstate', onPop);
@@ -228,6 +232,8 @@
   <Auth mode="setup" onDone={loadState} />
 {:else if !state.logged_in}
   <Auth mode="login" onDone={loadState} />
+{:else if mobile}
+  <MobileHome {system} onSessionLost={sessionLost} onDesktop={() => { mobile = false; history.replaceState(null, '', '/'); }} />
 {:else}
   <header class="topbar glass blur" inert={covered && phone}>
     <div class="side">
@@ -246,6 +252,7 @@
             <Segmented options={themeModes} bind:value={mode} label="Appearance" />
           </div>
           <button class="pop-item" role="menuitem" onclick={(e) => openFromBar(e, '/settings/security')}><SettingsIcon size={16} />Account and security</button>
+          <button class="pop-item" role="menuitem" onclick={() => { userOpen = false; mobile = true; history.replaceState(null, '', '/mobile'); }}><Smartphone size={16} />Phone view</button>
           <button class="pop-item" role="menuitem" onclick={signOut}><LogOut size={16} />Sign out</button>
         </Popover>
       </div>
