@@ -47,6 +47,7 @@
     { id: 'sys-monitor', name: 'Monitor', icon: Gauge, to: '/monitor', hint: 'Live charts for CPU, memory and network' },
     { id: 'sys-terminal', name: 'Terminal', icon: SquareTerminal, to: '/console', hint: 'Root shell in the browser' },
     { id: 'sys-backups', name: 'Backups', icon: Archive, to: '/backups', hint: 'Back up and restore apps' },
+    { id: 'sys-logs', name: 'Logs', icon: ScrollText, to: '/logs', hint: 'Search the logs of all apps and Box' },
     { id: 'sys-settings', name: 'Settings', icon: Settings, to: '/settings', hint: 'Everything about this Box' },
   ];
   const PLACES = [

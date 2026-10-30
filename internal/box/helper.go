@@ -286,6 +286,7 @@ func (h *helperServer) actions() map[string]helperAction {
 		"local_names_status":   h.localNamesStatus,
 		"security_scan":        h.securityScan,
 		"files_find":           h.filesFind,
+		"logs_all":             h.logsAll,
 		"ssh_harden":           h.sshHarden,
 		"local_names_set":      h.localNamesSet,
 		"files_stat":           h.filesStat,
