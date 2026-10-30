@@ -72,6 +72,7 @@ type helperRequest struct {
 	Env      string        `json:"env,omitempty"`
 	Icon     string        `json:"icon,omitempty"`
 	Allow    []string      `json:"allow,omitempty"` // own apps: confirmed risk findings
+	Limits   *appLimits    `json:"limits,omitempty"`
 	// System updates, disks and shares.
 	Packages []string    `json:"packages,omitempty"`
 	Share    *sambaShare `json:"share,omitempty"`
@@ -236,6 +237,7 @@ func (h *helperServer) ctxActions() map[string]func(context.Context, helperReque
 		"custom_app_save":    h.customAppSave,
 		"pkg_install":        h.pkgInstall,
 		"auto_updates":       h.autoUpdatesSet,
+		"app_limits":         h.appLimitsSet,
 	}
 }
 
@@ -277,6 +279,7 @@ func (h *helperServer) actions() map[string]helperAction {
 		"backup_prune":         h.backupPrune,
 		"custom_app_get":       h.customAppGet,
 		"custom_app_check":     h.customAppCheck,
+		"app_stats":            h.appStats,
 		"files_stat":           h.filesStat,
 		// System updates, disks and shares (sysupdates.go, disks.go, shares.go).
 		"apt_status":         h.aptStatus,

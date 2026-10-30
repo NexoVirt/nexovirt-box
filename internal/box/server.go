@@ -91,6 +91,8 @@ func (a *App) routeTable() []route {
 		{"GET /api/jobs/{id}", false, a.jobStatus},
 		{"GET /api/apps/{id}/credentials", false, a.appCredentials},
 		{"GET /api/apps/auto-updates", false, a.autoUpdatesGet},
+		{"GET /api/apps/stats", false, a.appStats},
+		{"POST /api/apps/{id}/limits", false, a.appLimitsSave},
 		{"POST /api/apps/{id}/auto-update", false, a.autoUpdateSave},
 		{"GET /api/settings", false, a.settingsGet},
 		{"GET /api/desktop", false, a.desktopGet},

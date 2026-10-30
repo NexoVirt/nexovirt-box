@@ -397,6 +397,19 @@ func (h *helperServer) customEdit(ctx context.Context, req helperRequest, dir st
 	return meta, nil
 }
 
+// checkCustomRaw runs the raw compose and .env checks of an own app's folder.
+func checkCustomRaw(dir string) error {
+	raw, err := os.ReadFile(filepath.Join(dir, "compose.yaml"))
+	if err != nil {
+		return err
+	}
+	if err := checkOwnComposeRaw(raw); err != nil {
+		return err
+	}
+	env, _ := os.ReadFile(filepath.Join(dir, ".env"))
+	return checkOwnEnv(string(env))
+}
+
 // keepFound drops confirmations that match nothing in the config, so app.json lists only what the
 // admin really allowed.
 func keepFound(cfg []byte, p mountPolicy, allow []string) []string {

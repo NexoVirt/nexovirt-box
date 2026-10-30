@@ -42,6 +42,7 @@ const (
 	evFirewallRolled = "firewall_rollback"
 	evDiskHealth     = "disk_health"
 	evAppUpdate      = "app_update"
+	evAppResources   = "app_resources"
 )
 
 type notifyEvent struct {
@@ -57,6 +58,7 @@ var notifyEvents = []notifyEvent{
 	{evDiskHigh, "A disk is getting full", "Above the threshold below.", true},
 	{evDiskHealth, "A disk reports problems", "Its SMART health got worse (warning or failing).", true},
 	{evUpdate, "Updates are available", "For apps or for NexoVirt Box.", true},
+	{evAppResources, "An app is near its memory limit", "It uses 90 % or more of the limit you set.", true},
 	{evAppUpdate, "An automatic app update ran", "Updated, or rolled back because the app did not come up.", true},
 	{evBackupFailed, "A backup failed", "Scheduled or started by hand.", true},
 	{evBackupOK, "A backup succeeded", "One message per backup.", false},
