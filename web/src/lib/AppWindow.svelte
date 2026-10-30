@@ -167,7 +167,8 @@
     padding: 1.25rem 1.5rem 1.75rem;
   }
   .body.fill { display: flex; flex-direction: column; overflow: hidden; padding-bottom: 1rem; }
-  .body.fill > :global(*) { width: 100%; }
+  /* :where keeps this at zero specificity, so fixed overlays (menus, panels) keep their own width. */
+  :where(.body.fill) > :global(*) { width: 100%; }
   .body.flush { padding: 0; }
   .phone .body:not(.flush) { padding: 1rem max(1rem, env(safe-area-inset-right, 0px)) calc(1.5rem + env(safe-area-inset-bottom, 0px)) max(1rem, env(safe-area-inset-left, 0px)); }
 
