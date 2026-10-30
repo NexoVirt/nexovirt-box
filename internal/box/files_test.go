@@ -177,6 +177,7 @@ func TestFilesHideBoxAndSystemFiles(t *testing.T) {
 		apps + "/web1/app.json":              true,
 		apps + "/web1/.env":                  true,
 		"/var/lib/nexovirt-box/web/box.db":   true,
+		"/var/lib/nexovirt-box/backup-tmp/x": true,
 		"/var/lib/nexovirt-box/shared/media": false,
 		"/var/lib/nexovirt-box-other/x":      false,
 		"/home/me/file":                      false,
