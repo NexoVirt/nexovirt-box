@@ -9,6 +9,7 @@ import (
 	"errors"
 	"io"
 	"io/fs"
+	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -151,7 +152,7 @@ func (h *helperServer) filesList(req helperRequest, logf func(string)) (any, err
 	list := []fileEntry{}
 	for _, e := range entries {
 		info, err := e.Info()
-		if err != nil || e.Name() == trashDirName {
+		if err != nil || e.Name() == trashDirName || e.Name() == versionsDirName {
 			continue
 		}
 		fe := fileEntry{Name: e.Name(), Dir: info.IsDir(), Size: info.Size(), ModTime: info.ModTime().Unix(), Mode: info.Mode().Perm().String()}
@@ -340,6 +341,11 @@ func (h *helperServer) filesUploadFinish(req helperRequest, logf func(string)) (
 		if !req.Overwrite || st.IsDir() {
 			os.Remove(tmp)
 			return nil, uerr("%s already exists.", filepath.Base(real))
+		}
+		if _, r, err := h.resolve(filepath.Dir(real), true); err == nil {
+			if err := keepVersion(r, real, ""); err != nil { // the replaced file stays as a version (versions.go)
+				log.Printf("files: keep version of %s: %v", real, err)
+			}
 		}
 	}
 	if err := os.Rename(tmp, real); err != nil {
