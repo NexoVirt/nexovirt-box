@@ -3,6 +3,7 @@
 import { api } from './api.js';
 import { waitJob, appURL } from './jobs.js';
 import { toast } from './toast.svelte.js';
+import { withProof } from './proof.svelte.js';
 import { router } from './nav.js';
 
 export const installs = $state({}); // app id -> { name, job, status, lines, result, error, http }
@@ -32,7 +33,8 @@ function track(id, name, jobId) {
 
 // Starts an install; the result says only whether it started.
 export async function startInstall(id, name, body) {
-  const res = await api(`/api/apps/${id}/install`, { method: 'POST', body });
+  // Docker access needs the password (the server answers 428 without a fresh one).
+  const res = await (body.allow_docker_socket ? withProof : (f) => f())(() => api(`/api/apps/${id}/install`, { method: 'POST', body }));
   if (res.ok) track(id, name, res.data.job);
   return res;
 }

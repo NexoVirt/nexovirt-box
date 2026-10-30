@@ -119,6 +119,7 @@
     busy = true;
     const res = await startInstall(app.id, app.name, { answers, data_dir: dataDir.trim(), allow_docker_socket: socketOK });
     busy = false;
+    if (res.cancelled) return;
     if (res.status === 401) return onSessionLost();
     if (!res.ok) {
       error = res.error;

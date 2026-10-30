@@ -94,3 +94,20 @@ func TestSocketGate(t *testing.T) {
 		t.Fatal("apps without the socket are never asked")
 	}
 }
+
+func TestInstallSocketNeedsProof(t *testing.T) {
+	app := &catalog.App{}
+	app.DockerSocket = true
+	if installSocketCheck(app, false, func() bool { return true }) == nil {
+		t.Fatal("installed without the confirmation")
+	}
+	if installSocketCheck(app, true, func() bool { return false }) == nil {
+		t.Fatal("installed with Docker access without a password proof")
+	}
+	if installSocketCheck(app, true, func() bool { return true }) != nil {
+		t.Fatal("refused with confirmation and proof")
+	}
+	if installSocketCheck(&catalog.App{}, false, nil) != nil {
+		t.Fatal("apps without the socket are never asked")
+	}
+}

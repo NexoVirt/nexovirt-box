@@ -337,8 +337,8 @@ func (h *helperServer) appInstall(ctx context.Context, req helperRequest, logf f
 		}
 		return nil, uerr("%s is already installed.", app.Name)
 	}
-	if app.DockerSocket && !req.AllowDockerSocket {
-		return nil, uerr("%s needs access to Docker. Confirm that in the install form first.", app.Name)
+	if err := installSocketCheck(app, req.AllowDockerSocket, func() bool { return h.consoleAllowed(req) }); err != nil {
+		return nil, err
 	}
 	dataDir := filepath.Join(dir, "data")
 	customData := req.DataDir != "" && req.DataDir != dataDir

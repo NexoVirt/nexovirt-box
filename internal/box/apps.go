@@ -549,7 +549,14 @@ func (a *App) appInstall(w http.ResponseWriter, r *http.Request) {
 	if b.Retry {
 		kind = "retry"
 	}
-	a.runJob(w, r, kind, id, "app.install", helperRequest{Action: "app_install", ID: id, Answers: b.Answers, DataDir: b.DataDir, Retry: b.Retry, AllowDockerSocket: b.AllowDockerSocket})
+	req := helperRequest{Action: "app_install", ID: id, Answers: b.Answers, DataDir: b.DataDir, Retry: b.Retry, AllowDockerSocket: b.AllowDockerSocket}
+	if b.AllowDockerSocket { // Docker access is control of the server: confirmed with the password
+		if !a.needProof(w, r) {
+			return
+		}
+		req = a.proofReq(r, req)
+	}
+	a.runJob(w, r, kind, id, "app.install", req)
 }
 
 func (a *App) appAction(w http.ResponseWriter, r *http.Request) {
