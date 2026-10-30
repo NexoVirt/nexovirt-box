@@ -121,6 +121,21 @@ stays untouched; `checkConfig` refuses a `limits.yaml` with any other key (it ca
 failed recreate puts the previous file back. `app.json` `limits` mirrors it. Every 2 minutes the web process warns
 (`app_resources` notification) about apps at 90 % or more of their memory limit.
 
+## Stacks (`internal/catalog/stacks.go`, `internal/box/stacks.go`)
+
+A stack installs several catalog apps together (media, smart home, development, personal cloud). Stacks are written by
+hand in `catalog/stacks.json` (id, name, description, notes on how the apps work together, apps with optional fixed
+answers, never secrets) and copied into the signed `index.json` by `catalog.WriteDir` (so the importer, the image
+check and `cmd/catalog-resign` all keep them; apps the catalog no longer has are left out, a stack with fewer than two
+apps is dropped). Box only reads stacks from the verified index. After editing `stacks.json`, re-sign:
+`go run ./cmd/catalog-resign` (key `~/.config/nexovirt/box-catalog.key`, never committed).
+
+The App Store shows them above the apps ("Stacks"); "Install all" (`POST /api/stacks/{id}/install`, one job) runs the
+normal helper install for each app that is not installed yet, in order, with the stack's answers; it stops at the first
+failure (installed apps stay) and then shows the notes. The apps are wired through Box's shared media folder (the
+Runtipi apps mount `${ROOT_FOLDER_HOST}/media`); connections inside the apps (API keys, download clients) are explained
+in the notes, Box does not change app settings.
+
 ## Start and stop times (`appschedule.go`)
 
 App menu "Start and stop times": per weekday an optional start and stop time (server time), stored in the web setting

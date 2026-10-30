@@ -78,6 +78,7 @@ func (a *App) routeTable() []route {
 		{"GET /api/catalog", false, a.catalogList},
 		{"POST /api/catalog/sync", false, a.catalogSync},
 		{"GET /api/catalog/{id}", false, a.catalogApp},
+		{"POST /api/stacks/{id}/install", false, a.stackInstall},
 		{"GET /api/catalog/{id}/icon", false, a.catalogIcon},
 		{"GET /api/catalog/{id}/screenshot/{n}", false, a.catalogScreenshot},
 		{"GET /api/apps", false, a.appsList},
