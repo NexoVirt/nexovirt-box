@@ -9,11 +9,15 @@ import (
 	"errors"
 	"io"
 	"os"
+	"time"
 
 	"golang.org/x/sys/unix"
 )
 
-var errStopWalk = errors.New("stop")
+var (
+	errStopWalk = errors.New("stop")
+	errSkipDir  = errors.New("skip this folder") // from a walkAt callback: do not go inside
+)
 
 // beneath opens the parent of real (inside root r) and returns it with the base name.
 func beneath(r rootInfo, real string) (int, string, error) {
@@ -71,6 +75,9 @@ func walkAt(dirFD int, name, rel string, fn func(parentFD int, name, rel string,
 		return err
 	}
 	if err := fn(dirFD, name, rel, st); err != nil || !isDirMode(uint32(st.Mode)) {
+		if err == errSkipDir {
+			return nil
+		}
 		return err
 	}
 	fd, err := unix.Openat(dirFD, name, dirFlags, 0)
@@ -149,3 +156,5 @@ func copyAt(sFD int, sName string, dFD int, dName string) error {
 	}
 	return nil
 }
+
+func statMtime(st *unix.Stat_t) time.Time { return time.Unix(st.Mtim.Unix()) }

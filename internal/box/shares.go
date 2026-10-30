@@ -22,6 +22,8 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+
+	"golang.org/x/sys/unix"
 )
 
 var (
@@ -689,16 +691,19 @@ func handoverPathOK(real string, roots []string, base string) error {
 	return uerr("Only folders inside the folders Files may show can be handed over, not a top folder itself.")
 }
 
-// handoverWalk calls fn for the folder and everything below it. WalkDir never follows
-// symlinks, so a link is visited (and lchown'ed) but never what it points to.
-func handoverWalk(dir string, fn func(string) error) (int, error) {
+// handoverWalk calls fn for the folder (inside root r) and everything below it, on folder
+// descriptors: a link is visited (and lchown'ed) but never followed, also when a folder is
+// swapped for a link during the walk.
+func handoverWalk(r rootInfo, real string, fn func(parentFD int, name string, st unix.Stat_t) error) (int, error) {
+	fd, name, err := openStart(r, real)
+	if err != nil {
+		return 0, err
+	}
+	defer unix.Close(fd)
 	n := 0
-	err := filepath.WalkDir(dir, func(p string, d os.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
+	err = walkAt(fd, name, "", func(parent int, name, _ string, st unix.Stat_t) error {
 		n++
-		return fn(p)
+		return fn(parent, name, st)
 	})
 	return n, err
 }
@@ -706,7 +711,7 @@ func handoverWalk(dir string, fn func(string) error) (int, error) {
 const maxHandover = 200000
 
 func (h *helperServer) sambaHandover(req helperRequest, logf func(string)) (any, error) {
-	real, _, err := h.resolve(req.Path, true)
+	real, root, err := h.resolve(req.Path, true)
 	if err != nil {
 		return nil, err
 	}
@@ -748,7 +753,7 @@ func (h *helperServer) sambaHandover(req helperRequest, logf func(string)) (any,
 			shareUIDs[id] = true
 		}
 	}
-	owners, count, err := handoverOwners(real)
+	owners, count, err := handoverOwners(root, real)
 	if err != nil {
 		var ue userError
 		if errors.As(err, &ue) {
@@ -774,8 +779,8 @@ func (h *helperServer) sambaHandover(req helperRequest, logf func(string)) (any,
 	}
 	uid, _ := strconv.Atoi(u.Uid)
 	gid, _ := strconv.Atoi(u.Gid)
-	n, err := handoverWalk(real, func(p string) error {
-		return os.Lchown(p, uid, gid)
+	n, err := handoverWalk(root, real, func(parent int, name string, _ unix.Stat_t) error {
+		return unix.Fchownat(parent, name, uid, gid, unix.AT_SYMLINK_NOFOLLOW)
 	})
 	if err != nil {
 		return nil, uerr("Not every file could be handed over (%d done): %v", n, errors.Unwrap(err))
@@ -874,16 +879,10 @@ func handoverOwnersOK(owners map[int]int, ents []passwdEntry, shareUIDs map[int]
 }
 
 // handoverOwners counts the owners of the folder and everything below it (without following links).
-func handoverOwners(real string) (map[int]int, int, error) {
+func handoverOwners(r rootInfo, real string) (map[int]int, int, error) {
 	owners := map[int]int{}
-	n, err := handoverWalk(real, func(p string) error {
-		fi, err := os.Lstat(p)
-		if err != nil {
-			return err
-		}
-		if s, ok := fi.Sys().(*syscall.Stat_t); ok {
-			owners[int(s.Uid)]++
-		}
+	n, err := handoverWalk(r, real, func(_ int, _ string, st unix.Stat_t) error {
+		owners[int(st.Uid)]++
 		if len(owners) > 0 && n0(owners) >= maxHandover {
 			return uerr("This folder has more than %d items. Hand it over in the console instead.", maxHandover)
 		}

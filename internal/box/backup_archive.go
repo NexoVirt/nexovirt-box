@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"filippo.io/age"
+	"golang.org/x/sys/unix"
 )
 
 type backupManifest struct {
@@ -90,57 +91,58 @@ func writeArchive(w io.Writer, rcpt age.Recipient, man backupManifest, fill func
 	return nil
 }
 
-// addTree adds dir (not following symlinks) below prefix. skip gets slash paths relative to dir.
+// addTree adds dir below prefix. skip gets slash paths relative to dir. It walks on folder
+// descriptors and never follows a link, also when an app swaps a folder or file for a link while
+// the backup runs (it could otherwise pull host files into the archive).
 func addTree(tw *tar.Writer, dir, prefix string, skip func(rel string) bool) error {
-	return filepath.WalkDir(dir, func(p string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		rel, _ := filepath.Rel(dir, p)
-		rel = filepath.ToSlash(rel)
-		if rel != "." && skip != nil && skip(rel) {
-			if d.IsDir() {
-				return filepath.SkipDir
+	fd, err := unix.Open(dir, dirFlags, 0)
+	if err != nil {
+		return err
+	}
+	defer unix.Close(fd)
+	return walkAt(fd, ".", "", func(parent int, name, rel string, st unix.Stat_t) error {
+		rel = strings.TrimPrefix(rel, "/")
+		kind := st.Mode & unix.S_IFMT
+		if rel != "" && skip != nil && skip(rel) {
+			if kind == unix.S_IFDIR {
+				return errSkipDir
 			}
 			return nil
 		}
-		info, err := d.Info()
-		if err != nil {
-			return err
+		hdr := &tar.Header{Name: prefix, Mode: int64(uint32(st.Mode) & 0o7777), Uid: int(st.Uid), Gid: int(st.Gid), ModTime: statMtime(&st)}
+		if rel != "" {
+			hdr.Name = prefix + "/" + rel
 		}
-		link := ""
-		switch {
-		case info.Mode()&fs.ModeSymlink != 0:
-			link, _ = os.Readlink(p)
-		case info.Mode().IsRegular(), info.IsDir():
+		var f *os.File
+		switch kind {
+		case unix.S_IFDIR:
+			hdr.Typeflag, hdr.Name = tar.TypeDir, hdr.Name+"/"
+		case unix.S_IFLNK:
+			buf := make([]byte, 4096)
+			n, err := unix.Readlinkat(parent, name, buf)
+			if err != nil {
+				return err
+			}
+			hdr.Typeflag, hdr.Linkname = tar.TypeSymlink, string(buf[:n])
+		case unix.S_IFREG:
+			if f, err = openFileAt(parent, name); err != nil {
+				return err
+			}
+			defer f.Close()
+			info, err := f.Stat()
+			if err != nil {
+				return err
+			}
+			hdr.Typeflag, hdr.Size = tar.TypeReg, info.Size()
 		default:
 			return nil // sockets, devices and pipes are not data
 		}
-		hdr, err := tar.FileInfoHeader(info, link)
-		if err != nil {
-			return err
-		}
-		hdr.Name = prefix
-		if rel != "." {
-			hdr.Name = prefix + "/" + rel
-		}
-		if info.IsDir() {
-			hdr.Name += "/"
-		}
-		hdr.Uname, hdr.Gname = "", ""
 		if err := tw.WriteHeader(hdr); err != nil {
 			return err
 		}
-		if info.Mode().IsRegular() {
-			f, err := os.Open(p)
-			if err != nil {
-				return err
-			}
-			_, err = io.CopyN(tw, f, hdr.Size) // a file that grew is cut at its header size
-			f.Close()
-			if err != nil {
-				return err
-			}
+		if f != nil {
+			_, err := io.CopyN(tw, f, hdr.Size) // a file that grew is cut at its header size
+			return err
 		}
 		return nil
 	})
