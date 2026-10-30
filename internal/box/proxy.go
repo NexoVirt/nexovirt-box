@@ -301,6 +301,13 @@ func (h *helperServer) appDomain(req helperRequest, logf func(string)) (any, err
 		port = req.Port
 	}
 	meta.Domain, meta.TLS, meta.DomainPort, meta.Protect = domain, "", port, domain != "" && req.Confirm == "protect"
+	bindPort := meta.MainPort
+	if meta.DomainPort > 0 {
+		bindPort = meta.DomainPort
+	}
+	if err := h.applyBinding(meta, meta.Protect, bindPort, logf); err != nil {
+		return nil, err
+	}
 	if req.HTTPPort > 0 && validPort(req.HTTPPort) && ok && cfg.BoxPort != req.HTTPPort {
 		cfg.BoxPort = req.HTTPPort // the web process sends its own port
 		if b, err := json.MarshalIndent(cfg, "", "  "); err == nil {

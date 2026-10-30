@@ -135,7 +135,13 @@ embedded.
   one-time token (1 min, table `proxy_tokens`) to `https://<domain>/.nxbox-auth`, rewritten to
   `/api/proxy-auth/finish`, which sets `nxbox_proxy` for that domain only (12 h, HttpOnly, Secure). Tokens are bound
   to the domain and to the Box session they came from (sign-out ends them) and are never a Box session, so an app
-  that reads its own cookies gains nothing on Box. Redirect targets stay same-site (`safeLocalPath`).
+  that reads its own cookies gains nothing on Box. Redirect targets stay same-site (`safeLocalPath`: absolute path, no
+  `//`, no backslash or control character anywhere, `url.Parse` gives no scheme or host); the token only goes to
+  `https://<protected domain>` on the proxy's HTTPS port (`signinTarget`: no user info, no other port, rebuilt from
+  the checked parts). While protected, the app's port behind the domain is published on 127.0.0.1 only
+  (`proxybind.go`: Box-written `bind.yaml`, `ports: !override` for the services publishing it, every other port
+  unchanged, added as an extra `-f` file and checked by `checkBindFile` + `checkConfig` before the recreate; removed
+  again when the sign-in is turned off). An app that publishes the port as part of a range cannot be protected.
   Updates (`updates.go`): registry digest HEAD for apps; signed `latest.json` for Box (release key in
   `internal/catalog/key.go`, private half `~/.config/nexovirt/box-release.key`), rollback on failed health check.
 
