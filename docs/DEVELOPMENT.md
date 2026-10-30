@@ -169,6 +169,16 @@ embedded.
   only for a device lsblk lists right now. The web side re-checks every 6 h (`watchDisks`), Home shows a warning tile
   (`GET /api/disks/summary`, cached only), and worse verdicts raise a `diskEvent` to `diskEventSink`s
   (TODO: the notifications feature registers one with `app.subscribeDiskEvents`).
+- Security check (`security.go`, Settings > Security check, `GET /api/security/check`): helper `security_scan` reads
+  `sshd -T` (password sign-in, root sign-in), whether any `authorized_keys` exists, whether sshd_config includes
+  sshd_config.d, the firewall's incoming policy, pending packages and automatic updates, and Box apps publishing ports
+  on 0.0.0.0/[::]; the web side adds the user's two-step sign-in. `securityFindings` (pure) scores 100 minus 25/15/5 per
+  high/medium/low finding. Fixes: SSH (`POST /api/security/fix`, password proof checked in the helper `ssh_harden`)
+  writes only `/etc/ssh/sshd_config.d/10-nexovirt-box.conf` (PasswordAuthentication/KbdInteractiveAuthentication no,
+  or PermitRootLogin prohibit-password), refused without an SSH key for the password fix or when sshd_config does not
+  include the drop-ins, checked with `sshd -t` and reloaded, any failure restores the previous file; automatic updates
+  use the existing action. Firewall, OS updates, exposed apps and 2FA are links (no automatic change). Audited
+  `security.fix`.
 - Local names (`localnames.go`, Settings > Network, `GET|POST /api/local-names`, audited `localnames.on|off`):
   mDNS through Avahi (installed on the admin's switch via `pkg_install` op `avahi` = avahi-daemon + avahi-utils).
   Helper actions `local_names_status`, `local_names_set`; Box writes only `/etc/nexovirt-box/localnames.{json,sh}` and

@@ -5,6 +5,7 @@
   import Lazy from '$lib/Lazy.svelte';
   import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
   import ShieldCheck from '@lucide/svelte/icons/shield-check';
+  import ShieldHalf from '@lucide/svelte/icons/shield-half';
   import Package from '@lucide/svelte/icons/package';
   import Network from '@lucide/svelte/icons/network';
   import Shield from '@lucide/svelte/icons/shield';
@@ -27,6 +28,7 @@
     [
       { key: 'general', label: 'General', icon: SlidersHorizontal, hint: 'Wallpaper, appearance, name' },
       { key: 'security', label: 'Account and security', icon: ShieldCheck, hint: 'Password, two-step sign-in, sessions' },
+      { key: 'security-check', label: 'Security check', icon: ShieldHalf, hint: 'Score and fixes for this server' },
     ],
     [
       { key: 'apps', label: 'Apps and catalog', icon: Package, hint: 'Catalog address, image cleanup' },
@@ -51,7 +53,7 @@
   // Each section is its own chunk, loaded when it is first opened.
   const LOAD = {
     settings: () => import('./Settings.svelte'), firewall: () => import('./Firewall.svelte'), shares: () => import('./Shares.svelte'),
-    disks: () => import('./Disks.svelte'), health: () => import('./Health.svelte'), 'system-updates': () => import('./Updates.svelte'), backups: () => import('./Backups.svelte'),
+    disks: () => import('./Disks.svelte'), health: () => import('./Health.svelte'), 'security-check': () => import('./SecurityCheck.svelte'), 'system-updates': () => import('./Updates.svelte'), backups: () => import('./Backups.svelte'),
     activity: () => import('./Activity.svelte'),
   };
   // Sections that come from the tabs of Settings.svelte.
