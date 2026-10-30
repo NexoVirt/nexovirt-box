@@ -43,5 +43,9 @@
    "generate": true
   }
  ],
- "compose": "services:\n  umami-analytics:\n    container_name: umami-analytics\n    image: ghcr.io/umami-software/umami:3.4.1\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:3000\n    environment:\n      - DATABASE_URL=postgresql://umami:${UMAMI_ANALYTICS_DB_PASSWORD}@umami-analytics-db:5432/umami-analytics-db\n      - DATABASE_TYPE=postgresql\n      - APP_SECRET=${UMAMI_ANALYTICS_APP_SECRET}\n  umami-analytics-db:\n    container_name: umami-analytics-db\n    image: postgres:15-alpine\n    restart: unless-stopped\n    environment:\n      - POSTGRES_DB=umami-analytics-db\n      - POSTGRES_USER=umami\n      - POSTGRES_PASSWORD=${UMAMI_ANALYTICS_DB_PASSWORD}\n    volumes:\n      - ${APP_DATA_DIR}/data/db:/var/lib/postgresql/data\n"
+ "compose": "services:\n  umami-analytics:\n    container_name: umami-analytics\n    image: ghcr.io/umami-software/umami:3.4.1\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:3000\n    environment:\n      - DATABASE_URL=postgresql://umami:${UMAMI_ANALYTICS_DB_PASSWORD}@umami-analytics-db:5432/umami-analytics-db\n      - DATABASE_TYPE=postgresql\n      - APP_SECRET=${UMAMI_ANALYTICS_APP_SECRET}\n  umami-analytics-db:\n    container_name: umami-analytics-db\n    image: postgres:15-alpine\n    restart: unless-stopped\n    environment:\n      - POSTGRES_DB=umami-analytics-db\n      - POSTGRES_USER=umami\n      - POSTGRES_PASSWORD=${UMAMI_ANALYTICS_DB_PASSWORD}\n    volumes:\n      - ${APP_DATA_DIR}/data/db:/var/lib/postgresql/data\n",
+ "first_login": {
+  "username": "admin",
+  "password": "umami"
+ }
 }

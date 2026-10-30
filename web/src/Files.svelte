@@ -42,6 +42,7 @@
   import CircleCheck from '@lucide/svelte/icons/circle-check';
   import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
   import X from '@lucide/svelte/icons/x';
+  import { hscroll } from '$lib/hscroll.js';
 
   let { onSessionLost } = $props();
 
@@ -147,7 +148,10 @@
   function goFwd() { if (!fwd.length) return; back = [...back, path]; const p = fwd[0]; fwd = fwd.slice(1); open(p, 'none'); }
   function goUp() { if (path) open(path === root ? '' : parentOf(path)); }
 
-  // Path bar: breadcrumbs, a click on free space turns it into a text field.
+  // Path bar: breadcrumbs, a click on free space turns it into a text field. A normal wheel
+  // scrolls it sideways (hscroll); after a folder change the current folder is in view.
+  let pathBar = $state();
+  $effect(() => { crumbs; tick().then(() => { if (pathBar) pathBar.scrollLeft = pathBar.scrollWidth; }); });
   async function editPath() {
     pathText = path || '/';
     editing = true;
@@ -609,7 +613,7 @@
         </form>
       {:else}
         <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions, a11y_no_static_element_interactions, a11y_interactive_supports_focus -->
-        <div class="pathbar" role="navigation" aria-label="Folder path" onclick={(e) => e.target === e.currentTarget && path && editPath()}>
+        <div class="pathbar" role="navigation" aria-label="Folder path" bind:this={pathBar} use:hscroll onclick={(e) => e.target === e.currentTarget && path && editPath()}>
           <button class="crumb" onclick={() => open('')}><Server size={14} />This server</button>
           {#each crumbs as c (c.path)}
             <ChevronRight size={13} class="sep" />

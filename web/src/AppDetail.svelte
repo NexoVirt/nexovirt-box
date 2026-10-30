@@ -8,6 +8,7 @@
   import JobLog from '$lib/JobLog.svelte';
   import Secret from '$lib/Secret.svelte';
   import Credentials from '$lib/Credentials.svelte';
+  import HScroll from '$lib/HScroll.svelte';
   import Lightbox from '$lib/Lightbox.svelte';
   import RichText from '$lib/RichText.svelte';
   import Loader from '@lucide/svelte/icons/loader-circle';
@@ -220,13 +221,13 @@
     {/if}
     {#if app.tagline}<p class="tagline">{app.tagline}</p>{/if}
     {#if shots.length}
-      <div class="shots">
+      <HScroll label="screenshots" gap="0.75rem" aria-label="Screenshots">
         {#each shots as s, k (s.i)}
           <button type="button" class="shot" bind:this={shotEls[k]} onclick={() => (viewing = k)} aria-label="Open {s.alt}">
             <img src={s.src} alt={s.alt} loading="lazy" onerror={() => (badShots = { ...badShots, [s.i]: true })} />
           </button>
         {/each}
-      </div>
+      </HScroll>
       <Lightbox images={shots} bind:index={viewing} thumb={(k) => shotEls[k]?.querySelector('img')} label="Screenshots of {app.name}" />
     {/if}
     {#if app.notes}
@@ -303,11 +304,10 @@
   .actions { display: flex; align-items: center; gap: 0.875rem; flex-wrap: wrap; }
   .tagline { font-size: 0.9375rem; font-weight: 500; }
   .desc { color: var(--text-2); white-space: pre-line; max-height: 14rem; overflow-y: auto; overflow-x: hidden; overflow-wrap: anywhere; }
-  .shots { display: flex; gap: 0.75rem; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 0.25rem; }
-  .shot { flex-shrink: 0; padding: 0; border: 0; background: none; border-radius: 0.875rem; cursor: zoom-in; scroll-snap-align: start; transition: transform 100ms ease-out; }
+  .shot { flex-shrink: 0; padding: 0; border: 0; background: none; border-radius: 0.875rem; cursor: zoom-in; transition: transform 100ms ease-out; }
   .shot:active { transform: scale(0.97); }
   .shot:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  .shots img { display: block; height: 11rem; max-width: none; border-radius: 0.875rem; }
+  .shot img { display: block; height: 11rem; max-width: none; border-radius: 0.875rem; }
   .getting-started { display: grid; gap: 0.375rem; padding: 0.75rem 0.875rem; border-radius: var(--r-control); background: var(--fill); }
   .meta { box-shadow: none; background: var(--surface-2); }
   :global(.dark) .meta { background: var(--fill); }

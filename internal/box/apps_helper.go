@@ -939,7 +939,8 @@ func (h *helperServer) appCredentials(req helperRequest, logf func(string)) (any
 	if err := validID(req.ID); err != nil {
 		return nil, err
 	}
-	if _, err := h.readMeta(req.ID); err != nil {
+	meta, err := h.readMeta(req.ID)
+	if err != nil {
 		return nil, err
 	}
 	b, err := os.ReadFile(filepath.Join(h.appDir(req.ID), ".env"))
@@ -948,8 +949,9 @@ func (h *helperServer) appCredentials(req helperRequest, logf func(string)) (any
 	}
 	env := parseEnv(b)
 	type result struct {
-		Items []appCred `json:"items"`
-		Note  string    `json:"note,omitempty"`  // how to sign in the first time
+		Items   []appCred `json:"items"`
+		Pending bool      `json:"pending,omitempty"` // the app has not written its first password yet
+		Note    string    `json:"note,omitempty"`    // how to sign in the first time
 		Notes string    `json:"notes,omitempty"` // getting started
 	}
 	res := result{Items: []appCred{}}
@@ -969,12 +971,23 @@ func (h *helperServer) appCredentials(req helperRequest, logf func(string)) (any
 		res.Items = append(res.Items, appCred{Label: q.Label, Value: v, Secret: q.Type == "password", Locked: q.Locked})
 	}
 	dir := h.appDir(req.ID)
-	res.Items = firstLoginCreds(app, env, res.Items, func() []string {
-		if needDocker() != nil {
-			return nil
-		}
-		return readFirstLogLines(dir, req.ID, firstLogLines)
+	dataDir := meta.DataDir
+	if dataDir == "" {
+		dataDir = filepath.Join(dir, "data")
+	}
+	items, pending := firstLoginCreds(app, env, res.Items, firstLoginSources{
+		logs: func() []string {
+			if needDocker() != nil {
+				return nil
+			}
+			return readFirstLogLines(dir, req.ID, firstLogLines)
+		},
+		file: func(rel string) ([]byte, error) { return readDataFile(dataDir, rel) },
 	})
+	if items != nil {
+		res.Items = items
+	}
+	res.Pending = pending
 	if app.FirstLogin != nil {
 		res.Note = app.FirstLogin.Note
 	}

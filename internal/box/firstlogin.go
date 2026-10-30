@@ -7,7 +7,9 @@ package box
 import (
 	"bufio"
 	"context"
+	"errors"
 	"io"
+	"os"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -24,7 +26,59 @@ type appCred struct {
 	Value  string `json:"value"`
 	Secret bool   `json:"secret"`
 	Locked bool   `json:"locked,omitempty"`
-	Source string `json:"source,omitempty"` // "log": read from the app's logs, may have changed since
+	// Source: "log" read from the app's logs, "file" read from a file the app wrote, "default" a
+	// fixed default the app ships with. All three may have changed since.
+	Source string `json:"source,omitempty"`
+}
+
+// firstLoginSources are the lazy readers firstLoginCreds needs: logs runs docker, file reads a
+// file inside the app's data folder. Both are only called when the catalog asks for them.
+type firstLoginSources struct {
+	logs func() []string
+	file func(rel string) ([]byte, error)
+}
+
+// maxCredFile is the largest first-login file Box reads.
+const maxCredFile = 64 << 10
+
+// readDataFile reads rel inside dataDir. os.Root refuses paths and symlinks that lead outside
+// dataDir (the container writes this folder, so a link to /etc/shadow must not be followed);
+// only small regular files are read.
+func readDataFile(dataDir, rel string) ([]byte, error) {
+	root, err := os.OpenRoot(dataDir)
+	if err != nil {
+		return nil, err
+	}
+	defer root.Close()
+	f, err := root.Open(rel)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	st, err := f.Stat()
+	if err != nil {
+		return nil, err
+	}
+	if !st.Mode().IsRegular() || st.Size() > maxCredFile {
+		return nil, errors.New("not a small regular file")
+	}
+	return io.ReadAll(io.LimitReader(f, maxCredFile))
+}
+
+// fileSecret picks the password out of a first-login file: the regexp's group, else the whole
+// file when it is one short line.
+func fileSecret(b []byte, re *regexp.Regexp) string {
+	if re != nil {
+		if m := re.FindSubmatch(b); m != nil {
+			return strings.TrimSpace(string(m[1]))
+		}
+		return ""
+	}
+	v := strings.TrimSpace(string(b))
+	if strings.ContainsAny(v, "\r\n") || len(v) > 256 {
+		return ""
+	}
+	return v
 }
 
 var ansiRe = regexp.MustCompile(`\x1b\[[0-9;?]*[A-Za-z]`)
@@ -56,14 +110,16 @@ func readFirstLogLines(dir, id string, n int) []string {
 	return lines
 }
 
-// scanLog returns the first capture of re in lines.
+// scanLog returns the last capture of re in lines: apps that print a new password on every
+// start (qBittorrent) mean the newest one.
 func scanLog(lines []string, re *regexp.Regexp) string {
+	v := ""
 	for _, l := range lines {
 		if m := re.FindStringSubmatch(l); m != nil && strings.TrimSpace(m[1]) != "" {
-			return strings.TrimSpace(m[1])
+			v = strings.TrimSpace(m[1])
 		}
 	}
-	return ""
+	return v
 }
 
 // genericSecretRes match the usual "initial password is: X" style lines. Each has one group.
@@ -104,35 +160,56 @@ func genericLogSecrets(lines []string) []string {
 	return out
 }
 
-// firstLoginCreds adds the catalog's first-login details (or what the logs show) to have.
-// logs is only called when needed, it runs docker.
-func firstLoginCreds(app *catalog.App, env map[string]string, have []appCred, logs func() []string) []appCred {
-	known := map[string]bool{}
-	for _, c := range have {
-		known[c.Value] = true
-	}
-	out := have
+// firstLoginCreds puts the catalog's first-login details (or what the logs show) in front of
+// have, the app's own answers; a value shows once. pending is true when the catalog names a
+// password source that has nothing yet (the app has not started far enough).
+func firstLoginCreds(app *catalog.App, env map[string]string, have []appCred, src firstLoginSources) (out []appCred, pending bool) {
+	known := map[appCred]bool{} // by value and kind: user "admin" with password "admin" shows both
 	add := func(c appCred) {
-		if c.Value != "" && !known[c.Value] {
-			known[c.Value] = true
+		k := appCred{Value: c.Value, Secret: c.Secret}
+		if c.Value != "" && !known[k] {
+			known[k] = true
 			out = append(out, c)
 		}
 	}
 	fl := app.FirstLogin
 	if fl == nil {
-		for _, v := range genericLogSecrets(logs()) {
+		for _, c := range have {
+			add(c)
+		}
+		for _, v := range genericLogSecrets(src.logs()) {
 			add(appCred{Label: "Password found in the logs", Value: v, Secret: true, Source: "log"})
 		}
-		return out
+		return out, false
 	}
 	if fl.Username != "" {
 		add(appCred{Label: "User name", Value: fl.Username})
 	}
+	found := false
+	pw := func(c appCred) {
+		if c.Value != "" {
+			found = true
+		}
+		add(c)
+	}
 	if fl.PasswordFromEnv != "" {
-		add(appCred{Label: "Password", Value: env[fl.PasswordFromEnv], Secret: true})
+		pw(appCred{Label: "Password", Value: env[fl.PasswordFromEnv], Secret: true})
+	}
+	if rel, err := fl.FilePath(); err == nil && rel != "" && src.file != nil {
+		if b, err := src.file(rel); err == nil {
+			re, _ := fl.FileRegexp()
+			pw(appCred{Label: "Initial password", Value: fileSecret(b, re), Secret: true, Source: "file"})
+		}
 	}
 	if re, err := fl.LogRegexp(); err == nil && re != nil {
-		add(appCred{Label: "Initial password", Value: scanLog(logs(), re), Secret: true, Source: "log"})
+		pw(appCred{Label: "Initial password", Value: scanLog(src.logs(), re), Secret: true, Source: "log"})
 	}
-	return out
+	if fl.Password != "" {
+		pw(appCred{Label: "Default password", Value: fl.Password, Secret: true, Source: "default"})
+	}
+	for _, c := range have {
+		add(c)
+	}
+	asked := fl.PasswordFromEnv != "" || fl.PasswordFromFile != "" || fl.PasswordFromLog != ""
+	return out, asked && !found
 }

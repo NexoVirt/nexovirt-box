@@ -64,29 +64,70 @@ type App struct {
 }
 
 // FirstLogin says how to sign in to an app the first time, when the app makes its own admin
-// account. PasswordFromLog is a regular expression with one capture group, matched against
-// the first log lines of the app; PasswordFromEnv names a variable of the app's .env.
+// account. Password is a fixed default the app ships with. PasswordFromLog is a regular
+// expression with one capture group, matched against the first log lines of the app;
+// PasswordFromEnv names a variable of the app's .env. PasswordFromFile is a file the app writes
+// into its data folder (a path relative to APP_DATA_DIR); PasswordFromFileRegex (one capture
+// group) picks the password out of it, else the whole file (trimmed) is the password.
 type FirstLogin struct {
-	Username        string `json:"username,omitempty"`
-	PasswordFromLog string `json:"password_from_log_regex,omitempty"`
-	PasswordFromEnv string `json:"password_from_env,omitempty"`
-	Note            string `json:"note,omitempty"`
+	Username              string `json:"username,omitempty"`
+	Password              string `json:"password,omitempty"`
+	PasswordFromLog       string `json:"password_from_log_regex,omitempty"`
+	PasswordFromEnv       string `json:"password_from_env,omitempty"`
+	PasswordFromFile      string `json:"password_from_file,omitempty"`
+	PasswordFromFileRegex string `json:"password_from_file_regex,omitempty"`
+	Note                  string `json:"note,omitempty"`
 }
 
 // LogRegexp compiles PasswordFromLog; it must have exactly one capture group.
 func (f *FirstLogin) LogRegexp() (*regexp.Regexp, error) {
-	if f == nil || f.PasswordFromLog == "" {
+	if f == nil {
 		return nil, nil
 	}
-	re, err := regexp.Compile(f.PasswordFromLog)
+	return oneGroup(f.PasswordFromLog, "log")
+}
+
+// FileRegexp compiles PasswordFromFileRegex; it must have exactly one capture group.
+func (f *FirstLogin) FileRegexp() (*regexp.Regexp, error) {
+	if f == nil {
+		return nil, nil
+	}
+	return oneGroup(f.PasswordFromFileRegex, "file")
+}
+
+func oneGroup(expr, what string) (*regexp.Regexp, error) {
+	if expr == "" {
+		return nil, nil
+	}
+	re, err := regexp.Compile(expr)
 	if err != nil {
 		return nil, err
 	}
 	if re.NumSubexp() != 1 {
-		return nil, fmt.Errorf("first_login: the log pattern needs exactly one group")
+		return nil, fmt.Errorf("first_login: the %s pattern needs exactly one group", what)
 	}
 	return re, nil
 }
+
+// FilePath returns PasswordFromFile as a clean path inside the app's data folder: relative,
+// no "..", at most 8 parts of safe characters. Empty when there is none.
+func (f *FirstLogin) FilePath() (string, error) {
+	if f == nil || f.PasswordFromFile == "" {
+		return "", nil
+	}
+	p := f.PasswordFromFile
+	if !fileRe.MatchString(p) || path.Clean(p) != p || strings.Count(p, "/") > 7 {
+		return "", fmt.Errorf("first_login: bad file path %q", p)
+	}
+	for _, part := range strings.Split(p, "/") {
+		if part == "." || part == ".." {
+			return "", fmt.Errorf("first_login: bad file path %q", p)
+		}
+	}
+	return p, nil
+}
+
+var fileRe = regexp.MustCompile(`^[A-Za-z0-9_][A-Za-z0-9_./-]{0,199}$`)
 
 type IndexEntry struct {
 	Summary

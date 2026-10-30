@@ -42,5 +42,9 @@
    "required": true
   }
  ],
- "compose": "services:\n  peppermint:\n    image: pepperlabs/peppermint:latest\n    container_name: peppermint\n    environment:\n      - DB_USERNAME=tipi\n      - DB_PASSWORD=${PEPPERMINT_DB_PASSWORD}\n      - DB_HOST=peppermint-db\n      - API_URL={APP_PROTOCOL:-http}://${PEPPERMINT_DOMAIN_API}\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:3000\n      - 8217:5003\n    depends_on:\n      - peppermint-db\n  peppermint-db:\n    container_name: peppermint-db\n    image: postgres:latest\n    restart: unless-stopped\n    environment:\n      - POSTGRES_USER=tipi\n      - POSTGRES_PASSWORD=${PEPPERMINT_DB_PASSWORD}\n      - POSTGRES_DB=peppermint\n    volumes:\n      - ${APP_DATA_DIR}/data/postgres:/var/lib/postgresql/data\n"
+ "compose": "services:\n  peppermint:\n    image: pepperlabs/peppermint:latest\n    container_name: peppermint\n    environment:\n      - DB_USERNAME=tipi\n      - DB_PASSWORD=${PEPPERMINT_DB_PASSWORD}\n      - DB_HOST=peppermint-db\n      - API_URL={APP_PROTOCOL:-http}://${PEPPERMINT_DOMAIN_API}\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:3000\n      - 8217:5003\n    depends_on:\n      - peppermint-db\n  peppermint-db:\n    container_name: peppermint-db\n    image: postgres:latest\n    restart: unless-stopped\n    environment:\n      - POSTGRES_USER=tipi\n      - POSTGRES_PASSWORD=${PEPPERMINT_DB_PASSWORD}\n      - POSTGRES_DB=peppermint\n    volumes:\n      - ${APP_DATA_DIR}/data/postgres:/var/lib/postgresql/data\n",
+ "first_login": {
+  "username": "admin@admin.com",
+  "password": "1234"
+ }
 }

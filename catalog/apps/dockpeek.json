@@ -45,5 +45,9 @@
   }
  ],
  "compose": "# Service definitions for the big-bear-dockpeek application\nservices:\n  # Service name: big-bear-dockpeek\n  # The `big-bear-dockpeek` service definition\n  big-bear-dockpeek:\n    # Name of the container\n    container_name: big-bear-dockpeek\n    # Image to be used for the container\n    image: ghcr.io/dockpeek/dockpeek:v1.7.3@sha256:eb3f6ebf64a1775f22873e01cd25d2543da94a2743bbf7b005cf13e9bc171360\n    # Environment variables\n    environment:\n      # Secret key for the application (change this)\n      SECRET_KEY: ${SECRET_SECRET_KEY}\n      # Username for authentication (change this)\n      USERNAME: \"bigbear\"\n      # Password for authentication (change this)\n      PASSWORD: ${SECRET_PASSWORD}\n      # Docker host configuration\n      DOCKER_HOST: \"unix:///var/run/docker.sock\"\n    # Container restart policy\n    restart: unless-stopped\n    # Volumes to be mounted to the container\n    volumes:\n      - /var/run/docker.sock:/var/run/docker.sock\n    # Ports mapping between host and container\n    ports:\n      - \"${APP_PORT}:8000\"\n",
+ "first_login": {
+  "username": "bigbear",
+  "password_from_env": "SECRET_PASSWORD"
+ },
  "notes": "**Support BigBearTechWorld**: https://ko-fi.com/bigbeartechworld\n**Community Forum**: https://community.bigbeartechworld.com\n**Read this before installing**: https://community.bigbeartechworld.com/t/added-dockpeek-to-bigbearcasaos/4136?u=dragonfire1119\n\nBefore you install, make sure to change the default credentials (SECRET_KEY, USERNAME, PASSWORD) for security."
 }

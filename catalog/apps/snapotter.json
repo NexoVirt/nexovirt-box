@@ -39,5 +39,9 @@
    "generate": true
   }
  ],
- "compose": "services:\n  snapotter:\n    image: snapotter/snapotter:2.2.0\n    deploy:\n      resources:\n        reservations:\n          memory: \"1024M\"\n    network_mode: bridge\n    ports:\n      - target: 1349\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/data\n        target: /data\n      - type: bind\n        source: ${APP_DATA_DIR}/workspace\n        target: /tmp/workspace\n    environment:\n      - AUTH_ENABLED=true\n      - DEFAULT_USERNAME=admin\n      - DEFAULT_PASSWORD=${SECRET_DEFAULT_PASSWORD}\n      - MAX_UPLOAD_SIZE_MB=0\n      - MAX_BATCH_SIZE=0\n      - CONCURRENT_JOBS=0\n      - REDIS_MAXMEMORY=512mb\n    healthcheck:\n      test: [\"CMD\", \"curl\", \"-fsS\", \"http://localhost:1349/api/v1/health\"]\n      interval: 30s\n      timeout: 10s\n      retries: 10\n      start_period: 90s\n    container_name: snapotter\n"
+ "compose": "services:\n  snapotter:\n    image: snapotter/snapotter:2.2.0\n    deploy:\n      resources:\n        reservations:\n          memory: \"1024M\"\n    network_mode: bridge\n    ports:\n      - target: 1349\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/data\n        target: /data\n      - type: bind\n        source: ${APP_DATA_DIR}/workspace\n        target: /tmp/workspace\n    environment:\n      - AUTH_ENABLED=true\n      - DEFAULT_USERNAME=admin\n      - DEFAULT_PASSWORD=${SECRET_DEFAULT_PASSWORD}\n      - MAX_UPLOAD_SIZE_MB=0\n      - MAX_BATCH_SIZE=0\n      - CONCURRENT_JOBS=0\n      - REDIS_MAXMEMORY=512mb\n    healthcheck:\n      test: [\"CMD\", \"curl\", \"-fsS\", \"http://localhost:1349/api/v1/health\"]\n      interval: 30s\n      timeout: 10s\n      retries: 10\n      start_period: 90s\n    container_name: snapotter\n",
+ "first_login": {
+  "username": "admin",
+  "password_from_env": "SECRET_DEFAULT_PASSWORD"
+ }
 }

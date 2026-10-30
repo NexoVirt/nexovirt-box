@@ -129,3 +129,18 @@ func TestTipWithReplacedPasswordIsDropped(t *testing.T) {
 		t.Fatalf("notes kept: %q", a.Notes)
 	}
 }
+
+func TestKnownFirstLoginIsValid(t *testing.T) {
+	for id, fl := range knownFirstLogin {
+		fl := fl
+		if _, err := fl.LogRegexp(); err != nil {
+			t.Errorf("%s: %v", id, err)
+		}
+		if _, err := fl.FileRegexp(); err != nil {
+			t.Errorf("%s: %v", id, err)
+		}
+		if _, err := fl.FilePath(); err != nil {
+			t.Errorf("%s: %v", id, err)
+		}
+	}
+}

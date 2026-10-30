@@ -44,5 +44,9 @@
    "generate": true
   }
  ],
- "compose": "services:\n  bookstack:\n    image: 'lscr.io/linuxserver/bookstack:26.09.20260929'\n    volumes:\n      - '${APP_DATA_DIR}/data/config:/config'\n    environment:\n      - 'TZ=${TZ}'\n      - 'APP_URL=${APP_PROTOCOL:-http}://${APP_DOMAIN}'\n      - 'APP_KEY=base64:${APP_KEY}'\n      - 'DB_HOST=bookstack-db'\n      - 'DB_USERNAME=tipi'\n      - 'DB_PASSWORD=${BOOKSTACK_DB_PASS}'\n      - 'DB_DATABASE=bookstackapp'\n    depends_on:\n      - 'bookstack-db'\n    x-runtipi:\n      internal_port: 80\n      is_main: true\n  bookstack-db:\n    image: 'lscr.io/linuxserver/mariadb'\n    volumes:\n      - '${APP_DATA_DIR}/data/db:/config'\n    environment:\n      - 'TZ=${TZ}'\n      - 'MYSQL_ROOT_PASSWORD=${ROOT_ACCESS_PASSWORD}'\n      - 'MYSQL_DATABASE=bookstackapp'\n      - 'MYSQL_USER=tipi'\n      - 'MYSQL_PASSWORD=${BOOKSTACK_DB_PASS}'\n    x-runtipi:\n      is_main: false\nx-runtipi:\n  schema_version: 2\n"
+ "compose": "services:\n  bookstack:\n    image: 'lscr.io/linuxserver/bookstack:26.09.20260929'\n    volumes:\n      - '${APP_DATA_DIR}/data/config:/config'\n    environment:\n      - 'TZ=${TZ}'\n      - 'APP_URL=${APP_PROTOCOL:-http}://${APP_DOMAIN}'\n      - 'APP_KEY=base64:${APP_KEY}'\n      - 'DB_HOST=bookstack-db'\n      - 'DB_USERNAME=tipi'\n      - 'DB_PASSWORD=${BOOKSTACK_DB_PASS}'\n      - 'DB_DATABASE=bookstackapp'\n    depends_on:\n      - 'bookstack-db'\n    x-runtipi:\n      internal_port: 80\n      is_main: true\n  bookstack-db:\n    image: 'lscr.io/linuxserver/mariadb'\n    volumes:\n      - '${APP_DATA_DIR}/data/db:/config'\n    environment:\n      - 'TZ=${TZ}'\n      - 'MYSQL_ROOT_PASSWORD=${ROOT_ACCESS_PASSWORD}'\n      - 'MYSQL_DATABASE=bookstackapp'\n      - 'MYSQL_USER=tipi'\n      - 'MYSQL_PASSWORD=${BOOKSTACK_DB_PASS}'\n    x-runtipi:\n      is_main: false\nx-runtipi:\n  schema_version: 2\n",
+ "first_login": {
+  "username": "admin@admin.com",
+  "password": "password"
+ }
 }

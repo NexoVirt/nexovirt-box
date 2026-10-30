@@ -35,5 +35,9 @@
   }
  ],
  "compose": "services:\n  alist-sync:\n    image: xjxjin/alist-sync:1.1.5\n    container_name: alist-sync\n    restart: unless-stopped\n    ports:\n      - \"${APP_PORT}:52441\"\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/data\n        target: /app/data\n    environment:\n      - TZ=Asia/Shanghai\n",
+ "first_login": {
+  "username": "admin",
+  "password": "admin"
+ },
  "notes": "The default login password is admin/admin."
 }

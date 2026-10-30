@@ -1,13 +1,14 @@
 <script>
   // A Box window over the desktop. It grows out of the tile (or button) that opened it and goes back
   // into it on close (critically damped spring, same path both ways). Every window floats like a
-  // macOS window: drag by the title bar, resize from the edges and the corner, maximise (button or
+  // macOS window: drag by the title bar, resize from any edge or corner, maximise (button or
   // double-click on the title), minimise to the dock row; place and size are remembered per window.
   // A click anywhere brings it to the front. Escape closes the window in front, unless a dialog,
   // a menu or the terminal has the key. Phones (under 700 px) always get the full screen.
   import { onMount } from 'svelte';
   import { origin } from './desktop.svelte.js';
-  import { remember, clamp } from './windows.svelte.js';
+  import { remember, clamp, fit } from './windows.svelte.js';
+  import { resizeRect } from './winmath.js';
   import X from '@lucide/svelte/icons/x';
   import Minus from '@lucide/svelte/icons/minus';
   import Maximize2 from '@lucide/svelte/icons/maximize-2';
@@ -55,21 +56,23 @@
   }
   function barUp() { if (grab) { grab = null; remember(w); } }
 
-  // Resize from the right edge, the bottom edge or the corner.
-  const MIN_W = 420, MIN_H = 300;
+  // Resize from any edge or corner (resizeRect: the grabbed edge follows the pointer 1:1, the
+  // opposite edge stays put, never smaller than the minimum or past the browser window).
+  const EDGES = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'];
   let size = null;
   function sizeDown(e, dir) {
     if (e.button !== 0) return;
     e.preventDefault();
-    size = { dir, x: e.clientX, y: e.clientY, w: w.rect.w, h: w.rect.h };
+    e.stopPropagation();
+    size = { dir, x: e.clientX, y: e.clientY, r: { ...w.rect } };
     e.currentTarget.setPointerCapture(e.pointerId);
   }
   function sizeMove(e) {
-    if (!size) return;
-    if (size.dir !== 's') w.rect.w = Math.max(MIN_W, Math.min(innerWidth - w.rect.x - 4, size.w + e.clientX - size.x));
-    if (size.dir !== 'e') w.rect.h = Math.max(MIN_H, Math.min(innerHeight - w.rect.y - 4, size.h + e.clientY - size.y));
+    if (size) Object.assign(w.rect, resizeRect(size.r, size.dir, e.clientX - size.x, e.clientY - size.y, innerWidth, innerHeight));
   }
   function sizeUp() { if (size) { size = null; remember(w); } }
+  // A smaller browser window: the window shrinks with it (the saved size stays until moved).
+  function viewport() { if (!phone) fit(w.rect); }
   function toggleMax() { w.max = !w.max; remember(w); }
 
   function key(e) {
@@ -86,7 +89,7 @@
   $effect(() => { if (focused && !w.min && el && !el.contains(document.activeElement)) el.focus({ preventScroll: true }); });
 </script>
 
-<svelte:window onkeydown={key} />
+<svelte:window onkeydown={key} onresize={viewport} />
 
 <div class="window" class:floating={isFloat} class:maxed={!phone && w.max} class:phone class:focused class:hidden-win={w.min} bind:this={el}
   role="dialog" aria-modal="false" aria-label={title} tabindex="-1" style:z-index={30 + rank}
@@ -113,9 +116,9 @@
     {@render children()}
   </div>
   {#if isFloat}
-    <span class="edge e" onpointerdown={(e) => sizeDown(e, 'e')} onpointermove={sizeMove} onpointerup={sizeUp} onpointercancel={sizeUp} aria-hidden="true"></span>
-    <span class="edge s" onpointerdown={(e) => sizeDown(e, 's')} onpointermove={sizeMove} onpointerup={sizeUp} onpointercancel={sizeUp} aria-hidden="true"></span>
-    <span class="edge se" onpointerdown={(e) => sizeDown(e, 'se')} onpointermove={sizeMove} onpointerup={sizeUp} onpointercancel={sizeUp} aria-hidden="true"></span>
+    {#each EDGES as d (d)}
+      <span class="edge {d}" onpointerdown={(e) => sizeDown(e, d)} onpointermove={sizeMove} onpointerup={sizeUp} onpointercancel={sizeUp} aria-hidden="true"></span>
+    {/each}
   {/if}
 </div>
 
@@ -158,8 +161,9 @@
   .ctl:hover { background: var(--fill); color: var(--text); }
   .ctl:active { transform: scale(0.92); }
 
+  /* isolation: nothing a page stacks (sticky toolbars, z-indexed bars) can rise above the resize edges. */
   .body {
-    flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+    flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; isolation: isolate;
     padding: 1.25rem 1.5rem 1.75rem;
   }
   .body.fill { display: flex; flex-direction: column; overflow: hidden; padding-bottom: 1rem; }
@@ -167,10 +171,14 @@
   .body.flush { padding: 0; }
   .phone .body:not(.flush) { padding: 1rem max(1rem, env(safe-area-inset-right, 0px)) calc(1.5rem + env(safe-area-inset-bottom, 0px)) max(1rem, env(safe-area-inset-left, 0px)); }
 
-  .edge { position: absolute; z-index: 3; touch-action: none; }
-  .edge.e { top: 2.75rem; right: 0; bottom: 1rem; width: 6px; cursor: ew-resize; }
-  .edge.s { left: 0; right: 1rem; bottom: 0; height: 6px; cursor: ns-resize; }
-  .edge.se { right: 0; bottom: 0; width: 1rem; height: 1rem; cursor: nwse-resize; }
+  /* Resize handles along every edge and corner, above the title bar and the page. */
+  .edge { position: absolute; z-index: 10; touch-action: none; }
+  .edge.n, .edge.s { left: 0.875rem; right: 0.875rem; height: 6px; cursor: ns-resize; }
+  .edge.e, .edge.w { top: 0.875rem; bottom: 0.875rem; width: 6px; cursor: ew-resize; }
+  .edge.n { top: 0; } .edge.s { bottom: 0; } .edge.e { right: 0; } .edge.w { left: 0; }
+  .edge.ne, .edge.nw, .edge.se, .edge.sw { width: 0.875rem; height: 0.875rem; }
+  .edge.ne { top: 0; right: 0; cursor: nesw-resize; } .edge.sw { bottom: 0; left: 0; cursor: nesw-resize; }
+  .edge.nw { top: 0; left: 0; cursor: nwse-resize; } .edge.se { bottom: 0; right: 0; cursor: nwse-resize; }
 
   /* The window title replaces the large page title; actions and subtitles stay. */
   .body :global(.page-head h1) { display: none; }
