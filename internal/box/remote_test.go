@@ -96,3 +96,39 @@ func TestPairingAndProxy(t *testing.T) {
 		t.Fatal("token not sealed")
 	}
 }
+
+// The other box's answer is served under this box's origin, so it must never run as a page here.
+func TestRemoteResponseSandboxed(t *testing.T) {
+	evil := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		w.Header().Set("Set-Cookie", "nxbox_session=x; Path=/")
+		w.Header().Set("Refresh", "0; url=https://evil.example")
+		w.Header().Set("Content-Security-Policy", "script-src *")
+		w.Write([]byte("<script>alert(1)</script>"))
+	}))
+	defer evil.Close()
+	sum := sha256.Sum256(evil.Certificate().Raw)
+	local, lh, ltoken := newTestApp(t)
+	local.state = t.TempDir()
+	sess := sessionFrom(post(lh, "/api/setup", `{"token":"`+ltoken+`","username":"me","password":"long-enough-pw"}`, ""))
+	local.store.initRemote()
+	sealed, _ := local.sealToken(pairPrefix + "x")
+	local.store.db.Exec(`INSERT INTO remotes (name, url, token, fingerprint, created) VALUES ('nas', ?, ?, ?, 1)`, evil.URL, sealed, hex.EncodeToString(sum[:]))
+	rec := get(lh, "/api/remote/1/system", sess)
+	h := rec.Header()
+	if h.Get("Set-Cookie") != "" || h.Get("Refresh") != "" {
+		t.Fatalf("state headers passed through: %v", h)
+	}
+	sandboxed := false
+	for _, v := range h.Values("Content-Security-Policy") {
+		if strings.HasPrefix(v, "sandbox") {
+			sandboxed = true
+		}
+		if strings.Contains(v, "script-src *") {
+			t.Fatalf("the other box's CSP passed through: %v", v)
+		}
+	}
+	if !sandboxed {
+		t.Fatalf("no sandbox CSP: %v", h)
+	}
+}

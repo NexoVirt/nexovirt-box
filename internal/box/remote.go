@@ -371,6 +371,21 @@ func (a *App) remoteDelete(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
+// sandboxRemoteResponse keeps the other box from acting in this box's origin: its answer is
+// served under this box's address, so a compromised box could otherwise send HTML or a script
+// that runs here with the admin's session. The answer can only be data: a sandbox CSP (no
+// scripts, no same origin), no sniffing, and no headers that set state in the browser.
+func sandboxRemoteResponse(res *http.Response) error {
+	for _, h := range []string{"Set-Cookie", "Clear-Site-Data", "Refresh", "Service-Worker-Allowed", "Location",
+		"Content-Security-Policy", "Content-Security-Policy-Report-Only", "Access-Control-Allow-Origin",
+		"Access-Control-Allow-Credentials", "Link"} {
+		res.Header.Del(h)
+	}
+	res.Header.Set("Content-Security-Policy", "sandbox; default-src 'none'")
+	res.Header.Set("X-Content-Type-Options", "nosniff")
+	return nil
+}
+
 // remoteProxy forwards /api/remote/<id>/<rest> to the other box's /api/<rest>.
 func (a *App) remoteProxy(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
@@ -405,12 +420,9 @@ func (a *App) remoteProxy(w http.ResponseWriter, r *http.Request) {
 			}
 			pr.Out.Header.Set("Authorization", "Bearer "+tok)
 		},
-		Transport:     pinnedTransport(fp),
-		FlushInterval: -1, // the stats stream
-		ModifyResponse: func(res *http.Response) error {
-			res.Header.Del("Set-Cookie")
-			return nil
-		},
+		Transport:      pinnedTransport(fp),
+		FlushInterval:  -1, // the stats stream
+		ModifyResponse: sandboxRemoteResponse,
 		ErrorHandler: func(w http.ResponseWriter, _ *http.Request, err error) {
 			writeError(w, http.StatusBadGateway, "The other box does not answer.")
 		},
