@@ -3,6 +3,7 @@
   import DataTable from '$lib/DataTable.svelte';
   import { onMount } from 'svelte';
   import { api } from '$lib/api.js';
+  import MapPin from '@lucide/svelte/icons/map-pin';
   import { withProof } from '$lib/proof.svelte.js';
   import { toast } from '$lib/toast.svelte.js';
   import { ago } from '$lib/format.js';
@@ -96,7 +97,21 @@
 
   const evLabel = (k) => data?.events.find((e) => e.key === k)?.label || (k === 'test' ? 'Test message' : k);
 
-  onMount(load);
+  let geo = $state(null), geoPoll;
+  async function loadGeo() {
+    const res = await api('/api/notify/geoip');
+    if (res.ok) geo = res.data;
+    clearTimeout(geoPoll);
+    if (geo?.loading) geoPoll = setTimeout(loadGeo, 3000);
+  }
+  async function setGeo(on) {
+    const res = await api('/api/notify/geoip', { method: 'POST', body: { enabled: on } });
+    if (!res.ok) return toast(res.error, 'error');
+    geo = res.data;
+    setTimeout(loadGeo, 1500);
+  }
+
+  onMount(() => { load(); loadGeo(); return () => clearTimeout(geoPoll); });
   const HIST_COLS = [
     { key: 'title', label: 'Message', primary: true },
     { key: 'event', label: 'Event', value: (h) => evLabel(h.event) },
@@ -152,6 +167,18 @@
     </div>
   </section>
   <p class="t-caption note">The same alert is sent at most once every 30 minutes, and at most 20 messages go out in 10 minutes.</p>
+
+  <section class="group">
+    <label class="row">
+      <span class="ico"><MapPin size={16} /></span>
+      <div class="grow">
+        <span>Show where sign-ins come from</span>
+        <span class="t-caption">{geo?.loading ? 'Downloading the location database (about 60 MB)' : geo?.error ? geo.error : 'Sign-in messages always name the browser and system. With this on they also name the city and country, looked up on this server in the free DB-IP Lite database (downloaded once a month, no account). IP geolocation by DB-IP (db-ip.com), CC BY 4.0.'}</span>
+      </div>
+      {#if geo?.loading}<Loader size={16} class="spinner" />{/if}
+      <input class="switch" type="checkbox" checked={geo?.enabled} onchange={(e) => setGeo(e.currentTarget.checked)} aria-label="Show where sign-ins come from" disabled={!geo} />
+    </label>
+  </section>
 
   <div class="hist">
     <DataTable label="Recent notifications" title="Recent notifications" columns={HIST_COLS} rows={data.history.map((h, i) => ({ ...h, _i: i }))} key="_i"

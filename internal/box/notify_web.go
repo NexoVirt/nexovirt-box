@@ -106,7 +106,7 @@ func (a *App) notifyRulesSave(w http.ResponseWriter, r *http.Request) {
 // ---- sign-ins ----
 
 // onLogin raises "new address" for an IP Box has not seen before (not for the very first one).
-func (a *App) onLogin(username, ip string) {
+func (a *App) onLogin(username, ip, agent string) {
 	if a.notify == nil || ip == "" {
 		return
 	}
@@ -117,7 +117,8 @@ func (a *App) onLogin(username, ip string) {
 		return
 	}
 	if added, _ := res.RowsAffected(); added == 1 && n > 0 {
-		a.notify.send(evLoginNewIP, ip, "Sign-in from a new address", fmt.Sprintf("%s signed in from %s, an address Box has not seen before.", username, ip))
+		a.notify.send(evLoginNewIP, ip, "Sign-in from a new address",
+			fmt.Sprintf("%s signed in from %s, an address Box has not seen before (%s).", username, ip, a.loginDetails(ip, agent)))
 	}
 }
 
