@@ -127,6 +127,9 @@ func checkBindFile(dir string) error {
 // leaves the old file in place, so the caller refuses to recreate the app (fail closed).
 func syncBindFile(ctx context.Context, dir, id string, port int) error {
 	path := filepath.Join(dir, bindFile)
+	if port < 0 { // protected, but no port to keep private: change nothing, refuse (fail closed)
+		return uerr("This app is behind the Box sign-in but Box does not know which port to keep private. Turn the sign-in off for its domain and on again.")
+	}
 	if port == 0 {
 		if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
 			return err

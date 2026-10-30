@@ -304,6 +304,9 @@ func (h *helperServer) appDomain(req helperRequest, logf func(string)) (any, err
 	if meta.Protect && meta.DomainPort == 0 {
 		meta.DomainPort = meta.MainPort // pin the protected port, so a later edit cannot move it
 	}
+	if meta.Protect && meta.DomainPort <= 0 {
+		return nil, uerr("%s has no web port Box knows, so the sign-in cannot keep it private. Enter the app port behind the domain first.", meta.Name)
+	}
 	if err := h.applyBinding(meta, logf); err != nil {
 		return nil, err
 	}

@@ -142,7 +142,7 @@ func (h *helperServer) policy(m installedApp) mountPolicy {
 	}
 	p := mountPolicy{base: h.base(), allow: allow, allowSocket: m.SocketOK, custom: m.Custom, confirmed: m.Allowed, reviewed: m.Reviewed}
 	if m.Protect && m.Domain != "" {
-		p.protectPort = m.DomainPort // pinned when the sign-in was turned on (proxy.go)
+		p.protectPort = protectedPort(m)
 	}
 	if m.Custom {
 		rs, _ := h.roots()
@@ -714,7 +714,23 @@ func (h *helperServer) readMeta(id string) (installedApp, error) {
 		return m, uerr("This app is not installed.")
 	}
 	err = json.Unmarshal(b, &m)
+	if m.Protect && m.DomainPort == 0 && m.MainPort > 0 {
+		m.DomainPort = m.MainPort // app.json from before the port was pinned; kept on the next write
+	}
 	return m, err
+}
+
+// protectedPort is the port behind the Box sign-in: the pinned one, else the main port. It is
+// never 0 for a protected app: -1 means "protected but no port", which syncBindFile refuses
+// instead of removing the binding.
+func protectedPort(m installedApp) int {
+	switch {
+	case m.DomainPort > 0:
+		return m.DomainPort
+	case m.MainPort > 0:
+		return m.MainPort
+	}
+	return -1
 }
 
 func (h *helperServer) appsStatus(req helperRequest, logf func(string)) (any, error) {

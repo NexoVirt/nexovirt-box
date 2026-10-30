@@ -28,7 +28,7 @@ type mountPolicy struct {
 	roots       []string // own apps: the file roots, binds inside them need no confirmation
 	confirmed   []string // own apps: risk findings the admin confirmed (riskFinding keys)
 	reviewed    bool     // own apps saved with the per-item review; older ones keep legacyOK
-	protectPort int      // Box sign-in in front: this port is published on 127.0.0.1 only (proxybind.go)
+	protectPort int      // Box sign-in in front: this port on 127.0.0.1 only; -1 = protected without a port (refused)
 }
 
 // Folders that are never mounted, nor any folder that contains them.
