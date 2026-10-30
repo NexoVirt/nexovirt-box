@@ -35,5 +35,14 @@
    "required": true
   }
  ],
- "compose": "services:\n  medusa:\n    container_name: medusa\n    deploy:\n      resources:\n        limits:\n          memory: 7848M\n    environment:\n      - TZ= $TZ\n    image: pymedusa/medusa:master\n    ports:\n      - target: 8081\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}\n        target: /config\n      - type: bind\n        source: ${APP_DATA_DIR}/Downloads/Television\n        target: /downloads\n      - type: bind\n        source: ${APP_DATA_DIR}/Media/Television\n        target: /tv\n    network_mode: bridge\n    privileged: false\n"
+ "compose": "services:\n  medusa:\n    container_name: medusa\n    deploy:\n      resources:\n        limits:\n          memory: 7848M\n    environment:\n      - TZ= $TZ\n    image: pymedusa/medusa:master\n    ports:\n      - target: 8081\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n      - type: bind\n        source: ${APP_DATA_DIR}/Downloads/Television\n        target: /downloads\n      - type: bind\n        source: ${APP_DATA_DIR}/Media/Television\n        target: /tv\n    network_mode: bridge\n    privileged: false\n",
+ "layout": [
+  {
+   "to": "config",
+   "except": [
+    "Downloads",
+    "Media"
+   ]
+  }
+ ]
 }

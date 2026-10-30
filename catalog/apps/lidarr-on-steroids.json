@@ -28,5 +28,5 @@
    "required": true
   }
  ],
- "compose": "services:\n  lidarr-deemix:\n    image: youegraillot/lidarr-on-steroids:1.5.2\n    container_name: lidarr-deemix\n    volumes:\n      - ${APP_DATA_DIR}/data/config:/config\n      - ${APP_DATA_DIR}/data/config-deemix:/config_deemix\n      - ${ROOT_FOLDER_HOST}/media/downloads/deemix:/downloads\n      - ${ROOT_FOLDER_HOST}/media/data/music:/music\n      - ${ROOT_FOLDER_HOST}/media/usenet/completed/:/downloads/completed\n      - ${ROOT_FOLDER_HOST}/media:/media\n    ports:\n      - ${APP_PORT}:8686 # Lidarr web UI\n      - 8187:6595 # Deemix web UI\n    restart: unless-stopped\n"
+ "compose": "services:\n  lidarr-deemix:\n    image: youegraillot/lidarr-on-steroids:1.5.2\n    container_name: lidarr-deemix\n    volumes:\n      - ${APP_DATA_DIR}/data/config:/config\n      - ${APP_DATA_DIR}/data/config-deemix:/config_deemix\n      - ${ROOT_FOLDER_HOST}/media/downloads/deemix:/downloads\n      - ${ROOT_FOLDER_HOST}/media/data/music:/music\n      - ${ROOT_FOLDER_HOST}/media/usenet/completed/:/downloads/completed\n    ports:\n      - ${APP_PORT}:8686 # Lidarr web UI\n      - 8187:6595 # Deemix web UI\n    restart: unless-stopped\n"
 }

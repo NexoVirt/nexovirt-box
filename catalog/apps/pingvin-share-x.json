@@ -29,5 +29,11 @@
    "required": true
   }
  ],
- "compose": "services:\n  pingvin-share:\n    container_name: pingvin-share\n    image: ghcr.io/smp46/pingvin-share-x:v2.1.0\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:3000\n    volumes:\n      - ${APP_DATA_DIR}/data:/opt/app/backend/data\n      - ${APP_DATA_DIR}/data/images:/opt/app/frontend/public/img\n"
+ "compose": "services:\n  pingvin-share:\n    container_name: pingvin-share\n    image: ghcr.io/smp46/pingvin-share-x:v2.1.0\n    restart: unless-stopped\n    ports:\n      - ${APP_PORT}:3000\n    volumes:\n      - ${APP_DATA_DIR}/data:/opt/app/backend/data\n      - ${APP_DATA_DIR}/images:/opt/app/frontend/public/img\n      - ${APP_DATA_DIR}/images:/opt/app/backend/data/images\n",
+ "layout": [
+  {
+   "from": "data/images",
+   "to": "images"
+  }
+ ]
 }

@@ -41,5 +41,13 @@
    "type": "text"
   }
  ],
- "compose": "services:\n  halo:\n    image: halohub/halo:2.27.1\n    container_name: halo\n    restart: unless-stopped\n    depends_on:\n      halodb:\n        condition: service_healthy\n    volumes:\n      - ${APP_DATA_DIR}:/root/.halo2\n    ports:\n      - ${APP_PORT}:8090\n    healthcheck:\n      test:\n        - CMD\n        - curl\n        - '-f'\n        - http://localhost:8090/actuator/health/readiness\n      interval: 30s\n      timeout: 5s\n      retries: 5\n      start_period: 30s\n    command:\n      - '--spring.r2dbc.url=r2dbc:pool:postgresql://halodb/halo'\n      - '--spring.r2dbc.username=halo'\n      - '--spring.r2dbc.password=${HALO_DATABASE_PASSWORD}'\n      - '--spring.sql.init.platform=postgresql'\n      - '--halo.external-url=${HALO_EXTERNAL_URL}'\n  halodb:\n    image: postgres:15.4\n    container_name: halodb\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/db:/var/lib/postgresql/data\n    healthcheck:\n      test:\n        - CMD\n        - pg_isready\n      interval: 10s\n      timeout: 5s\n      retries: 5\n    environment:\n      - POSTGRES_PASSWORD=${HALO_DATABASE_PASSWORD}\n      - POSTGRES_USER=halo\n      - POSTGRES_DB=halo\n      - PGUSER=halo\n"
+ "compose": "services:\n  halo:\n    image: halohub/halo:2.27.1\n    container_name: halo\n    restart: unless-stopped\n    depends_on:\n      halodb:\n        condition: service_healthy\n    volumes:\n      - ${APP_DATA_DIR}/halo:/root/.halo2\n    ports:\n      - ${APP_PORT}:8090\n    healthcheck:\n      test:\n        - CMD\n        - curl\n        - '-f'\n        - http://localhost:8090/actuator/health/readiness\n      interval: 30s\n      timeout: 5s\n      retries: 5\n      start_period: 30s\n    command:\n      - '--spring.r2dbc.url=r2dbc:pool:postgresql://halodb/halo'\n      - '--spring.r2dbc.username=halo'\n      - '--spring.r2dbc.password=${HALO_DATABASE_PASSWORD}'\n      - '--spring.sql.init.platform=postgresql'\n      - '--halo.external-url=${HALO_EXTERNAL_URL}'\n  halodb:\n    image: postgres:15.4\n    container_name: halodb\n    restart: unless-stopped\n    volumes:\n      - ${APP_DATA_DIR}/db:/var/lib/postgresql/data\n    healthcheck:\n      test:\n        - CMD\n        - pg_isready\n      interval: 10s\n      timeout: 5s\n      retries: 5\n    environment:\n      - POSTGRES_PASSWORD=${HALO_DATABASE_PASSWORD}\n      - POSTGRES_USER=halo\n      - POSTGRES_DB=halo\n      - PGUSER=halo\n",
+ "layout": [
+  {
+   "to": "halo",
+   "except": [
+    "db"
+   ]
+  }
+ ]
 }
