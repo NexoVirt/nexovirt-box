@@ -68,6 +68,11 @@ embedded.
   duplicates, trash, versions) starts from `walkRoots()` and checks each path with `visibleIn`, the same rule `resolve()`
   uses for browsing (blocked folders unless allow_system, inside an allowed root), so a root under a blocked folder
   is never searched. Arrows move, Enter runs, Escape closes.
+- Setup assistant (`SetupAssistant.svelte`): after the first sign-in (desktop pref `onboarded` unset; users who used Box
+  before it existed count as onboarded) it asks what the box is for (films, photos, files and cloud, backups, smart home,
+  development, start page), suggests the matching catalog stacks and apps (only those in the catalog and supported on
+  this architecture), and installs the ticked ones through the normal stack/app install jobs. Skip or finish sets
+  `onboarded: true`.
 - Phone view and installable web app: `/mobile` (`MobileHome.svelte`, also "Phone view" in the account menu) shows
   status rings, apps with start/stop/open and the latest notifications, with "Desktop" to leave it. `public/manifest.webmanifest`
   (start_url `/mobile`, icons 192/512, served as `application/manifest+json`) and `public/sw.js` (registered on HTTPS

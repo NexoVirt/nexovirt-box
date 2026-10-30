@@ -50,6 +50,7 @@ type desktopPrefs struct {
 	Weather   weatherPrefs `json:"weather"`
 	Theme     *themePrefs  `json:"theme,omitempty"`
 	CustomV   int64        `json:"custom_v"`
+	Onboarded *bool        `json:"onboarded,omitempty"` // the setup assistant was finished or skipped
 }
 
 var (
@@ -124,6 +125,10 @@ func (a *App) loadDesktop(id int64) desktopPrefs {
 		saved := defaultDesktop() // fields saved by an older version keep their defaults
 		if json.Unmarshal([]byte(raw), &saved) == nil && saved.validate() == nil {
 			p = saved
+		}
+		if p.Onboarded == nil { // used Box before the setup assistant existed: do not ask
+			t := true
+			p.Onboarded = &t
 		}
 	}
 	// Widgets added in a later version show up at the end.
