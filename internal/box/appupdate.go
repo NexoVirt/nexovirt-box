@@ -241,8 +241,15 @@ func (h *helperServer) restoreSnapshot(ctx context.Context, id string, logf func
 		}
 	}
 	logf("Putting the previous files back")
+	cur, curErr := h.readMeta(id)
 	if err := putBack(filepath.Join(rb, "app"), dir); err != nil {
 		return err
+	}
+	// The domain, its sign-in and the pinned port are today's proxy settings, not part of the
+	// version being restored: keep them, so a protected port stays private (checkConfig rebinds).
+	if restored, err := h.readMeta(id); err == nil && curErr == nil {
+		restored.Domain, restored.TLS, restored.DomainPort, restored.Protect = cur.Domain, cur.TLS, cur.DomainPort, cur.Protect
+		h.writeMeta(restored)
 	}
 	if info.DataDir != "" {
 		if err := putBack(filepath.Join(rb, "datadir"), info.DataDir); err != nil {
@@ -335,7 +342,13 @@ func (h *helperServer) updateApp(ctx context.Context, meta installedApp, noCopy 
 		h.saveUpdateRecord(meta.ID, rec)
 		return uerr("The update failed and the rollback failed too: %s", friendlyHelperErr("app_action", rerr))
 	}
-	if !meta.Stopped {
+	if restored, err := h.readMeta(meta.ID); err != nil {
+		return uerr("The update failed and the rollback could not read the app settings.")
+	} else if err := checkConfig(rctx, dir, meta.ID, h.policy(restored), false); err != nil {
+		rec.Result = "failed"
+		h.saveUpdateRecord(meta.ID, rec)
+		return uerr("The update failed and the previous version did not pass the checks: %s", friendlyHelperErr("app_action", err))
+	} else if !meta.Stopped {
 		runStream(rctx, compose(dir, meta.ID, "up", "-d", "--remove-orphans"), logf)
 	}
 	rec.Result = "rolled_back"
@@ -349,6 +362,13 @@ func (h *helperServer) rollbackApp(ctx context.Context, meta installedApp, logf 
 		return err
 	}
 	dir := h.appDir(meta.ID)
+	restored, err := h.readMeta(meta.ID)
+	if err != nil {
+		return err
+	}
+	if err := checkConfig(ctx, dir, meta.ID, h.policy(restored), false); err != nil {
+		return err
+	}
 	if !meta.Stopped {
 		if err := runStream(ctx, compose(dir, meta.ID, "up", "-d", "--remove-orphans"), logf); err != nil {
 			return err

@@ -141,7 +141,11 @@ embedded.
   the checked parts). While protected, the app's port behind the domain is published on 127.0.0.1 only
   (`proxybind.go`: Box-written `bind.yaml`, `ports: !override` for the services publishing it, every other port
   unchanged, added as an extra `-f` file and checked by `checkBindFile` + `checkConfig` before the recreate; removed
-  again when the sign-in is turned off). An app that publishes the port as part of a range cannot be protected.
+  again when the sign-in is turned off). An app that publishes the port as part of a range cannot be protected. The protected port is pinned in `app.json`
+  (`domain_port`); `checkConfig`, which every compose path runs before Docker uses the files (start, update, own app
+  edit, catalog update, restore, limits, roll back), rewrites `bind.yaml` from the current compose files (or removes a
+  stale one), so the binding cannot drift open. When the port can no longer be bound (an edit dropped it) the change is
+  refused and the old file stays (fail closed). A roll back keeps today's domain, sign-in and pinned port.
   Updates (`updates.go`): registry digest HEAD for apps; signed `latest.json` for Box (release key in
   `internal/catalog/key.go`, private half `~/.config/nexovirt/box-release.key`), rollback on failed health check.
 

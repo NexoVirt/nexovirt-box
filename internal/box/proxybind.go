@@ -122,9 +122,47 @@ func checkBindFile(dir string) error {
 	return nil
 }
 
-// applyBinding writes (protect) or removes bind.yaml for an app and recreates it when it runs.
-// Any failure puts the previous file back.
-func (h *helperServer) applyBinding(meta installedApp, protect bool, port int, logf func(string)) error {
+// syncBindFile writes bind.yaml for a protected port (0 = remove it). It renders the compose
+// files without the old binding first. When the port cannot be bound to loopback it fails and
+// leaves the old file in place, so the caller refuses to recreate the app (fail closed).
+func syncBindFile(ctx context.Context, dir, id string, port int) error {
+	path := filepath.Join(dir, bindFile)
+	if port == 0 {
+		if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+			return err
+		}
+		return nil
+	}
+	prev, prevErr := os.ReadFile(path)
+	os.Remove(path)
+	putBack := func() {
+		if prevErr == nil {
+			os.WriteFile(path, prev, 0o600)
+		}
+	}
+	cfg, err := renderConfig(ctx, dir, id)
+	if err != nil {
+		putBack()
+		return err
+	}
+	b, ok, err := bindYAML(cfg, port)
+	if err != nil || !ok {
+		putBack()
+		if err == nil {
+			err = uerr("Port %d is behind the Box sign-in, but the app no longer publishes it as a single port, so it cannot be kept private. Turn the sign-in off for its domain first, or keep the port.", port)
+		}
+		return err
+	}
+	if err := os.WriteFile(path, b, 0o600); err != nil {
+		putBack()
+		return err
+	}
+	return nil
+}
+
+// applyBinding brings the binding in line with meta (the sign-in on or off) through the install
+// checks and recreates a running app. Any failure puts the previous file back.
+func (h *helperServer) applyBinding(meta installedApp, logf func(string)) error {
 	dir := h.appDir(meta.ID)
 	path := filepath.Join(dir, bindFile)
 	prev, prevErr := os.ReadFile(path)
@@ -137,44 +175,14 @@ func (h *helperServer) applyBinding(meta installedApp, protect bool, port int, l
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	if meta.Custom {
-		if err := checkCustomRaw(dir); err != nil {
-			return err
-		}
-	}
-	os.Remove(path)
-	if protect {
-		cfg, err := renderConfig(ctx, dir, meta.ID)
-		if err != nil {
-			restore()
-			return err
-		}
-		b, ok, err := bindYAML(cfg, port)
-		if err != nil || !ok {
-			restore()
-			if err == nil {
-				err = uerr("Box cannot limit port %d of %s to the sign-in proxy, so the sign-in could be skipped. It was not turned on.", port, meta.Name)
-			}
-			return err
-		}
-		if err := os.WriteFile(path, b, 0o600); err != nil {
-			restore()
-			return err
-		}
-	}
-	if string(prev) == readOr(path) {
-		return nil // nothing changed
-	}
 	if err := checkConfig(ctx, dir, meta.ID, h.policy(meta), false); err != nil {
 		restore()
 		return err
 	}
-	if meta.Stopped {
+	if string(prev) == readOr(path) || meta.Stopped {
 		return nil
 	}
-	if logf != nil {
-		logf("Recreating " + meta.Name + " with the new port binding")
-	}
+	logf("Recreating " + meta.Name + " with the new port binding")
 	if err := runStream(ctx, compose(dir, meta.ID, "up", "-d", "--remove-orphans"), logf); err != nil {
 		restore()
 		bctx, bcancel := context.WithTimeout(context.Background(), 5*time.Minute)

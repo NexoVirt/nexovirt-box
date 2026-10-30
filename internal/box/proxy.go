@@ -301,11 +301,10 @@ func (h *helperServer) appDomain(req helperRequest, logf func(string)) (any, err
 		port = req.Port
 	}
 	meta.Domain, meta.TLS, meta.DomainPort, meta.Protect = domain, "", port, domain != "" && req.Confirm == "protect"
-	bindPort := meta.MainPort
-	if meta.DomainPort > 0 {
-		bindPort = meta.DomainPort
+	if meta.Protect && meta.DomainPort == 0 {
+		meta.DomainPort = meta.MainPort // pin the protected port, so a later edit cannot move it
 	}
-	if err := h.applyBinding(meta, meta.Protect, bindPort, logf); err != nil {
+	if err := h.applyBinding(meta, logf); err != nil {
 		return nil, err
 	}
 	if req.HTTPPort > 0 && validPort(req.HTTPPort) && ok && cfg.BoxPort != req.HTTPPort {
