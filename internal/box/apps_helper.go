@@ -49,6 +49,8 @@ type installedApp struct {
 	Reviewed    bool          `json:"reviewed,omitempty"`         // own apps: saved with the per-item review
 	LastUpdate  *updateRecord `json:"last_update,omitempty"`      // appupdate.go
 	Limits      *appLimits    `json:"limits,omitempty"`           // appresources.go
+	DomainPort  int           `json:"domain_port,omitempty"`      // proxy: app port behind the domain (0 = main port)
+	Protect     bool          `json:"protect,omitempty"`          // proxy: Box sign-in in front of the domain (proxyauth.go)
 }
 
 type appStatus struct {
@@ -968,7 +970,7 @@ func (h *helperServer) appCredentials(req helperRequest, logf func(string)) (any
 		Items   []appCred `json:"items"`
 		Pending bool      `json:"pending,omitempty"` // the app has not written its first password yet
 		Note    string    `json:"note,omitempty"`    // how to sign in the first time
-		Notes string    `json:"notes,omitempty"` // getting started
+		Notes   string    `json:"notes,omitempty"`   // getting started
 	}
 	res := result{Items: []appCred{}}
 	cat, _, err := loadCatalog(h.webState)

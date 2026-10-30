@@ -8,7 +8,9 @@ package box
 
 import (
 	"context"
+	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"io"
 	"net"
@@ -30,13 +32,50 @@ type proxyConfig struct {
 	HTTPPort  int    `json:"http_port"`
 	HTTPSPort int    `json:"https_port"`
 	Email     string `json:"email,omitempty"`
+	BoxPort   int    `json:"box_port,omitempty"` // Box's own HTTPS port, for the sign-in gate (proxyauth.go)
 }
 
 type proxyRoute struct {
-	App    string `json:"app"`
-	Domain string `json:"domain"`
-	Port   int    `json:"port"`
-	TLS    string `json:"tls"` // letsencrypt | internal
+	App     string    `json:"app"`
+	Domain  string    `json:"domain"`
+	Port    int       `json:"port"`
+	TLS     string    `json:"tls"`               // letsencrypt | internal
+	Protect bool      `json:"protect,omitempty"` // Box sign-in in front of the app
+	Cert    *certInfo `json:"cert,omitempty"`
+}
+
+type certInfo struct {
+	Issuer  string `json:"issuer"`
+	Expires int64  `json:"expires"`
+}
+
+// routeCert reads the certificate Caddy keeps for a domain (any issuer folder).
+func routeCert(domain string) *certInfo {
+	files, _ := filepath.Glob(filepath.Join(proxyDir, "data", "caddy", "certificates", "*", domain, domain+".crt"))
+	var best *certInfo
+	for _, f := range files {
+		b, err := os.ReadFile(f)
+		if err != nil {
+			continue
+		}
+		blk, _ := pem.Decode(b)
+		if blk == nil {
+			continue
+		}
+		c, err := x509.ParseCertificate(blk.Bytes)
+		if err != nil {
+			continue
+		}
+		if best == nil || c.NotAfter.Unix() > best.Expires {
+			issuer := c.Issuer.Organization
+			name := c.Issuer.CommonName
+			if len(issuer) > 0 {
+				name = issuer[0]
+			}
+			best = &certInfo{Issuer: name, Expires: c.NotAfter.Unix()}
+		}
+	}
+	return best
 }
 
 func readProxyConfig() (proxyConfig, bool) {
@@ -61,7 +100,11 @@ func proxyRunning() bool {
 
 func (h *helperServer) proxyStatus(req helperRequest, logf func(string)) (any, error) {
 	cfg, ok := readProxyConfig()
-	st := map[string]any{"enabled": ok, "running": false, "routes": h.proxyRoutes()}
+	routes := h.proxyRoutes()
+	for i := range routes {
+		routes[i].Cert = routeCert(routes[i].Domain)
+	}
+	st := map[string]any{"enabled": ok, "running": false, "routes": routes}
 	if ok {
 		st["config"] = cfg
 		st["running"] = needDocker() == nil && proxyRunning()
@@ -79,7 +122,11 @@ func (h *helperServer) proxyRoutes() []proxyRoute {
 	for _, e := range entries {
 		m, err := h.readMeta(e.Name())
 		if err == nil && m.Domain != "" {
-			out = append(out, proxyRoute{App: m.ID, Domain: m.Domain, Port: m.MainPort, TLS: m.TLS})
+			port := m.MainPort
+			if m.DomainPort > 0 {
+				port = m.DomainPort
+			}
+			out = append(out, proxyRoute{App: m.ID, Domain: m.Domain, Port: port, TLS: m.TLS, Protect: m.Protect})
 		}
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Domain < out[j].Domain })
@@ -167,10 +214,24 @@ func (h *helperServer) writeCaddyfile(cfg proxyConfig) error {
 		fmt.Fprintf(&b, "\temail %s\n", cfg.Email)
 	}
 	b.WriteString("}\n")
+	boxPort := cfg.BoxPort
+	if boxPort == 0 {
+		boxPort = 8443
+	}
 	for _, r := range h.proxyRoutes() {
-		fmt.Fprintf(&b, "\n%s {\n\treverse_proxy 127.0.0.1:%d\n", r.Domain, r.Port)
+		fmt.Fprintf(&b, "\n%s {\n", r.Domain)
 		if r.TLS != "letsencrypt" {
 			b.WriteString("\ttls internal\n")
+		}
+		if r.Protect {
+			// Box's sign-in in front: the one-time token comes back on the app's own domain, and
+			// every request is checked against Box first (proxyauth.go). Box is on localhost with
+			// its own self-signed certificate.
+			box := fmt.Sprintf("https://127.0.0.1:%d", boxPort)
+			fmt.Fprintf(&b, "\thandle /.nxbox-auth {\n\t\trewrite * /api/proxy-auth/finish?{query}\n\t\treverse_proxy %s {\n\t\t\ttransport http {\n\t\t\t\ttls_insecure_skip_verify\n\t\t\t}\n\t\t}\n\t}\n", box)
+			fmt.Fprintf(&b, "\thandle {\n\t\tforward_auth %s {\n\t\t\turi /api/proxy-auth/check\n\t\t\ttransport http {\n\t\t\t\ttls_insecure_skip_verify\n\t\t\t}\n\t\t}\n\t\treverse_proxy 127.0.0.1:%d\n\t}\n", box, r.Port)
+		} else {
+			fmt.Fprintf(&b, "\treverse_proxy 127.0.0.1:%d\n", r.Port)
 		}
 		b.WriteString("}\n")
 	}
@@ -218,7 +279,34 @@ func (h *helperServer) appDomain(req helperRequest, logf func(string)) (any, err
 			}
 		}
 	}
-	meta.Domain, meta.TLS = domain, ""
+	port := 0
+	if domain != "" && req.Port > 0 && req.Port != meta.MainPort {
+		if !validPort(req.Port) {
+			return nil, uerr("Pick a port between 1 and 65535.")
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		cfgJSON, err := renderConfig(ctx, h.appDir(meta.ID), meta.ID)
+		cancel()
+		if err != nil {
+			return nil, err
+		}
+		ports, _ := publishedPorts(cfgJSON)
+		found := false
+		for _, hp := range ports {
+			found = found || (hp.proto == "tcp" && hp.port == req.Port)
+		}
+		if !found {
+			return nil, uerr("%s does not publish port %d. Pick one of its ports.", meta.Name, req.Port)
+		}
+		port = req.Port
+	}
+	meta.Domain, meta.TLS, meta.DomainPort, meta.Protect = domain, "", port, domain != "" && req.Confirm == "protect"
+	if req.HTTPPort > 0 && validPort(req.HTTPPort) && ok && cfg.BoxPort != req.HTTPPort {
+		cfg.BoxPort = req.HTTPPort // the web process sends its own port
+		if b, err := json.MarshalIndent(cfg, "", "  "); err == nil {
+			os.WriteFile(filepath.Join(proxyDir, "proxy.json"), b, 0o600)
+		}
+	}
 	note := ""
 	if domain != "" {
 		points := dnsPointsHere(domain)

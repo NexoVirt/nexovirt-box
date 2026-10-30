@@ -125,7 +125,17 @@ embedded.
   `files_zip`, `mkdir` with `op: exist_ok`) resolves paths inside the roots (`TestFilesCopyZipSizeStayInside`).
 - Firewall (`firewall.go`): only Box's own rules; `firewall.pending.json` + 60 s timer roll back unless confirmed;
   rules restored at helper start (nftables does not persist). Files (`files.go`): resolve + roots + blocked dirs,
-  fd passing for read/upload. Proxy (`proxy.go`): Caddy container `nxbox-proxy` in /etc/nexovirt-box/caddy.
+  fd passing for read/upload. Proxy (`proxy.go`): Caddy container `nxbox-proxy` in /etc/nexovirt-box/caddy. Domains per app (`POST /api/apps/{id}/domain`
+  {domain, port, protect}): the port must be one the app publishes (0 = main port), DNS is checked against the
+  server's addresses, Let's Encrypt when it points here and Caddy holds 80/443, else `tls internal`; Settings > Network
+  lists each route's certificate (issuer, expiry, read from Caddy's data folder). "Box sign-in in front"
+  (`proxyauth.go`): Caddy `forward_auth` to Box (`https://127.0.0.1:<box port>`, self-signed so verify is skipped on
+  localhost) at `/api/proxy-auth/check`; without the domain cookie it redirects to Box `/api/proxy-auth/start` (Box
+  address remembered from the admin's browser when protection was turned on), which for a signed-in user sends a
+  one-time token (1 min, table `proxy_tokens`) to `https://<domain>/.nxbox-auth`, rewritten to
+  `/api/proxy-auth/finish`, which sets `nxbox_proxy` for that domain only (12 h, HttpOnly, Secure). Tokens are bound
+  to the domain and to the Box session they came from (sign-out ends them) and are never a Box session, so an app
+  that reads its own cookies gains nothing on Box. Redirect targets stay same-site (`safeLocalPath`).
   Updates (`updates.go`): registry digest HEAD for apps; signed `latest.json` for Box (release key in
   `internal/catalog/key.go`, private half `~/.config/nexovirt/box-release.key`), rollback on failed health check.
 

@@ -120,20 +120,33 @@ func (a *App) proxyRemove(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) appDomain(w http.ResponseWriter, r *http.Request) {
-	var in struct{ Domain string }
+	var in struct {
+		Domain  string
+		Port    int
+		Protect bool
+	}
 	if err := readJSON(r, &in); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	id := r.PathValue("id")
+	req := helperRequest{Action: "app_domain", ID: id, Domain: in.Domain, Port: in.Port, HTTPPort: a.port}
+	if in.Protect {
+		req.Confirm = "protect"
+		a.rememberBoxURL(r)
+	}
 	ctx, cancel := context.WithTimeout(r.Context(), 90*time.Second)
 	defer cancel()
-	raw, err := a.helper.call(ctx, helperRequest{Action: "app_domain", ID: id, Domain: in.Domain}, nil)
+	raw, err := a.helper.call(ctx, req, nil)
 	if err != nil {
 		writeError(w, http.StatusUnprocessableEntity, friendly(err))
 		return
 	}
-	a.audit(r, "app.domain", id+" "+in.Domain)
+	detail := id + " " + in.Domain
+	if in.Protect {
+		detail += " (Box sign-in)"
+	}
+	a.audit(r, "app.domain", detail)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(raw)
 }

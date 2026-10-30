@@ -170,6 +170,9 @@ func (a *App) routeTable() []route {
 		{"GET /api/share-links", false, a.shareLinksList},
 		{"POST /api/share-links", false, a.shareLinkCreate},
 		{"POST /api/share-links/{id}/revoke", false, a.shareLinkRevoke},
+		{"GET /api/proxy-auth/check", true, a.proxyAuthCheck},
+		{"GET /api/proxy-auth/start", true, a.proxyAuthStart},
+		{"GET /api/proxy-auth/finish", true, a.proxyAuthFinish},
 		{"GET /s/{token}", true, a.sharePublic},
 		{"POST /s/{token}", true, a.sharePublic},
 	}
