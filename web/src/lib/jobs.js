@@ -85,3 +85,8 @@ export function appURL(app) {
 export function isDigest(v = '') {
   return /^(sha256:)?[0-9a-f]{40,}$/i.test(v);
 }
+
+// Catalog links are only followed as http(s) addresses, never javascript: or data:.
+export function webLink(u) {
+  return typeof u === 'string' && /^https?:\/\//i.test(u) ? u : undefined;
+}

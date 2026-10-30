@@ -139,3 +139,11 @@ func TestPullFailuresBecomeFriendly(t *testing.T) {
 		t.Fatalf("raw line not logged: %v", logged)
 	}
 }
+
+func TestCheckDataDirRefusesTricks(t *testing.T) {
+	for _, p := range []string{"/srv/a'b", "/srv/a\nAPP=x", "/var/spool/cron/crontabs", "/usr/local/x", "/srv/$HOME"} {
+		if checkDataDir(p) == nil {
+			t.Errorf("%q accepted", p)
+		}
+	}
+}
