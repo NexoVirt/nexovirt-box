@@ -98,7 +98,8 @@
   }
 
   const busyOf = (app) => busy[app.id] || bg[app.id] || app.busy || '';
-  const unexpected = $derived((apps || []).filter((a) => !busyOf(a) && !a.stopped && DOWN.includes(a.state)));
+  const unexpected = $derived((apps || []).filter((a) => !busyOf(a) && !a.stopped && !a.layout_issue && DOWN.includes(a.state)));
+  const layoutIssues = $derived((apps || []).filter((a) => a.layout_issue));
 
   function stateText(app) {
     if (app.state === 'exited' && app.exit_code) return `Stopped with an error (code ${app.exit_code})`;
@@ -371,6 +372,15 @@
   {#if docker && (!docker.installed || !docker.running)}
     <DockerSetup {docker} onDone={load} />
   {/if}
+
+  {#each layoutIssues as app (app.id)}
+    <div class="notice down" role="status">
+      <CircleAlert size={18} />
+      <div class="down-text">
+        <span><strong>{app.name}</strong>: Needs attention: folder layout. {app.layout_issue}</span>
+      </div>
+    </div>
+  {/each}
 
   {#each unexpected as app (app.id)}
     <div class="notice down" role="status">

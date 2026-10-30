@@ -70,6 +70,10 @@ func (h *helperServer) backupRestore(ctx context.Context, req helperRequest, log
 	}
 
 	var meta installedApp
+	var archived installedApp // the archive's own settings: was its data already in the current layout?
+	if b, err := os.ReadFile(filepath.Join(staged, "app.json")); err == nil {
+		json.Unmarshal(b, &archived)
+	}
 	if !signed {
 		logf("This backup was made by an older Box version without a signature: its settings are checked like an own app.")
 	}
@@ -195,7 +199,14 @@ func (h *helperServer) backupRestore(ctx context.Context, req helperRequest, log
 			return nil, err
 		}
 	}
-	// 3. checks, as for an install
+	// 3. checks, as for an install; data from an older nested layout is moved first (layout.go)
+	if installed && !archived.LayoutOK {
+		meta.LayoutOK = false
+	}
+	if _, err := h.ensureLayout(ctx, newID, &meta, logf); err != nil {
+		rollback()
+		return nil, err
+	}
 	logf("Checking ports and folders")
 	if err := checkConfig(ctx, dir, newID, h.policy(meta), !installed); err != nil {
 		rollback()

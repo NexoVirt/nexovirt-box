@@ -375,7 +375,7 @@ func (h *helperServer) customEdit(ctx context.Context, req helperRequest, dir st
 	prevCompose, _ := os.ReadFile(filepath.Join(dir, "compose.yaml"))
 	prevEnv, _ := os.ReadFile(filepath.Join(dir, ".env"))
 	prevMeta := meta
-	meta.Name, meta.SocketOK = strings.TrimSpace(req.Name), req.AllowDockerSocket
+	meta.Name, meta.SocketOK, meta.LayoutIssue = strings.TrimSpace(req.Name), req.AllowDockerSocket, ""
 	meta.Allowed, meta.Reviewed = req.Allow, true
 	if req.Icon != "" {
 		meta.Icon = req.Icon
