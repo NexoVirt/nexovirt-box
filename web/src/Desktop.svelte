@@ -314,7 +314,7 @@
   }
   function globalKey(e) {
     if (inert || e.target.closest?.('input, textarea, [contenteditable]')) return;
-    if (e.key === '/' || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k')) { e.preventDefault(); searchEl?.focus(); }
+    if (e.key === '/') { e.preventDefault(); searchEl?.focus(); } // Ctrl+K is the command palette (App.svelte)
   }
 
   // ---- widget editor ----
@@ -322,6 +322,25 @@
     const list = [...prefs.widgets];
     [list[i], list[i + by]] = [list[i + by], list[i]];
     saveDesktop({ widgets: list });
+  }
+  function placeWidget(id, x, y) { saveDesktop({ widgets: prefs.widgets.map((w) => (w.id === id ? { ...w, x, y } : w)) }); }
+  function dockWidgets() { saveDesktop({ widgets: prefs.widgets.map(({ x, y, ...w }) => w) }); }
+  let placeQ = $state(''), places = $state([]), placeBusy = $state(false), placeTimer;
+  function findPlace() {
+    clearTimeout(placeTimer);
+    if (placeQ.trim().length < 2) { places = []; return; }
+    placeTimer = setTimeout(async () => {
+      placeBusy = true;
+      const res = await api('/api/widgets/weather/places?q=' + encodeURIComponent(placeQ.trim()));
+      placeBusy = false;
+      places = res.ok ? res.data : [];
+      if (!res.ok) toast(res.error, 'error');
+    }, 350);
+  }
+  function pickPlace(p) {
+    const name = [p.name, p.admin1, p.country].filter(Boolean).join(', ').slice(0, 80);
+    saveDesktop({ weather: { name, lat: p.latitude, lon: p.longitude }, widgets: prefs.widgets.map((w) => (w.id === 'weather' ? { ...w, on: true } : w)) });
+    places = []; placeQ = '';
   }
   function toggleWidget(i, on) { saveDesktop({ widgets: prefs.widgets.map((w, j) => (j === i ? { ...w, on } : w)) }); }
   const hiddenSys = $derived(SYSTEM.filter((s) => (prefs?.hidden || []).includes(s.id)));
@@ -345,7 +364,7 @@
 <div class="desk" class:on-dark={onDark} {inert}>
   <aside class="left">
     {#if prefs}
-      <Widgets {system} {username} widgets={prefs.widgets} clock={prefs.clock} paused={inert} {onNavigate} {onSessionLost} onEdit={() => (editOpen = true)} />
+      <Widgets {system} {username} widgets={prefs.widgets} clock={prefs.clock} {apps} weatherPlace={prefs.weather?.name || ''} free={!narrow} paused={inert} {onNavigate} {onSessionLost} onEdit={() => (editOpen = true)} onMove={placeWidget} />
     {:else}
       {#each Array(3) as _}<div class="glass skel-widget"><span class="skeleton"></span></div>{/each}
     {/if}
@@ -455,7 +474,7 @@
 <Dialog bind:open={editOpen} label="Edit widgets">
   <div class="dlg">
     <div class="dlg-head"><h2 class="t-title">Edit widgets</h2></div>
-    <p class="t-sub">Pick the widgets on the left of the desktop and their order. Saved for your account.</p>
+    <p class="t-sub">Pick the widgets on the left of the desktop and their order. Drag a widget by its handle to place it anywhere. Saved for your account.</p>
     {#if prefs}
       <div class="group">
         {#each prefs.widgets as w, i (w.id)}
@@ -467,6 +486,18 @@
           </div>
         {/each}
       </div>
+      {#if prefs.widgets.some((w) => w.x != null)}
+        <button class="btn btn-gray btn-sm" onclick={dockWidgets}>Put all widgets back in the column</button>
+      {/if}
+      <p class="t-section">Weather place</p>
+      <div class="group">
+        <div class="row"><span class="grow">{prefs.weather?.name || 'No place picked'}</span></div>
+        <div class="row"><input class="input" bind:value={placeQ} oninput={findPlace} placeholder="Search a city" aria-label="Search a city for the weather" spellcheck="false" /></div>
+        {#each places as p (p.latitude + ',' + p.longitude)}
+          <button class="row place" onclick={() => pickPlace(p)}>{[p.name, p.admin1, p.country].filter(Boolean).join(', ')}</button>
+        {/each}
+      </div>
+      <p class="t-caption">The weather comes from Open-Meteo.com (no account). Box asks for the picked place only, from the server.</p>
       {#if hiddenSys.length}
         <p class="t-section">Hidden from the desktop</p>
         <div class="group">
@@ -588,4 +619,6 @@
     kbd { display: none; }
     .search input { font-size: 0.9375rem; }
   }
+  .place { width: 100%; border: 0; background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+  .place:hover { background: var(--fill); }
 </style>
