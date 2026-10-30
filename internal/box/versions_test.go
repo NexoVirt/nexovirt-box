@@ -14,7 +14,7 @@ func TestFileVersions(t *testing.T) {
 	upload := func(content string) {
 		t.Helper()
 		id := "0123456789abcdef"
-		os.WriteFile(uploadTemp(doc, id), []byte(content), 0o644)
+		os.WriteFile(filepath.Join(root, uploadTempName(id)), []byte(content), 0o644)
 		if _, err := h.filesUploadFinish(helperRequest{Path: doc, ID: id, Overwrite: true}, nil); err != nil {
 			t.Fatal(err)
 		}
