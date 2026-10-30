@@ -40,8 +40,15 @@ A compose file (pasted or uploaded) plus an optional `.env`, stored verbatim in 
 catalog app (`app.json` `custom: true`). Adding or changing one needs a fresh password proof checked by the helper.
 Before Docker reads it, the raw YAML is refused when it has `include`, `extends.file`, `build`, `label_file`,
 secrets or configs with `file`, or an `env_file` other than `.env` (Docker would read those host files as root while
-rendering). The rendered config then gets the mount checks of every app plus: no privileged mode, devices, GPUs, host
-PID/IPC/UTS/userns/cgroup, dangerous capabilities (SYS_ADMIN, ALL, ...) or unconfined security profiles. `.env` may
+rendering). The rendered config then gets the mount checks of every app (Box's own files, system folders and secrets
+stay refused, no confirmation possible). Before saving, the dialog calls `POST /api/apps/custom/check` (helper
+`custom_app_check`: renders the file in a scratch folder `apps/.check-*` without `app.json`, runs nothing) and lists
+risk findings: privileged mode, devices, GPUs, host network/PID/IPC/UTS/userns/cgroup, dangerous capabilities
+(SYS_ADMIN, ALL, ...), unconfined security profiles, and binds outside the app folder, the shared folder and the
+file roots. Each one is allowed per item (key like `web:privileged`, `bind:/opt/x`); the save request carries the
+confirmed keys (audited as `app.custom_allow`), the helper refuses every unconfirmed finding and stores the confirmed
+ones in `app.json` (`allowed`, `reviewed`) so later starts, updates and restores pass the same check. Own apps saved
+before the review (no `reviewed`) keep host network and outside binds, never privileges. `.env` may
 not set `DOCKER_*` or `COMPOSE_*`. Editing shows a line diff, checks the new file (only new ports must be free),
 redeploys, and goes back to the old file when it does not start.
 

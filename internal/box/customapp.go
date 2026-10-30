@@ -17,6 +17,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -148,14 +149,30 @@ var deniedCaps = map[string]bool{"ALL": true, "SYS_ADMIN": true, "SYS_MODULE": t
 
 var unconfinedRe = regexp.MustCompile(`(?i)unconfined|label[=:]disable|systempaths`)
 
-// checkPrivileges reads `docker compose config --format json`.
-func checkPrivileges(configJSON []byte) error {
+// riskFinding is something in an own app's compose file that gives a container power over the
+// server. Box refuses it unless the admin confirmed exactly this key (stored in app.json).
+type riskFinding struct {
+	Key  string `json:"key"`
+	Text string `json:"text"`
+}
+
+// legacyOK are the findings Box allowed before the per-item review existed; own apps saved before
+// it (app.json without "reviewed") keep running with them.
+func legacyOK(key string) bool {
+	return strings.HasSuffix(key, ":network_host") || strings.HasPrefix(key, "bind:")
+}
+
+// riskFindings reads `docker compose config --format json`. Binds outside the app's own folders,
+// the shared folder and the file roots (p.roots) are findings too; binds of Box's state, system
+// folders and secrets stay refused by checkMounts whatever the admin confirms.
+func riskFindings(configJSON []byte, p mountPolicy) ([]riskFinding, error) {
 	var cfg struct {
 		Services map[string]struct {
 			Privileged        bool     `json:"privileged"`
 			CapAdd            []string `json:"cap_add"`
 			Devices           []any    `json:"devices"`
 			DeviceCgroupRules []string `json:"device_cgroup_rules"`
+			NetworkMode       string   `json:"network_mode"`
 			Pid               string   `json:"pid"`
 			Ipc               string   `json:"ipc"`
 			Uts               string   `json:"uts"`
@@ -163,35 +180,100 @@ func checkPrivileges(configJSON []byte) error {
 			Cgroup            string   `json:"cgroup"`
 			SecurityOpt       []string `json:"security_opt"`
 			Gpus              any      `json:"gpus"`
+			Volumes           []struct {
+				Type   string `json:"type"`
+				Source string `json:"source"`
+			} `json:"volumes"`
 		} `json:"services"`
 	}
 	if err := json.Unmarshal(configJSON, &cfg); err != nil {
-		return uerr("The app definition could not be read.")
+		return nil, uerr("The app definition could not be read.")
 	}
-	refuse := func(svc, what string) error {
-		return uerr("Service %s asks for %s, which gives it control over the server. Box refused it.", svc, what)
+	var out []riskFinding
+	seen := map[string]bool{}
+	add := func(key, text string) {
+		if !seen[key] {
+			seen[key] = true
+			out = append(out, riskFinding{key, text})
+		}
 	}
-	for name, s := range cfg.Services {
-		switch {
-		case s.Privileged:
-			return refuse(name, "privileged mode")
-		case len(s.Devices) > 0 || len(s.DeviceCgroupRules) > 0:
-			return refuse(name, "host devices")
-		case s.Gpus != nil:
-			return refuse(name, "GPU devices")
-		case s.Pid == "host", s.Ipc == "host", s.Uts == "host", s.UsernsMode == "host", s.Cgroup == "host":
-			return refuse(name, "the server's own process namespaces")
+	names := make([]string, 0, len(cfg.Services))
+	for n := range cfg.Services {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		s := cfg.Services[name]
+		svc := func(what, text string) { add(name+":"+what, "Service "+name+" "+text) }
+		if s.Privileged {
+			svc("privileged", "runs in privileged mode (full control of the server).")
+		}
+		if len(s.Devices) > 0 || len(s.DeviceCgroupRules) > 0 {
+			svc("devices", "uses host devices.")
+		}
+		if s.Gpus != nil {
+			svc("gpus", "uses GPU devices.")
+		}
+		if s.NetworkMode == "host" {
+			svc("network_host", "uses the server's network directly (every port it opens is open on the server).")
+		}
+		for k, v := range map[string]string{"pid": s.Pid, "ipc": s.Ipc, "uts": s.Uts, "userns": s.UsernsMode, "cgroup": s.Cgroup} {
+			if v == "host" {
+				svc(k+"_host", "shares the server's "+k+" namespace.")
+			}
 		}
 		for _, c := range s.CapAdd {
-			if deniedCaps[strings.TrimPrefix(strings.ToUpper(c), "CAP_")] {
-				return refuse(name, "the capability "+c)
+			c = strings.TrimPrefix(strings.ToUpper(c), "CAP_")
+			if deniedCaps[c] {
+				svc("cap:"+c, "asks for the capability "+c+".")
 			}
 		}
 		for _, o := range s.SecurityOpt {
 			if unconfinedRe.MatchString(o) {
-				return refuse(name, "an unconfined security profile")
+				svc("unconfined", "turns off a security profile ("+o+").")
 			}
 		}
+		for _, v := range s.Volumes {
+			if v.Type != "bind" || !filepath.IsAbs(v.Source) {
+				continue
+			}
+			path := resolvePath(v.Source)
+			if p.allowed(path) || p.inRoots(path) || filepath.Base(path) == "docker.sock" {
+				continue
+			}
+			add("bind:"+filepath.Clean(v.Source), "A service mounts the server folder "+filepath.Clean(v.Source)+", which is outside Box's folders.")
+		}
+	}
+	// Map order made the per-service namespace loop random; keep the list stable.
+	sort.SliceStable(out, func(i, j int) bool { return out[i].Key < out[j].Key })
+	return out, nil
+}
+
+func (p mountPolicy) inRoots(path string) bool {
+	for _, r := range p.roots {
+		r = resolvePath(r)
+		if path == r || within(path, r) {
+			return true
+		}
+	}
+	return false
+}
+
+// checkPrivileges refuses every finding the admin did not confirm.
+func checkPrivileges(configJSON []byte, p mountPolicy) error {
+	fs, err := riskFindings(configJSON, p)
+	if err != nil {
+		return err
+	}
+	ok := map[string]bool{}
+	for _, k := range p.confirmed {
+		ok[k] = true
+	}
+	for _, f := range fs {
+		if ok[f.Key] || (!p.reviewed && legacyOK(f.Key)) {
+			continue
+		}
+		return uerr("%s Box refused it. Confirm it in the review step if you trust this app.", f.Text)
 	}
 	return nil
 }
@@ -247,7 +329,8 @@ func (h *helperServer) customAdd(ctx context.Context, req helperRequest, dir str
 	}
 	os.Chmod(filepath.Join(dir, "data"), 0o755)
 	meta := installedApp{ID: req.ID, Name: strings.TrimSpace(req.Name), Version: "own", Scheme: "http", Store: "Own app",
-		InstalledAt: time.Now().Unix(), DataDir: filepath.Join(dir, "data"), SocketOK: req.AllowDockerSocket, Custom: true, Icon: req.Icon}
+		InstalledAt: time.Now().Unix(), DataDir: filepath.Join(dir, "data"), SocketOK: req.AllowDockerSocket, Custom: true, Icon: req.Icon,
+		Allowed: req.Allow, Reviewed: true}
 	if err := writeAppFiles(dir, req.Compose, req.Env, meta, true); err != nil {
 		os.RemoveAll(dir)
 		return nil, err
@@ -259,6 +342,7 @@ func (h *helperServer) customAdd(ctx context.Context, req helperRequest, dir str
 		return nil, err
 	}
 	meta.MainPort = firstTCPPort(cfg)
+	meta.Allowed = keepFound(cfg, h.policy(meta), req.Allow)
 	h.writeMeta(meta)
 	if err := h.up(ctx, meta.Name, dir, meta.ID, logf); err != nil {
 		return nil, err // files stay: Retry install resumes, Uninstall removes them
@@ -279,6 +363,7 @@ func (h *helperServer) customEdit(ctx context.Context, req helperRequest, dir st
 	prevEnv, _ := os.ReadFile(filepath.Join(dir, ".env"))
 	prevMeta := meta
 	meta.Name, meta.SocketOK = strings.TrimSpace(req.Name), req.AllowDockerSocket
+	meta.Allowed, meta.Reviewed = req.Allow, true
 	if req.Icon != "" {
 		meta.Icon = req.Icon
 	}
@@ -296,6 +381,7 @@ func (h *helperServer) customEdit(ctx context.Context, req helperRequest, dir st
 		return nil, err
 	}
 	meta.MainPort = firstTCPPort(cfg)
+	meta.Allowed = keepFound(cfg, h.policy(meta), req.Allow)
 	h.writeMeta(meta)
 	if meta.Stopped {
 		logf("Saved. The app stays stopped until you start it.")
@@ -310,6 +396,69 @@ func (h *helperServer) customEdit(ctx context.Context, req helperRequest, dir st
 	}
 	return meta, nil
 }
+
+// keepFound drops confirmations that match nothing in the config, so app.json lists only what the
+// admin really allowed.
+func keepFound(cfg []byte, p mountPolicy, allow []string) []string {
+	fs, _ := riskFindings(cfg, p)
+	want := map[string]bool{}
+	for _, k := range allow {
+		want[k] = true
+	}
+	var out []string
+	for _, f := range fs {
+		if want[f.Key] {
+			out = append(out, f.Key)
+		}
+	}
+	return out
+}
+
+// customAppCheck renders a compose file in a scratch folder and lists what needs a confirmation.
+// Everything Box refuses outright comes back as the error.
+func (h *helperServer) customAppCheck(req helperRequest, _ func(string)) (any, error) {
+	if err := checkOwnComposeRaw([]byte(req.Compose)); err != nil {
+		return nil, err
+	}
+	if err := checkOwnEnv(req.Env); err != nil {
+		return nil, err
+	}
+	if err := needDocker(); err != nil {
+		return nil, err
+	}
+	os.MkdirAll(h.appsDir, 0o700)
+	dir, err := os.MkdirTemp(h.appsDir, ".check-")
+	if err != nil {
+		return nil, err
+	}
+	defer os.RemoveAll(dir)
+	meta := installedApp{ID: "check", Custom: true, Reviewed: true, SocketOK: true, DataDir: filepath.Join(dir, "data")}
+	// No app.json here: nothing that lists apps may take the scratch folder for one.
+	if err := os.WriteFile(filepath.Join(dir, "compose.yaml"), []byte(req.Compose), 0o600); err != nil {
+		return nil, err
+	}
+	if err := os.WriteFile(filepath.Join(dir, ".env"), []byte(req.Env), 0o600); err != nil {
+		return nil, err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	cfg, err := renderConfig(ctx, dir, "check")
+	if err != nil {
+		return nil, err
+	}
+	p := h.policy(meta)
+	p.allow = append(p.allow, dir)
+	if err := checkMounts(cfg, p); err != nil {
+		return nil, err
+	}
+	fs, err := riskFindings(cfg, p)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]any{"findings": fs, "docker_socket": socketMounted(cfg)}, nil
+}
+
+func socketMounted(cfg []byte) bool { return strings.Contains(string(cfg), "docker.sock") }
 
 // writeAppFiles stores the compose file and .env verbatim (0600) plus app.json.
 func writeAppFiles(dir, composeText, env string, meta installedApp, marker bool) error {
@@ -385,5 +534,5 @@ func (h *helperServer) customAppGet(req helperRequest, _ func(string)) (any, err
 	c, _ := os.ReadFile(filepath.Join(h.appDir(req.ID), "compose.yaml"))
 	e, _ := os.ReadFile(filepath.Join(h.appDir(req.ID), ".env"))
 	return map[string]any{"id": meta.ID, "name": meta.Name, "icon": meta.Icon, "compose": string(c), "env": string(e),
-		"docker_socket_ok": meta.SocketOK}, nil
+		"docker_socket_ok": meta.SocketOK, "allowed": meta.Allowed}, nil
 }

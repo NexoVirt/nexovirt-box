@@ -19,11 +19,12 @@
 
   const SAMPLE = `services:\n  web:\n    image: nginx:alpine\n    ports:\n      - "8080:80"\n    volumes:\n      - ./html:/usr/share/nginx/html\n    restart: unless-stopped\n`;
   let name = $state(''), composeText = $state(''), env = $state(''), icon = $state('lucide:server'), upload = $state(null), uploadPreview = $state('');
+  let findings = $state([]), allow = $state([]), checking = $state(false);
   let socket = $state(false), original = $state(null), loading = $state(false), step = $state('edit'), busy = $state(false), lines = $state([]), error = $state('');
 
   $effect(() => {
     if (!open) return;
-    error = ''; lines = []; step = 'edit'; upload = null; uploadPreview = ''; socket = false;
+    error = ''; lines = []; step = 'edit'; upload = null; uploadPreview = ''; socket = false; findings = []; allow = [];
     if (editId) load();
     else { original = null; name = ''; composeText = ''; env = ''; icon = 'lucide:server'; }
   });
@@ -35,7 +36,7 @@
     if (res.status === 401) return onSessionLost?.();
     if (!res.ok) { error = res.error; return; }
     original = res.data;
-    name = res.data.name; composeText = res.data.compose; env = res.data.env; icon = res.data.icon || 'lucide:server'; socket = !!res.data.docker_socket_ok;
+    name = res.data.name; composeText = res.data.compose; env = res.data.env; icon = res.data.icon || 'lucide:server'; socket = !!res.data.docker_socket_ok; allow = res.data.allowed || [];
   }
 
   let mentionsSocket = $derived(/docker\.sock/.test(composeText));
@@ -61,21 +62,32 @@
     r.readAsDataURL(f);
   }
 
-  function next(e) {
+  async function next(e) {
     e.preventDefault();
     error = '';
     if (!name.trim()) { error = 'Give the app a name.'; return; }
     if (!composeText.trim()) { error = 'Paste or upload a compose file.'; return; }
     if (mentionsSocket && !socket) { error = 'This compose file mounts the Docker socket. Allow it below if you trust the app.'; return; }
+    // The helper renders the file and lists what gives a container power over the server.
+    checking = true;
+    const res = await api('/api/apps/custom/check', { method: 'POST', body: { compose: composeText, env } });
+    checking = false;
+    if (res.status === 401) return onSessionLost?.();
+    if (!res.ok) { error = res.error; findings = []; return; }
+    findings = res.data.findings || [];
+    allow = allow.filter((k) => findings.some((f) => f.key === k));
+    if (findings.some((f) => !allow.includes(f.key))) { error = 'Confirm each item below, or change the compose file.'; return; }
     if (original) step = 'review';
     else save();
   }
+
+  function toggle(key, on) { allow = on ? [...allow, key] : allow.filter((k) => k !== key); }
 
   async function save() {
     busy = true;
     error = '';
     lines = [];
-    const body = { op: original ? 'edit' : 'add', id: original?.id || '', name, compose: composeText, env, icon, allow_docker_socket: socket };
+    const body = { op: original ? 'edit' : 'add', id: original?.id || '', name, compose: composeText, env, icon, allow_docker_socket: socket, allow };
     const job = await withProof(() => runJob('/api/apps/custom', body, (j) => (lines = j.lines)));
     if (job.cancelled) { busy = false; return; }
     if (job.http === 401) { busy = false; return onSessionLost?.(); }
@@ -134,14 +146,23 @@
           </div>
           <textarea class="input mono code env" bind:value={env} rows="3" spellcheck="false" placeholder="KEY=value" disabled={busy}></textarea>
         </div>
-        <p class="t-caption">Relative folders like ./data stay inside the app's own folder. Images must be ready to pull (no build). Box refuses access to its own files, system folders, host devices and privileged mode.</p>
+        <p class="t-caption">Relative folders like ./data stay inside the app's own folder. Images must be ready to pull (no build). Box refuses access to its own files and system folders. Privileged mode, host devices, the host network and folders outside Box's folders need your confirmation per item.</p>
         {#if mentionsSocket}
           <label class="row-field warn"><span class="field-text"><span class="field-label"><TriangleAlert size={15} />Allow access to Docker</span><span class="t-caption">The file mounts the Docker socket. That gives the app full control of the server.</span></span><input class="switch" type="checkbox" bind:checked={socket} disabled={busy} /></label>
+        {/if}
+        {#if findings.length}
+          <div class="risks">
+            <span class="field-label"><TriangleAlert size={15} />This app asks for more than usual</span>
+            <span class="t-caption">Each item gives the app power over the server. Allow only what you trust; Box keeps refusing the rest.</span>
+            {#each findings as f (f.key)}
+              <label class="row-field warn"><span>{f.text}</span><input class="switch" type="checkbox" checked={allow.includes(f.key)} onchange={(e) => toggle(f.key, e.currentTarget.checked)} disabled={busy} /></label>
+            {/each}
+          </div>
         {/if}
         {#if busy}<JobLog {lines} />{/if}
         <div class="buttons">
           <button type="button" class="btn btn-gray" data-close onclick={() => (open = false)} disabled={busy}>Cancel</button>
-          <button class="btn btn-primary" disabled={busy}>{#if busy}<Loader size={16} class="spinner" />Installing{:else}{editId ? 'Review changes' : 'Check and install'}{/if}</button>
+          <button class="btn btn-primary" disabled={busy || checking}>{#if busy}<Loader size={16} class="spinner" />Installing{:else if checking}<Loader size={16} class="spinner" />Checking{:else}{editId ? 'Review changes' : 'Check and install'}{/if}</button>
         </div>
       {/if}
     </form>
@@ -181,6 +202,8 @@
   .code.env { min-height: 4.5rem; }
   .field-text { display: grid; gap: 0.125rem; }
   .warn .field-label { display: inline-flex; align-items: center; gap: 0.375rem; color: var(--warn); }
+  .risks { display: grid; gap: 0.5rem; }
+  .risks > .field-label { display: inline-flex; align-items: center; gap: 0.375rem; color: var(--warn); }
   .busy-line { display: flex; align-items: center; gap: 0.5rem; }
   .diff { margin: 0; max-height: 24rem; overflow: auto; padding: 0.75rem 0; border-radius: var(--r-control); background: var(--fill); font-size: 0.78rem; line-height: 1.5; }
   .ln { display: block; padding: 0 0.875rem; white-space: pre; }

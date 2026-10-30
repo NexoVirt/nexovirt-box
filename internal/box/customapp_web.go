@@ -12,13 +12,14 @@ import (
 )
 
 type customBody struct {
-	Op                string `json:"op"` // add, edit
-	ID                string `json:"id"`
-	Name              string `json:"name"`
-	Compose           string `json:"compose"`
-	Env               string `json:"env"`
-	Icon              string `json:"icon"`
-	AllowDockerSocket bool   `json:"allow_docker_socket"`
+	Op                string   `json:"op"` // add, edit
+	ID                string   `json:"id"`
+	Name              string   `json:"name"`
+	Compose           string   `json:"compose"`
+	Env               string   `json:"env"`
+	Icon              string   `json:"icon"`
+	AllowDockerSocket bool     `json:"allow_docker_socket"`
+	Allow             []string `json:"allow"`
 }
 
 func (a *App) customAppSave(w http.ResponseWriter, r *http.Request) {
@@ -50,10 +51,34 @@ func (a *App) customAppSave(w http.ResponseWriter, r *http.Request) {
 	if !a.needProof(w, r) {
 		return
 	}
+	if len(in.Allow) > 50 {
+		writeError(w, http.StatusBadRequest, "The request could not be read.")
+		return
+	}
+	for _, k := range in.Allow {
+		if len(k) > 300 || controlChar.MatchString(k) {
+			writeError(w, http.StatusBadRequest, "The request could not be read.")
+			return
+		}
+	}
+	if len(in.Allow) > 0 {
+		a.audit(r, "app.custom_allow", in.ID+": "+strings.Join(in.Allow, ", "))
+	}
 	tok := sessionToken(r)
 	kind := map[string]string{"add": "install", "edit": "edit"}[in.Op]
 	a.runJob(w, r, kind, in.ID, "app.custom_"+in.Op, helperRequest{Action: "custom_app_save", Op: in.Op, ID: in.ID, Name: in.Name,
-		Compose: in.Compose, Env: in.Env, Icon: in.Icon, AllowDockerSocket: in.AllowDockerSocket, Session: hashToken(tok), Proof: a.consoleProof(tok)})
+		Compose: in.Compose, Env: in.Env, Icon: in.Icon, AllowDockerSocket: in.AllowDockerSocket, Allow: in.Allow, Session: hashToken(tok), Proof: a.consoleProof(tok)})
+}
+
+// customAppCheck lists what in a compose file needs the admin's confirmation (nothing runs).
+func (a *App) customAppCheck(w http.ResponseWriter, r *http.Request) {
+	var in customBody
+	r.Body = http.MaxBytesReader(nil, r.Body, maxCompose+maxEnv+16<<10)
+	if err := readJSONRaw(r, &in); err != nil {
+		writeError(w, http.StatusBadRequest, "The request could not be read. The compose file can have at most 256 KB.")
+		return
+	}
+	a.helperJSON(w, r, helperRequest{Action: "custom_app_check", Compose: in.Compose, Env: in.Env})
 }
 
 func (a *App) customAppGet(w http.ResponseWriter, r *http.Request) {
