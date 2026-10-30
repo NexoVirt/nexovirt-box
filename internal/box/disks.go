@@ -356,7 +356,9 @@ func (h *helperServer) smartSelftest(req helperRequest, logf func(string)) (any,
 	if _, err := exec.LookPath("smartctl"); err != nil {
 		return nil, uerr("Install smartmontools first.")
 	}
-	out, err := exec.Command("smartctl", "-t", req.Op, req.Path).CombinedOutput()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+	out, err := exec.CommandContext(ctx, "smartctl", "-t", req.Op, req.Path).CombinedOutput()
 	if err != nil && !strings.Contains(string(out), "Testing has begun") && !strings.Contains(string(out), "Self-test has begun") {
 		return nil, uerr("The disk did not start the test: %s", strings.TrimSpace(lastLines(string(out), 1)))
 	}

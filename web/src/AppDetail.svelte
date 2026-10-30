@@ -3,7 +3,7 @@
   import { api } from '$lib/api.js';
   import { untrack } from 'svelte';
   import { installs, startInstall } from '$lib/installs.svelte.js';
-  import { plainText, appURL, versionLabel, generatePassword } from '$lib/jobs.js';
+  import { plainText, appURL, versionLabel, generatePassword, webLink } from '$lib/jobs.js';
   import AppIcon from '$lib/AppIcon.svelte';
   import JobLog from '$lib/JobLog.svelte';
   import Secret from '$lib/Secret.svelte';
@@ -237,9 +237,9 @@
     {#if app.description && plainText(app.description) !== app.tagline}<p class="desc">{plainText(app.description)}</p>{/if}
     <div class="group meta">
       {#if app.main_port}<div class="row"><span class="row-label">Default web port</span><span class="row-value num">{app.main_port}</span></div>{/if}
-      {#if app.website}<div class="row"><span class="row-label">Website</span><a class="row-value link truncate" href={app.website} target="_blank" rel="noopener noreferrer">{app.website.replace(/^https?:\/\//, '')}</a></div>{/if}
-      {#if app.source}<div class="row"><span class="row-label">Source code</span><a class="row-value link truncate" href={app.source} target="_blank" rel="noopener noreferrer">{app.source.replace(/^https?:\/\//, '')}</a></div>{/if}
-      <div class="row"><span class="row-label">App definition</span><a class="row-value link truncate" href={app.attribution.url} target="_blank" rel="noopener noreferrer">{app.attribution.store}, {app.attribution.license}</a></div>
+      {#if webLink(app.website)}<div class="row"><span class="row-label">Website</span><a class="row-value link truncate" href={webLink(app.website)} target="_blank" rel="noopener noreferrer">{app.website.replace(/^https?:\/\//, '')}</a></div>{/if}
+      {#if webLink(app.source)}<div class="row"><span class="row-label">Source code</span><a class="row-value link truncate" href={webLink(app.source)} target="_blank" rel="noopener noreferrer">{app.source.replace(/^https?:\/\//, '')}</a></div>{/if}
+      <div class="row"><span class="row-label">App definition</span><a class="row-value link truncate" href={webLink(app.attribution.url)} target="_blank" rel="noopener noreferrer">{app.attribution.store}, {app.attribution.license}</a></div>
     </div>
   {:else if view === 'form'}
     <form class="form" id="install-form" onsubmit={install}>

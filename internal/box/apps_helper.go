@@ -1083,7 +1083,18 @@ func checkDataDir(p string) error {
 	if !filepath.IsAbs(p) || filepath.Clean(p) != p || strings.Count(p, "/") < 2 {
 		return uerr("Use a full folder path like /srv/apps/name.")
 	}
-	if underAny(p, systemDirs) {
+	if strings.ContainsAny(p, "'\"\\$`") || strings.IndexFunc(p, func(r rune) bool { return r < 0x20 || r == 0x7f }) >= 0 {
+		return uerr("Use a folder path without quotes, dollar signs or control characters.")
+	}
+	// The folder as given and as it really is (a link in a parent folder could point anywhere).
+	real := p
+	for d := p; d != "/"; d = filepath.Dir(d) {
+		if r, err := filepath.EvalSymlinks(d); err == nil {
+			real = filepath.Join(r, strings.TrimPrefix(p, d))
+			break
+		}
+	}
+	if underAny(p, systemDirs) || underAny(real, systemDirs) || underAny(p, blockedDirs) || underAny(real, blockedDirs) {
 		return uerr("%s is a system folder. Pick a folder under /srv, /home, /opt or /mnt.", p)
 	}
 	st, err := os.Lstat(p)
