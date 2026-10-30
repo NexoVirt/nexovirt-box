@@ -94,8 +94,32 @@ func TestAptErrors(t *testing.T) {
 }
 
 func TestAutoUpdatesDropIn(t *testing.T) {
-	b := autoUpdatesDropIn()
-	if !strings.Contains(b, `APT::Periodic::Unattended-Upgrade "1";`) || !strings.Contains(b, `APT::Periodic::Update-Package-Lists "1";`) {
+	b := autoUpdatesDropIn(defaultAutoCfg())
+	if !strings.Contains(b, `APT::Periodic::Unattended-Upgrade "1";`) || !strings.Contains(b, `APT::Periodic::Update-Package-Lists "1";`) ||
+		!strings.Contains(b, `Automatic-Reboot "false"`) {
 		t.Fatalf("drop-in: %s", b)
+	}
+	c := autoUpdateCfg{From: "23:30", To: "01:00", Reboot: "needed", RebootAt: "02:15"}
+	if err := c.validate(); err != nil {
+		t.Fatal(err)
+	}
+	if b := autoUpdatesDropIn(c); !strings.Contains(b, `Automatic-Reboot "true"`) || !strings.Contains(b, `Automatic-Reboot-Time "02:15"`) {
+		t.Fatalf("reboot: %s", b)
+	}
+	if tm := autoTimer(c); !strings.Contains(tm, "OnCalendar=*-*-* 23:30:00") || !strings.Contains(tm, "RandomizedDelaySec=85m") {
+		t.Fatalf("timer: %s", tm)
+	}
+	for _, bad := range []autoUpdateCfg{{From: "4:00", To: "05:00", Reboot: "never", RebootAt: "04:00"}, {From: "04:00", To: "04:00", Reboot: "never", RebootAt: "04:00"},
+		{From: "04:00", To: "05:00", Reboot: "always", RebootAt: "04:00"}, {From: "04:00", To: "05:00\nOnCalendar=x", Reboot: "never", RebootAt: "04:00"}} {
+		if bad.validate() == nil {
+			t.Errorf("accepted %+v", bad)
+		}
+	}
+	log := "2026-10-01 04:12:01,1 INFO Starting unattended upgrades script\n2026-10-01 04:12:09,2 INFO All upgrades installed\n"
+	if r := lastAutoResult(log); r != "All upgrades installed" {
+		t.Fatalf("result %q", r)
+	}
+	if r := lastAutoResult(log + "2026-10-02 04:10:00,0 ERROR Cache has broken packages\n"); r != "Error: Cache has broken packages" {
+		t.Fatalf("error %q", r)
 	}
 }

@@ -34,14 +34,15 @@ func (a *App) helperReply(w http.ResponseWriter, r *http.Request, req helperRequ
 }
 
 type sysBody struct {
-	Op       string      `json:"op"`
-	Packages []string    `json:"packages"`
-	Confirm  string      `json:"confirm"`
-	Path     string      `json:"path"`
-	Name     string      `json:"name"`
-	Password string      `json:"password"`
-	Share    *sambaShare `json:"share"`
-	Export   *nfsExport  `json:"export"`
+	Op       string         `json:"op"`
+	Packages []string       `json:"packages"`
+	Confirm  string         `json:"confirm"`
+	Path     string         `json:"path"`
+	Name     string         `json:"name"`
+	Password string         `json:"password"`
+	Share    *sambaShare    `json:"share"`
+	Export   *nfsExport     `json:"export"`
+	Auto     *autoUpdateCfg `json:"auto"`
 }
 
 func readSys(w http.ResponseWriter, r *http.Request) (sysBody, bool) {
@@ -86,7 +87,13 @@ func (a *App) sysUpdatesProgress(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) sysAutoUpdates(w http.ResponseWriter, r *http.Request) {
 	if in, ok := readSys(w, r); ok {
-		a.runJob(w, r, "auto_updates", "system-auto-updates", "system.auto_updates_"+in.Op, helperRequest{Action: "auto_updates", Op: in.Op})
+		if in.Auto != nil {
+			if err := in.Auto.validate(); err != nil {
+				writeError(w, http.StatusUnprocessableEntity, err.Error())
+				return
+			}
+		}
+		a.runJob(w, r, "auto_updates", "system-auto-updates", "system.auto_updates_"+in.Op, helperRequest{Action: "auto_updates", Op: in.Op, AutoCfg: in.Auto})
 	}
 }
 
