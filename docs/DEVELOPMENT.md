@@ -237,6 +237,14 @@ embedded.
   battery/replace battery, and scheduled apps without a successful backup for 8 days. `watchSystemHealth` (every 10
   min) sends them as the `health` notification (backup problems once a day; SMART changes keep `disk_health`).
   smartmontools is installed only from the Disks banner (the admin's click, `pkg_install`).
+- External drives (`drives.go`, Settings > Disks > External drives, `GET /api/drives`, `POST /api/drives/{mount,unmount,eject,format}`,
+  audited `drive.*`): helper `drives_list` keeps only disks with TRAN=usb or RM=1 from lsblk; every action re-reads the
+  list, so the server's own disks can never be mounted, ejected or formatted. `drive_mount` mounts a partition with a file
+  system from a fixed list under `/media/nxbox/<label>` with nosuid,nodev,noexec (not permanent: a reboot unmounts it);
+  `drive_unmount` (op `eject` powers the disk off with udisksctl or `/sys/block/<dev>/device/delete`) only unmounts what
+  Box mounted. `drive_format` (job) needs a password proof checked by the helper, the typed text `FORMAT <device>`, no
+  mounted partition, then one GPT partition (sfdisk) with ext4 or exFAT. "Use for backups" creates a local backup target
+  at `<mount>/nexovirt-box-backups`; mounted drives show up as places in Files (default roots) and can be shared.
 - Shares (`shares.go`, state /etc/nexovirt-box/shares.json): Samba writes ONLY /etc/samba/nexovirt-box.conf plus one
   include line appended to smb.conf once; testparm failure restores the previous file. Share users are Linux system users
   Box created (nologin, no home; a name that already exists is refused) with smbpasswd. Shares use force user/group = the
