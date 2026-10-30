@@ -135,6 +135,7 @@ func (a *App) routeTable() []route {
 		{"POST /api/backups/history/clear", false, a.backupHistoryClear},
 		{"POST /api/backups/history/{id}/dismiss", false, a.backupHistoryDismiss},
 		{"POST /api/apps/custom", false, a.customAppSave},
+		{"POST /api/apps/custom/check", false, a.customAppCheck},
 		{"GET /api/apps/{id}/custom", false, a.customAppGet},
 		{"POST /api/apps/{id}/icon", false, a.customIconUpload},
 		{"GET /api/notify", false, a.notifyGet},

@@ -29,22 +29,24 @@ import (
 )
 
 type installedApp struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Version     string `json:"version"`
-	MainPort    int    `json:"main_port"`
-	Scheme      string `json:"scheme"`
-	Store       string `json:"store"`
-	InstalledAt int64  `json:"installed_at"`
-	Domain      string `json:"domain,omitempty"`
-	TLS         string `json:"tls,omitempty"`
-	DataDir     string `json:"data_dir,omitempty"`
-	DataCreated bool   `json:"data_created,omitempty"`     // Box created DataDir, so "delete data" may remove it
-	SocketOK    bool   `json:"docker_socket_ok,omitempty"` // the admin agreed to give this app Docker access
-	Stopped     bool   `json:"stopped,omitempty"`          // stopped on purpose (desired state), no alert
-	Custom      bool   `json:"custom,omitempty"`           // an own app (compose from the admin, customapp.go)
-	Icon        string `json:"icon,omitempty"`             // own apps: lucide:<name> or upload
-	ComposeSHA  string `json:"compose_sha,omitempty"`      // sha256 of the catalog compose it runs (catalogupdate.go)
+	ID          string   `json:"id"`
+	Name        string   `json:"name"`
+	Version     string   `json:"version"`
+	MainPort    int      `json:"main_port"`
+	Scheme      string   `json:"scheme"`
+	Store       string   `json:"store"`
+	InstalledAt int64    `json:"installed_at"`
+	Domain      string   `json:"domain,omitempty"`
+	TLS         string   `json:"tls,omitempty"`
+	DataDir     string   `json:"data_dir,omitempty"`
+	DataCreated bool     `json:"data_created,omitempty"`     // Box created DataDir, so "delete data" may remove it
+	SocketOK    bool     `json:"docker_socket_ok,omitempty"` // the admin agreed to give this app Docker access
+	Stopped     bool     `json:"stopped,omitempty"`          // stopped on purpose (desired state), no alert
+	Custom      bool     `json:"custom,omitempty"`           // an own app (compose from the admin, customapp.go)
+	Icon        string   `json:"icon,omitempty"`             // own apps: lucide:<name> or upload
+	ComposeSHA  string   `json:"compose_sha,omitempty"`      // sha256 of the catalog compose it runs (catalogupdate.go)
+	Allowed     []string `json:"allowed,omitempty"`          // own apps: risk findings the admin confirmed (customapp.go)
+	Reviewed    bool     `json:"reviewed,omitempty"`         // own apps: saved with the per-item review
 }
 
 type appStatus struct {
@@ -134,7 +136,14 @@ func (h *helperServer) policy(m installedApp) mountPolicy {
 	if m.DataDir != "" {
 		allow = append(allow, m.DataDir)
 	}
-	return mountPolicy{base: h.base(), allow: allow, allowSocket: m.SocketOK, custom: m.Custom}
+	p := mountPolicy{base: h.base(), allow: allow, allowSocket: m.SocketOK, custom: m.Custom, confirmed: m.Allowed, reviewed: m.Reviewed}
+	if m.Custom {
+		rs, _ := h.roots()
+		for _, r := range rs {
+			p.roots = append(p.roots, r.real)
+		}
+	}
+	return p
 }
 
 func exists(p string) bool { _, err := os.Stat(p); return err == nil }
@@ -581,7 +590,7 @@ func checkConfig(ctx context.Context, dir, id string, p mountPolicy, ports bool)
 		return err
 	}
 	if p.custom {
-		if err := checkPrivileges(out); err != nil {
+		if err := checkPrivileges(out, p); err != nil {
 			return err
 		}
 	}

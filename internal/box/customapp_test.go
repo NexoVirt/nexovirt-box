@@ -42,8 +42,9 @@ func TestOwnComposeRawRefusals(t *testing.T) {
 // After `docker compose config`, everything that would give the container root on the host
 // is refused (mounts are checked by checkMounts as for catalog apps).
 func TestOwnComposePrivileges(t *testing.T) {
-	ok := `{"services":{"w":{"image":"nginx","cap_add":["NET_ADMIN"],"network_mode":"host"}}}`
-	if err := checkPrivileges([]byte(ok)); err != nil {
+	ok := `{"services":{"w":{"image":"nginx","cap_add":["NET_ADMIN"],"volumes":[{"type":"bind","source":"/srv/media"}]}}}`
+	p := mountPolicy{custom: true, reviewed: true, roots: []string{"/srv"}}
+	if err := checkPrivileges([]byte(ok), p); err != nil {
 		t.Fatalf("normal app refused: %v", err)
 	}
 	bad := map[string]string{
@@ -63,9 +64,47 @@ func TestOwnComposePrivileges(t *testing.T) {
 		"gpus":        `{"services":{"w":{"gpus":"all"}}}`,
 	}
 	for name, j := range bad {
-		if err := checkPrivileges([]byte(j)); err == nil {
+		if err := checkPrivileges([]byte(j), p); err == nil {
 			t.Errorf("%s accepted", name)
 		}
+	}
+}
+
+// Every risky item can be confirmed one by one, and only the confirmed key passes.
+func TestOwnComposeConfirmPerItem(t *testing.T) {
+	cfg := []byte(`{"services":{"w":{"privileged":true,"network_mode":"host","volumes":[{"type":"bind","source":"/opt/stuff"}]},"x":{"cap_add":["CAP_SYS_ADMIN"]}}}`)
+	p := mountPolicy{custom: true, reviewed: true, roots: []string{"/srv"}}
+	fs, err := riskFindings(cfg, p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var keys []string
+	for _, f := range fs {
+		keys = append(keys, f.Key)
+	}
+	want := "bind:/opt/stuff w:network_host w:privileged x:cap:SYS_ADMIN"
+	if strings.Join(keys, " ") != want {
+		t.Fatalf("findings %v, want %s", keys, want)
+	}
+	p.confirmed = keys[:3]
+	if err := checkPrivileges(cfg, p); err == nil || !strings.Contains(err.Error(), "SYS_ADMIN") {
+		t.Fatalf("unconfirmed capability passed: %v", err)
+	}
+	p.confirmed = keys
+	if err := checkPrivileges(cfg, p); err != nil {
+		t.Fatalf("confirmed items refused: %v", err)
+	}
+	// Own apps saved before the review keep host network and outside binds, never privileges.
+	legacy := mountPolicy{custom: true}
+	if err := checkPrivileges([]byte(`{"services":{"w":{"network_mode":"host","volumes":[{"type":"bind","source":"/opt/stuff"}]}}}`), legacy); err != nil {
+		t.Fatalf("legacy app refused: %v", err)
+	}
+	if err := checkPrivileges([]byte(`{"services":{"w":{"privileged":true}}}`), legacy); err == nil {
+		t.Fatal("legacy app got privileged mode")
+	}
+	// Box's own files and system folders stay refused whatever was confirmed.
+	if err := checkMounts([]byte(`{"services":{"w":{"volumes":[{"type":"bind","source":"/etc"}]}}}`), p); err == nil {
+		t.Fatal("/etc mounted")
 	}
 }
 
