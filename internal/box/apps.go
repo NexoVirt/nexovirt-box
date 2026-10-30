@@ -521,6 +521,7 @@ type appBody struct {
 	Op                string            `json:"op"`
 	DeleteData        bool              `json:"delete_data"`
 	DataDir           string            `json:"data_dir"`
+	NoCopy            bool              `json:"no_copy"` // update without a rollback copy
 }
 
 func readAppBody(r *http.Request) (appBody, error) {
@@ -558,13 +559,16 @@ func (a *App) appAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	switch b.Op {
-	case "start", "stop", "restart", "update":
+	case "start", "stop", "restart", "update", "rollback":
 	default:
 		writeError(w, http.StatusBadRequest, "This action is not allowed.")
 		return
 	}
 	id := r.PathValue("id")
 	req := helperRequest{Action: "app_action", ID: id, Op: b.Op}
+	if b.Op == "update" && b.NoCopy {
+		req.Confirm = "no_copy"
+	}
 	if b.AllowDockerSocket { // apps installed before Box asked: confirmed once, with the password
 		if !a.needProof(w, r) {
 			return

@@ -31,6 +31,8 @@
   import CircleAlert from '@lucide/svelte/icons/circle-alert';
   import LayoutGrid from '@lucide/svelte/icons/layout-grid';
   import Globe from '@lucide/svelte/icons/globe';
+  import Undo2 from '@lucide/svelte/icons/undo-2';
+  import CalendarClock from '@lucide/svelte/icons/calendar-clock';
 
   let { onSessionLost, onNavigate } = $props();
 
@@ -39,7 +41,7 @@
     stopped: ['Stopped', ''], exited: ['Stopped with an error', 'error'], not_created: ['Not started yet', ''],
     interrupted: ['Install interrupted', 'warn'], unknown: ['Unknown', ''],
   };
-  const DONE = { start: 'started', stop: 'stopped', restart: 'restarted', update: 'updated', install: 'installed', retry: 'installed', uninstall: 'removed', backup: 'backed up', restore: 'restored', verify: 'backup checked', edit: 'redeployed' };
+  const DONE = { start: 'started', stop: 'stopped', restart: 'restarted', update: 'updated', install: 'installed', retry: 'installed', uninstall: 'removed', backup: 'backed up', restore: 'restored', verify: 'backup checked', edit: 'redeployed', rollback: 'rolled back' };
   // Down although nobody stopped it.
   const DOWN = ['exited', 'partial', 'restarting', 'stopped', 'not_created'];
 
@@ -65,6 +67,9 @@
   let backupsFor = $state(null), backupsOpen = $state(false);
   let catFor = $state(null), catOpen = $state(false);
   let socketFor = $state(null), socketOpen = $state(false), socketBusy = $state(false); // { app, op }
+  let rollFor = $state(null), rollOpen = $state(false);
+  let noCopyFor = $state(null), noCopyOpen = $state(false), noCopyMsg = $state('');
+  let auto = $state({}), autoFor = $state(null), autoOpen = $state(false), autoForm = $state({ on: false, from: '03:00', to: '05:00' }), autoBusy = $state(false);
   let domainFor = $state(null), domainOpen = $state(false), domain = $state(''), domainBusy = $state(false), domainError = $state('');
 
   const followJobs = jobFollower((job, id) => {
@@ -146,9 +151,37 @@
   }
 
   async function loadExtras() {
-    const [u, p] = await Promise.all([api('/api/updates'), api('/api/proxy')]);
+    const [u, p, au] = await Promise.all([api('/api/updates'), api('/api/proxy'), api('/api/apps/auto-updates')]);
     if (u.ok) updates = u.data;
     if (p.ok) proxy = p.data;
+    if (au.ok) auto = au.data || {};
+  }
+
+  function askRollback(e, app) {
+    menu = null;
+    origin = { x: e.clientX, y: e.clientY };
+    rollFor = app;
+    rollOpen = true;
+  }
+
+  function openAuto(e, app) {
+    menu = null;
+    origin = { x: e.clientX, y: e.clientY };
+    autoFor = app;
+    autoForm = { on: false, from: '03:00', to: '05:00', ...(auto[app.id] || {}) };
+    autoOpen = true;
+  }
+
+  async function saveAuto(e) {
+    e.preventDefault();
+    autoBusy = true;
+    const res = await api(`/api/apps/${autoFor.id}/auto-update`, { method: 'POST', body: autoForm });
+    autoBusy = false;
+    if (res.status === 401) return onSessionLost();
+    if (!res.ok) return toast(res.error, 'error');
+    auto = { ...auto, [autoFor.id]: res.data };
+    autoOpen = false;
+    toast(res.data.on ? `${autoFor.name} updates itself between ${res.data.from} and ${res.data.to}.` : `Automatic updates for ${autoFor.name} are off.`, 'success');
   }
 
   export async function checkUpdates() {
@@ -196,16 +229,17 @@
     load();
   }
 
-  async function act(app, op, allow = false) {
+  async function act(app, op, allow = false, extra = {}) {
     menu = null;
     busy = { ...busy, [app.id]: op };
-    const job = await (allow ? withProof : (f) => f())(() => runJob(`/api/apps/${app.id}/action`, { op, allow_docker_socket: allow }));
+    const job = await (allow ? withProof : (f) => f())(() => runJob(`/api/apps/${app.id}/action`, { op, allow_docker_socket: allow, ...extra }));
     const { [app.id]: _, ...rest } = busy;
     busy = rest;
     if (job.cancelled) return;
     if (job.http === 401) return onSessionLost();
     if (job.status === 'done') toast(`${app.name} ${DONE[op]}.`, 'success');
     else if (job.error?.startsWith('needs_docker_socket:')) { socketFor = { app, op }; socketOpen = true; }
+    else if (op === 'update' && job.error?.startsWith('Not enough free space for the rollback copy')) { noCopyFor = app; noCopyMsg = job.error; noCopyOpen = true; }
     else toast(job.error, 'error', 8000);
     if (op === 'update' && job.status === 'done') updates.apps[app.id] = { available: false };
     load();
@@ -338,7 +372,9 @@
                 {#if app.state !== 'interrupted' && app.state !== 'not_created'}
                   <button class="pop-item" role="menuitem" onclick={() => act(app, 'restart')}><RotateCw size={16} />Restart</button>
                   <button class="pop-item" role="menuitem" onclick={() => act(app, 'update')}><Download size={16} />Update</button>
+                  <button class="pop-item" role="menuitem" onclick={(e) => openAuto(e, app)}><CalendarClock size={16} />Automatic updates</button>
                 {/if}
+                {#if app.last_update?.rollback}<button class="pop-item" role="menuitem" onclick={(e) => askRollback(e, app)}><Undo2 size={16} />Roll back last update</button>{/if}
                 {#if app.custom}<button class="pop-item" role="menuitem" onclick={(e) => openOwn(e, app)}><FilePen size={16} />Edit compose file</button>
                 {:else}<button class="pop-item" role="menuitem" onclick={(e) => showCreds(e, app)}><KeyRound size={16} />Login details</button>{/if}
                 <button class="pop-item" role="menuitem" onclick={(e) => openBackups(e, app)}><Archive size={16} />Backups</button>
@@ -368,6 +404,44 @@
       <button class="btn btn-primary" onclick={allowSocket} disabled={socketBusy}>{#if socketBusy}<Loader size={16} class="spinner" />Starting{:else}Allow and start{/if}</button>
     </div>
   </div>
+</Dialog>
+
+<Dialog bind:open={rollOpen} label="Roll back" {origin}>
+  <div class="dlg">
+    <h2 class="t-title">Roll back {rollFor?.name}?</h2>
+    <p class="t-sub">Box puts back the images and the data from just before the last update{rollFor?.last_update ? ` (${new Date(rollFor.last_update.at * 1000).toLocaleString()})` : ''}. Changes the app made since then are lost.</p>
+    <div class="buttons">
+      <button class="btn btn-gray" data-close onclick={() => (rollOpen = false)}>Cancel</button>
+      <button class="btn btn-danger" onclick={() => { rollOpen = false; act(rollFor, 'rollback'); }}>Roll back</button>
+    </div>
+  </div>
+</Dialog>
+
+<Dialog bind:open={noCopyOpen} label="Update without rollback copy">
+  <div class="dlg">
+    <h2 class="t-title">Update {noCopyFor?.name} without a rollback copy?</h2>
+    <p class="t-sub">{noCopyMsg} Without the copy, Box cannot go back automatically if the new version does not start.</p>
+    <div class="buttons">
+      <button class="btn btn-gray" data-close onclick={() => (noCopyOpen = false)}>Cancel</button>
+      <button class="btn btn-primary" onclick={() => { noCopyOpen = false; act(noCopyFor, 'update', false, { no_copy: true }); }}>Update anyway</button>
+    </div>
+  </div>
+</Dialog>
+
+<Dialog bind:open={autoOpen} label="Automatic updates" {origin} locked={autoBusy}>
+  <form class="dlg" onsubmit={saveAuto}>
+    <h2 class="t-title">Automatic updates for {autoFor?.name}</h2>
+    <p class="t-sub">When a newer image is found, Box updates the app inside this daily window (server time). It saves a rollback copy first and goes back on its own when the app does not answer afterwards.</p>
+    <label class="row-field"><span class="field-label">Update automatically</span><input class="switch" type="checkbox" bind:checked={autoForm.on} disabled={autoBusy} /></label>
+    <div class="times">
+      <label class="field"><span class="field-label">From</span><input class="input" type="time" bind:value={autoForm.from} required disabled={autoBusy || !autoForm.on} /></label>
+      <label class="field"><span class="field-label">Until</span><input class="input" type="time" bind:value={autoForm.to} required disabled={autoBusy || !autoForm.on} /></label>
+    </div>
+    <div class="buttons">
+      <button type="button" class="btn btn-gray" data-close onclick={() => (autoOpen = false)} disabled={autoBusy}>Cancel</button>
+      <button class="btn btn-primary" disabled={autoBusy}>{#if autoBusy}<Loader size={16} class="spinner" />Saving{:else}Save{/if}</button>
+    </div>
+  </form>
 </Dialog>
 
 <AppBackups bind:open={backupsOpen} app={backupsFor} apps={apps || []} {origin} {onSessionLost} {onNavigate} onDone={load} />
@@ -422,6 +496,7 @@
 
 <style>
   h2, p { margin: 0; }
+  .times { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
   .skeleton.sq { width: 42px; height: 42px; border-radius: 10px; }
   .skeleton.line { display: block; width: 40%; height: 0.8rem; }
   /* A plain list on the window surface: rows split by hairlines, nothing behind them. */
