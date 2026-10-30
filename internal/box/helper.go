@@ -241,6 +241,7 @@ func (h *helperServer) ctxActions() map[string]func(context.Context, helperReque
 		"app_limits":         h.appLimitsSet,
 		"app_clone":          h.appClone,
 		"storage_dupes":      h.storageDupes,
+		"drive_format":       h.driveFormat,
 	}
 }
 
@@ -294,6 +295,9 @@ func (h *helperServer) actions() map[string]helperAction {
 		"trash_purge":          h.trashPurge,
 		"storage_scan":         h.storageScan,
 		"versions_list":        h.versionsList,
+		"drives_list":          h.drivesList,
+		"drive_mount":          h.driveMount,
+		"drive_unmount":        h.driveUnmount,
 		"version_restore":      h.versionRestore,
 		"ssh_harden":           h.sshHarden,
 		"local_names_set":      h.localNamesSet,

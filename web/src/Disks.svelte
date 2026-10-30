@@ -7,6 +7,7 @@
   import { bytes } from '$lib/format.js';
   import { runJob } from '$lib/jobs.js';
   import DataTable from '$lib/DataTable.svelte';
+  import ExternalDrives from './ExternalDrives.svelte';
   import HardDrive from '@lucide/svelte/icons/hard-drive';
   import Cpu from '@lucide/svelte/icons/memory-stick';
   import RefreshCw from '@lucide/svelte/icons/refresh-cw';
@@ -15,7 +16,7 @@
   import Stethoscope from '@lucide/svelte/icons/stethoscope';
   import Download from '@lucide/svelte/icons/download';
 
-  let { onSessionLost } = $props();
+  let { onSessionLost, onNavigate } = $props();
 
   let data = $state(null), error = $state(''), loading = $state(false);
   let installing = $state(false), installLine = $state('');
@@ -173,6 +174,7 @@
     </DataTable>
     <p class="t-caption foot">Box checks the disks every six hours and shows a warning on Home when one needs attention.</p>
   {/if}
+  <ExternalDrives {onSessionLost} {onNavigate} />
 </div>
 
 <style>
