@@ -70,7 +70,7 @@
   let catFor = $state(null), catOpen = $state(false);
   let socketFor = $state(null), socketOpen = $state(false), socketBusy = $state(false); // { app, op }
   let rollFor = $state(null), rollOpen = $state(false);
-  let cloneFor = $state(null), cloneOpen = $state(false), cloneName = $state(''), clonePort = $state(''), cloneBusy = $state(false), cloneLines = $state([]), cloneError = $state('');
+  let cloneFor = $state(null), cloneOpen = $state(false), cloneName = $state(''), clonePort = $state(''), cloneBusy = $state(false), cloneLines = $state([]), cloneError = $state(''), cloneExpose = $state(false);
   let limFor = $state(null), limOpen = $state(false), limCpu = $state(''), limMem = $state(''), limBusy = $state(false), limLines = $state([]), limError = $state('');
   let noCopyFor = $state(null), noCopyOpen = $state(false), noCopyMsg = $state('');
   let auto = $state({}), autoFor = $state(null), autoOpen = $state(false), autoForm = $state({ on: false, from: '03:00', to: '05:00' }), autoBusy = $state(false);
@@ -187,14 +187,14 @@
   function openClone(e, app) {
     menu = null;
     origin = { x: e.clientX, y: e.clientY };
-    cloneFor = app; cloneName = app.name + ' 2'; clonePort = ''; cloneError = ''; cloneLines = [];
+    cloneFor = app; cloneName = app.name + ' 2'; clonePort = ''; cloneError = ''; cloneLines = []; cloneExpose = false;
     cloneOpen = true;
   }
 
   async function saveClone(e) {
     e.preventDefault();
     cloneBusy = true; cloneError = '';
-    const job = await runJob(`/api/apps/${cloneFor.id}/clone`, { name: cloneName, port: Number(clonePort) || 0 }, (j) => (cloneLines = j.lines));
+    const job = await runJob(`/api/apps/${cloneFor.id}/clone`, { name: cloneName, port: Number(clonePort) || 0, expose: cloneExpose }, (j) => (cloneLines = j.lines));
     cloneBusy = false;
     if (job.http === 401) return onSessionLost();
     if (job.status !== 'done') { cloneError = job.error; return; }
@@ -463,6 +463,10 @@
     {#if cloneError}<div class="notice" role="alert">{cloneError}</div>{/if}
     <label class="field"><span class="field-label">Name</span><input class="input" bind:value={cloneName} maxlength="60" required disabled={cloneBusy} /></label>
     <label class="field"><span class="field-label">Web port (optional)</span><input class="input" type="number" min="1" max="65535" bind:value={clonePort} placeholder="Box picks a free one" disabled={cloneBusy} /></label>
+    {#if cloneFor?.protect}
+      <p class="t-caption">{cloneFor.name} is behind the Box sign-in, so the clone's ports are only reachable from this server (127.0.0.1) until you give it a domain.</p>
+      <label class="row-field warn"><span class="field-text"><span class="field-label">Reachable without sign-in</span><span class="t-caption">Publish the clone's ports on every address. Anyone who can reach this server can open it.</span></span><input class="switch" type="checkbox" bind:checked={cloneExpose} disabled={cloneBusy} /></label>
+    {/if}
     {#if cloneBusy}<JobLog lines={cloneLines} />{/if}
     <div class="buttons">
       <button type="button" class="btn btn-gray" data-close onclick={() => (cloneOpen = false)} disabled={cloneBusy}>Cancel</button>

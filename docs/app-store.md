@@ -130,7 +130,13 @@ when a port was given) repointed; data starts empty and named volumes are new th
 `ports: !override` lines) that renames fixed container names and moves published ports that another app (running or
 not) or the server uses to the next free port; the given port becomes the clone's main port. Refused: binds outside the
 clone's own folder and the shared folder (it would share files with the original), port ranges. Domain, sign-in,
-limits and update history are not taken over; `app.json` `clone_of` names the original. Any failure removes the clone.
+limits and update history are not taken over; `app.json` `clone_of` names the original. A source behind the Box sign-in
+gives a clone published on 127.0.0.1 only, unless the admin turns on "Reachable without sign-in" (`expose`, audited
+`app.clone_expose`). Volumes and networks with a fixed name get a name in the clone's project
+(`nxbox-<id>_<key>`, written to `clone.yaml`); an external volume refuses the clone (external networks stay shared,
+they hold no data). A failed clone is cleaned up with `down` (never `--volumes`) plus `docker volume rm` of volumes
+that carry its project label and its name prefix only, so the original's volumes are never touched. Update roll back
+copies and restores only volumes labelled with the app's own project.
 
 ## Catalog
 
