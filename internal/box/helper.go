@@ -240,6 +240,7 @@ func (h *helperServer) ctxActions() map[string]func(context.Context, helperReque
 		"auto_updates":       h.autoUpdatesSet,
 		"app_limits":         h.appLimitsSet,
 		"app_clone":          h.appClone,
+		"storage_dupes":      h.storageDupes,
 	}
 }
 
@@ -291,6 +292,7 @@ func (h *helperServer) actions() map[string]helperAction {
 		"trash_restore":        h.trashRestore,
 		"trash_delete":         h.trashDelete,
 		"trash_purge":          h.trashPurge,
+		"storage_scan":         h.storageScan,
 		"ssh_harden":           h.sshHarden,
 		"local_names_set":      h.localNamesSet,
 		"files_stat":           h.filesStat,
