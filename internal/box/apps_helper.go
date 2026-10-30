@@ -431,6 +431,7 @@ func (h *helperServer) up(ctx context.Context, name, dir, id string, logf func(s
 	}
 	os.Remove(filepath.Join(dir, installMarker))
 	logf(name + " is running.")
+	h.refreshLocalNames()
 	return nil
 }
 
@@ -960,6 +961,7 @@ func (h *helperServer) appUninstall(ctx context.Context, req helperRequest, logf
 		if meta.Domain != "" {
 			h.reloadProxy(logf) // its route is gone with app.json
 		}
+		h.refreshLocalNames()
 	}()
 	if req.DeleteData {
 		if meta.DataCreated { // only a folder Box created itself is deleted

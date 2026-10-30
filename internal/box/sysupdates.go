@@ -450,6 +450,7 @@ func (h *helperServer) systemReboot(req helperRequest, logf func(string)) (any, 
 // installable is the fixed list of packages Box may install on request.
 var installable = map[string]string{
 	"smart": "smartmontools", "samba": "samba", "nfs": "nfs-kernel-server", "unattended": "unattended-upgrades",
+	"avahi": "avahi-daemon avahi-utils",
 }
 
 func (h *helperServer) pkgInstall(ctx context.Context, req helperRequest, logf func(string)) (any, error) {
@@ -468,8 +469,9 @@ func (h *helperServer) pkgInstall(ctx context.Context, req helperRequest, logf f
 
 func aptInstall(ctx context.Context, pkg string, logf func(string)) error {
 	install := func() error {
-		return streamCmd(aptCmd(ctx, "apt-get", "install", "-y", "--no-install-recommends", "-o", "Dpkg::Options::=--force-confdef",
-			"-o", "Dpkg::Options::=--force-confold", pkg), logf)
+		args := []string{"apt-get", "install", "-y", "--no-install-recommends", "-o", "Dpkg::Options::=--force-confdef",
+			"-o", "Dpkg::Options::=--force-confold", "--"}
+		return streamCmd(aptCmd(ctx, append(args, strings.Fields(pkg)...)...), logf) // fixed names from installable
 	}
 	if install() == nil {
 		return nil
