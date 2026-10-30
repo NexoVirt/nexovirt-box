@@ -282,6 +282,8 @@ func (h *helperServer) actions() map[string]helperAction {
 		"custom_app_check":     h.customAppCheck,
 		"app_stats":            h.appStats,
 		"ups_status":           h.upsStatus,
+		"local_names_status":   h.localNamesStatus,
+		"local_names_set":      h.localNamesSet,
 		"files_stat":           h.filesStat,
 		// System updates, disks and shares (sysupdates.go, disks.go, shares.go).
 		"apt_status":         h.aptStatus,

@@ -169,6 +169,14 @@ embedded.
   only for a device lsblk lists right now. The web side re-checks every 6 h (`watchDisks`), Home shows a warning tile
   (`GET /api/disks/summary`, cached only), and worse verdicts raise a `diskEvent` to `diskEventSink`s
   (TODO: the notifications feature registers one with `app.subscribeDiskEvents`).
+- Local names (`localnames.go`, Settings > Network, `GET|POST /api/local-names`, audited `localnames.on|off`):
+  mDNS through Avahi (installed on the admin's switch via `pkg_install` op `avahi` = avahi-daemon + avahi-utils).
+  Helper actions `local_names_status`, `local_names_set`; Box writes only `/etc/nexovirt-box/localnames.{json,sh}` and
+  `nexovirt-box-mdns.service`, whose script runs `avahi-publish -a -R <name> <lan ip>` for `box.local` and
+  `<app id>.box.local` (labels checked, IPv4 of the outgoing route). With the reverse proxy on, Caddy serves
+  `http://<app>.box.local` (plain HTTP: no public certificate exists for .local) and redirects `http://box.local` to
+  Box. Apps behind the Box sign-in get no local name (it would skip the sign-in). Names follow installs and uninstalls
+  (`refreshLocalNames`).
 - Health (`health.go`, Settings > Health, `GET /api/health`): SMART verdicts and disk temperatures from the cached
   `watchDisks` result, sensor temperatures (gopsutil hwmon, read by the web user), UPS through NUT (helper `ups_status`:
   `upsc -l` then `upsc <name>`, names `^[A-Za-z0-9_.-]{1,64}$`; without upsc it says so, Box never installs NUT), and

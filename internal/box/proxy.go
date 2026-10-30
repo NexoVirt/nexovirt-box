@@ -235,6 +235,12 @@ func (h *helperServer) writeCaddyfile(cfg proxyConfig) error {
 		}
 		b.WriteString("}\n")
 	}
+	if localNamesOn() { // http://<app>.box.local in the LAN (localnames.go); no public certificate exists for .local
+		for _, r := range h.localRoutes() {
+			fmt.Fprintf(&b, "\nhttp://%s {\n\treverse_proxy 127.0.0.1:%d\n}\n", r.Domain, r.Port)
+		}
+		fmt.Fprintf(&b, "\nhttp://box.local {\n\tredir https://box.local:%d{uri}\n}\n", boxPort)
+	}
 	return os.WriteFile(filepath.Join(proxyDir, "Caddyfile"), []byte(b.String()), 0o644)
 }
 
