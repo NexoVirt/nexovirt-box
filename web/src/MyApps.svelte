@@ -92,7 +92,7 @@
     return (STATES[app.state] || STATES.unknown)[0];
   }
 
-  // /apps/installed?app=<id>[&do=backups|uninstall]: from the desktop tile menu. Shows that app
+  // /apps/installed?app=<id>[&do=login|backups|uninstall]: from the desktop tile menu. Shows that app
   // (scrolled to and marked) and opens the asked dialog once.
   let wanted = new URLSearchParams(location.search);
   let marked = $state('');
@@ -106,7 +106,8 @@
     marked = id;
     setTimeout(() => document.getElementById('app-' + id)?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 50);
     const at = { clientX: innerWidth / 2, clientY: innerHeight / 2 };
-    if (what === 'backups') openBackups(at, app);
+    if (what === 'login' && !app.custom) showCreds(at, app);
+    else if (what === 'backups') openBackups(at, app);
     else if (what === 'uninstall') askRemove(at, app);
   }
 

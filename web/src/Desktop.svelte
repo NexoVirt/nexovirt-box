@@ -20,6 +20,7 @@
   import Square from '@lucide/svelte/icons/square';
   import RotateCw from '@lucide/svelte/icons/rotate-cw';
   import ScrollText from '@lucide/svelte/icons/scroll-text';
+  import KeyRound from '@lucide/svelte/icons/key-round';
   import Archive from '@lucide/svelte/icons/archive';
   import Settings2 from '@lucide/svelte/icons/settings-2';
   import Trash2 from '@lucide/svelte/icons/trash-2';
@@ -159,6 +160,7 @@
         { key: 'stop', label: 'Stop', icon: Square, disabled: !up || working },
         { key: 'restart', label: 'Restart', icon: RotateCw, disabled: !up || working },
         'sep',
+        ...(app.custom ? [] : [{ key: 'login', label: 'Login details', icon: KeyRound }]),
         { key: 'logs', label: 'Logs', icon: ScrollText },
         { key: 'backups', label: 'Backups', icon: Archive },
         { key: 'settings', label: 'Settings', icon: Settings2 },
@@ -176,6 +178,7 @@
     if (key === 'hide') return saveDesktop({ hidden: [...(prefs.hidden || []), t.id] });
     const app = t.app;
     if (key === 'logs') return go(`/apps/${app.id}/logs`, el);
+    if (key === 'login') return go(`/apps/installed?app=${app.id}&do=login`, el);
     if (key === 'backups') return go(`/apps/installed?app=${app.id}&do=backups`, el);
     if (key === 'settings') return go(`/apps/installed?app=${app.id}`, el);
     if (key === 'uninstall') return go(`/apps/installed?app=${app.id}&do=uninstall`, el);
