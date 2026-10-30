@@ -24,8 +24,8 @@ var (
 )
 
 type weatherEntry struct {
-	at   time.Time
-	body []byte
+	at  time.Time
+	now weatherNow // only the weather: the place name is the asking user's and added per request
 }
 
 type weatherNow struct {
@@ -67,30 +67,36 @@ func (a *App) weather(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	key := strconv.FormatFloat(wp.Lat, 'f', 2, 64) + "," + strconv.FormatFloat(wp.Lon, 'f', 2, 64)
+	now, ok := cachedWeather(key)
+	if !ok {
+		lat, lon, _ := strings.Cut(key, ",")
+		q := url.Values{"latitude": {lat}, "longitude": {lon}, "current": {"temperature_2m,weather_code,wind_speed_10m,is_day"},
+			"daily": {"temperature_2m_max,temperature_2m_min"}, "timezone": {"auto"}, "forecast_days": {"1"}}
+		ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+		defer cancel()
+		b, err := fetchLimited(ctx, weatherBase+"?"+q.Encode(), 256<<10)
+		if err != nil {
+			writeError(w, http.StatusBadGateway, "The weather service did not answer. Try again later.")
+			return
+		}
+		if now, err = parseWeather(b); err != nil {
+			writeError(w, http.StatusBadGateway, "The weather service sent something Box cannot read.")
+			return
+		}
+		weatherCache.Store(key, weatherEntry{time.Now(), now})
+	}
+	writeJSON(w, http.StatusOK, weatherReply(wp.Name, now))
+}
+
+func cachedWeather(key string) (weatherNow, bool) {
 	if e, ok := weatherCache.Load(key); ok && time.Since(e.(weatherEntry).at) < 20*time.Minute {
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(e.(weatherEntry).body)
-		return
+		return e.(weatherEntry).now, true
 	}
-	lat, lon, _ := strings.Cut(key, ",")
-	q := url.Values{"latitude": {lat}, "longitude": {lon}, "current": {"temperature_2m,weather_code,wind_speed_10m,is_day"},
-		"daily": {"temperature_2m_max,temperature_2m_min"}, "timezone": {"auto"}, "forecast_days": {"1"}}
-	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
-	defer cancel()
-	b, err := fetchLimited(ctx, weatherBase+"?"+q.Encode(), 256<<10)
-	if err != nil {
-		writeError(w, http.StatusBadGateway, "The weather service did not answer. Try again later.")
-		return
-	}
-	now, err := parseWeather(b)
-	if err != nil {
-		writeError(w, http.StatusBadGateway, "The weather service sent something Box cannot read.")
-		return
-	}
-	out, _ := json.Marshal(map[string]any{"place": wp.Name, "now": now})
-	weatherCache.Store(key, weatherEntry{time.Now(), out})
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(out)
+	return weatherNow{}, false
+}
+
+func weatherReply(placeName string, now weatherNow) map[string]any {
+	return map[string]any{"place": placeName, "now": now}
 }
 
 type place struct {

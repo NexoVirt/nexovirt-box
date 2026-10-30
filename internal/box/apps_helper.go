@@ -51,6 +51,7 @@ type installedApp struct {
 	Limits      *appLimits    `json:"limits,omitempty"`           // appresources.go
 	DomainPort  int           `json:"domain_port,omitempty"`      // proxy: app port behind the domain (0 = main port)
 	Protect     bool          `json:"protect,omitempty"`          // proxy: Box sign-in in front of the domain (proxyauth.go)
+	CloneOf     string        `json:"clone_of,omitempty"`         // appclone.go: the app this one was cloned from
 }
 
 type appStatus struct {
@@ -167,7 +168,7 @@ func (h *helperServer) appDir(id string) string { return filepath.Join(h.appsDir
 func compose(dir, id string, args ...string) *exec.Cmd {
 	base := []string{"compose", "--project-name", "nxbox-" + id, "--project-directory", dir,
 		"-f", filepath.Join(dir, "compose.yaml")}
-	for _, f := range []string{limitsFile, bindFile} { // Box's own extra files (appresources.go, proxybind.go)
+	for _, f := range []string{limitsFile, cloneFile, bindFile} { // Box's own extra files (appresources.go, proxybind.go)
 		if exists(filepath.Join(dir, f)) {
 			base = append(base, "-f", filepath.Join(dir, f))
 		}
@@ -371,7 +372,7 @@ func (h *helperServer) appInstall(ctx context.Context, req helperRequest, logf f
 			os.RemoveAll(dir)
 			return
 		}
-		for _, f := range []string{"compose.yaml", ".env", "app.json", installMarker, limitsFile, bindFile} {
+		for _, f := range []string{"compose.yaml", ".env", "app.json", installMarker, limitsFile, bindFile, cloneFile} {
 			os.Remove(filepath.Join(dir, f))
 		}
 	}
@@ -597,6 +598,9 @@ func checkConfig(ctx context.Context, dir, id string, p mountPolicy, ports bool)
 		return err
 	}
 	if err := checkBindFile(dir); err != nil {
+		return err
+	}
+	if err := checkCloneFile(dir); err != nil {
 		return err
 	}
 	out, err := renderConfig(ctx, dir, id)
@@ -975,7 +979,7 @@ func (h *helperServer) appUninstall(ctx context.Context, req helperRequest, logf
 		logf(meta.Name + " and its data were removed.")
 		return map[string]any{"data_kept": false}, nil
 	}
-	for _, f := range []string{"compose.yaml", ".env", "app.json", installMarker, limitsFile, bindFile} {
+	for _, f := range []string{"compose.yaml", ".env", "app.json", installMarker, limitsFile, bindFile, cloneFile} {
 		os.Remove(filepath.Join(dir, f))
 	}
 	logf(meta.Name + " was removed. Its data stays in " + dataDir + ".")

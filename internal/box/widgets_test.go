@@ -3,6 +3,7 @@ package box
 import (
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestParseWeather(t *testing.T) {
@@ -40,5 +41,14 @@ func TestWidgetPrefsValidation(t *testing.T) {
 	bad.Weather = weatherPrefs{Name: strings.Repeat("a", 10), Lat: 91}
 	if bad.validate() == nil {
 		t.Fatal("latitude 91 accepted")
+	}
+}
+
+// The cache holds only weather; each user gets their own place name back.
+func TestWeatherCacheHasNoPlaceName(t *testing.T) {
+	weatherCache.Store("1.00,2.00", weatherEntry{time.Now(), weatherNow{Temp: 3}})
+	now, ok := cachedWeather("1.00,2.00")
+	if r := weatherReply("Bob's village", now); !ok || r["place"] != "Bob's village" || now.Temp != 3 {
+		t.Fatalf("%v %v", ok, r)
 	}
 }

@@ -121,6 +121,17 @@ stays untouched; `checkConfig` refuses a `limits.yaml` with any other key (it ca
 failed recreate puts the previous file back. `app.json` `limits` mirrors it. Every 2 minutes the web process warns
 (`app_resources` notification) about apps at 90 % or more of their memory limit.
 
+## Clone (`appclone.go`)
+
+App menu "Clone" (`POST /api/apps/{id}/clone` {name, port}, job `clone`, helper `app_clone`): a new id (slug of the
+name, not a store id), the compose file copied verbatim, `.env` copied with `APP_ID`, `APP_DATA_DIR` (and `APP_PORT`
+when a port was given) repointed; data starts empty and named volumes are new through the new project name. Box writes
+`clone.yaml` (extra compose file, validated by `checkCloneFile`: only `container_name: nxbox-<id>-<service>` and
+`ports: !override` lines) that renames fixed container names and moves published ports that another app (running or
+not) or the server uses to the next free port; the given port becomes the clone's main port. Refused: binds outside the
+clone's own folder and the shared folder (it would share files with the original), port ranges. Domain, sign-in,
+limits and update history are not taken over; `app.json` `clone_of` names the original. Any failure removes the clone.
+
 ## Catalog
 
 - `catalog/index.json`: `generated_at`, and per app the summary fields plus `file` and `sha256`.

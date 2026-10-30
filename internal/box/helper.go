@@ -239,6 +239,7 @@ func (h *helperServer) ctxActions() map[string]func(context.Context, helperReque
 		"pkg_install":        h.pkgInstall,
 		"auto_updates":       h.autoUpdatesSet,
 		"app_limits":         h.appLimitsSet,
+		"app_clone":          h.appClone,
 	}
 }
 
