@@ -4,8 +4,12 @@
   files, reverse proxy, updates) goes through `nexovirt-box helper`, a root service on a unix
   socket that only the web user may use and that only knows a fixed list of typed actions.
 - The console is a root shell. The helper itself checks the password (and the 2FA code) and gives
-  out a 5-minute proof bound to the session; without it the helper refuses to start a shell, so
-  even a compromised web process cannot open one. Signing out closes open consoles.
+  out a 5-minute proof bound to the session; without it the helper refuses to start a shell and
+  the other actions that reach root (own apps, restores, Docker access for an app, VPN, SSH
+  hardening, the folders Files may show, formatting a drive). So a stolen session cookie, a
+  script injected into the page or a paired box cannot get root. The helper reads the password
+  hash from the web database, so a compromised web process (which can change that database and
+  sees the password when it is typed) counts as the admin. Signing out closes open consoles.
 - Two-step sign-in: TOTP with 10 single-use recovery codes, and passkeys. Browsers only allow
   passkeys on a domain name with a trusted certificate (or localhost), not on an IP address.
 - Docker is only used through the helper, and it only runs app definitions from the catalog
@@ -29,5 +33,15 @@
   atomically, also across restarts). `X-Forwarded-For` is only trusted from `-trusted-proxies`.
 - Passwords are bcrypt hashes; sessions SHA-256 hashes of random tokens; the database is readable
   by the web user only.
+
+## Known limits
+
+- An app with nested writable bind mounts (one service mounts a folder, another a folder inside
+  it, as about a dozen catalog apps and the shared media folder do) gives a compromised container
+  a way out: it can replace the inner folder with a symlink, and Docker follows that symlink the
+  next time it starts the other container (also through a restart policy after a reboot, before
+  Box can check it). Box checks every bind when it starts an app, but not Docker's own restarts.
+- A paired box with full access can do everything the app and system API allows, except the
+  actions listed above that need the password.
 
 Report security problems privately, see [SECURITY.md](../.github/SECURITY.md).
