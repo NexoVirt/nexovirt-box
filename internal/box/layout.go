@@ -10,12 +10,16 @@ package box
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/NexoVirt/nexovirt-box/internal/catalog"
@@ -74,22 +78,10 @@ func checkNested(sources []string, p mountPolicy) error {
 	return nil
 }
 
-// envVars reads an app's .env (KEY='value' lines as Box writes them).
-func envVars(dir string) map[string]string {
-	vars := map[string]string{}
-	b, _ := os.ReadFile(filepath.Join(dir, ".env"))
-	for _, l := range strings.Split(string(b), "\n") {
-		k, v, ok := strings.Cut(strings.TrimSpace(l), "=")
-		if ok && envKeyRe.MatchString(k) {
-			vars[k] = strings.Trim(v, `'"`)
-		}
-	}
-	return vars
-}
-
-// otherBinds lists the host folders the other installed apps bind (from their compose and .env,
-// without Docker).
-func (h *helperServer) otherBinds(id string) map[string][]string {
+// otherBinds lists the host folders the other installed apps bind, from the same rendered
+// config the mount check uses for the app itself (cached per app until one of its files
+// changes). An app Box cannot read refuses the check (fail closed).
+func (h *helperServer) otherBinds(id string) (map[string][]string, error) {
 	out := map[string][]string{}
 	entries, _ := os.ReadDir(h.appsDir)
 	for _, e := range entries {
@@ -97,15 +89,62 @@ func (h *helperServer) otherBinds(id string) map[string][]string {
 			continue
 		}
 		dir := h.appDir(e.Name())
-		c, err := os.ReadFile(filepath.Join(dir, "compose.yaml"))
-		if err != nil {
+		if !exists(filepath.Join(dir, "compose.yaml")) {
 			continue
 		}
-		if src, err := catalog.BindSources(string(c), envVars(dir)); err == nil && len(src) > 0 {
-			out[e.Name()] = src
+		src, err := h.renderedBinds(e.Name())
+		if err != nil {
+			return nil, uerr("Box cannot read the app %s, so it cannot check that the folders of both apps do not overlap. Fix or remove %s first.", e.Name(), e.Name())
 		}
+		out[e.Name()] = src
 	}
-	return out
+	return out, nil
+}
+
+type bindCacheEntry struct {
+	key string
+	src []string
+}
+
+var bindCache = struct {
+	sync.Mutex
+	m map[string]bindCacheEntry
+}{m: map[string]bindCacheEntry{}}
+
+// renderedBinds renders an installed app's config (after the raw checks) and returns its binds.
+func (h *helperServer) renderedBinds(id string) ([]string, error) {
+	dir := h.appDir(id)
+	sum := sha256.New()
+	for _, f := range []string{"compose.yaml", ".env", limitsFile, cloneFile, bindFile, "app.json"} {
+		b, _ := os.ReadFile(filepath.Join(dir, f))
+		fmt.Fprintf(sum, "%s %d\n", f, len(b))
+		sum.Write(b)
+	}
+	key := hex.EncodeToString(sum.Sum(nil))
+	bindCache.Lock()
+	c, ok := bindCache.m[id]
+	bindCache.Unlock()
+	if ok && c.key == key {
+		return c.src, nil
+	}
+	meta, err := h.readMeta(id)
+	if err != nil {
+		return nil, err
+	}
+	if err := preRenderChecks(dir, meta.Custom); err != nil {
+		return nil, err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+	out, err := renderConfig(ctx, dir, id)
+	if err != nil {
+		return nil, err
+	}
+	src := bindSourcesOf(out)
+	bindCache.Lock()
+	bindCache.m[id] = bindCacheEntry{key, src}
+	bindCache.Unlock()
+	return src, nil
 }
 
 // bindSourcesOf reads the bind sources of a rendered config (`docker compose config` JSON).
@@ -268,6 +307,9 @@ func moveBeneath(root, from, to string) error {
 // anything else is stopped and marked. It reports whether it moved the app.
 func (h *helperServer) ensureLayout(ctx context.Context, id string, meta *installedApp, logf func(string)) (bool, error) {
 	dir := h.appDir(id)
+	if err := preRenderChecks(dir, meta.Custom); err != nil { // before Docker reads the files
+		return false, err
+	}
 	out, err := renderConfig(ctx, dir, id)
 	if err != nil {
 		return false, err
@@ -303,7 +345,7 @@ func (h *helperServer) ensureLayout(ctx context.Context, id string, meta *instal
 		return false, h.layoutIssue(ctx, meta, "It mounts folders inside each other ("+nestedText(pairs)+") and is no longer in the catalog. Back up its data and remove it.")
 	}
 	vars := envVars(dir)
-	vars["APP_DATA_DIR"] = meta.DataDir
+	vars["APP_DATA_DIR"] = meta.DataDir // the catalog's new compose, checked statically before it is written
 	if src, err := catalog.BindSources(app.Compose, vars); err != nil || len(catalog.NestedPairs(src)) > 0 {
 		return false, h.layoutIssue(ctx, meta, "It mounts folders inside each other ("+nestedText(pairs)+") and the catalog has no side-by-side version of it yet.")
 	}
@@ -395,4 +437,17 @@ func (h *helperServer) checkLayouts() {
 			}
 		}()
 	}
+}
+
+// envVars reads an app's .env (KEY='value' lines as Box writes them).
+func envVars(dir string) map[string]string {
+	vars := map[string]string{}
+	b, _ := os.ReadFile(filepath.Join(dir, ".env"))
+	for _, l := range strings.Split(string(b), "\n") {
+		k, v, ok := strings.Cut(strings.TrimSpace(l), "=")
+		if ok && envKeyRe.MatchString(k) {
+			vars[k] = strings.Trim(v, `'"`)
+		}
+	}
+	return vars
 }

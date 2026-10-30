@@ -31,6 +31,7 @@ type mountPolicy struct {
 	reviewed    bool                // own apps saved with the per-item review; older ones keep legacyOK
 	protectPort int                 // Box sign-in in front: this port on 127.0.0.1 only; -1 = protected without a port (refused)
 	others      map[string][]string // the other installed apps' bind sources (layout.go, no nesting across apps)
+	othersErr   error               // another app's binds could not be read: refuse (fail closed)
 }
 
 // Folders that are never mounted, nor any folder that contains them.

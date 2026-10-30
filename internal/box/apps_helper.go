@@ -143,7 +143,8 @@ func (h *helperServer) policy(m installedApp) mountPolicy {
 	if m.DataDir != "" {
 		allow = append(allow, m.DataDir)
 	}
-	p := mountPolicy{base: h.base(), allow: allow, appDir: dir, others: h.otherBinds(m.ID), allowSocket: m.SocketOK, custom: m.Custom, confirmed: m.Allowed, reviewed: m.Reviewed}
+	others, othersErr := h.otherBinds(m.ID)
+	p := mountPolicy{base: h.base(), allow: allow, appDir: dir, others: others, othersErr: othersErr, allowSocket: m.SocketOK, custom: m.Custom, confirmed: m.Allowed, reviewed: m.Reviewed}
 	if m.Protect && m.Domain != "" {
 		p.protectPort = protectedPort(m)
 	}
@@ -585,8 +586,11 @@ func timezone() string {
 
 // checkConfig renders the compose config, refuses host folders the app must not see
 // (appsafety.go) and host ports that are already in use.
-func checkConfig(ctx context.Context, dir, id string, p mountPolicy, ports bool) error {
-	if p.custom { // checked before Docker reads it (customapp.go)
+// preRenderChecks are the checks on the raw files that must pass before Docker reads any of
+// them (also for a render only): an own app's compose and .env, and Box's override files (they
+// can come back from a backup). Every render of an app's files goes through here first.
+func preRenderChecks(dir string, custom bool) error {
+	if custom { // customapp.go
 		if err := checkCustomRaw(dir); err != nil {
 			return err
 		}
@@ -594,13 +598,18 @@ func checkConfig(ctx context.Context, dir, id string, p mountPolicy, ports bool)
 	if err := checkLimitsFile(dir); err != nil {
 		return err
 	}
-	// The extra compose files (they can come back from a backup) are checked before Docker reads
-	// any of them, also for the render syncBindFile does.
 	if err := checkCloneFile(dir); err != nil {
 		return err
 	}
-	if err := checkBindFile(dir); err != nil {
+	return checkBindFile(dir)
+}
+
+func checkConfig(ctx context.Context, dir, id string, p mountPolicy, ports bool) error {
+	if err := preRenderChecks(dir, p.custom); err != nil {
 		return err
+	}
+	if p.othersErr != nil {
+		return p.othersErr
 	}
 	// Every compose path goes through here, so the loopback binding of a protected app is
 	// rewritten (or removed) right before Docker uses the files (proxybind.go).

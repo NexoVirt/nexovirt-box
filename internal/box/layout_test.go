@@ -1,6 +1,7 @@
 package box
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -119,5 +120,71 @@ func TestApplyLayoutFailureKeepsOldLayout(t *testing.T) {
 	}
 	if _, err := os.Lstat(filepath.Join(data, "halo")); err == nil {
 		t.Error("the new folder was left behind")
+	}
+}
+
+// fakeDocker puts a docker on PATH that records its calls and answers `compose config` with the
+// rendered.json in the project folder.
+func fakeDocker(t *testing.T) (calls string) {
+	t.Helper()
+	bin := t.TempDir()
+	calls = filepath.Join(bin, "calls")
+	script := "#!/bin/sh\necho \"$@\" >> " + calls + "\ndir=\nwhile [ $# -gt 0 ]; do [ \"$1\" = --project-directory ] && dir=\"$2\"; shift; done\ncat \"$dir/rendered.json\" 2>/dev/null\n"
+	os.WriteFile(filepath.Join(bin, "docker"), []byte(script), 0o755)
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	return calls
+}
+
+func installTestApp(t *testing.T, h *helperServer, id string, meta installedApp, compose, rendered string) string {
+	t.Helper()
+	dir := h.appDir(id)
+	os.MkdirAll(dir, 0o700)
+	meta.ID, meta.Name = id, id
+	h.writeMeta(meta)
+	os.WriteFile(filepath.Join(dir, "compose.yaml"), []byte(compose), 0o600)
+	os.WriteFile(filepath.Join(dir, ".env"), []byte("APP_ID='"+id+"'\n"), 0o600)
+	os.WriteFile(filepath.Join(dir, "rendered.json"), []byte(rendered), 0o600)
+	return dir
+}
+
+// An own app's compose that fails the raw checks never reaches Docker, not even for a render.
+func TestEnsureLayoutChecksBeforeDockerReads(t *testing.T) {
+	calls := fakeDocker(t)
+	h := &helperServer{appsDir: filepath.Join(t.TempDir(), "apps"), webState: t.TempDir()}
+	installTestApp(t, h, "mine", installedApp{Custom: true}, "include:\n  - /etc/evil.yaml\nservices:\n  a:\n    image: x\n", `{}`)
+	meta, _ := h.readMeta("mine")
+	if _, err := h.ensureLayout(context.Background(), "mine", &meta, func(string) {}); err == nil || !strings.Contains(err.Error(), "include") {
+		t.Fatalf("raw check skipped: %v", err)
+	}
+	if b, _ := os.ReadFile(calls); len(b) > 0 {
+		t.Fatalf("Docker read the files first: %s", b)
+	}
+	// The same app as someone else's neighbour is not rendered either: the check fails closed.
+	if _, err := h.otherBinds("other"); err == nil {
+		t.Fatal("an app that fails the raw checks was used for the overlap check")
+	}
+	if b, _ := os.ReadFile(calls); len(b) > 0 {
+		t.Fatalf("Docker read the neighbour's files: %s", b)
+	}
+}
+
+// The other apps' folders come from Docker's rendered config, so defaults and relative paths
+// cannot hide an overlap.
+func TestOverlapWithOtherAppUsesRenderedConfig(t *testing.T) {
+	fakeDocker(t)
+	h := &helperServer{appsDir: filepath.Join(t.TempDir(), "apps"), webState: t.TempDir()}
+	films := t.TempDir()
+	rel := filepath.Join(h.appDir("films"), "library")
+	installTestApp(t, h, "films", installedApp{Custom: true},
+		"services:\n  a:\n    image: x\n    volumes:\n      - ${MEDIA:-/nowhere}:/m\n      - ./library:/l\n",
+		`{"services":{"a":{"volumes":[{"type":"bind","source":"`+films+`"},{"type":"bind","source":"`+rel+`"}]}}}`)
+	p := h.policy(installedApp{ID: "new"})
+	if p.othersErr != nil {
+		t.Fatal(p.othersErr)
+	}
+	for _, src := range []string{filepath.Join(films, "new"), filepath.Join(rel, "x")} {
+		if err := checkMounts(binds(src), p); err == nil || !strings.Contains(err.Error(), "films") {
+			t.Errorf("%s overlapping the other app accepted: %v", src, err)
+		}
 	}
 }
