@@ -2,6 +2,7 @@ package box
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -20,8 +21,8 @@ func TestAListFirstLoginFromCatalog(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	got := firstLoginCreds(app, map[string]string{}, nil, func() []string { return []string{"x", cleanLogLine(alistLine)} })
-	if len(got) != 2 || got[0].Value != "admin" || got[1].Value != "2qGnVpOM" || got[1].Source != "log" || !got[1].Secret {
+	got, pending := firstLoginCreds(app, map[string]string{}, nil, firstLoginSources{logs: func() []string { return []string{"x", cleanLogLine(alistLine)} }})
+	if pending || len(got) != 2 || got[0].Value != "admin" || got[1].Value != "2qGnVpOM" || got[1].Source != "log" || !got[1].Secret {
 		t.Fatalf("got %+v", got)
 	}
 }
@@ -41,8 +42,21 @@ func TestEveryCatalogFirstLoginIsValid(t *testing.T) {
 			continue
 		}
 		n++
-		if _, err := app.FirstLogin.LogRegexp(); err != nil {
+		fl := app.FirstLogin
+		if _, err := fl.LogRegexp(); err != nil {
 			t.Errorf("%s: %v", e.ID, err)
+		}
+		if _, err := fl.FileRegexp(); err != nil {
+			t.Errorf("%s: %v", e.ID, err)
+		}
+		if _, err := fl.FilePath(); err != nil {
+			t.Errorf("%s: %v", e.ID, err)
+		}
+		if fl.PasswordFromFileRegex != "" && fl.PasswordFromFile == "" {
+			t.Errorf("%s: a file pattern without a file", e.ID)
+		}
+		if fl.Username == "" && fl.Password == "" && fl.PasswordFromEnv == "" && fl.PasswordFromFile == "" && fl.PasswordFromLog == "" && fl.Note == "" {
+			t.Errorf("%s: empty first_login", e.ID)
 		}
 		if v := app.FirstLogin.PasswordFromEnv; v != "" && !strings.Contains(app.Compose, v) {
 			t.Errorf("%s: %s is not used by the compose file", e.ID, v)
@@ -77,9 +91,84 @@ func TestFirstLoginSkipsKnownValues(t *testing.T) {
 	app := &catalog.App{FirstLogin: &catalog.FirstLogin{Username: "admin", PasswordFromEnv: "PW"}}
 	have := []appCred{{Label: "Admin password", Value: "pw1", Secret: true}}
 	called := false
-	got := firstLoginCreds(app, map[string]string{"PW": "pw1"}, have, func() []string { called = true; return nil })
-	if len(got) != 2 || got[1].Value != "admin" || called {
-		t.Fatalf("got %+v called %v", got, called)
+	got, pending := firstLoginCreds(app, map[string]string{"PW": "pw1"}, have, firstLoginSources{logs: func() []string { called = true; return nil }})
+	if len(got) != 2 || got[0].Value != "admin" || got[1].Value != "pw1" || called || pending {
+		t.Fatalf("got %+v called %v pending %v", got, called, pending)
+	}
+}
+
+// The file Crafty 4 writes on its first start (main.py, json.dumps indent=4).
+const craftyCreds = `{
+    "username": "admin",
+    "password": "k3Jx9_Qp2LmZ",
+    "info": "This is NOT where you change your password. This file is only a means to give you a default password."
+}`
+
+func TestCraftyFirstLoginFromFile(t *testing.T) {
+	cat, _, err := loadCatalog("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	app, err := cat.App("crafty")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	rel, err := app.FirstLogin.FilePath()
+	if err != nil || rel == "" {
+		t.Fatalf("crafty file path %q %v", rel, err)
+	}
+	read := firstLoginSources{logs: func() []string { return nil }, file: func(r string) ([]byte, error) { return readDataFile(dir, r) }}
+	got, pending := firstLoginCreds(app, nil, nil, read)
+	if !pending || len(got) != 1 || got[0].Value != "admin" {
+		t.Fatalf("before the first start: %+v pending %v", got, pending)
+	}
+	os.MkdirAll(filepath.Join(dir, filepath.Dir(rel)), 0o700)
+	os.WriteFile(filepath.Join(dir, rel), []byte(craftyCreds), 0o600)
+	got, pending = firstLoginCreds(app, nil, nil, read)
+	if pending || len(got) != 2 || got[1].Value != "k3Jx9_Qp2LmZ" || got[1].Source != "file" || !got[1].Secret {
+		t.Fatalf("got %+v pending %v", got, pending)
+	}
+}
+
+func TestReadDataFileStaysInside(t *testing.T) {
+	dir, outside := t.TempDir(), t.TempDir()
+	secret := filepath.Join(outside, "shadow")
+	os.WriteFile(secret, []byte("root:secret"), 0o600)
+	os.WriteFile(filepath.Join(dir, "ok.txt"), []byte(" pw \n"), 0o600)
+	os.Symlink(secret, filepath.Join(dir, "link"))
+	os.Symlink(outside, filepath.Join(dir, "dirlink"))
+	os.Mkdir(filepath.Join(dir, "sub"), 0o700)
+	os.WriteFile(filepath.Join(dir, "big"), make([]byte, maxCredFile+1), 0o600)
+	if b, err := readDataFile(dir, "ok.txt"); err != nil || fileSecret(b, nil) != "pw" {
+		t.Fatalf("ok.txt: %q %v", b, err)
+	}
+	for _, rel := range []string{"link", "dirlink/shadow", "../" + filepath.Base(outside) + "/shadow", "sub", "big", "missing"} {
+		if b, err := readDataFile(dir, rel); err == nil {
+			t.Errorf("%s was read: %q", rel, b)
+		}
+	}
+}
+
+func TestFirstLoginFilePathRules(t *testing.T) {
+	for p, ok := range map[string]bool{
+		"data/config/default-creds.txt": true, "admin.pw": true,
+		"/etc/shadow": false, "../x": false, "a/../../x": false, "a//b": false, "./a": false, "a/": false, "a b": false,
+		"a/b/c/d/e/f/g/h/i": false,
+	} {
+		_, err := (&catalog.FirstLogin{PasswordFromFile: p}).FilePath()
+		if (err == nil) != ok {
+			t.Errorf("%q: err %v", p, err)
+		}
+	}
+}
+
+func TestFirstLoginDefaultPasswordAndOrder(t *testing.T) {
+	app := &catalog.App{FirstLogin: &catalog.FirstLogin{Username: "admin", Password: "admin"}}
+	have := []appCred{{Label: "Database password", Value: "dbpw", Secret: true}}
+	got, pending := firstLoginCreds(app, nil, have, firstLoginSources{logs: func() []string { t.Fatal("logs read"); return nil }})
+	if pending || len(got) != 3 || got[0].Label != "User name" || got[1].Source != "default" || got[2].Value != "dbpw" {
+		t.Fatalf("got %+v pending %v", got, pending)
 	}
 }
 

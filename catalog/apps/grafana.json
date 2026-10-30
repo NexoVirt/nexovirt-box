@@ -29,5 +29,10 @@
    "required": true
   }
  ],
- "compose": "services:\n  grafana:\n    container_name: grafana\n    image: grafana/grafana-oss:13.0.2\n    ports:\n      - ${APP_PORT}:3000\n    volumes:\n      - ${APP_DATA_DIR}/data/grafana:/var/lib/grafana\n"
+ "compose": "services:\n  grafana:\n    container_name: grafana\n    image: grafana/grafana-oss:13.0.2\n    ports:\n      - ${APP_PORT}:3000\n    volumes:\n      - ${APP_DATA_DIR}/data/grafana:/var/lib/grafana\n",
+ "first_login": {
+  "username": "admin",
+  "password": "admin",
+  "note": "Grafana asks for a new password right after the first sign-in."
+ }
 }

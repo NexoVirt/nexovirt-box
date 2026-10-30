@@ -42,5 +42,9 @@
    "generate": true
   }
  ],
- "compose": "services:\n  nzbget:\n    environment:\n      NZBGET_PASS: ${SECRET_NZBGET_PASS}\n      NZBGET_USER: nzbget\n      PGID: \"1000\"\n      PUID: \"1000\"\n      TZ: Europe/London\n    image: linuxserver/nzbget:26.1.20260522\n    deploy:\n      resources:\n        reservations:\n          memory: 64M\n    network_mode: bridge\n    ports:\n      - target: 6789\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n      - type: bind\n        source: ${SHARED_DIR}/Downloads\n        target: /downloads\n    container_name: nzbget\n"
+ "compose": "services:\n  nzbget:\n    environment:\n      NZBGET_PASS: ${SECRET_NZBGET_PASS}\n      NZBGET_USER: nzbget\n      PGID: \"1000\"\n      PUID: \"1000\"\n      TZ: Europe/London\n    image: linuxserver/nzbget:26.1.20260522\n    deploy:\n      resources:\n        reservations:\n          memory: 64M\n    network_mode: bridge\n    ports:\n      - target: 6789\n        published: \"${APP_PORT}\"\n        protocol: tcp\n    restart: unless-stopped\n    volumes:\n      - type: bind\n        source: ${APP_DATA_DIR}/config\n        target: /config\n      - type: bind\n        source: ${SHARED_DIR}/Downloads\n        target: /downloads\n    container_name: nzbget\n",
+ "first_login": {
+  "username": "nzbget",
+  "password_from_env": "SECRET_NZBGET_PASS"
+ }
 }

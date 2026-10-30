@@ -29,5 +29,9 @@
    "required": true
   }
  ],
- "compose": "services:\n  deluge:\n    image: lscr.io/linuxserver/deluge:18.04.1\n    container_name: deluge\n    environment:\n      - PUID=1000\n      - PGID=1000\n      - TZ=${TZ}\n      - DELUGE_LOGLEVEL=error #optional\n    volumes:\n      - ${APP_DATA_DIR}/data/deluge/config:/config\n      - ${ROOT_FOLDER_HOST}/media/torrents:/media/torrents\n    ports:\n      - ${APP_PORT}:8112\n      - 6881:6881\n      - 6881:6881/udp\n    restart: unless-stopped\n"
+ "compose": "services:\n  deluge:\n    image: lscr.io/linuxserver/deluge:18.04.1\n    container_name: deluge\n    environment:\n      - PUID=1000\n      - PGID=1000\n      - TZ=${TZ}\n      - DELUGE_LOGLEVEL=error #optional\n    volumes:\n      - ${APP_DATA_DIR}/data/deluge/config:/config\n      - ${ROOT_FOLDER_HOST}/media/torrents:/media/torrents\n    ports:\n      - ${APP_PORT}:8112\n      - 6881:6881\n      - 6881:6881/udp\n    restart: unless-stopped\n",
+ "first_login": {
+  "password": "deluge",
+  "note": "The Deluge web page only asks for the password."
+ }
 }

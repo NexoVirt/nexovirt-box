@@ -20,5 +20,9 @@
  "main_port": 0,
  "scheme": "http",
  "questions": [],
- "compose": "x-runtipi:\n  schema_version: 2\nservices:\n  filebrowser-quantum:\n    image: gtstef/filebrowser:2.0-stable\n    volumes:\n      - ${ROOT_FOLDER_HOST}/media:/runtipi/media\n      - ${ROOT_FOLDER_HOST}/app-data:/runtipi/app-data\n      - ${ROOT_FOLDER_HOST}/user-config:/runtipi/user-config\n      - ${APP_DATA_DIR}/data:/home/filebrowser/data\n    x-runtipi:\n      internal_port: 80\n      is_main: true\n"
+ "compose": "x-runtipi:\n  schema_version: 2\nservices:\n  filebrowser-quantum:\n    image: gtstef/filebrowser:2.0-stable\n    volumes:\n      - ${ROOT_FOLDER_HOST}/media:/runtipi/media\n      - ${ROOT_FOLDER_HOST}/app-data:/runtipi/app-data\n      - ${ROOT_FOLDER_HOST}/user-config:/runtipi/user-config\n      - ${APP_DATA_DIR}/data:/home/filebrowser/data\n    x-runtipi:\n      internal_port: 80\n      is_main: true\n",
+ "first_login": {
+  "username": "admin",
+  "password": "admin"
+ }
 }

@@ -29,5 +29,10 @@
    "required": true
   }
  ],
- "compose": "services:\n  qbittorrent:\n    image: lscr.io/linuxserver/qbittorrent:5.3.0\n    container_name: qbittorrent\n    environment:\n      - PUID=1000\n      - PGID=1000\n      - TZ=${TZ}\n      - WEBUI_PORT=${APP_PORT}\n    volumes:\n      - ${APP_DATA_DIR}/data/config:/config\n      - ${ROOT_FOLDER_HOST}/media/torrents:/media/torrents\n    ports:\n      - ${APP_PORT}:${APP_PORT}\n      - '6881:6881'\n      - 6881:6881/udp\n    restart: unless-stopped\n"
+ "compose": "services:\n  qbittorrent:\n    image: lscr.io/linuxserver/qbittorrent:5.3.0\n    container_name: qbittorrent\n    environment:\n      - PUID=1000\n      - PGID=1000\n      - TZ=${TZ}\n      - WEBUI_PORT=${APP_PORT}\n    volumes:\n      - ${APP_DATA_DIR}/data/config:/config\n      - ${ROOT_FOLDER_HOST}/media/torrents:/media/torrents\n    ports:\n      - ${APP_PORT}:${APP_PORT}\n      - '6881:6881'\n      - 6881:6881/udp\n    restart: unless-stopped\n",
+ "first_login": {
+  "username": "admin",
+  "password_from_log_regex": "temporary password is provided for this session: (\\S+)",
+  "note": "qBittorrent prints a temporary password on every start until you set your own in Tools, Options, Web UI. If this one does not work, restart the app and open Login details again."
+ }
 }

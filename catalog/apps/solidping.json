@@ -33,5 +33,10 @@
   }
  ],
  "compose": "services:\n  app:\n    image: ghcr.io/fclairamb/solidping:0.37.0@sha256:b7905f7747e217c259f7442b14fcdb49b145b06dbe6791f9fc8dd4dde5e95428\n    container_name: big-bear-solidping\n    restart: unless-stopped\n    # The image runs as nonroot (uid 65532) and has no shell. Running as root\n    # lets it write to host bind mounts created by the platform as root.\n    user: \"0:0\"\n    # Needed for ICMP ping checks.\n    cap_add:\n      - NET_RAW\n    ports:\n      - \"${APP_PORT}:4000\"\n    volumes:\n      - ${APP_DATA_DIR}/data:/data\n    healthcheck:\n      test: [\"CMD\", \"/app/solidping\", \"healthcheck\"]\n      interval: 30s\n      timeout: 5s\n      retries: 3\n      start_period: 15s\n",
+ "first_login": {
+  "username": "admin@solidping.io",
+  "password": "solidpass",
+  "note": "SolidPing asks for a new password right after the first sign-in. The organization is \"default\"."
+ },
  "notes": "First login: admin@solidping.io / solidpass, organization \"default\". You are asked to set a new password immediately."
 }
