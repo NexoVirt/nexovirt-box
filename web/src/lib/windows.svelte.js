@@ -2,9 +2,10 @@
 // resizable, with z-order, minimise (to the dock row) and maximise. Place, size and maximise are
 // remembered per window in this browser (localStorage nxbox-win-<key>).
 
+import { TOP, clampRect, fitRect } from './winmath.js';
+
 export const wm = $state({ list: [], seq: 0 });
 
-const TOP = 56; // below the top bar
 const CASCADE = 28; // offset of each further new window
 
 function saved(key) {
@@ -15,12 +16,11 @@ export function remember(w) {
   try { localStorage.setItem('nxbox-win-' + w.key, JSON.stringify({ ...w.rect, max: w.max })); } catch { /* storage blocked */ }
 }
 
-// Keeps a window grabbable: at least 120 px of its title bar stay on screen.
-export function clamp(r) {
-  r.x = Math.min(Math.max(r.x, 120 - r.w), innerWidth - 120);
-  r.y = Math.min(Math.max(r.y, TOP - 8), innerHeight - 48);
-  return r;
-}
+// Keeps a window grabbable: at least 120 px of its title bar stay on screen (in place).
+export function clamp(r) { return Object.assign(r, clampRect(r, innerWidth, innerHeight)); }
+
+// Shrinks a window to fit a smaller browser window (in place).
+export function fit(r) { return Object.assign(r, fitRect(r, innerWidth, innerHeight)); }
 
 // The remembered place, else the default size centred on screen, shifted per open window.
 export function place(key, [dw, dh], open) {

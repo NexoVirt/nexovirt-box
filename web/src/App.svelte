@@ -16,6 +16,7 @@
   import Auth from './Auth.svelte';
   import Desktop from './Desktop.svelte';
   import AppWindow from '$lib/AppWindow.svelte';
+  import { hscroll } from '$lib/hscroll.js';
   import Lazy from '$lib/Lazy.svelte';
   import PasswordGate from '$lib/PasswordGate.svelte';
   import Popover from '$lib/Popover.svelte';
@@ -288,7 +289,7 @@
     {/if}
   {/each}
   {#if docked.length}
-    <nav class="dockrow" aria-label="Minimised windows">
+    <nav class="dockrow" aria-label="Minimised windows" use:hscroll>
       {#each docked as w (w.key)}
         <button class="parked" onclick={() => focusWindow(w)} aria-label="Show {titleOf(w)} again"><span class="dot ok"></span>{titleOf(w)}</button>
       {/each}

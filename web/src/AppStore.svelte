@@ -3,6 +3,7 @@
   import { api } from '$lib/api.js';
   import { toast } from '$lib/toast.svelte.js';
   import AppIcon from '$lib/AppIcon.svelte';
+  import HScroll from '$lib/HScroll.svelte';
   import Dialog from '$lib/Dialog.svelte';
   import AppDetail from './AppDetail.svelte';
   import DockerSetup from './DockerSetup.svelte';
@@ -130,11 +131,11 @@
         <Search size={17} />
         <input type="search" placeholder="Search apps" bind:value={query} aria-label="Search apps" />
       </label>
-      <div class="chips" role="tablist" aria-label="Categories">
+      <HScroll role="tablist" aria-label="Categories" label="categories">
         {#each categories as c (c)}
           <button class="chip" role="tab" aria-selected={c === cat} onclick={() => (cat = c)}>{c}</button>
         {/each}
-      </div>
+      </HScroll>
     </div>
 
     {#if !catalog}
@@ -186,8 +187,6 @@
   .search { display: flex; align-items: center; gap: 0.625rem; height: 2.75rem; padding: 0 0.875rem; border-radius: var(--r-control); background: var(--fill); color: var(--text-3); max-width: 32rem; }
   .search:focus-within { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent); }
   .search input { flex: 1; min-width: 0; border: 0; background: none; height: 100%; font-size: 0.9375rem; color: var(--text); outline: none; }
-  .chips { display: flex; gap: 0.375rem; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
-  .chips::-webkit-scrollbar { display: none; }
   .chip {
     flex-shrink: 0; height: 2rem; padding: 0 0.875rem; border: 0; border-radius: var(--r-pill); cursor: pointer;
     background: var(--fill); color: var(--text-2); font-size: 0.8125rem; font-weight: 600;
