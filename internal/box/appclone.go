@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -35,12 +36,22 @@ type cloneService struct {
 // cloneYAML builds the override: container names prefixed with the clone's project and every
 // published port mapped through ports (old host port -> new). It reports an error for port
 // ranges, which cannot be moved one by one.
-func cloneYAML(configJSON []byte, id string, ports map[int]int) ([]byte, error) {
+func cloneYAML(configJSON []byte, id string, ports map[int]int, loopback bool) ([]byte, error) {
 	var cfg struct {
 		Services map[string]cloneService `json:"services"`
+		Volumes  map[string]topLevel     `json:"volumes"`
+		Networks map[string]topLevel     `json:"networks"`
 	}
 	if err := json.Unmarshal(configJSON, &cfg); err != nil {
 		return nil, uerr("The app definition could not be read.")
+	}
+	volNames, err := scopedNames(cfg.Volumes, id, true)
+	if err != nil {
+		return nil, err
+	}
+	netNames, err := scopedNames(cfg.Networks, id, false)
+	if err != nil {
+		return nil, err
 	}
 	names := make([]string, 0, len(cfg.Services))
 	for n := range cfg.Services {
@@ -74,6 +85,9 @@ func cloneYAML(configJSON []byte, id string, ports map[int]int) ([]byte, error) 
 				n = to
 			}
 			ip := p.HostIP
+			if loopback {
+				ip = "127.0.0.1" // the source is behind the Box sign-in: the clone stays private too
+			}
 			if ip == "" { // every address, IPv4 and IPv6, as Docker does without one
 				fmt.Fprintf(&b, "      - \"%d:%d/%s\"\n", n, p.Target, proto(p))
 				continue
@@ -87,10 +101,67 @@ func cloneYAML(configJSON []byte, id string, ports map[int]int) ([]byte, error) 
 			fmt.Fprintf(&b, "      - \"%s:%d:%d/%s\"\n", ip, n, p.Target, proto(p))
 		}
 	}
+	for _, top := range []struct {
+		key   string
+		names map[string]string
+	}{{"volumes", volNames}, {"networks", netNames}} {
+		if len(top.names) == 0 {
+			continue
+		}
+		keys := make([]string, 0, len(top.names))
+		for k := range top.names {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		b.WriteString(top.key + ":\n")
+		for _, k := range keys {
+			fmt.Fprintf(&b, "  %s:\n    name: %s\n", k, top.names[k])
+		}
+	}
 	return []byte(b.String()), nil
 }
 
-var cloneNameLine = regexp.MustCompile(`^    container_name: nxbox-[a-z0-9][a-z0-9-]{0,62}-[a-zA-Z0-9][a-zA-Z0-9_.-]{0,62}$`)
+type topLevel struct {
+	Name     string `json:"name"`
+	External any    `json:"external"`
+}
+
+func isExternal(v any) bool {
+	switch x := v.(type) {
+	case bool:
+		return x
+	case nil:
+		return false
+	}
+	return true // the old {name: ...} form
+}
+
+// scopedNames gives every volume (or network) a name in the clone's own project, so the clone
+// never uses the original's. An external volume holds data Box cannot give the clone its own copy
+// of, so it is refused; external networks carry no data and stay shared (down never removes them).
+func scopedNames(m map[string]topLevel, id string, volumes bool) (map[string]string, error) {
+	out := map[string]string{}
+	for k, v := range m {
+		if !serviceNameRe.MatchString(k) {
+			return nil, uerr("The name %q cannot be cloned.", k)
+		}
+		if isExternal(v.External) {
+			if volumes {
+				return nil, uerr("This app uses the external volume %s, which a clone would share with the original. Box cannot clone it.", k)
+			}
+			continue
+		}
+		if want := "nxbox-" + id + "_" + k; v.Name != want {
+			out[k] = want
+		}
+	}
+	return out, nil
+}
+
+var (
+	cloneNameLine   = regexp.MustCompile(`^    container_name: nxbox-[a-z0-9][a-z0-9-]{0,62}-[a-zA-Z0-9][a-zA-Z0-9_.-]{0,62}$`)
+	cloneScopedLine = regexp.MustCompile(`^    name: nxbox-[a-z0-9][a-z0-9-]{0,62}_[a-zA-Z0-9][a-zA-Z0-9_.-]{0,62}$`)
+)
 
 // checkCloneFile makes sure a clone.yaml (it can come back from a backup) only renames
 // containers and moves ports.
@@ -105,7 +176,8 @@ func checkCloneFile(dir string) error {
 	}
 	for _, l := range strings.Split(strings.TrimRight(string(b), "\n"), "\n") {
 		switch {
-		case strings.HasPrefix(l, "#"), l == "services:", l == "    ports: !override", bindServiceLine.MatchString(l), bindPortLine.MatchString(l), cloneNameLine.MatchString(l):
+		case strings.HasPrefix(l, "#"), l == "services:", l == "    ports: !override", bindServiceLine.MatchString(l), bindPortLine.MatchString(l), cloneNameLine.MatchString(l),
+			l == "volumes:", l == "networks:", cloneScopedLine.MatchString(l):
 		default:
 			return bad
 		}
@@ -227,7 +299,7 @@ func (h *helperServer) appClone(ctx context.Context, req helperRequest, logf fun
 	if err != nil {
 		return fail(err)
 	}
-	b, err := cloneYAML(cfg, req.NewID, plan)
+	b, err := cloneYAML(cfg, req.NewID, plan, src.Protect && req.Confirm != "expose")
 	if err != nil {
 		return fail(err)
 	}
@@ -247,7 +319,7 @@ func (h *helperServer) appClone(ctx context.Context, req helperRequest, logf fun
 		return fail(err)
 	}
 	if err := h.up(ctx, meta.Name, dir, req.NewID, logf); err != nil {
-		runStream(context.Background(), compose(dir, req.NewID, "down", "--volumes", "--remove-orphans"), func(string) {})
+		cleanupClone(req.NewID, dir)
 		return fail(err)
 	}
 	return meta, nil
@@ -305,4 +377,18 @@ func (h *helperServer) publishedByApps() map[int]bool {
 		}
 	}
 	return out
+}
+
+// cleanupClone removes what a failed clone created: its containers, and only volumes that carry
+// the clone's own project label AND its project name prefix (never --volumes, which would follow
+// a volume name that points elsewhere).
+func cleanupClone(id, dir string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	runStream(ctx, compose(dir, id, "down", "--remove-orphans"), func(string) {})
+	for _, v := range appVolumes(ctx, id) {
+		if strings.HasPrefix(v.Name, "nxbox-"+id+"_") {
+			exec.CommandContext(ctx, "docker", "volume", "rm", v.Name).Run()
+		}
+	}
 }

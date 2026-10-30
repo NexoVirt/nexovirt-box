@@ -582,8 +582,9 @@ func (a *App) appAction(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) appClone(w http.ResponseWriter, r *http.Request) {
 	var in struct {
-		Name string
-		Port int
+		Name   string
+		Port   int
+		Expose bool // a protected source's clone published on every address (the UI warns first)
 	}
 	if err := readJSON(r, &in); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
@@ -600,7 +601,12 @@ func (a *App) appClone(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	a.runJob(w, r, "clone", newID, "app.clone", helperRequest{Action: "app_clone", ID: id, NewID: newID, Name: in.Name, Port: in.Port})
+	req := helperRequest{Action: "app_clone", ID: id, NewID: newID, Name: in.Name, Port: in.Port}
+	if in.Expose {
+		req.Confirm = "expose"
+		a.audit(r, "app.clone_expose", id+" -> "+newID)
+	}
+	a.runJob(w, r, "clone", newID, "app.clone", req)
 }
 
 func (a *App) appUninstall(w http.ResponseWriter, r *http.Request) {

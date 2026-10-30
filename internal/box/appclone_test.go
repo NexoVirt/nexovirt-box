@@ -13,7 +13,7 @@ func TestCloneYAMLAndPorts(t *testing.T) {
 	if err != nil || plan[8080] != 8082 || plan[9000] != 9000 {
 		t.Fatalf("plan %v %v", plan, err)
 	}
-	b, err := cloneYAML(cfg, "wiki-2", plan)
+	b, err := cloneYAML(cfg, "wiki-2", plan, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -30,7 +30,7 @@ func TestCloneYAMLAndPorts(t *testing.T) {
 	if checkCloneFile(dir) == nil {
 		t.Fatal("foreign container name accepted")
 	}
-	if _, err := cloneYAML([]byte(`{"services":{"w":{"ports":[{"target":1,"published":"10-20"}]}}}`), "x", nil); err == nil {
+	if _, err := cloneYAML([]byte(`{"services":{"w":{"ports":[{"target":1,"published":"10-20"}]}}}`), "x", nil, false); err == nil {
 		t.Fatal("port range accepted")
 	}
 	// The wanted main port wins over the automatic choice.
@@ -89,5 +89,59 @@ esac
 	}
 	if _, err := h.appClone(t.Context(), helperRequest{ID: "wiki", NewID: "wiki-2", Name: "Again"}, func(string) {}); err == nil {
 		t.Fatal("second clone with the same id accepted")
+	}
+}
+
+// A protected source gives a loopback-only clone; fixed or external volume names never point the
+// clone at the original's data.
+func TestCloneKeepsProtectionAndScopesVolumes(t *testing.T) {
+	cfg := []byte(`{"services":{"web":{"ports":[{"target":80,"published":"8080"}]}},
+		"volumes":{"db":{"name":"wiki_db"},"cache":{"name":"nxbox-wiki-2_cache"}},
+		"networks":{"default":{"name":"nxbox-wiki-2_default"},"proxy":{"name":"proxy","external":true},"back":{"name":"wiki_back"}}}`)
+	b, err := cloneYAML(cfg, "wiki-2", map[int]int{8080: 8081}, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(b)
+	for _, want := range []string{`"127.0.0.1:8081:80/tcp"`, "volumes:\n  db:\n    name: nxbox-wiki-2_db\n", "networks:\n  back:\n    name: nxbox-wiki-2_back\n"} {
+		if !strings.Contains(s, want) {
+			t.Fatalf("missing %q in\n%s", want, s)
+		}
+	}
+	if strings.Contains(s, "cache:") || strings.Contains(s, "proxy") {
+		t.Fatalf("already scoped or external entries rewritten:\n%s", s)
+	}
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, cloneFile), b, 0o600)
+	if err := checkCloneFile(dir); err != nil {
+		t.Fatalf("own file refused: %v\n%s", err, s)
+	}
+	os.WriteFile(filepath.Join(dir, cloneFile), []byte("volumes:\n  db:\n    name: wiki_db\n"), 0o600)
+	if checkCloneFile(dir) == nil {
+		t.Fatal("a volume name outside the clone's project accepted")
+	}
+	if _, err := cloneYAML([]byte(`{"services":{},"volumes":{"data":{"name":"shared","external":true}}}`), "wiki-2", nil, false); err == nil {
+		t.Fatal("external volume accepted")
+	}
+}
+
+// A failed clone removes only volumes of its own project, never the original's.
+func TestCloneCleanupLeavesSourceVolumes(t *testing.T) {
+	bin := t.TempDir()
+	log := filepath.Join(bin, "log")
+	script := `#!/bin/sh
+echo "$*" >> ` + log + `
+case "$*" in
+  *"volume ls"*) printf 'nxbox-wiki-2_db|db\nwiki_db|db\n' ;;
+  *"volume inspect"*) echo /var/lib/docker/volumes/x/_data ;;
+esac
+`
+	os.WriteFile(filepath.Join(bin, "docker"), []byte(script), 0o755)
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	cleanupClone("wiki-2", t.TempDir())
+	calls, _ := os.ReadFile(log)
+	c := string(calls)
+	if strings.Contains(c, "--volumes") || strings.Contains(c, "volume rm wiki_db") || !strings.Contains(c, "volume rm nxbox-wiki-2_db") {
+		t.Fatalf("cleanup calls:\n%s", c)
 	}
 }
