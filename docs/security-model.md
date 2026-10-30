@@ -23,6 +23,9 @@
   Previews are sandboxed; SVG and HTML are always downloads.
 - Reverse proxy: Box never takes over a port another program uses; with 80/443 taken you pick
   other ports.
+- Backups are encrypted with age and signed with an HMAC keyed from the backup key, so someone who
+  can write to a backup target cannot plant an archive that restores as a privileged app or a
+  different admin account.
 - Self-updates: only releases signed with the NexoVirt release key, applied on click; when the
   new version does not answer, the old binary is restored.
 - Failed sign-ins, setup and password confirmations are limited to 5 per minute per IP (counted

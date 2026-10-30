@@ -15,6 +15,8 @@ package box
 import (
 	"archive/tar"
 	"compress/gzip"
+	"crypto/hmac"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -67,9 +69,24 @@ func parseArchiveName(n string) (string, time.Time, bool) {
 	return m[1], t, err == nil
 }
 
-// writeArchive encrypts a tar.gz with the manifest first and fill's entries after it.
-func writeArchive(w io.Writer, rcpt age.Recipient, man backupManifest, fill func(*tar.Writer) error) error {
-	aw, err := age.Encrypt(w, rcpt)
+// Archives are age-encrypted to the backup key's public half, which the UI shows, so anyone who
+// can write to a backup target could build one. Each archive therefore ends with an HMAC over the
+// encrypted bytes, keyed from the secret half: only this Box (or one with the same key) makes
+// archives that verify. Layout: <age file> <32-byte HMAC-SHA256> "NXBOXMAC1\n".
+const macMagic = "NXBOXMAC1\n"
+
+const macTrailer = sha256.Size + len(macMagic)
+
+func archiveMACKey(id *age.X25519Identity) []byte {
+	k := sha256.Sum256([]byte("nexovirt-box backup mac v1\n" + id.String()))
+	return k[:]
+}
+
+// writeArchive encrypts a tar.gz with the manifest first and fill's entries after it, then
+// appends the HMAC trailer.
+func writeArchive(w io.Writer, id *age.X25519Identity, man backupManifest, fill func(*tar.Writer) error) error {
+	mac := hmac.New(sha256.New, archiveMACKey(id))
+	aw, err := age.Encrypt(io.MultiWriter(w, mac), id.Recipient())
 	if err != nil {
 		return err
 	}
@@ -88,7 +105,8 @@ func writeArchive(w io.Writer, rcpt age.Recipient, man backupManifest, fill func
 			return err
 		}
 	}
-	return nil
+	_, err = w.Write(append(mac.Sum(nil), macMagic...))
+	return err
 }
 
 // addTree adds dir below prefix. skip gets slash paths relative to dir. It walks on folder
@@ -148,8 +166,29 @@ func addTree(tw *tar.Writer, dir, prefix string, skip func(rel string) bool) err
 	})
 }
 
-// openArchive decrypts r and unpacks it into dir (which must exist), then returns the manifest.
-func openArchive(r io.Reader, id age.Identity, dir string) (backupManifest, error) {
+var errForgedArchive = userError{"This backup was changed or was not made with the backup key of this Box. It was not used."}
+
+// openArchive checks the HMAC trailer, decrypts the archive and unpacks it into dir (which must
+// exist), then returns the manifest. signed is false for archives from Box versions before the
+// trailer existed: the caller must not trust their settings.
+func openArchive(ra io.ReaderAt, size int64, id *age.X25519Identity, dir string) (man backupManifest, signed bool, err error) {
+	body := size
+	if size >= int64(macTrailer) {
+		tail := make([]byte, macTrailer)
+		if _, err := ra.ReadAt(tail, size-int64(macTrailer)); err == nil && string(tail[sha256.Size:]) == macMagic {
+			body = size - int64(macTrailer)
+			mac := hmac.New(sha256.New, archiveMACKey(id))
+			if _, err := io.Copy(mac, io.NewSectionReader(ra, 0, body)); err != nil || !hmac.Equal(mac.Sum(nil), tail[:sha256.Size]) {
+				return man, false, errForgedArchive
+			}
+			signed = true
+		}
+	}
+	man, err = unpackArchive(io.NewSectionReader(ra, 0, body), id, dir)
+	return man, signed, err
+}
+
+func unpackArchive(r io.Reader, id age.Identity, dir string) (backupManifest, error) {
 	var man backupManifest
 	ar, err := age.Decrypt(r, id)
 	if err != nil {

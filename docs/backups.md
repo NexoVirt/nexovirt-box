@@ -12,6 +12,10 @@
   We chose stop over pause or volume snapshots: pause leaves dirty database pages, and snapshots need LVM/ZFS/btrfs.
 - **Format**: `<app>-<UTC yyyymmddThhmmssZ>.nxb`, a gzip tar encrypted with age (X25519). The archive is written to
   `/var/lib/nexovirt-box/backup-tmp` first (needs free space for one archive), then uploaded.
+- **Signature**: age only encrypts to the public key, so each archive ends with an HMAC-SHA256 over the encrypted
+  bytes, keyed from the secret key (`<age file><32-byte MAC>NXBOXMAC1\n`). A changed archive is refused. Archives from
+  versions before the signature still restore apps, but checked like an own app (no confirmed findings, no Docker or
+  Compose variables from their `.env`, data only into the app folder); their Box settings are never restored.
 - **Key**: the age identity lives in `/etc/nexovirt-box/backup/key.txt` (root, 0600) so restores are one click. It is
   shown once when created ("Save your backup key"); import it on a new server to restore there. Replacing it needs a
   password proof; old backups then need the old key.

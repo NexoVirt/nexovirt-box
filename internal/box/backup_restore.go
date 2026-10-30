@@ -54,7 +54,7 @@ func (h *helperServer) backupRestore(ctx context.Context, req helperRequest, log
 	}
 	ctx, cancel := context.WithTimeout(ctx, 6*time.Hour)
 	defer cancel()
-	man, stage, err := h.fetchArchive(ctx, req, h.appsDir, logf)
+	man, stage, signed, err := h.fetchArchive(ctx, req, h.appsDir, logf)
 	if err != nil {
 		return nil, err
 	}
@@ -70,12 +70,20 @@ func (h *helperServer) backupRestore(ctx context.Context, req helperRequest, log
 	}
 
 	var meta installedApp
+	if !signed {
+		logf("This backup was made by an older Box version without a signature: its settings are checked like an own app.")
+	}
 	if installed {
-		// An installed app keeps its current compose file and settings; data and .env come back.
+		// An installed app keeps its current compose file and settings; data and .env come back
+		// (the .env only from a signed archive: it decides values the compose file uses).
 		if meta, err = h.readMeta(newID); err != nil {
 			return nil, err
 		}
-		for _, f := range []string{"compose.yaml", "app.json"} {
+		keep := []string{"compose.yaml", "app.json"}
+		if !signed {
+			keep = append(keep, ".env")
+		}
+		for _, f := range keep {
 			if err := copyPrivate(filepath.Join(dir, f), filepath.Join(staged, f)); err != nil {
 				return nil, err
 			}
@@ -89,6 +97,11 @@ func (h *helperServer) backupRestore(ctx context.Context, req helperRequest, log
 		meta.Domain, meta.TLS, meta.DataCreated = "", "", false // domains are not taken over
 		meta.DomainPort, meta.Protect = 0, false
 		meta.SocketOK = req.AllowDockerSocket
+		if !signed {
+			if err := h.distrustRestoredApp(&meta, app, staged); err != nil {
+				return nil, err
+			}
+		}
 		if newID != app {
 			meta.Name += " (restored)"
 		}
@@ -103,7 +116,7 @@ func (h *helperServer) backupRestore(ctx context.Context, req helperRequest, log
 		switch {
 		case installed && meta.DataDir == man.DataDir:
 			external = true
-		case !installed && newID == app && checkDataDir(man.DataDir) == nil:
+		case !installed && newID == app && signed && checkDataDir(man.DataDir) == nil:
 			external, meta.DataCreated = true, !exists(man.DataDir)
 		default: // the old folder is taken: the data goes into the app's own folder
 			os.RemoveAll(filepath.Join(staged, "data"))
@@ -277,9 +290,13 @@ func (h *helperServer) restoreBox(ctx context.Context, req helperRequest, logf f
 	if err != nil {
 		return nil, err
 	}
-	_, stage, err := h.fetchArchive(ctx, req, tmp, logf)
+	_, stage, signed, err := h.fetchArchive(ctx, req, tmp, logf)
 	if err != nil {
 		return nil, err
+	}
+	if !signed { // the database holds the admin password: never from an archive Box cannot check
+		os.RemoveAll(stage)
+		return nil, uerr("This settings backup was made by an older Box version without a signature, so Box cannot check that it was not changed. It was not restored. Make a new backup with this version.")
 	}
 	db := filepath.Join(stage, "box", "box.db")
 	if st, err := os.Lstat(db); err != nil || !st.Mode().IsRegular() {
@@ -319,4 +336,39 @@ func copyPrivate(src, dst string) error {
 		return err
 	}
 	return os.WriteFile(dst, b, 0o600)
+}
+
+// distrustRestoredApp makes an app from an unsigned archive go through the checks of an own app
+// (raw compose, privileges, no confirmed findings), unless its compose file is exactly the one the
+// signed catalog ships for it. Docker and Compose variables in its .env are dropped.
+func (h *helperServer) distrustRestoredApp(meta *installedApp, app, staged string) error {
+	compose, err := os.ReadFile(filepath.Join(staged, "compose.yaml"))
+	if err != nil {
+		return uerr("This backup has no app definition in it.")
+	}
+	trusted := false
+	if !meta.Custom {
+		if cat, _, err := loadCatalog(h.webState); err == nil {
+			if ca, err := cat.App(app); err == nil && composeSHA([]byte(ca.Compose)) == composeSHA(compose) {
+				trusted = true
+			}
+		}
+	}
+	if !trusted {
+		meta.Custom, meta.Reviewed, meta.Allowed = true, true, nil
+	}
+	envPath := filepath.Join(staged, ".env")
+	b, err := os.ReadFile(envPath)
+	if err != nil {
+		return nil
+	}
+	var kept []string
+	for _, l := range strings.Split(string(b), "\n") {
+		k := strings.ToUpper(strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(l), "export ")))
+		if strings.HasPrefix(k, "COMPOSE_") || strings.HasPrefix(k, "DOCKER_") {
+			continue
+		}
+		kept = append(kept, l)
+	}
+	return os.WriteFile(envPath, []byte(strings.Join(kept, "\n")), 0o600)
 }
