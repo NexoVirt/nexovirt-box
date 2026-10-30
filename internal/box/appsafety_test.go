@@ -27,7 +27,7 @@ func testPolicy(t *testing.T) (mountPolicy, string) {
 	for _, d := range []string{filepath.Join(app, "data"), filepath.Join(base, "apps", "other"), filepath.Join(base, "web"), filepath.Join(base, "shared")} {
 		os.MkdirAll(d, 0o700)
 	}
-	return mountPolicy{base: base, allow: []string{app, filepath.Join(base, "shared")}}, base
+	return mountPolicy{base: base, allow: []string{app, filepath.Join(base, "shared")}, appDir: app}, base
 }
 
 func TestMountsRefuseBoxState(t *testing.T) {
@@ -40,6 +40,9 @@ func TestMountsRefuseBoxState(t *testing.T) {
 		filepath.Join(base, "apps"),          // every app
 		filepath.Join(base, "apps", "other"), // another app's folder
 		filepath.Join(base, "apps", "other", ".env"),
+		filepath.Join(base, "apps", "code-server"),             // its own folder: compose.yaml, .env, app.json
+		filepath.Join(base, "apps", "code-server", "app.json"), // its own settings
+		filepath.Join(base, "apps", "code-server", "compose.yaml"),
 		"/etc/nexovirt-box", "/etc/nexovirt-box/caddy", "/run/nexovirt-box", "/run/nexovirt-box/helper.sock",
 		"/", "/etc", "/root", "/root/.ssh", "/proc", "/sys", "/boot", "/run", "/etc/shadow", "/etc/sudoers.d",
 	} {
@@ -88,6 +91,12 @@ func TestMountsFollowSymlinks(t *testing.T) {
 	}
 	if err := checkMounts(binds(filepath.Join(link, "not-yet")), p); err == nil {
 		t.Fatal("a missing path below a symlink to the state dir was accepted")
+	}
+	// A link from its data folder up to its own app folder (compose.yaml, app.json).
+	up := filepath.Join(base, "apps", "code-server", "data", "db")
+	os.Symlink("..", up)
+	if err := checkMounts(binds(up), p); err == nil {
+		t.Fatal("a symlink to the app's own folder was accepted")
 	}
 }
 
