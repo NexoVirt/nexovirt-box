@@ -23,6 +23,7 @@ func sharedDir(base string) string { return filepath.Join(base, "shared") }
 type mountPolicy struct {
 	base        string   // Box's state dir (/var/lib/nexovirt-box)
 	allow       []string // folders inside base the app may use: its own dir, its data dir, the shared dir
+	appDir      string   // the app's own folder: never mounted itself, nor its compose, .env and settings
 	allowSocket bool     // the catalog marks the app as needing Docker and the admin agreed
 	custom      bool     // an own app: raw compose and privilege checks too (customapp.go)
 	roots       []string // own apps: the file roots, binds inside them need no confirmation
@@ -98,6 +99,13 @@ func (p mountPolicy) check(src string) error {
 			return refuse("Docker, which means full control of the server")
 		}
 	}
+	// The app folder holds compose.yaml, .env and app.json, which decide what Box starts as root:
+	// a container that can write them gets the server. Its subfolders (data) are fine.
+	if p.appDir != "" {
+		if d := resolvePath(p.appDir); path == d || (filepath.Dir(path) == d && appControlFile(filepath.Base(path))) {
+			return refuse("NexoVirt Box's own files")
+		}
+	}
 	for _, d := range append([]string{p.base}, boxDirs...) {
 		d = resolvePath(d)
 		if path == d || within(d, path) {
@@ -120,6 +128,15 @@ func (p mountPolicy) check(src string) error {
 		}
 	}
 	return nil
+}
+
+// appControlFile: the files Box keeps in an app's folder (everything but its subfolders).
+func appControlFile(name string) bool {
+	switch name {
+	case "compose.yaml", ".env", "app.json", limitsFile, bindFile, cloneFile, installMarker:
+		return true
+	}
+	return strings.HasPrefix(name, ".") || strings.HasSuffix(name, ".yaml") || strings.HasSuffix(name, ".json")
 }
 
 func (p mountPolicy) allowed(path string) bool {
