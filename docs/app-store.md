@@ -21,7 +21,7 @@ Each app is one JSON file (`catalog/apps/<id>.json`):
 | `compose` | the compose file, stored verbatim on install as `compose.yaml` |
 | `docker_socket` | true when the app mounts the Docker socket (shown as a warning: that is root access) |
 | `attribution` | store name, URL and license of the catalog the app came from |
-| `first_login` | how to sign in the first time when the app makes its own admin: `username`, `password_from_log_regex` (one capture group, matched against the first 1000 log lines), `password_from_env` (a variable of the app's `.env`), `note` |
+| `first_login` | how to sign in the first time when the app makes its own admin: `username`, `password` (a fixed default the app ships with), `password_from_env` (a variable of the app's `.env`), `password_from_file` (a file the app writes, path relative to `APP_DATA_DIR`) with optional `password_from_file_regex` (one capture group; without it the whole file, one short line, is the password), `password_from_log_regex` (one capture group, the last match in the first 1000 log lines), `note` |
 | `notes` | "Getting started" text (plain text, links are made clickable); imported from CasaOS/BigBear `tips.before_install` |
 
 Question types: `text`, `password`, `number`, `email`, `domain`, `boolean`, `select` (`options`), plus `port`.
@@ -37,12 +37,24 @@ Passwords: every `password` question is generated (strong random) unless the adm
 keys containing `SUDO` (a sudo password inside the container) are always generated. My Apps shows them under
 Login details (`GET /api/apps/{id}/credentials`, audited).
 
-First login: Login details (`GET /api/apps/{id}/credentials`, audited) returns `{items, note, notes}`. Without
+First login: Login details (`GET /api/apps/{id}/credentials`, audited; also in the desktop tile menu) returns
+`{items, pending, note, notes}`. The first-login user and password come first, then the app's other answers (a value
+shows once per kind). Each item may carry `source`: `log`, `file` or `default`, shown as a pill. `pending` is true while
+a named password source has nothing yet (the app has not started far enough); the UI then offers "Check again".
+The helper reads `password_from_file` through `os.Root` on the app's data folder (no `..`, no absolute path, no symlink
+leading outside, regular files up to 64 KiB only; `FirstLogin.FilePath` validates the catalog value). Without
 `first_login` the helper scans the first 1000 log lines for common patterns (initial/default/generated password,
 admin password, default credentials) and offers up to three values marked "From the logs". Curated `first_login`
-entries live in `cmd/catalog-import/firstlogin.go` (`knownFirstLogin`); `go run ./cmd/catalog-import -enrich -casaos
-<dir> -bigbear <dir>` refreshes `first_login` and `notes` in the existing catalog and re-signs it without a full
-re-import. A store tip that names a default password the importer replaced with a generated one is dropped.
+entries live in `cmd/catalog-import/firstlogin.go` (`knownFirstLogin`, plus `knownHTTPS` for apps whose UI only answers
+on HTTPS); `go run ./cmd/catalog-import -enrich [-casaos <dir> -bigbear <dir>]` refreshes `first_login`, those scheme
+fixes and (with the store dirs) `notes` in the existing catalog and re-signs it without a full re-import. A store tip
+that names a default password the importer replaced with a generated one is dropped.
+
+Curated today: Crafty (generated password in `data/config/default-creds.txt`), AList and qBittorrent (from the logs),
+OpenList, Davis, Dockpeek, Etherpad, Healthchecks, Kopia, MicroBin, MineOS, Nextcloud with SMB, NZBGet, Seafile,
+SnapOtter, Stirling-PDF, TaskingAI, Tududi, WebDAV (generated password + fixed user name), and fixed defaults for
+AList Sync, BookStack, Brave, Calibre-Web, Chrome, copyparty, Deluge, FileBrowser Quantum, Grafana, Grocy, Kanboard,
+Mixpost (and Pro), Peppermint, SolidPing, Speedtest Tracker and Umami.
 
 Logs: `GET /api/apps/{id}/logs?tail=&since=&service=` returns `{services, lines: [{s, t, m}]}` (per service, Docker
 timestamps, merged by time, tail up to 10000). The Logs page `/apps/<id>/logs` polls with `since`.

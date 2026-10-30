@@ -52,8 +52,9 @@ embedded.
   blur, widgets order/on, tile order, hidden system tiles, clock options, theme; POST merges, unknown fields refused),
   wallpaper upload `POST/GET /api/desktop/wallpaper` (JPEG/PNG/WebP only, 8 MB). Built-in wallpapers are flat colours
   and two flat-shape SVGs made for Box (`public/wallpapers/`), never gradients or third-party photos.
-- Windows (`lib/AppWindow.svelte`, `lib/windows.svelte.js`): every Box window floats: drag the title bar, resize from the
-  right/bottom edge or corner, maximise (button or double-click the title), minimise to the dock row at the bottom,
+- Windows (`lib/AppWindow.svelte`, `lib/windows.svelte.js`, geometry in `lib/winmath.js`): every Box window floats:
+  drag the title bar, resize from any edge or corner (min 420 x 300, never under the top bar; the window body is its own
+  stacking context so page toolbars never cover the handles; a smaller browser window shrinks it), maximise (button or double-click the title), minimise to the dock row at the bottom,
   click to bring to front; several at once, new ones centred with a cascade offset; place, size and maximise in
   localStorage `nxbox-win-<key>`; under 700 px full screen. Esc closes only the window in front (unless a dialog, menu,
   input or the terminal has the key). Dialogs (`Dialog`, `Sheet`, z 50+) are modal above all windows (z 30 + rank), the
@@ -80,6 +81,10 @@ embedded.
   `src/lib/theme.svelte.js` holds the state). Every page keeps the shared `.page-head`; never add page-local overrides.
   Pages listed as fill (Files, Activity, Backups, Logs) fill their window and scroll inside their own card.
 - Backups (`Backups.svelte`) has top tabs (Segmented, `#overview|archives|schedules|targets|activity` in the URL).
+- Horizontal strips (`lib/HScroll.svelte` with previous/next buttons while it overflows, or the bare `use:hscroll`
+  action from `lib/hscroll.js`): a normal vertical wheel scrolls them sideways while hovered (the page keeps the wheel at
+  the strip's ends), arrow/Home/End move between items, touch and trackpads stay native. Used by the App Store
+  categories, screenshots, the Files path bar and the minimised-window row; never a bare `overflow-x: auto` strip.
 - Selects use the global `select.input` style (own chevron with room); never the cramped native arrow.
 - Every async thing has a loading state (skeletons, spinners). Errors are friendly text (toasts via
   `src/lib/toast.svelte.js` or a `.notice`), never raw HTTP errors or stack traces.
@@ -175,6 +180,7 @@ embedded.
 
 - `make build`: UI (`web`, `npm ci && npm run build`) then Go for linux/amd64 + linux/arm64 into `bin/`.
 - `make test`: `go vet` + `go test` (includes the importer and the catalog signature checks).
+- Web unit tests: `cd web && npm test` (`node --test`, plain modules only: `lib/winmath.js`, `lib/hscroll.js`).
 - Dev: `go run ./cmd/nexovirt-box -dev -listen 127.0.0.1:8080` and `cd web && npm run dev` (Vite proxies `/api`).
 - Install or upgrade on a server: copy `bin/nexovirt-box-linux-<arch>` + `deploy/install.sh`, run the script as
   root. It creates the `nexovirt-box` user and both units and moves a 0.1 root-only install into the new layout.
@@ -189,7 +195,7 @@ embedded.
   detector on `internal/` and `cmd/` except `internal/box`, whose tests swap package-level paths in cleanups),
   golangci-lint (`.github/golangci.yml`, locally `golangci-lint run -c .github/golangci.yml`), catalog and key checks (built-in catalog verifies with the release
   catalog key, release builds do not trust `keys/catalog-dev.key`, `deploy/get.sh` carries the release
-  key), `svelte-check` + Vite build, linux/amd64 + linux/arm64 binaries as artifacts.
+  key), `svelte-check` + `npm test` + Vite build, linux/amd64 + linux/arm64 binaries as artifacts.
 - Release (`.github/workflows/release.yml`): push an annotated tag `vX.Y.Z` (a `-suffix` makes it a
   pre-release; GitHub's `latest` ignores pre-releases). The tag message becomes the release notes and
   the notes shown in Box. The workflow tests, builds the UI and both binaries with `main.version`
