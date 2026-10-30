@@ -25,7 +25,7 @@ type foundFile struct {
 
 var errFindDone = errors.New("done")
 
-func findInRoots(roots []string, query string, blocked []string) []foundFile {
+func findInRoots(roots []string, query string, visible func(string) bool) []foundFile {
 	q := strings.ToLower(query)
 	out := []foundFile{}
 	deadline := time.Now().Add(findTimeout)
@@ -39,7 +39,13 @@ func findInRoots(roots []string, query string, blocked []string) []foundFile {
 			if seen > findMaxEntries || len(out) >= findMaxResults || time.Now().After(deadline) {
 				return errFindDone
 			}
-			if d.IsDir() && p != root && (underAny(p, blocked) || strings.HasPrefix(d.Name(), ".nxbox")) {
+			if !visible(p) { // the same rule as browsing, the root included
+				if d.IsDir() {
+					return filepath.SkipDir
+				}
+				return nil
+			}
+			if d.IsDir() && strings.HasPrefix(d.Name(), ".nxbox") {
 				return filepath.SkipDir
 			}
 			if p != root && strings.Contains(strings.ToLower(d.Name()), q) {
@@ -56,14 +62,6 @@ func (h *helperServer) filesFind(req helperRequest, _ func(string)) (any, error)
 	if utf8.RuneCountInString(q) < 2 || len(q) > 100 || controlChar.MatchString(q) {
 		return []foundFile{}, nil
 	}
-	rs, cfg := h.roots()
-	var roots []string
-	for _, r := range rs {
-		roots = append(roots, r.real)
-	}
-	blocked := blockedDirs
-	if cfg.AllowSystem {
-		blocked = nil
-	}
-	return findInRoots(roots, q, blocked), nil
+	roots, visible := h.walkRoots()
+	return findInRoots(roots, q, visible), nil
 }
