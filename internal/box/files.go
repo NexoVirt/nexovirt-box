@@ -35,24 +35,23 @@ var blockedDirs = []string{"/etc", "/proc", "/sys", "/dev", "/boot", "/root", "/
 	"/var/lib/apt", "/var/cache/apt", "/var/lib/systemd", "/var/lib/snapd", "/var/spool/cron", "/var/spool/anacron",
 	"/var/lib/nexovirt-box/web"}
 
-// boxHidden reports whether p is one of Box's own files. Below Box's state folder only the app
-// folders' data and the shared folder are shown: an app's compose.yaml, .env and app.json decide
-// what runs as root, so editing them through the files would skip every check.
+// boxHidden reports whether p is one of Box's own files: its web state, its backup staging and,
+// in the app folders, everything but the apps' data. An app's compose.yaml, .env and app.json
+// decide what runs as root, so editing them through the files would skip every check.
 func boxHidden(p, appsDir string) bool {
 	if appsDir == "" {
 		return false
 	}
 	base := filepath.Dir(appsDir)
-	if p != base && !within(p, base) {
+	for _, d := range []string{"web", "backup-tmp"} {
+		if x := filepath.Join(base, d); p == x || within(p, x) {
+			return true
+		}
+	}
+	if !within(p, appsDir) {
 		return false
 	}
-	if p == base || p == appsDir || p == sharedDir(base) || within(p, sharedDir(base)) {
-		return false
-	}
-	rel, err := filepath.Rel(appsDir, p)
-	if err != nil || strings.HasPrefix(rel, "..") {
-		return true // the web state, backups and anything else of Box's
-	}
+	rel, _ := filepath.Rel(appsDir, p)
 	parts := strings.Split(filepath.ToSlash(rel), "/")
 	return len(parts) > 1 && parts[1] != "data"
 }
@@ -77,6 +76,9 @@ func (h *helperServer) filesConfig() filesConfig {
 		c.Roots = defaultRoots(h.appsDir)
 	}
 	c.appsDir = h.appsDir
+	if real, err := filepath.EvalSymlinks(h.appsDir); err == nil {
+		c.appsDir = real
+	}
 	return c
 }
 
@@ -409,7 +411,7 @@ func (h *helperServer) filesRootsSet(req helperRequest, logf func(string)) (any,
 		if err != nil {
 			return nil, uerr("%s does not exist.", r)
 		}
-		if !cfg.AllowSystem && (underAny(r, blockedDirs) || underAny(real, blockedDirs) || real == "/" || boxHidden(real, h.appsDir)) {
+		if !cfg.AllowSystem && (underAny(r, blockedDirs) || underAny(real, blockedDirs) || real == "/" || boxHidden(real, cfg.appsDir)) {
 			return nil, uerr("%s is a system folder and cannot be shown.", r)
 		}
 		roots = append(roots, r)
