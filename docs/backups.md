@@ -60,3 +60,9 @@ destination (URL, ntfy server and topic, mail server and user) changes. Saving a
 proof. Events: app down (two polls in a row, 30 s apart) and recovered, disk above a threshold, updates available,
 backup failed or succeeded, sign-in from a new IP, 5 failed sign-ins in 10 minutes, firewall change rolled back.
 The same event key is sent once per 30 minutes, at most 20 messages per 10 minutes, the last 500 are kept.
+
+Sign-in from a new address names the browser and system (from the user agent, `deviceOf`). With "Show where sign-ins
+come from" on (`POST /api/notify/geoip`, audited), Box downloads DB-IP's free "IP to City Lite" database (CC BY 4.0,
+attribution in Settings > Notifications; about 60 MB gzip, no account or key, checked to open before it replaces the old
+one, refreshed monthly) into `<state>/geoip/` and adds "near City, Country" for public addresses. Lookups are local;
+no address leaves the server. Turning it off deletes the file.

@@ -38,6 +38,7 @@ type App struct {
 	updates    updateCache
 	state      string    // web state directory
 	notify     *notifier // nil until set up (tests)
+	geo        geoDB     // sign-in places (geoip.go)
 	disks      diskCache
 	shareLimit *limiter // public share link hits per IP
 }
@@ -168,6 +169,8 @@ func (a *App) routeTable() []route {
 		{"POST /api/notify/channels/{id}/delete", false, a.notifyChannelDelete},
 		{"POST /api/notify/channels/{id}/test", false, a.notifyChannelTest},
 		{"POST /api/notify/rules", false, a.notifyRulesSave},
+		{"GET /api/notify/geoip", false, a.geoGet},
+		{"POST /api/notify/geoip", false, a.geoSave},
 		{"GET /api/system-updates", false, a.sysUpdates},
 		{"POST /api/system-updates/refresh", false, a.sysUpdatesRefresh},
 		{"POST /api/system-updates/simulate", false, a.sysUpdatesSimulate},
@@ -505,7 +508,7 @@ func (a *App) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.store.audit(c.Username, a.clientIP(r), "login.ok", "")
-	a.onLogin(c.Username, a.clientIP(r))
+	a.onLogin(c.Username, a.clientIP(r), r.UserAgent())
 	t, err := a.store.newSession(id, a.clientIP(r), r.UserAgent())
 	if err != nil {
 		log.Printf("login session: %v", err)
