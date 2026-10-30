@@ -37,6 +37,7 @@
   import LocalNames from './LocalNames.svelte';
   import VpnSettings from './VpnSettings.svelte';
   import NetworkOverview from './NetworkOverview.svelte';
+  import BoxesSettings from './BoxesSettings.svelte';
   import WallpaperSettings from './WallpaperSettings.svelte';
   import ThemeSettings from './ThemeSettings.svelte';
 
@@ -551,6 +552,7 @@
           <LocalNames {onSessionLost} />
           <VpnSettings {onSessionLost} />
           <NetworkOverview {onSessionLost} />
+          <BoxesSettings {onSessionLost} />
 
         {:else if tab === 'updates'}
           <section class="group">

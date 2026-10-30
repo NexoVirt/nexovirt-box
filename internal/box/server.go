@@ -119,6 +119,14 @@ func (a *App) routeTable() []route {
 		{"POST /api/apps/{id}/domain", false, a.appDomain},
 		{"GET /api/local-names", false, a.localNamesGet},
 		{"GET /api/vpn", false, a.vpnGet},
+		{"GET /api/pairing", false, a.pairingList},
+		{"POST /api/pairing", false, a.pairingCreate},
+		{"POST /api/pairing/{id}/revoke", false, a.pairingRevoke},
+		{"GET /api/remotes", false, a.remotesList},
+		{"POST /api/remotes", false, a.remoteAdd},
+		{"POST /api/remotes/{id}/delete", false, a.remoteDelete},
+		{"GET /api/remote/{id}/{rest...}", false, a.remoteProxy},
+		{"POST /api/remote/{id}/{rest...}", false, a.remoteProxy},
 		{"GET /api/network/overview", false, a.networkOverviewGet},
 		{"POST /api/network/overview", false, a.networkOverviewGet},
 		{"POST /api/vpn", false, a.vpnSave},
@@ -236,7 +244,7 @@ func (a *App) routes(ui fs.FS) http.Handler {
 		writeError(w, http.StatusNotFound, "This page does not exist.")
 	})
 	mux.Handle("/", spa(ui))
-	return securityHeaders(sameOrigin(mux))
+	return securityHeaders(a.remoteAuth(sameOrigin(mux)))
 }
 
 // spa serves the built UI and falls back to index.html so client routes reload fine.
@@ -273,7 +281,8 @@ func securityHeaders(next http.Handler) http.Handler {
 // SameSite=Strict as well; this is the second layer.
 func sameOrigin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet && r.Method != http.MethodHead && !originMatches(r) {
+		_, paired := remoteUser(r) // a pairing token in a header carries no cookie, so no CSRF (remote.go)
+		if r.Method != http.MethodGet && r.Method != http.MethodHead && !paired && !originMatches(r) {
 			writeError(w, http.StatusForbidden, "This request was refused. Reload the page and try again.")
 			return
 		}
@@ -363,6 +372,9 @@ func parseCIDRs(list string) []*net.IPNet {
 // ---- auth ----
 
 func (a *App) currentUser(r *http.Request) (int64, bool) {
+	if uid, ok := remoteUser(r); ok { // another box with a pairing token (remote.go)
+		return uid, true
+	}
 	return a.store.sessionUser(sessionToken(r))
 }
 

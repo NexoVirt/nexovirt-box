@@ -1,4 +1,5 @@
 <script>
+  import { apiPath } from './remote.js';
   // App icon from the Box media proxy (catalog apps and uploaded icons of own apps), placed as is
   // (no plate, frame or shadow). Own apps may pick a Lucide icon; a plain Lucide glyph stands in
   // when the app has no icon.
@@ -15,7 +16,7 @@
   {#if Lucide}
     <Lucide size={Math.round(size * 0.8)} strokeWidth={1.5} />
   {:else if !failed}
-    <img src="/api/catalog/{id}/icon{v ? `?v=${v}` : ''}" alt="" loading="lazy" decoding="async" onerror={() => (failed = true)} />
+    <img src={apiPath(`/api/catalog/${id}/icon${v ? `?v=${v}` : ''}`)} alt="" loading="lazy" decoding="async" onerror={() => (failed = true)} />
   {:else}
     <Package size={Math.round(size * 0.8)} strokeWidth={1.5} />
   {/if}
