@@ -162,3 +162,54 @@ func TestProtectedPortStaysPrivate(t *testing.T) {
 		}
 	})
 }
+
+// A protected app is never treated as "port 0": legacy app.json without the pinned port falls
+// back to the main port, and without any port every compose change is refused while the old
+// binding stays.
+func TestProtectedPortNeverZero(t *testing.T) {
+	fakeDockerPorts(t, "8080")
+	h, meta, dir := protectedApp(t, false)
+	// Legacy app.json: protected, no pinned port.
+	legacy := meta
+	legacy.DomainPort = 0
+	b, _ := json.Marshal(legacy)
+	os.WriteFile(filepath.Join(dir, "app.json"), b, 0o600)
+	m, _ := h.readMeta("wiki")
+	if m.DomainPort != 8080 || h.policy(m).protectPort != 8080 {
+		t.Fatalf("legacy app not migrated: %+v / %d", m, h.policy(m).protectPort)
+	}
+	if err := checkConfig(t.Context(), dir, "wiki", h.policy(m), false); err != nil || !loopbackBound(dir) {
+		t.Fatalf("legacy protected app lost its binding: %v", err)
+	}
+	// No port at all: fail closed.
+	noPort := legacy
+	noPort.MainPort = 0
+	if p := h.policy(noPort).protectPort; p != -1 {
+		t.Fatalf("protected app without a port got protectPort %d", p)
+	}
+	if err := checkConfig(t.Context(), dir, "wiki", h.policy(noPort), false); err == nil || !loopbackBound(dir) {
+		t.Fatalf("binding removed for a protected app without a port: %v", err)
+	}
+	if err := syncBindFile(t.Context(), dir, "wiki", -1); err == nil || !loopbackBound(dir) {
+		t.Fatal("syncBindFile did not fail closed")
+	}
+}
+
+// Turning the sign-in on is refused when no port can be resolved.
+func TestProtectRefusedWithoutPort(t *testing.T) {
+	fakeDockerPorts(t, "8080")
+	old := proxyDir
+	proxyDir = t.TempDir()
+	t.Cleanup(func() { proxyDir = old })
+	os.WriteFile(filepath.Join(proxyDir, "proxy.json"), []byte(`{"http_port":80,"https_port":443}`), 0o600)
+	h := &helperServer{appsDir: t.TempDir(), webState: t.TempDir(), proofs: newProofKeeper()}
+	os.MkdirAll(h.appDir("noweb"), 0o700)
+	h.writeMeta(installedApp{ID: "noweb", Name: "No web"})
+	_, err := h.appDomain(helperRequest{ID: "noweb", Domain: "noweb.example.com", Confirm: "protect"}, func(string) {})
+	if err == nil || !strings.Contains(err.Error(), "port") {
+		t.Fatalf("protect without a port accepted: %v", err)
+	}
+	if m, _ := h.readMeta("noweb"); m.Protect || m.Domain != "" {
+		t.Fatalf("settings written anyway: %+v", m)
+	}
+}

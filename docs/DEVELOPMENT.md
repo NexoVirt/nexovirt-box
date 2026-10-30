@@ -145,7 +145,9 @@ embedded.
   (`domain_port`); `checkConfig`, which every compose path runs before Docker uses the files (start, update, own app
   edit, catalog update, restore, limits, roll back), rewrites `bind.yaml` from the current compose files (or removes a
   stale one), so the binding cannot drift open. When the port can no longer be bound (an edit dropped it) the change is
-  refused and the old file stays (fail closed). A roll back keeps today's domain, sign-in and pinned port.
+  refused and the old file stays (fail closed). A roll back keeps today's domain, sign-in and pinned port. A protected app is never "port 0": an older `app.json`
+  without `domain_port` falls back to the main port (migrated on read), the sign-in is refused when no port is known,
+  and a protected app without any port makes `checkConfig` refuse instead of removing the binding.
   Updates (`updates.go`): registry digest HEAD for apps; signed `latest.json` for Box (release key in
   `internal/catalog/key.go`, private half `~/.config/nexovirt/box-release.key`), rollback on failed health check.
 
