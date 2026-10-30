@@ -180,6 +180,7 @@ func riskFindings(configJSON []byte, p mountPolicy) ([]riskFinding, error) {
 			Cgroup            string   `json:"cgroup"`
 			SecurityOpt       []string `json:"security_opt"`
 			Gpus              any      `json:"gpus"`
+			VolumesFrom       []string `json:"volumes_from"`
 			Volumes           []struct {
 				Type   string `json:"type"`
 				Source string `json:"source"`
@@ -220,6 +221,18 @@ func riskFindings(configJSON []byte, p mountPolicy) ([]riskFinding, error) {
 		for k, v := range map[string]string{"pid": s.Pid, "ipc": s.Ipc, "uts": s.Uts, "userns": s.UsernsMode, "cgroup": s.Cgroup} {
 			if v == "host" {
 				svc(k+"_host", "shares the server's "+k+" namespace.")
+			}
+		}
+		// Another app's container (not a service of this app): its mounts and namespaces, for
+		// example a Docker socket that app was allowed, would come along unchecked.
+		for k, v := range map[string]string{"network": s.NetworkMode, "pid": s.Pid, "ipc": s.Ipc} {
+			if strings.HasPrefix(v, "container:") {
+				svc(k+"_container", "shares the "+k+" namespace of another container ("+strings.TrimPrefix(v, "container:")+").")
+			}
+		}
+		for _, v := range s.VolumesFrom {
+			if strings.HasPrefix(v, "container:") {
+				svc("volumes_from", "takes over the folders of another container ("+strings.TrimPrefix(v, "container:")+").")
 			}
 		}
 		for _, c := range s.CapAdd {

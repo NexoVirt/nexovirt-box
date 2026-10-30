@@ -48,20 +48,23 @@ func TestOwnComposePrivileges(t *testing.T) {
 		t.Fatalf("normal app refused: %v", err)
 	}
 	bad := map[string]string{
-		"privileged":  `{"services":{"w":{"privileged":true}}}`,
-		"cap_all":     `{"services":{"w":{"cap_add":["ALL"]}}}`,
-		"cap_sysadm":  `{"services":{"w":{"cap_add":["CAP_SYS_ADMIN"]}}}`,
-		"cap_lower":   `{"services":{"w":{"cap_add":["sys_module"]}}}`,
-		"devices":     `{"services":{"w":{"devices":[{"source":"/dev/sda","target":"/dev/sda"}]}}}`,
-		"pid":         `{"services":{"w":{"pid":"host"}}}`,
-		"ipc":         `{"services":{"w":{"ipc":"host"}}}`,
-		"userns":      `{"services":{"w":{"userns_mode":"host"}}}`,
-		"cgroup":      `{"services":{"w":{"cgroup":"host"}}}`,
-		"apparmor":    `{"services":{"w":{"security_opt":["apparmor=unconfined"]}}}`,
-		"seccomp":     `{"services":{"w":{"security_opt":["seccomp:unconfined"]}}}`,
-		"label":       `{"services":{"w":{"security_opt":["label=disable"]}}}`,
-		"cgroup_rule": `{"services":{"w":{"device_cgroup_rules":["a *:* rwm"]}}}`,
-		"gpus":        `{"services":{"w":{"gpus":"all"}}}`,
+		"privileged":    `{"services":{"w":{"privileged":true}}}`,
+		"cap_all":       `{"services":{"w":{"cap_add":["ALL"]}}}`,
+		"cap_sysadm":    `{"services":{"w":{"cap_add":["CAP_SYS_ADMIN"]}}}`,
+		"cap_lower":     `{"services":{"w":{"cap_add":["sys_module"]}}}`,
+		"devices":       `{"services":{"w":{"devices":[{"source":"/dev/sda","target":"/dev/sda"}]}}}`,
+		"pid":           `{"services":{"w":{"pid":"host"}}}`,
+		"ipc":           `{"services":{"w":{"ipc":"host"}}}`,
+		"userns":        `{"services":{"w":{"userns_mode":"host"}}}`,
+		"cgroup":        `{"services":{"w":{"cgroup":"host"}}}`,
+		"apparmor":      `{"services":{"w":{"security_opt":["apparmor=unconfined"]}}}`,
+		"seccomp":       `{"services":{"w":{"security_opt":["seccomp:unconfined"]}}}`,
+		"label":         `{"services":{"w":{"security_opt":["label=disable"]}}}`,
+		"cgroup_rule":   `{"services":{"w":{"device_cgroup_rules":["a *:* rwm"]}}}`,
+		"gpus":          `{"services":{"w":{"gpus":"all"}}}`,
+		"volumes_from":  `{"services":{"w":{"volumes_from":["container:nxbox-portainer-portainer-1"]}}}`,
+		"net_container": `{"services":{"w":{"network_mode":"container:nxbox-other-1"}}}`,
+		"pid_container": `{"services":{"w":{"pid":"container:nxbox-other-1"}}}`,
 	}
 	for name, j := range bad {
 		if err := checkPrivileges([]byte(j), p); err == nil {
