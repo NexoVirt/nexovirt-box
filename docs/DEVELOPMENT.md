@@ -52,6 +52,10 @@ embedded.
   blur, widgets order/on, tile order, hidden system tiles, clock options, theme; POST merges, unknown fields refused),
   wallpaper upload `POST/GET /api/desktop/wallpaper` (JPEG/PNG/WebP only, 8 MB). Built-in wallpapers are flat colours
   and two flat-shape SVGs made for Box (`public/wallpapers/`), never gradients or third-party photos.
+- Command palette (`lib/CommandPalette.svelte`, Ctrl+K / Cmd+K or the search button in the top bar; not while the
+  terminal has the keys): windows, Settings sections, installed apps (open, start, stop, restart, logs) and files by
+  name (`GET /api/files/find?q=`, helper `files_find`: names containing the query in the allowed roots, 30 results,
+  200000 entries, 4 s, blocked folders skipped, symlinks not followed). Arrows move, Enter runs, Escape closes.
 - Windows (`lib/AppWindow.svelte`, `lib/windows.svelte.js`, geometry in `lib/winmath.js`): every Box window floats:
   drag the title bar, resize from any edge or corner (min 420 x 300, never under the top bar; the window body is its own
   stacking context so page toolbars never cover the handles; a smaller browser window shrinks it), maximise (button or double-click the title), minimise to the dock row at the bottom,

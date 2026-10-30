@@ -150,6 +150,10 @@ func (a *App) filesUpload(w http.ResponseWriter, r *http.Request) {
 		"files.upload")
 }
 
+func (a *App) filesFind(w http.ResponseWriter, r *http.Request) {
+	a.helperJSON(w, r, helperRequest{Action: "files_find", Name: r.URL.Query().Get("q")})
+}
+
 func (a *App) filesSize(w http.ResponseWriter, r *http.Request) {
 	a.filesCall(w, r, helperRequest{Action: "files_size", Path: r.URL.Query().Get("path")}, "")
 }

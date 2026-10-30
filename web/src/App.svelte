@@ -35,6 +35,8 @@
   import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
   import ChevronRight from '@lucide/svelte/icons/chevron-right';
   import UserRound from '@lucide/svelte/icons/user-round';
+  import SearchIcon from '@lucide/svelte/icons/search';
+  import CommandPalette from '$lib/CommandPalette.svelte';
 
   const themeModes = [
     { value: 'light', label: 'Light' },
@@ -73,6 +75,14 @@
   let userOpen = $state(false), bellOpen = $state(false);
   let mode = $state(theme.mode);
   let bell = $state(null), diskWarn = $state([]);
+  let paletteOpen = $state(false);
+  // Ctrl+K / Cmd+K opens the command palette (not while the terminal has the keys).
+  function paletteKey(e) {
+    if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 'k' && state?.logged_in && !e.target.closest?.('.xterm')) {
+      e.preventDefault();
+      paletteOpen = !paletteOpen;
+    }
+  }
 
   $effect(() => { if (mode !== theme.mode) setThemeMode(mode); });
   // The user's theme (or the one being edited) as CSS tokens, again on every light/dark switch.
@@ -197,6 +207,8 @@
   let initials = $derived(state?.username ? state.username.slice(0, 2).toUpperCase() : '');
 </script>
 
+<svelte:window onkeydown={paletteKey} />
+
 <Toaster />
 <PasswordGate />
 
@@ -238,6 +250,7 @@
       </div>
       <button class="bar-btn" onclick={(e) => openFromBar(e, '/settings')} aria-label="Settings" title="Settings"><SettingsIcon size={18} /></button>
       <button class="bar-btn" onclick={(e) => openFromBar(e, '/console')} aria-label="Terminal" title="Terminal"><SquareTerminal size={18} /></button>
+      <button class="bar-btn" onclick={() => (paletteOpen = true)} aria-label="Search (Ctrl+K)" title="Search (Ctrl+K)"><SearchIcon size={18} /></button>
     </div>
     <div class="side">
       <div class="anchor">
@@ -275,6 +288,7 @@
     </div>
   </header>
 
+  <CommandPalette bind:open={paletteOpen} onNavigate={navigate} onSessionLost={sessionLost} />
   <Desktop {system} username={state.username} onSessionLost={sessionLost} onNavigate={navigate} inert={covered} />
 
   {#each wm.list as w (w.key)}
