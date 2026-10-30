@@ -236,6 +236,11 @@ embedded.
   job, because jobs keep their results) and not stored. Turning the VPN on and adding a device need a password proof
   checked by the helper; peers are loaded with `wg syncconf` without dropping connections. Behind NAT (public address
   differs from the LAN address) Settings shows the port forward to set on the router. Audited `vpn.*`.
+- Network overview (`netoverview.go`, Settings > Network > Devices and ports, `GET /api/network/overview`; POST = scan,
+  audited `network.sweep`): helper `network_overview` reads the neighbor table (`ip -j neigh`, Docker bridges and failed
+  entries left out, names by reverse DNS), optionally after pinging every address of the box's own /24 once (32 at a
+  time, nothing wider), and the listening sockets (`ss -ltnupH`) with their program; ports Docker publishes for a Box app
+  are named after the app (`docker ps` labels).
 - Local names (`localnames.go`, Settings > Network, `GET|POST /api/local-names`, audited `localnames.on|off`):
   mDNS through Avahi (installed on the admin's switch via `pkg_install` op `avahi` = avahi-daemon + avahi-utils).
   Helper actions `local_names_status`, `local_names_set`; Box writes only `/etc/nexovirt-box/localnames.{json,sh}` and

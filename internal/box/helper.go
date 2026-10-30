@@ -298,6 +298,7 @@ func (h *helperServer) actions() map[string]helperAction {
 		"versions_list":        h.versionsList,
 		"drives_list":          h.drivesList,
 		"vpn_status":           h.vpnStatus,
+		"network_overview":     h.networkOverview,
 		"vpn_setup":            h.vpnSetup,
 		"vpn_client_add":       h.vpnClientAdd,
 		"vpn_client_revoke":    h.vpnClientRevoke,

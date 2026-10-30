@@ -118,6 +118,8 @@ func (a *App) routeTable() []route {
 		{"POST /api/apps/{id}/domain", false, a.appDomain},
 		{"GET /api/local-names", false, a.localNamesGet},
 		{"GET /api/vpn", false, a.vpnGet},
+		{"GET /api/network/overview", false, a.networkOverviewGet},
+		{"POST /api/network/overview", false, a.networkOverviewGet},
 		{"POST /api/vpn", false, a.vpnSave},
 		{"POST /api/vpn/clients", false, a.vpnClientAddWeb},
 		{"POST /api/vpn/clients/revoke", false, a.vpnClientRevokeWeb},
