@@ -11,6 +11,8 @@
   import Dialog from '$lib/Dialog.svelte';
   import TrashDialog from './TrashDialog.svelte';
   import StorageDialog from './StorageDialog.svelte';
+  import VersionsDialog from './VersionsDialog.svelte';
+  import HistoryIcon from '@lucide/svelte/icons/history';
   import ChartPie from '@lucide/svelte/icons/chart-pie';
   import ContextMenu from '$lib/ContextMenu.svelte';
   import ShareLinkDialog from '$lib/ShareLinkDialog.svelte';
@@ -54,7 +56,7 @@
   const DRAG_TYPE = 'application/x-nxbox-paths';
 
   let places = $state([]);
-  let trashOpen = $state(false), delForGood = $state(false), storageOpen = $state(false);
+  let trashOpen = $state(false), delForGood = $state(false), storageOpen = $state(false), versionsOpen = $state(false), versionsPath = $state('');
   let path = $state(''); // '' = the server overview (all places)
   let entries = $state(null);
   let error = $state('');
@@ -411,6 +413,7 @@
           { key: 'share', label: 'Share link', icon: LinkIcon, disabled: !one },
           'sep',
           { key: 'info', label: 'Get info', icon: Info, disabled: !one },
+          { key: 'versions', label: 'Versions', icon: HistoryIcon, disabled: !one || one.dir },
           { key: 'delete', label: 'Delete', icon: Trash, danger: true, hint: 'Del' },
         ]
       : [
@@ -438,6 +441,7 @@
       'paste-into': () => one && paste(join(path, one.name)),
       move: () => askMove(selEntries),
       info: () => one && showInfo(one),
+      versions: () => one && !one.dir && ((versionsPath = join(path, one.name)), (versionsOpen = true)),
       share: () => one && (share = { path: join(path, one.name), name: one.name, dir: one.dir, origin: menuAt }, shareOpen = true),
       delete: () => askDelete(selEntries),
       mkdir: () => askName('mkdir'),
@@ -883,6 +887,7 @@
 
 <TrashDialog bind:open={trashOpen} onChanged={reload} {onSessionLost} />
 <StorageDialog bind:open={storageOpen} {path} onChanged={reload} {onSessionLost} />
+<VersionsDialog bind:open={versionsOpen} path={versionsPath} onChanged={reload} {onSessionLost} />
 
 <Dialog bind:open={delOpen} label="Delete" locked={delBusy}>
   <div class="dlg">

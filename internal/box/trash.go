@@ -40,8 +40,9 @@ type trashItem struct {
 	Size    int64  `json:"size"`
 }
 
+// inTrash reports whether p lies in one of Box's own folders of a root (trash, versions).
 func inTrash(p string) bool {
-	return strings.Contains(p+"/", "/"+trashDirName+"/")
+	return strings.Contains(p+"/", "/"+trashDirName+"/") || strings.Contains(p+"/", "/"+versionsDirName+"/")
 }
 
 // The trash is root's own: <root>/.nxbox-trash and each <id> folder must be real directories
@@ -67,18 +68,22 @@ func checkOwnDir(fd int) error {
 
 // openTrash opens (and with create, makes) the trash of root r. A missing trash without create
 // returns -1 and no error.
-func openTrash(r rootInfo, create bool) (int, error) {
+func openTrash(r rootInfo, create bool) (int, error) { return openOwnDir(r, trashDirName, create) }
+
+// openOwnDir opens one of Box's own folders at the top of a root (trash, versions) with the
+// checks above.
+func openOwnDir(r rootInfo, name string, create bool) (int, error) {
 	rootFD, err := unix.Open(r.real, dirFlags, 0)
 	if err != nil {
 		return -1, err
 	}
 	defer unix.Close(rootFD)
 	if create {
-		if err := unix.Mkdirat(rootFD, trashDirName, 0o700); err != nil && !errors.Is(err, unix.EEXIST) {
+		if err := unix.Mkdirat(rootFD, name, 0o700); err != nil && !errors.Is(err, unix.EEXIST) {
 			return -1, err
 		}
 	}
-	fd, err := unix.Openat(rootFD, trashDirName, dirFlags, 0)
+	fd, err := unix.Openat(rootFD, name, dirFlags, 0)
 	if err != nil {
 		if errors.Is(err, unix.ENOENT) && !create {
 			return -1, nil
@@ -425,6 +430,7 @@ func (h *helperServer) trashPurge(req helperRequest, _ func(string)) (any, error
 		}
 		unix.Close(tfd)
 	}
+	h.versionsPurge()
 	return map[string]int{"deleted": n}, nil
 }
 

@@ -134,6 +134,8 @@ func (a *App) routeTable() []route {
 		{"GET /api/files/find", false, a.filesFind},
 		{"GET /api/files/trash", false, a.trashGet},
 		{"GET /api/files/analyze", false, a.storageAnalyze},
+		{"GET /api/files/versions", false, a.versionsGet},
+		{"POST /api/files/versions/restore", false, a.versionRestoreWeb},
 		{"POST /api/files/dupes", false, a.storageDupesStart},
 		{"POST /api/files/trash/restore", false, a.trashAction("trash_restore", "files.trash_restore")},
 		{"POST /api/files/trash/delete", false, a.trashAction("trash_delete", "files.trash_delete")},

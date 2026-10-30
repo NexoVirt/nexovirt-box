@@ -153,6 +153,12 @@ embedded.
   root, and moves use `renameNoReplace` (renameat2 RENAME_NOREPLACE), so nothing planted meanwhile is overwritten. The metadata JSON is untrusted: the name comes from the single entry in `<id>/`, ids must match
   the fixed pattern, and a restore target must be a clean path whose folder resolves inside the same place. The web process purges items older than `trash_days` (default 30, 1..365) daily. Audited
   `files.trash_restore|trash_delete|trash_empty|trash_days|trash_purge`.
+- File versions (`versions.go`, Files > item menu > Versions): when an upload replaces a regular file, the old one moves
+  into `<root>/.nxbox-versions/<id>/file` (+ `<id>.json`: real path, time, size) with the trash's protections (own 0700
+  folders, O_NOFOLLOW, `openBeneath` + `renameNoReplace`, JSON untrusted, ids from the folder names). The last 10 per
+  file are kept, none older than 30 days (pruned on each new version and in the daily purge). Restore
+  (`POST /api/files/versions/restore`, audited) first keeps the current file as a version, then moves the old one back
+  without replacing anything. `GET /api/files/versions?path=` lists them. Changes made outside Box are not versioned.
 - Storage analysis (`storage.go`, Files > Places > Storage analysis): `GET /api/files/analyze?path=` (helper
   `storage_scan`: sizes below the folder, three levels deep, 40 children per folder plus "Other items", 30 s and 2 million
   entries at most) drawn as a squarified treemap (click a folder to go deeper; deeper folders are scanned on demand), and

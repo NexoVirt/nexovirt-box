@@ -293,6 +293,8 @@ func (h *helperServer) actions() map[string]helperAction {
 		"trash_delete":         h.trashDelete,
 		"trash_purge":          h.trashPurge,
 		"storage_scan":         h.storageScan,
+		"versions_list":        h.versionsList,
+		"version_restore":      h.versionRestore,
 		"ssh_harden":           h.sshHarden,
 		"local_names_set":      h.localNamesSet,
 		"files_stat":           h.filesStat,
