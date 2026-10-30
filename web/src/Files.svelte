@@ -10,6 +10,8 @@
   import { kindOf, PREVIEW_IMAGE, PREVIEW_TEXT } from '$lib/fileKinds.js';
   import Dialog from '$lib/Dialog.svelte';
   import TrashDialog from './TrashDialog.svelte';
+  import StorageDialog from './StorageDialog.svelte';
+  import ChartPie from '@lucide/svelte/icons/chart-pie';
   import ContextMenu from '$lib/ContextMenu.svelte';
   import ShareLinkDialog from '$lib/ShareLinkDialog.svelte';
   import LinkIcon from '@lucide/svelte/icons/link';
@@ -52,7 +54,7 @@
   const DRAG_TYPE = 'application/x-nxbox-paths';
 
   let places = $state([]);
-  let trashOpen = $state(false), delForGood = $state(false);
+  let trashOpen = $state(false), delForGood = $state(false), storageOpen = $state(false);
   let path = $state(''); // '' = the server overview (all places)
   let entries = $state(null);
   let error = $state('');
@@ -660,6 +662,9 @@
           <li>
             <button class="place" onclick={() => (trashOpen = true)}><Trash size={15} /><span class="truncate">Trash</span></button>
           </li>
+          <li>
+            <button class="place" onclick={() => (storageOpen = true)} disabled={!path} title={path ? `Analyze ${path}` : 'Open a folder first'}><ChartPie size={15} /><span class="truncate">Storage analysis</span></button>
+          </li>
           {#each places as p (p.path)}
             <li>
               <button class="place" class:active={root === p.path && path === p.path} class:over={dropOn === p.path} onclick={() => open(p.path)}
@@ -877,6 +882,7 @@
 </Dialog>
 
 <TrashDialog bind:open={trashOpen} onChanged={reload} {onSessionLost} />
+<StorageDialog bind:open={storageOpen} {path} onChanged={reload} {onSessionLost} />
 
 <Dialog bind:open={delOpen} label="Delete" locked={delBusy}>
   <div class="dlg">

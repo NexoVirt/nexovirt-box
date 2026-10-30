@@ -153,6 +153,12 @@ embedded.
   root, and moves use `renameNoReplace` (renameat2 RENAME_NOREPLACE), so nothing planted meanwhile is overwritten. The metadata JSON is untrusted: the name comes from the single entry in `<id>/`, ids must match
   the fixed pattern, and a restore target must be a clean path whose folder resolves inside the same place. The web process purges items older than `trash_days` (default 30, 1..365) daily. Audited
   `files.trash_restore|trash_delete|trash_empty|trash_days|trash_purge`.
+- Storage analysis (`storage.go`, Files > Places > Storage analysis): `GET /api/files/analyze?path=` (helper
+  `storage_scan`: sizes below the folder, three levels deep, 40 children per folder plus "Other items", 30 s and 2 million
+  entries at most) drawn as a squarified treemap (click a folder to go deeper; deeper folders are scanned on demand), and
+  a duplicate finder (`POST /api/files/dupes`, job, helper `storage_dupes`: files of 1 MB or more grouped by size, then
+  sha256, hard links of one file not counted, biggest first, 200 groups and 50 GB of hashing at most). Both walk with
+  `walkRoots`/`visibleIn` and never follow links; deleting a copy is the normal delete into the trash.
 - Firewall (`firewall.go`): only Box's own rules; `firewall.pending.json` + 60 s timer roll back unless confirmed;
   rules restored at helper start (nftables does not persist). Files (`files.go`): resolve + roots + blocked dirs,
   fd passing for read/upload. Proxy (`proxy.go`): Caddy container `nxbox-proxy` in /etc/nexovirt-box/caddy. Domains per app (`POST /api/apps/{id}/domain`
