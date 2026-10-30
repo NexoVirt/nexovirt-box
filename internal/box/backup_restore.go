@@ -87,6 +87,7 @@ func (h *helperServer) backupRestore(ctx context.Context, req helperRequest, log
 		}
 		meta.ID, meta.InstalledAt, meta.Stopped = newID, time.Now().Unix(), false
 		meta.Domain, meta.TLS, meta.DataCreated = "", "", false // domains are not taken over
+		meta.DomainPort, meta.Protect = 0, false
 		meta.SocketOK = req.AllowDockerSocket
 		if newID != app {
 			meta.Name += " (restored)"

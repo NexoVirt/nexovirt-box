@@ -141,6 +141,9 @@ func (h *helperServer) policy(m installedApp) mountPolicy {
 		allow = append(allow, m.DataDir)
 	}
 	p := mountPolicy{base: h.base(), allow: allow, allowSocket: m.SocketOK, custom: m.Custom, confirmed: m.Allowed, reviewed: m.Reviewed}
+	if m.Protect && m.Domain != "" {
+		p.protectPort = m.DomainPort // pinned when the sign-in was turned on (proxy.go)
+	}
 	if m.Custom {
 		rs, _ := h.roots()
 		for _, r := range rs {
@@ -585,6 +588,11 @@ func checkConfig(ctx context.Context, dir, id string, p mountPolicy, ports bool)
 		}
 	}
 	if err := checkLimitsFile(dir); err != nil {
+		return err
+	}
+	// Every compose path goes through here, so the loopback binding of a protected app is
+	// rewritten (or removed) right before Docker uses the files (proxybind.go).
+	if err := syncBindFile(ctx, dir, id, p.protectPort); err != nil {
 		return err
 	}
 	if err := checkBindFile(dir); err != nil {
