@@ -144,3 +144,16 @@ func TestKnownFirstLoginIsValid(t *testing.T) {
 		}
 	}
 }
+
+func TestReplaceVolumes(t *testing.T) {
+	in := "    volumes:\n      - '${A}/data:/x'\n      - ${A}/data/db:/db # comment\n      - type: bind\n        source: ${A}/s\n        target: /s\n"
+	out, n := replaceVolumes(in, map[string][]string{
+		"${A}/data/db:/db": {"${A}/db:/db"},
+		"${A}/data:/x":     nil,
+		"source=${A}/s":    {"${A}/s:/s", "${A}/deps:/s/deps"},
+	})
+	want := "    volumes:\n      - ${A}/db:/db\n      - type: bind\n        source: ${A}/s\n        target: /s\n      - type: bind\n        source: ${A}/deps\n        target: /s/deps\n"
+	if n != 3 || out != want {
+		t.Fatalf("n=%d\n%s", n, out)
+	}
+}

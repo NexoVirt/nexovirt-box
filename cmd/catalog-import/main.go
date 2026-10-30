@@ -40,7 +40,14 @@ func main() {
 	keyPath := flag.String("key", os.ExpandEnv("$HOME/.config/nexovirt/box-catalog.key"), "base64 Ed25519 seed (release key, kept outside the repository)")
 	allowPriv := flag.Bool("allow-privileged", false, "also import apps that need privileged mode or the host network")
 	enrich := flag.Bool("enrich", false, "keep the apps in -out and only refresh first_login and notes (from -casaos/-bigbear), then re-sign")
+	fixLayout := flag.Bool("side-by-side", false, "keep the apps in -out, apply the side-by-side mount fixes (layout.go), drop apps that still nest mounts, re-sign")
 	flag.Parse()
+	if *fixLayout {
+		if err := fixLayoutCatalog(*out, *keyPath); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
 	if *enrich {
 		if err := enrichCatalog(*out, *keyPath, *casaos, *bigbear); err != nil {
 			log.Fatal(err)
@@ -119,6 +126,7 @@ func main() {
 		a.ID = id
 	}
 	sort.Slice(apps, func(i, j int) bool { return apps[i].ID < apps[j].ID })
+	apps = sideBySide(apps) // no bind mounts inside each other (layout.go)
 	for _, a := range apps {
 		applyFirstLogin(a)
 	}

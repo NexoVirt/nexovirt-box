@@ -313,7 +313,9 @@ embedded.
   `~/.config/nexovirt/box-catalog.key`). `keys/catalog-dev.key` is the DEV key, accepted only with `-tags devkey`.
 - Rebuild the catalog from local checkouts of runtipi/runtipi-appstore, IceWhaleTech/CasaOS-AppStore and
   bigbeartechworld/big-bear-casaos: `go run ./cmd/catalog-import -runtipi <dir> -casaos <dir> -bigbear <dir>`.
-  Umbrel apps are never imported (no license). Then run `go run ./cmd/catalog-check` (drops apps whose images are
+  Umbrel apps are never imported (no license). The importer moves nested bind mounts side by side (fixes per app
+  with `layout` steps in `cmd/catalog-import/layout.go`) and drops apps that still nest them; on the existing
+  catalog the same runs with `go run ./cmd/catalog-import -side-by-side` (re-signs). Then run `go run ./cmd/catalog-check` (drops apps whose images are
   missing or private, records real architectures, re-signs; report in `docs/catalog-image-report.md`).
 - Installed apps: `/var/lib/nexovirt-box/apps/<id>/{compose.yaml,.env,app.json,data/}` (root, 0700), compose
   project `nxbox-<id>`. Long actions run as web-side jobs (`/api/jobs/{id}`, polled by the UI).

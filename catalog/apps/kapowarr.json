@@ -29,5 +29,5 @@
    "required": true
   }
  ],
- "compose": "services:\n  kapowarr:\n    image: mrcas/kapowarr:v1.3.2\n    container_name: kapowarr\n    volumes:\n      - /etc/localtime:/etc/localtime:ro\n      - ${APP_DATA_DIR}/data/kapowarr-db:/app/db\n      - ${ROOT_FOLDER_HOST}/media/downloads/kapowarr:/app/temp_downloads\n      - ${ROOT_FOLDER_HOST}/media:/media\n    ports:\n      - ${APP_PORT}:5656\n    restart: unless-stopped\n"
+ "compose": "services:\n  kapowarr:\n    image: mrcas/kapowarr:v1.3.2\n    container_name: kapowarr\n    volumes:\n      - /etc/localtime:/etc/localtime:ro\n      - ${APP_DATA_DIR}/data/kapowarr-db:/app/db\n      - ${APP_DATA_DIR}/data/temp-downloads:/app/temp_downloads\n      - ${ROOT_FOLDER_HOST}/media:/media\n    ports:\n      - ${APP_PORT}:5656\n    restart: unless-stopped\n"
 }

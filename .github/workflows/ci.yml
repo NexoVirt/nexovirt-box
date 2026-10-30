@@ -51,7 +51,7 @@ jobs:
           go-version-file: go.mod
       # The built-in catalog must verify with the release catalog key (a dev-signed catalog fails),
       # release builds must not trust the dev key, and get.sh must carry the release key.
-      - run: go test -v -run 'TestBuiltinCatalogVerifies|TestTamperedCatalogRefused|TestSyncedCatalogMustNotBeOlder|TestEveryCatalogFirstLoginIsValid|TestGetShUsesTheReleaseKey' ./internal/box/
+      - run: go test -v -run 'TestBuiltinCatalogVerifies|TestTamperedCatalogRefused|TestSyncedCatalogMustNotBeOlder|TestEveryCatalogFirstLoginIsValid|TestCatalogHasNoNestedBinds|TestGetShUsesTheReleaseKey' ./internal/box/
       - run: go test -v -run 'TestReleaseBuildDoesNotTrustDevKey' ./internal/catalog/
       - run: sh -n deploy/get.sh && sh -n deploy/install.sh
 

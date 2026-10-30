@@ -147,3 +147,29 @@ func TestCheckDataDirRefusesTricks(t *testing.T) {
 		}
 	}
 }
+
+// No catalog app mounts folders inside each other, and its layout steps are valid.
+func TestCatalogHasNoNestedBinds(t *testing.T) {
+	cat, _, err := loadCatalog("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range cat.Index.Apps {
+		app, err := cat.App(e.ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		vars := map[string]string{"APP_DATA_DIR": "/box/apps/" + app.ID + "/data", "ROOT_FOLDER_HOST": "/box/shared", "SHARED_DIR": "/box/shared"}
+		src, err := catalog.BindSources(app.Compose, vars)
+		if err != nil {
+			t.Errorf("%s: %v", app.ID, err)
+			continue
+		}
+		if pairs := catalog.NestedPairs(src); len(pairs) > 0 {
+			t.Errorf("%s mounts folders inside each other: %v", app.ID, pairs)
+		}
+		if err := catalog.ValidLayout(app.Layout); err != nil {
+			t.Errorf("%s: %v", app.ID, err)
+		}
+	}
+}
