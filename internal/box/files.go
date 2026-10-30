@@ -24,10 +24,37 @@ import (
 type filesConfig struct {
 	Roots       []string `json:"roots"`
 	AllowSystem bool     `json:"allow_system"` // only settable by editing the file on the server
+	appsDir     string   // Box's app folders: only their data is shown (boxHidden)
 }
 
-// blockedDirs are refused unless allow_system is set in /etc/nexovirt-box/files.json.
-var blockedDirs = []string{"/etc", "/proc", "/sys", "/dev", "/boot", "/root", "/run", "/var/lib/nexovirt-box/web"}
+// blockedDirs are refused unless allow_system is set in /etc/nexovirt-box/files.json. The file
+// actions run as root, so every folder whose files root runs or trusts (programs, libraries,
+// units, cron, package scripts, Docker's state) is in here, not only the secret ones.
+var blockedDirs = []string{"/etc", "/proc", "/sys", "/dev", "/boot", "/root", "/run", "/usr", "/bin", "/sbin",
+	"/lib", "/lib32", "/lib64", "/libx32", "/snap", "/var/lib/docker", "/var/lib/containerd", "/var/lib/dpkg",
+	"/var/lib/apt", "/var/cache/apt", "/var/lib/systemd", "/var/lib/snapd", "/var/spool/cron", "/var/spool/anacron",
+	"/var/lib/nexovirt-box/web"}
+
+// boxHidden reports whether p is one of Box's own files: its web state, its backup staging and,
+// in the app folders, everything but the apps' data. An app's compose.yaml, .env and app.json
+// decide what runs as root, so editing them through the files would skip every check.
+func boxHidden(p, appsDir string) bool {
+	if appsDir == "" {
+		return false
+	}
+	base := filepath.Dir(appsDir)
+	for _, d := range []string{"web", "backup-tmp"} {
+		if x := filepath.Join(base, d); p == x || within(p, x) {
+			return true
+		}
+	}
+	if !within(p, appsDir) {
+		return false
+	}
+	rel, _ := filepath.Rel(appsDir, p)
+	parts := strings.Split(filepath.ToSlash(rel), "/")
+	return len(parts) > 1 && parts[1] != "data"
+}
 
 func defaultRoots(appsDir string) []string {
 	roots := []string{"/home", "/srv", appsDir}
@@ -47,6 +74,10 @@ func (h *helperServer) filesConfig() filesConfig {
 	var c filesConfig
 	if !readJSONFile(fwPath("files.json"), &c) || len(c.Roots) == 0 {
 		c.Roots = defaultRoots(h.appsDir)
+	}
+	c.appsDir = h.appsDir
+	if real, err := filepath.EvalSymlinks(h.appsDir); err == nil {
+		c.appsDir = real
 	}
 	return c
 }
@@ -101,6 +132,9 @@ func visibleIn(p, real string, roots []rootInfo, cfg filesConfig) (rootInfo, boo
 	if !cfg.AllowSystem && (underAny(real, blockedDirs) || underAny(p, blockedDirs)) {
 		return rootInfo{}, false
 	}
+	if boxHidden(real, cfg.appsDir) || boxHidden(p, cfg.appsDir) {
+		return rootInfo{}, false
+	}
 	for _, r := range roots {
 		if real == r.real || strings.HasPrefix(real, strings.TrimSuffix(r.real, "/")+"/") {
 			return r, true
@@ -145,6 +179,7 @@ func (h *helperServer) filesList(req helperRequest, logf func(string)) (any, err
 	if err != nil {
 		return nil, err
 	}
+	cfg := h.filesConfig()
 	entries, err := os.ReadDir(real)
 	if err != nil {
 		return nil, uerr("This folder cannot be read.")
@@ -152,7 +187,7 @@ func (h *helperServer) filesList(req helperRequest, logf func(string)) (any, err
 	list := []fileEntry{}
 	for _, e := range entries {
 		info, err := e.Info()
-		if err != nil || e.Name() == trashDirName || e.Name() == versionsDirName {
+		if err != nil || e.Name() == trashDirName || e.Name() == versionsDirName || boxHidden(filepath.Join(real, e.Name()), cfg.appsDir) {
 			continue
 		}
 		fe := fileEntry{Name: e.Name(), Dir: info.IsDir(), Size: info.Size(), ModTime: info.ModTime().Unix(), Mode: info.Mode().Perm().String()}
@@ -359,6 +394,9 @@ func (h *helperServer) filesUploadFinish(req helperRequest, logf func(string)) (
 // filesRootsSet changes the shown folders. System folders stay refused here; they can only be
 // allowed by editing /etc/nexovirt-box/files.json on the server.
 func (h *helperServer) filesRootsSet(req helperRequest, logf func(string)) (any, error) {
+	if !h.consoleAllowed(req) { // the shown folders decide what the file actions may change as root
+		return nil, uerr("Enter your password to change the shown folders.")
+	}
 	cfg := h.filesConfig()
 	var roots []string
 	for _, r := range strings.Split(req.Path, "\n") {
@@ -373,7 +411,7 @@ func (h *helperServer) filesRootsSet(req helperRequest, logf func(string)) (any,
 		if err != nil {
 			return nil, uerr("%s does not exist.", r)
 		}
-		if !cfg.AllowSystem && (underAny(r, blockedDirs) || underAny(real, blockedDirs) || real == "/") {
+		if !cfg.AllowSystem && (underAny(r, blockedDirs) || underAny(real, blockedDirs) || real == "/" || boxHidden(real, cfg.appsDir)) {
 			return nil, uerr("%s is a system folder and cannot be shown.", r)
 		}
 		roots = append(roots, r)

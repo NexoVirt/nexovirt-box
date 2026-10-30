@@ -39,7 +39,7 @@ func TestFindSkipsBlockedRoots(t *testing.T) {
 	os.WriteFile(filepath.Join(good, "report.txt"), nil, 0o644)
 	// A configured root inside a blocked folder (/etc) must give nothing.
 	writeJSONFile(fwPath("files.json"), filesConfig{Roots: []string{"/etc", good}})
-	h := &helperServer{appsDir: t.TempDir()}
+	h := &helperServer{appsDir: filepath.Join(t.TempDir(), "box", "apps")} // Box's own folder is hidden, so not next to good
 	roots, visible := h.walkRoots()
 	for _, r := range roots {
 		if r == "/etc" || strings.HasPrefix(r, "/private/etc") {

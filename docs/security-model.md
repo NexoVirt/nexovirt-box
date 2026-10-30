@@ -15,9 +15,12 @@
   `nexovirt-box:`, or the firewalld rich rules it added) and shows the others read only. Each
   change must be confirmed within 60 seconds with a new request, else the helper restores the
   previous rules. Blocking the Box port needs a typed confirmation.
-- Files: every path is resolved and must stay inside the allowed folders; /etc, /root, /proc,
-  /sys, /dev, /boot and /run are refused (only an edit of `/etc/nexovirt-box/files.json` on the
-  server can allow them). Previews are sandboxed; SVG and HTML are always downloads.
+- Files: every path is resolved and must stay inside the allowed folders. System folders (/etc,
+  /root, /proc, /sys, /dev, /boot, /run, /usr, /bin, /sbin, /lib*, cron, package and Docker
+  state) are refused (only an edit of `/etc/nexovirt-box/files.json` on the server can allow
+  them), and of Box's own folder only the app data and the shared folder are shown, never an
+  app's compose file, `.env` or settings. Changing the shown folders needs the password.
+  Previews are sandboxed; SVG and HTML are always downloads.
 - Reverse proxy: Box never takes over a port another program uses; with 80/443 taken you pick
   other ports.
 - Self-updates: only releases signed with the NexoVirt release key, applied on click; when the

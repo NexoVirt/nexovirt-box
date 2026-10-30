@@ -66,7 +66,10 @@ func (a *App) filesRootsSet(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	a.filesCall(w, r, helperRequest{Action: "files_roots_set", Path: in.Roots}, "files.roots")
+	if !a.needProof(w, r) {
+		return
+	}
+	a.filesCall(w, r, a.proofReq(r, helperRequest{Action: "files_roots_set", Path: in.Roots}), "files.roots")
 }
 
 // previewTypes may be shown inline. Everything else (HTML, SVG, scripts) is a download, and
