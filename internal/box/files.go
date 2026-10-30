@@ -94,6 +94,9 @@ func (h *helperServer) resolve(p string, mustExist bool) (string, rootInfo, erro
 // when it is not under a blocked folder (unless allow_system) and lies inside an allowed root.
 // Browsing, search and every other walker over the roots use it, so they cannot drift apart.
 func visibleIn(p, real string, roots []rootInfo, cfg filesConfig) (rootInfo, bool) {
+	if inTrash(p) || inTrash(real) { // only the trash actions reach it (trash.go)
+		return rootInfo{}, false
+	}
 	if !cfg.AllowSystem && (underAny(real, blockedDirs) || underAny(p, blockedDirs)) {
 		return rootInfo{}, false
 	}
@@ -148,7 +151,7 @@ func (h *helperServer) filesList(req helperRequest, logf func(string)) (any, err
 	list := []fileEntry{}
 	for _, e := range entries {
 		info, err := e.Info()
-		if err != nil {
+		if err != nil || e.Name() == trashDirName {
 			continue
 		}
 		fe := fileEntry{Name: e.Name(), Dir: info.IsDir(), Size: info.Size(), ModTime: info.ModTime().Unix(), Mode: info.Mode().Perm().String()}
@@ -256,6 +259,13 @@ func (h *helperServer) filesDelete(req helperRequest, logf func(string)) (any, e
 	}
 	if _, err := os.Lstat(target); err != nil {
 		return nil, uerr("This file or folder does not exist.")
+	}
+	if req.Op != "permanent" {
+		it, err := moveToTrash(r, target, req.Path)
+		if err != nil {
+			return nil, err
+		}
+		return map[string]any{"ok": true, "trash": it.ID}, nil
 	}
 	if err := os.RemoveAll(target); err != nil {
 		return nil, uerr("It could not be deleted completely.")

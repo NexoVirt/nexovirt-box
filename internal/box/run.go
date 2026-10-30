@@ -79,6 +79,7 @@ func Run(v string) {
 	go app.watchUpdates()
 	go app.watchAutoUpdates()
 	go app.watchAppSchedules()
+	go app.watchTrash()
 	go app.watchAppResources()
 	go app.watchSystemHealth()
 	startNotifier(app)

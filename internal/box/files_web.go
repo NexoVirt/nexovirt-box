@@ -53,7 +53,7 @@ func (a *App) filesMutate(action, audit string) http.HandlerFunc {
 			return
 		}
 		op := ""
-		if in.Op == "exist_ok" {
+		if in.Op == "exist_ok" || (in.Op == "permanent" && action == "files_delete") {
 			op = in.Op
 		}
 		a.filesCall(w, r, helperRequest{Action: action, Path: in.Path, Path2: in.To, Op: op}, audit)
