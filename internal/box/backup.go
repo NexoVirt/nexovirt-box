@@ -82,9 +82,9 @@ func (h *helperServer) backupRun(ctx context.Context, req helperRequest, logf fu
 		return nil, err
 	}
 	if req.ID == "box" {
-		err = h.writeBoxArchive(f, id.Recipient(), logf)
+		err = h.writeBoxArchive(f, id, logf)
 	} else {
-		err = h.writeAppArchive(ctx, f, req.ID, id.Recipient(), logf)
+		err = h.writeAppArchive(ctx, f, req.ID, id, logf)
 	}
 	if cerr := f.Close(); err == nil {
 		err = cerr
@@ -114,7 +114,7 @@ func humanBytes(n int64) string {
 }
 
 // writeAppArchive stops the app if it runs, archives its folders and volumes and starts it again.
-func (h *helperServer) writeAppArchive(ctx context.Context, w io.Writer, appID string, rcpt age.Recipient, logf func(string)) error {
+func (h *helperServer) writeAppArchive(ctx context.Context, w io.Writer, appID string, id *age.X25519Identity, logf func(string)) error {
 	release, err := h.claim(appID, "backup")
 	if err != nil {
 		return err
@@ -158,7 +158,7 @@ func (h *helperServer) writeAppArchive(ctx context.Context, w io.Writer, appID s
 		man.Volumes = append(man.Volumes, v.Key)
 	}
 	logf("Packing and encrypting " + meta.Name)
-	return writeArchive(w, rcpt, man, func(tw *tar.Writer) error {
+	return writeArchive(w, id, man, func(tw *tar.Writer) error {
 		if err := addTree(tw, dir, "app", func(rel string) bool { return rel == installMarker || strings.HasSuffix(rel, ".prev") }); err != nil {
 			return err
 		}
@@ -179,7 +179,7 @@ func (h *helperServer) writeAppArchive(ctx context.Context, w io.Writer, appID s
 
 // writeBoxArchive saves Box's own settings: a consistent copy of the web database and the key
 // that encrypts notification secrets.
-func (h *helperServer) writeBoxArchive(w io.Writer, rcpt age.Recipient, logf func(string)) error {
+func (h *helperServer) writeBoxArchive(w io.Writer, id *age.X25519Identity, logf func(string)) error {
 	tmp, err := h.backupTmp()
 	if err != nil {
 		return err
@@ -203,55 +203,60 @@ func (h *helperServer) writeBoxArchive(w io.Writer, rcpt age.Recipient, logf fun
 	}
 	logf("Packing and encrypting Box's settings")
 	man := backupManifest{Format: 1, App: "box", Name: "NexoVirt Box settings", Created: time.Now().Unix(), BoxVersion: version}
-	return writeArchive(w, rcpt, man, func(tw *tar.Writer) error { return addTree(tw, stage, "box", nil) })
+	return writeArchive(w, id, man, func(tw *tar.Writer) error { return addTree(tw, stage, "box", nil) })
 }
 
-// fetchArchive downloads and unpacks an archive into a new folder below parent.
-func (h *helperServer) fetchArchive(ctx context.Context, req helperRequest, parent string, logf func(string)) (backupManifest, string, error) {
-	var man backupManifest
+// fetchArchive downloads and unpacks an archive into a new folder below parent. signed reports
+// whether the archive carries this Box's HMAC (see writeArchive).
+func (h *helperServer) fetchArchive(ctx context.Context, req helperRequest, parent string, logf func(string)) (man backupManifest, stage string, signed bool, err error) {
 	app, _, ok := parseArchiveName(req.Name)
 	if !ok {
-		return man, "", uerr("This backup does not exist.")
+		return man, "", false, uerr("This backup does not exist.")
 	}
 	st, err := h.storeFor(req.TargetID)
 	if err != nil {
-		return man, "", err
+		return man, "", false, err
 	}
 	id, err := h.identity()
 	if err != nil {
-		return man, "", err
+		return man, "", false, err
 	}
 	tmp, err := h.backupTmp()
 	if err != nil {
-		return man, "", err
+		return man, "", false, err
 	}
 	file := filepath.Join(tmp, req.Name+".dl")
 	defer os.Remove(file)
 	logf("Downloading " + req.Name)
 	if err := st.get(ctx, req.Name, file); err != nil {
-		return man, "", err
+		return man, "", false, err
 	}
 	os.MkdirAll(parent, 0o700)
-	stage, err := os.MkdirTemp(parent, ".restore-")
+	stage, err = os.MkdirTemp(parent, ".restore-")
 	if err != nil {
-		return man, "", err
+		return man, "", false, err
 	}
 	f, err := os.Open(file)
 	if err != nil {
 		os.RemoveAll(stage)
-		return man, "", err
+		return man, "", false, err
 	}
 	defer f.Close()
 	logf("Decrypting and unpacking")
-	man, err = openArchive(f, id, stage)
+	fi, err := f.Stat()
+	if err != nil {
+		os.RemoveAll(stage)
+		return man, "", false, err
+	}
+	man, signed, err = openArchive(f, fi.Size(), id, stage)
 	if err == nil && man.App != app {
 		err = uerr("This backup file does not belong to %s.", app)
 	}
 	if err != nil {
 		os.RemoveAll(stage)
-		return man, "", err
+		return man, "", false, err
 	}
-	return man, stage, nil
+	return man, stage, signed, nil
 }
 
 // backupVerify downloads an archive, decrypts it and reads every file.
@@ -260,11 +265,14 @@ func (h *helperServer) backupVerify(ctx context.Context, req helperRequest, logf
 	if err != nil {
 		return nil, err
 	}
-	man, stage, err := h.fetchArchive(ctx, req, tmp, logf)
+	man, stage, signed, err := h.fetchArchive(ctx, req, tmp, logf)
 	if err != nil {
 		return nil, err
 	}
 	defer os.RemoveAll(stage)
+	if !signed {
+		logf("This backup was made by an older Box version without a signature. Box cannot check that it was not changed.")
+	}
 	files, size := 0, int64(0)
 	filepath.WalkDir(stage, func(_ string, d os.DirEntry, err error) error {
 		if err == nil && d.Type().IsRegular() {

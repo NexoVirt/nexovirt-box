@@ -100,7 +100,7 @@ func TestArchiveRoundTrip(t *testing.T) {
 	id, _ := age.GenerateX25519Identity()
 	var buf bytes.Buffer
 	man := backupManifest{Format: 1, App: "uptime-kuma", Created: 1}
-	if err := writeArchive(&buf, id.Recipient(), man, func(tw *tar.Writer) error {
+	if err := writeArchive(&buf, id, man, func(tw *tar.Writer) error {
 		return addTree(tw, src, "app", func(rel string) bool { return rel == installMarker })
 	}); err != nil {
 		t.Fatal(err)
@@ -109,9 +109,12 @@ func TestArchiveRoundTrip(t *testing.T) {
 		t.Fatal("archive is not encrypted")
 	}
 	stage := t.TempDir()
-	got, err := openArchive(bytes.NewReader(buf.Bytes()), id, stage)
-	if err != nil || got.App != "uptime-kuma" {
-		t.Fatalf("open: %v %+v", err, got)
+	open := func(b []byte, id *age.X25519Identity) (backupManifest, bool, error) {
+		return openArchive(bytes.NewReader(b), int64(len(b)), id, t.TempDir())
+	}
+	got, signed, err := openArchive(bytes.NewReader(buf.Bytes()), int64(buf.Len()), id, stage)
+	if err != nil || got.App != "uptime-kuma" || !signed {
+		t.Fatalf("open: %v %v %+v", err, signed, got)
 	}
 	if b, _ := os.ReadFile(filepath.Join(stage, "app/data/kuma.db")); string(b) != "hello" {
 		t.Fatalf("data lost: %q", b)
@@ -120,8 +123,19 @@ func TestArchiveRoundTrip(t *testing.T) {
 		t.Fatal("skipped file was archived")
 	}
 	other, _ := age.GenerateX25519Identity()
-	if _, err := openArchive(bytes.NewReader(buf.Bytes()), other, t.TempDir()); err == nil {
+	if _, _, err := open(buf.Bytes(), other); err == nil {
 		t.Fatal("wrong key opened the archive")
+	}
+	// Someone who knows only the public key builds an archive: it does not verify.
+	forged := append([]byte{}, buf.Bytes()...)
+	forged[100] ^= 1
+	if _, _, err := open(forged, id); err != errForgedArchive {
+		t.Fatalf("a changed archive was used: %v", err)
+	}
+	// An archive from before the signature opens, but is reported as unsigned.
+	legacy := buf.Bytes()[:buf.Len()-macTrailer]
+	if _, signed, err := open(legacy, id); err != nil || signed {
+		t.Fatalf("legacy archive: %v signed=%v", err, signed)
 	}
 }
 
@@ -276,5 +290,24 @@ func TestAddTreeKeepsLinks(t *testing.T) {
 	}
 	if !bytes.Contains(buf.Bytes(), []byte("data")) {
 		t.Fatal("own file missing")
+	}
+}
+
+// An app from an unsigned archive is checked like an own app and loses Docker/Compose variables.
+func TestUnsignedRestoreIsDistrusted(t *testing.T) {
+	h := &helperServer{appsDir: t.TempDir(), webState: t.TempDir()}
+	staged := t.TempDir()
+	os.WriteFile(filepath.Join(staged, "compose.yaml"), []byte("services: {a: {image: x, privileged: true}}\n"), 0o600)
+	os.WriteFile(filepath.Join(staged, ".env"), []byte("APP_ID=x\nCOMPOSE_FILE=/etc/evil.yaml\nexport DOCKER_HOST=tcp://x\nPW=1\n"), 0o600)
+	meta := installedApp{Allowed: []string{"privileged"}}
+	if err := h.distrustRestoredApp(&meta, "uptime-kuma", staged); err != nil {
+		t.Fatal(err)
+	}
+	if !meta.Custom || meta.Allowed != nil || !meta.Reviewed {
+		t.Fatalf("settings kept: %+v", meta)
+	}
+	b, _ := os.ReadFile(filepath.Join(staged, ".env"))
+	if strings.Contains(string(b), "COMPOSE_") || strings.Contains(string(b), "DOCKER_") || !strings.Contains(string(b), "PW=1") {
+		t.Fatalf(".env: %q", b)
 	}
 }
