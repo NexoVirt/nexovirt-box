@@ -48,6 +48,7 @@ type installedApp struct {
 	Allowed     []string      `json:"allowed,omitempty"`          // own apps: risk findings the admin confirmed (customapp.go)
 	Reviewed    bool          `json:"reviewed,omitempty"`         // own apps: saved with the per-item review
 	LastUpdate  *updateRecord `json:"last_update,omitempty"`      // appupdate.go
+	Limits      *appLimits    `json:"limits,omitempty"`           // appresources.go
 }
 
 type appStatus struct {
@@ -160,7 +161,11 @@ func (h *helperServer) appDir(id string) string { return filepath.Join(h.appsDir
 
 func compose(dir, id string, args ...string) *exec.Cmd {
 	base := []string{"compose", "--project-name", "nxbox-" + id, "--project-directory", dir,
-		"-f", filepath.Join(dir, "compose.yaml"), "--env-file", filepath.Join(dir, ".env")}
+		"-f", filepath.Join(dir, "compose.yaml")}
+	if exists(filepath.Join(dir, limitsFile)) { // CPU/memory limits Box wrote (appresources.go)
+		base = append(base, "-f", filepath.Join(dir, limitsFile))
+	}
+	base = append(base, "--env-file", filepath.Join(dir, ".env"))
 	cmd := exec.Command("docker", append(base, args...)...)
 	cmd.Dir = dir
 	return cmd
@@ -571,17 +576,12 @@ func timezone() string {
 // (appsafety.go) and host ports that are already in use.
 func checkConfig(ctx context.Context, dir, id string, p mountPolicy, ports bool) error {
 	if p.custom { // checked before Docker reads it (customapp.go)
-		raw, err := os.ReadFile(filepath.Join(dir, "compose.yaml"))
-		if err != nil {
+		if err := checkCustomRaw(dir); err != nil {
 			return err
 		}
-		if err := checkOwnComposeRaw(raw); err != nil {
-			return err
-		}
-		env, _ := os.ReadFile(filepath.Join(dir, ".env"))
-		if err := checkOwnEnv(string(env)); err != nil {
-			return err
-		}
+	}
+	if err := checkLimitsFile(dir); err != nil {
+		return err
 	}
 	out, err := renderConfig(ctx, dir, id)
 	if err != nil {

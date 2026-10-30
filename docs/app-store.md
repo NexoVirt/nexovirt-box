@@ -107,6 +107,20 @@ Automatic updates: per app `{on, from, to}` (HH:MM, server time, window may wrap
 minutes the web process starts the normal update job for apps with an available update (from the last update check)
 inside their window, at most once per 20 hours; audited as user `auto`, result sent as the `app_update` notification.
 
+## Resources per app (`appresources.go`)
+
+`GET /api/apps/stats` (helper `app_stats`) returns per app CPU (percent of one core, summed over its containers),
+memory and the smallest container limit, network bytes since start (`docker stats --no-stream`, containers mapped
+through the `com.docker.compose.project=nxbox-<id>` label) and disk use of the app folder, an outside data folder and
+its volumes (measured in the background, cached 10 minutes, -1 until the first result). Shown in Monitor > Apps.
+
+Limits (app menu "Resource limits", `POST /api/apps/{id}/limits` {cpus, memory_mb}, job `limits`, helper `app_limits`):
+0.1 to all cores, 32 MB to the server's memory, the same for every service. Box writes `limits.yaml` (only `cpus` and
+`mem_limit` per service) next to `compose.yaml`; `compose()` adds it as a second `-f` file, so the app's compose file
+stays untouched; `checkConfig` refuses a `limits.yaml` with any other key (it can come back from a backup), and a
+failed recreate puts the previous file back. `app.json` `limits` mirrors it. Every 2 minutes the web process warns
+(`app_resources` notification) about apps at 90 % or more of their memory limit.
+
 ## Catalog
 
 - `catalog/index.json`: `generated_at`, and per app the summary fields plus `file` and `sha256`.

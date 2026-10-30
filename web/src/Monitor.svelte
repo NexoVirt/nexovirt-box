@@ -10,6 +10,7 @@
   import HardDrive from '@lucide/svelte/icons/hard-drive';
   import Network from '@lucide/svelte/icons/ethernet-port';
   import Loader from '@lucide/svelte/icons/loader-circle';
+  import AppUsage from './AppUsage.svelte';
 
   let { system, onSessionLost } = $props();
 
@@ -225,6 +226,8 @@
         {/each}
       </div>
     </section>
+
+    <section><AppUsage {onSessionLost} /></section>
   {/if}
 </div>
 

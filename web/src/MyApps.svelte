@@ -32,6 +32,7 @@
   import LayoutGrid from '@lucide/svelte/icons/layout-grid';
   import Globe from '@lucide/svelte/icons/globe';
   import Undo2 from '@lucide/svelte/icons/undo-2';
+  import Gauge from '@lucide/svelte/icons/gauge';
   import CalendarClock from '@lucide/svelte/icons/calendar-clock';
 
   let { onSessionLost, onNavigate } = $props();
@@ -68,6 +69,7 @@
   let catFor = $state(null), catOpen = $state(false);
   let socketFor = $state(null), socketOpen = $state(false), socketBusy = $state(false); // { app, op }
   let rollFor = $state(null), rollOpen = $state(false);
+  let limFor = $state(null), limOpen = $state(false), limCpu = $state(''), limMem = $state(''), limBusy = $state(false), limLines = $state([]), limError = $state('');
   let noCopyFor = $state(null), noCopyOpen = $state(false), noCopyMsg = $state('');
   let auto = $state({}), autoFor = $state(null), autoOpen = $state(false), autoForm = $state({ on: false, from: '03:00', to: '05:00' }), autoBusy = $state(false);
   let domainFor = $state(null), domainOpen = $state(false), domain = $state(''), domainBusy = $state(false), domainError = $state('');
@@ -155,6 +157,28 @@
     if (u.ok) updates = u.data;
     if (p.ok) proxy = p.data;
     if (au.ok) auto = au.data || {};
+  }
+
+  function openLimits(e, app) {
+    menu = null;
+    origin = { x: e.clientX, y: e.clientY };
+    limFor = app;
+    limCpu = app.limits?.cpus ? String(app.limits.cpus) : '';
+    limMem = app.limits?.memory_mb ? String(app.limits.memory_mb) : '';
+    limError = ''; limLines = [];
+    limOpen = true;
+  }
+
+  async function saveLimits(e) {
+    e.preventDefault();
+    limBusy = true; limError = '';
+    const job = await runJob(`/api/apps/${limFor.id}/limits`, { cpus: Number(limCpu) || 0, memory_mb: Math.round(Number(limMem)) || 0 }, (j) => (limLines = j.lines));
+    limBusy = false;
+    if (job.http === 401) return onSessionLost();
+    if (job.status !== 'done') { limError = job.error; return; }
+    limOpen = false;
+    toast(`Limits for ${limFor.name} saved.`, 'success');
+    load();
   }
 
   function askRollback(e, app) {
@@ -378,6 +402,7 @@
                 {#if app.custom}<button class="pop-item" role="menuitem" onclick={(e) => openOwn(e, app)}><FilePen size={16} />Edit compose file</button>
                 {:else}<button class="pop-item" role="menuitem" onclick={(e) => showCreds(e, app)}><KeyRound size={16} />Login details</button>{/if}
                 <button class="pop-item" role="menuitem" onclick={(e) => openBackups(e, app)}><Archive size={16} />Backups</button>
+                <button class="pop-item" role="menuitem" onclick={(e) => openLimits(e, app)}><Gauge size={16} />Resource limits</button>
                 <button class="pop-item" role="menuitem" onclick={(e) => showLogs(e, app)}><ScrollText size={16} />Logs</button>
                 <button class="pop-item" role="menuitem" onclick={(e) => editDomain(e, app)}><Globe size={16} />Domain and HTTPS</button>
                 <button class="pop-item danger" role="menuitem" onclick={(e) => askRemove(e, app)}><Trash2 size={16} />Uninstall</button>
@@ -404,6 +429,23 @@
       <button class="btn btn-primary" onclick={allowSocket} disabled={socketBusy}>{#if socketBusy}<Loader size={16} class="spinner" />Starting{:else}Allow and start{/if}</button>
     </div>
   </div>
+</Dialog>
+
+<Dialog bind:open={limOpen} label="Resource limits" {origin} locked={limBusy}>
+  <form class="dlg" onsubmit={saveLimits}>
+    <h2 class="t-title">Resource limits for {limFor?.name}</h2>
+    <p class="t-sub">Each container of the app gets at most this much. Leave a field empty for no limit. A running app is recreated with the new limits; Box warns you when it uses 90 % of its memory limit.</p>
+    {#if limError}<div class="notice" role="alert">{limError}</div>{/if}
+    <div class="times">
+      <label class="field"><span class="field-label">CPU cores</span><input class="input" type="number" min="0.1" step="0.1" bind:value={limCpu} placeholder="No limit" disabled={limBusy} /></label>
+      <label class="field"><span class="field-label">Memory (MB)</span><input class="input" type="number" min="32" step="1" bind:value={limMem} placeholder="No limit" disabled={limBusy} /></label>
+    </div>
+    {#if limBusy}<JobLog lines={limLines} />{/if}
+    <div class="buttons">
+      <button type="button" class="btn btn-gray" data-close onclick={() => (limOpen = false)} disabled={limBusy}>Cancel</button>
+      <button class="btn btn-primary" disabled={limBusy}>{#if limBusy}<Loader size={16} class="spinner" />Applying{:else}Save{/if}</button>
+    </div>
+  </form>
 </Dialog>
 
 <Dialog bind:open={rollOpen} label="Roll back" {origin}>
