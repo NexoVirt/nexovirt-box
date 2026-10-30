@@ -85,9 +85,44 @@ func TestProxyAuthFlow(t *testing.T) {
 }
 
 func TestSafeLocalPath(t *testing.T) {
-	for in, want := range map[string]string{"/a?b=1": "/a?b=1", "//evil": "/", "https://evil": "/", "/\\evil": "/", "": "/", "/x\r\nSet-Cookie: a": "/"} {
+	for in, want := range map[string]string{
+		"/a?b=1": "/a?b=1", "/dash/x": "/dash/x", "//evil": "/", "https://evil": "/", "/\\evil": "/", "": "/",
+		"/x\r\nSet-Cookie: a": "/", "/\t/evil.com": "/", "/\x00/evil": "/", "/a\x7f": "/", "/a\\b": "/", "/\n/evil": "/",
+		"/%09/evil.com": "/%09/evil.com", // encoded stays a path on the same site
+	} {
 		if got := safeLocalPath(in); got != want {
-			t.Errorf("safeLocalPath(%q) = %q", in, got)
+			t.Errorf("safeLocalPath(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+// The one-time token only ever goes to a protected domain on the proxy's HTTPS port.
+func TestSigninTarget(t *testing.T) {
+	prot := map[string]bool{"app.example.com": true}
+	ok := map[string]string{
+		"https://app.example.com/dash":     "https://app.example.com",
+		"https://APP.example.com:443/dash": "https://app.example.com",
+	}
+	for rd, want := range ok {
+		base, domain, path, good := signinTarget(rd, prot, 443)
+		if !good || base != want || domain != "app.example.com" || path != "/dash" {
+			t.Errorf("%s: %v %q %q %q", rd, good, base, domain, path)
+		}
+	}
+	if base, _, _, good := signinTarget("https://app.example.com:8444/", prot, 8444); !good || base != "https://app.example.com:8444" {
+		t.Errorf("own proxy port refused: %q", base)
+	}
+	for _, rd := range []string{
+		"https://app.example.com:8080/", // another service on that host
+		"https://user:pw@app.example.com/",
+		"https://evil.example/@app.example.com",
+		"http://app.example.com/",
+		"https://other.example.com/",
+		"//app.example.com/",
+		"https://app.example.com:443@evil.example/",
+	} {
+		if _, _, _, good := signinTarget(rd, prot, 443); good {
+			t.Errorf("%s accepted", rd)
 		}
 	}
 }

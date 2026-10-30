@@ -135,7 +135,7 @@ func (a *App) appDomain(w http.ResponseWriter, r *http.Request) {
 		req.Confirm = "protect"
 		a.rememberBoxURL(r)
 	}
-	ctx, cancel := context.WithTimeout(r.Context(), 90*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), 6*time.Minute) // may recreate the app (port binding)
 	defer cancel()
 	raw, err := a.helper.call(ctx, req, nil)
 	if err != nil {

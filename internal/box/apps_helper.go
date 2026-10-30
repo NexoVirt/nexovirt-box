@@ -164,8 +164,10 @@ func (h *helperServer) appDir(id string) string { return filepath.Join(h.appsDir
 func compose(dir, id string, args ...string) *exec.Cmd {
 	base := []string{"compose", "--project-name", "nxbox-" + id, "--project-directory", dir,
 		"-f", filepath.Join(dir, "compose.yaml")}
-	if exists(filepath.Join(dir, limitsFile)) { // CPU/memory limits Box wrote (appresources.go)
-		base = append(base, "-f", filepath.Join(dir, limitsFile))
+	for _, f := range []string{limitsFile, bindFile} { // Box's own extra files (appresources.go, proxybind.go)
+		if exists(filepath.Join(dir, f)) {
+			base = append(base, "-f", filepath.Join(dir, f))
+		}
 	}
 	base = append(base, "--env-file", filepath.Join(dir, ".env"))
 	cmd := exec.Command("docker", append(base, args...)...)
@@ -366,7 +368,7 @@ func (h *helperServer) appInstall(ctx context.Context, req helperRequest, logf f
 			os.RemoveAll(dir)
 			return
 		}
-		for _, f := range []string{"compose.yaml", ".env", "app.json", installMarker} {
+		for _, f := range []string{"compose.yaml", ".env", "app.json", installMarker, limitsFile, bindFile} {
 			os.Remove(filepath.Join(dir, f))
 		}
 	}
@@ -583,6 +585,9 @@ func checkConfig(ctx context.Context, dir, id string, p mountPolicy, ports bool)
 		}
 	}
 	if err := checkLimitsFile(dir); err != nil {
+		return err
+	}
+	if err := checkBindFile(dir); err != nil {
 		return err
 	}
 	out, err := renderConfig(ctx, dir, id)
@@ -944,7 +949,7 @@ func (h *helperServer) appUninstall(ctx context.Context, req helperRequest, logf
 		logf(meta.Name + " and its data were removed.")
 		return map[string]any{"data_kept": false}, nil
 	}
-	for _, f := range []string{"compose.yaml", ".env", "app.json", installMarker} {
+	for _, f := range []string{"compose.yaml", ".env", "app.json", installMarker, limitsFile, bindFile} {
 		os.Remove(filepath.Join(dir, f))
 	}
 	logf(meta.Name + " was removed. Its data stays in " + dataDir + ".")

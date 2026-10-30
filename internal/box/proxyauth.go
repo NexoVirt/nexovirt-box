@@ -13,6 +13,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -66,30 +67,66 @@ func (s *Store) proxyTokenOK(token, domain, kind string) (string, bool) {
 	return sess, true
 }
 
-// protectedDomains asks the helper which app domains have the sign-in in front.
-func (a *App) protectedDomains(ctx context.Context) map[string]bool {
+// protectedDomains asks the helper which app domains have the sign-in in front, and the
+// proxy's HTTPS port.
+func (a *App) protectedDomains(ctx context.Context) (map[string]bool, int) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 	out := map[string]bool{}
 	raw, err := a.helper.call(ctx, helperRequest{Action: "proxy_status"}, nil)
 	if err != nil {
-		return out
+		return out, 0
 	}
-	var st struct{ Routes []proxyRoute }
+	var st struct {
+		Routes []proxyRoute
+		Config proxyConfig
+	}
 	json.Unmarshal(raw, &st)
 	for _, r := range st.Routes {
 		if r.Protect {
 			out[r.Domain] = true
 		}
 	}
-	return out
+	return out, st.Config.HTTPSPort
+}
+
+// signinTarget checks the rd address: https, no user info, a protected domain, and no port or
+// exactly the proxy's HTTPS port. It returns the address to send the token to, built from the
+// checked parts only.
+func signinTarget(rd string, protected map[string]bool, httpsPort int) (base, domain, path string, ok bool) {
+	u, err := url.Parse(rd)
+	if err != nil || u.Scheme != "https" || u.User != nil || u.Host == "" || httpsPort == 0 {
+		return "", "", "", false
+	}
+	domain = strings.ToLower(u.Hostname())
+	if !protected[domain] {
+		return "", "", "", false
+	}
+	if p := u.Port(); p != "" && p != strconv.Itoa(httpsPort) {
+		return "", "", "", false
+	}
+	base = "https://" + domain
+	if httpsPort != 443 {
+		base += ":" + strconv.Itoa(httpsPort)
+	}
+	return base, domain, safeLocalPath(u.RequestURI()), true
 }
 
 func lowerHost(h string) string { return strings.ToLower(hostOnly(h)) }
 
 // safeLocalPath keeps a redirect on the same site: an absolute path, never //host or a scheme.
+// Browsers drop tabs and other control characters and read a backslash as a slash, so any of
+// them anywhere refuses the path.
 func safeLocalPath(p string) string {
-	if !strings.HasPrefix(p, "/") || strings.HasPrefix(p, "//") || strings.HasPrefix(p, "/\\") || strings.ContainsAny(p, "\r\n") {
+	if !strings.HasPrefix(p, "/") || strings.HasPrefix(p, "//") || strings.ContainsRune(p, '\\') {
+		return "/"
+	}
+	for i := 0; i < len(p); i++ {
+		if p[i] < 0x20 || p[i] == 0x7f {
+			return "/"
+		}
+	}
+	if u, err := url.Parse(p); err != nil || u.Scheme != "" || u.Host != "" {
 		return "/"
 	}
 	return p
@@ -120,16 +157,16 @@ func (a *App) proxyAuthStart(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusFound) // sign in, then open the app link again
 		return
 	}
-	u, err := url.Parse(r.URL.Query().Get("rd"))
-	if err != nil || u.Scheme != "https" || u.Host == "" || !a.protectedDomains(r.Context())[lowerHost(u.Host)] {
+	protected, port := a.protectedDomains(r.Context())
+	base, domain, path, ok := signinTarget(r.URL.Query().Get("rd"), protected, port)
+	if !ok {
 		writeError(w, http.StatusBadRequest, "This address is not an app protected by Box.")
 		return
 	}
-	domain := lowerHost(u.Host)
 	once := a.store.addProxyToken(domain, hashToken(tok), "once", proxyOnceTTL)
 	a.audit(r, "proxy.signin", domain)
-	q := url.Values{"t": {once}, "rd": {safeLocalPath(u.RequestURI())}}
-	http.Redirect(w, r, "https://"+u.Host+"/.nxbox-auth?"+q.Encode(), http.StatusFound)
+	q := url.Values{"t": {once}, "rd": {path}}
+	http.Redirect(w, r, base+"/.nxbox-auth?"+q.Encode(), http.StatusFound)
 }
 
 // proxyAuthFinish runs on the app's domain (through Caddy): it trades the one-time token for the

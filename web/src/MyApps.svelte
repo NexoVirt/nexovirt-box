@@ -513,7 +513,7 @@
       {#if domainError}<div class="notice" role="alert">{domainError}</div>{/if}
       <input class="input" bind:value={domain} placeholder="app.example.com" aria-label="Domain" spellcheck="false" autocapitalize="none" />
       <label class="field"><span class="field-label">App port behind the domain</span><input class="input" type="number" min="1" max="65535" bind:value={domainPort} disabled={domainBusy} /><span class="t-caption">The app's main port is {domainFor?.main_port || 'not known'}. Pick another one the app publishes if its web page is there.</span></label>
-      <label class="row-field"><span class="field-text"><span class="field-label">Box sign-in in front</span><span class="t-caption">Only people signed in to Box can open the app under this domain.</span></span><input class="switch" type="checkbox" bind:checked={domainProtect} disabled={domainBusy} /></label>
+      <label class="row-field"><span class="field-text"><span class="field-label">Box sign-in in front</span><span class="t-caption">Only people signed in to Box can open the app under this domain. This also closes the app's port for direct access (http://server:port): it is then reachable only through the domain.</span></span><input class="switch" type="checkbox" bind:checked={domainProtect} disabled={domainBusy} /></label>
       {#if domainFor?.domain}<p class="t-caption">Leave empty and save to remove the domain.</p>{/if}
       <div class="buttons">
         <button type="button" class="btn btn-gray" data-close onclick={() => (domainOpen = false)} disabled={domainBusy}>Cancel</button>
