@@ -1,0 +1,30 @@
+[
+ {
+  "id": "media",
+  "name": "Media stack",
+  "description": "Watch your films and series anywhere: Jellyfin plays them, Sonarr and Radarr find and sort them, Prowlarr manages the indexers, qBittorrent downloads and Jellyseerr takes requests.",
+  "notes": "All apps share Box's media folder, so downloads, the library and Jellyfin see the same files.\n1. qBittorrent: sign in (Login details in the app menu) and keep the download folder /media/torrents.\n2. Prowlarr: add your indexers, then Settings > Apps: add Sonarr and Radarr with their API keys (Settings > General in each app) and the server address shown in Apps.\n3. Sonarr and Radarr: Settings > Download clients: add qBittorrent (this server's address and its port). Root folders: /media/data/tv and /media/data/movies.\n4. Jellyfin: add the libraries /media/data/tv and /media/data/movies.\n5. Jellyseerr: connect it to Jellyfin, Sonarr and Radarr.",
+  "apps": [{"id": "jellyfin"}, {"id": "sonarr"}, {"id": "radarr"}, {"id": "prowlarr"}, {"id": "qbittorrent"}, {"id": "jellyseerr"}]
+ },
+ {
+  "id": "smart-home",
+  "name": "Smart home",
+  "description": "Home Assistant to control your devices and Node-RED to build automations with drag and drop.",
+  "notes": "Home Assistant: create your account on its first page. In Node-RED, install node-red-contrib-home-assistant-websocket and connect it to Home Assistant with a long-lived access token (Home Assistant > your profile > Security).",
+  "apps": [{"id": "home-assistant"}, {"id": "node-red"}]
+ },
+ {
+  "id": "development",
+  "name": "Development",
+  "description": "Gitea for your Git repositories and code-server, Visual Studio Code in the browser.",
+  "notes": "Gitea: finish the setup page and create the admin account. code-server: the password is under Login details. Clone your Gitea repositories in code-server's terminal with the address shown in Apps.",
+  "apps": [{"id": "gitea"}, {"id": "code-server"}]
+ },
+ {
+  "id": "personal-cloud",
+  "name": "Personal cloud",
+  "description": "Nextcloud for files, calendars and contacts, Vaultwarden for passwords and Paperless-ngx for your documents.",
+  "notes": "The admin user of Nextcloud and Paperless-ngx is admin; the passwords are generated (Login details in each app's menu). Vaultwarden needs HTTPS for its clients: give it a domain in its menu (Domain and HTTPS).",
+  "apps": [{"id": "nextcloud", "answers": {"NEXTCLOUD_ADMIN_USER": "admin"}}, {"id": "vaultwarden"}, {"id": "paperless-ngx", "answers": {"PAPERLESS_ADMIN_USERNAME": "admin"}}]
+ }
+]

@@ -91,7 +91,7 @@ func (a *App) catalogList(w http.ResponseWriter, r *http.Request) {
 		apps[i] = listed{e, archSupported(e.Architectures)}
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
-		"source": src, "generated_at": cat.Index.GeneratedAt, "apps": apps,
+		"source": src, "generated_at": cat.Index.GeneratedAt, "apps": apps, "stacks": cat.Stacks(),
 		"arch": goarch(), "sync_url": a.catalog.getURL() != "",
 	})
 }

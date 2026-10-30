@@ -6,6 +6,7 @@
   import HScroll from '$lib/HScroll.svelte';
   import Dialog from '$lib/Dialog.svelte';
   import AppDetail from './AppDetail.svelte';
+  import StacksRow from './StacksRow.svelte';
   import DockerSetup from './DockerSetup.svelte';
   import { sheet, backgrounded, installs } from '$lib/installs.svelte.js';
   import Search from '@lucide/svelte/icons/search';
@@ -145,6 +146,7 @@
     {:else if !filtered.length}
       <div class="tile empty t-sub">No app matches "{query}".</div>
     {:else}
+      {#if cat === 'All' && !query.trim()}<StacksRow stacks={catalog.stacks || []} apps={catalog.apps} {installed} onInstalled={refreshInstalled} {onSessionLost} />{/if}
       <div class="grid">
         {#each filtered.slice(0, shown) as a (a.id)}
           <button class="card" onclick={(e) => pick(e, a)}>

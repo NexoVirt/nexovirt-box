@@ -50,6 +50,19 @@ func WriteDir(out string, priv ed25519.PrivateKey, apps []*App) error {
 		}
 		idx.Apps = append(idx.Apps, IndexEntry{Summary: a.Summary, File: file, SHA256: FileHash(b)})
 	}
+	stacks, err := readStacks(out)
+	if err != nil {
+		return err
+	}
+	have := map[string]bool{}
+	for _, a := range apps {
+		have[a.ID] = true
+	}
+	stacks = keepKnown(stacks, have)
+	if err := ValidateStacks(stacks, func(id string) bool { return have[id] }); err != nil {
+		return err
+	}
+	idx.Stacks = stacks
 	raw, err := json.Marshal(idx)
 	if err != nil {
 		return err

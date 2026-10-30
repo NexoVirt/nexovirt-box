@@ -139,6 +139,7 @@ type Index struct {
 	Version     int          `json:"version"`
 	GeneratedAt int64        `json:"generated_at"`
 	Apps        []IndexEntry `json:"apps"`
+	Stacks      []Stack      `json:"stacks,omitempty"` // stacks.go, signed with the index
 }
 
 var IDRe = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,62}$`)
