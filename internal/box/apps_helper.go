@@ -29,24 +29,25 @@ import (
 )
 
 type installedApp struct {
-	ID          string   `json:"id"`
-	Name        string   `json:"name"`
-	Version     string   `json:"version"`
-	MainPort    int      `json:"main_port"`
-	Scheme      string   `json:"scheme"`
-	Store       string   `json:"store"`
-	InstalledAt int64    `json:"installed_at"`
-	Domain      string   `json:"domain,omitempty"`
-	TLS         string   `json:"tls,omitempty"`
-	DataDir     string   `json:"data_dir,omitempty"`
-	DataCreated bool     `json:"data_created,omitempty"`     // Box created DataDir, so "delete data" may remove it
-	SocketOK    bool     `json:"docker_socket_ok,omitempty"` // the admin agreed to give this app Docker access
-	Stopped     bool     `json:"stopped,omitempty"`          // stopped on purpose (desired state), no alert
-	Custom      bool     `json:"custom,omitempty"`           // an own app (compose from the admin, customapp.go)
-	Icon        string   `json:"icon,omitempty"`             // own apps: lucide:<name> or upload
-	ComposeSHA  string   `json:"compose_sha,omitempty"`      // sha256 of the catalog compose it runs (catalogupdate.go)
-	Allowed     []string `json:"allowed,omitempty"`          // own apps: risk findings the admin confirmed (customapp.go)
-	Reviewed    bool     `json:"reviewed,omitempty"`         // own apps: saved with the per-item review
+	ID          string        `json:"id"`
+	Name        string        `json:"name"`
+	Version     string        `json:"version"`
+	MainPort    int           `json:"main_port"`
+	Scheme      string        `json:"scheme"`
+	Store       string        `json:"store"`
+	InstalledAt int64         `json:"installed_at"`
+	Domain      string        `json:"domain,omitempty"`
+	TLS         string        `json:"tls,omitempty"`
+	DataDir     string        `json:"data_dir,omitempty"`
+	DataCreated bool          `json:"data_created,omitempty"`     // Box created DataDir, so "delete data" may remove it
+	SocketOK    bool          `json:"docker_socket_ok,omitempty"` // the admin agreed to give this app Docker access
+	Stopped     bool          `json:"stopped,omitempty"`          // stopped on purpose (desired state), no alert
+	Custom      bool          `json:"custom,omitempty"`           // an own app (compose from the admin, customapp.go)
+	Icon        string        `json:"icon,omitempty"`             // own apps: lucide:<name> or upload
+	ComposeSHA  string        `json:"compose_sha,omitempty"`      // sha256 of the catalog compose it runs (catalogupdate.go)
+	Allowed     []string      `json:"allowed,omitempty"`          // own apps: risk findings the admin confirmed (customapp.go)
+	Reviewed    bool          `json:"reviewed,omitempty"`         // own apps: saved with the per-item review
+	LastUpdate  *updateRecord `json:"last_update,omitempty"`      // appupdate.go
 }
 
 type appStatus struct {
@@ -817,7 +818,7 @@ func (h *helperServer) appAction(ctx context.Context, req helperRequest, logf fu
 		return nil, err
 	}
 	switch req.Op {
-	case "start", "stop", "restart", "update":
+	case "start", "stop", "restart", "update", "rollback":
 	default:
 		return nil, uerr("This action is not allowed.")
 	}
@@ -851,7 +852,8 @@ func (h *helperServer) appAction(ctx context.Context, req helperRequest, logf fu
 	ctx, cancel := context.WithTimeout(ctx, 40*time.Minute)
 	defer cancel()
 	// Desired state first, so a crash during the action is not reported as "stopped on purpose".
-	if meta.Stopped != (req.Op == "stop") {
+	// An update or rollback keeps the desired state the app had.
+	if req.Op != "update" && req.Op != "rollback" && meta.Stopped != (req.Op == "stop") {
 		meta.Stopped = req.Op == "stop"
 		h.writeMeta(meta)
 	}
@@ -876,10 +878,14 @@ func (h *helperServer) appAction(ctx context.Context, req helperRequest, logf fu
 	case "restart":
 		err = runStream(ctx, compose(dir, req.ID, "restart"), logf)
 	case "update":
-		logf("Downloading the newest images of " + meta.Name)
-		if err = runStream(ctx, compose(dir, req.ID, "pull"), logf); err == nil {
-			err = up()
-		}
+		err = h.updateApp(ctx, meta, req.Confirm == "no_copy", func() error {
+			if meta.Stopped {
+				return checkConfig(ctx, dir, req.ID, h.policy(meta), false)
+			}
+			return up()
+		}, logf)
+	case "rollback":
+		err = h.rollbackApp(ctx, meta, logf)
 	}
 	if err != nil {
 		return nil, err
@@ -914,6 +920,7 @@ func (h *helperServer) appUninstall(ctx context.Context, req helperRequest, logf
 			return nil, err
 		}
 	}
+	h.dropRollback(req.ID) // the copy of the last update goes with the app
 	dataDir := meta.DataDir
 	if dataDir == "" {
 		dataDir = filepath.Join(dir, "data")

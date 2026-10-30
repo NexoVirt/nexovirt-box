@@ -77,6 +77,7 @@ func Run(v string) {
 	}
 	go app.sampler.run()
 	go app.watchUpdates()
+	go app.watchAutoUpdates()
 	startNotifier(app)
 	go app.watchBackups()
 	go app.watchDisks()

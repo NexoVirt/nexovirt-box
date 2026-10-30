@@ -41,6 +41,7 @@ const (
 	evLoginFailed    = "login_failed_burst"
 	evFirewallRolled = "firewall_rollback"
 	evDiskHealth     = "disk_health"
+	evAppUpdate      = "app_update"
 )
 
 type notifyEvent struct {
@@ -56,6 +57,7 @@ var notifyEvents = []notifyEvent{
 	{evDiskHigh, "A disk is getting full", "Above the threshold below.", true},
 	{evDiskHealth, "A disk reports problems", "Its SMART health got worse (warning or failing).", true},
 	{evUpdate, "Updates are available", "For apps or for NexoVirt Box.", true},
+	{evAppUpdate, "An automatic app update ran", "Updated, or rolled back because the app did not come up.", true},
 	{evBackupFailed, "A backup failed", "Scheduled or started by hand.", true},
 	{evBackupOK, "A backup succeeded", "One message per backup.", false},
 	{evLoginNewIP, "Sign-in from a new address", "The first sign-in from an IP address Box has not seen.", true},

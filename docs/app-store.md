@@ -89,6 +89,24 @@ Docker runs `docker compose --project-name nxbox-<id> -f compose.yaml --env-file
 renders `docker compose config` and refuses ports that are already in use. Update = `pull` + `up -d` (the compose
 file stays). Uninstall = `down`, then either delete the folder or keep `data/` for a later reinstall.
 
+## Updates with rollback (`appupdate.go`, `appautoupdate.go`)
+
+An update (`app_action` op `update`) stops the app and copies its folder, a data folder outside it and its named
+volumes into `<state>/rollback/<id>/` (one copy per app, replaced by the next update, removed on uninstall), after
+checking free space (copy size + 512 MB; too little = the update is refused with "Not enough free space for the
+rollback copy", and the UI offers "Update anyway" = `no_copy`). The images it ran are tagged
+`nxbox-rollback/<id>:<n>` so an image prune keeps them. Then `pull`, the install checks, `up -d` and a health check:
+every container `running` in two polls 5 s apart and the main port accepting TCP, within 90 s. On failure the old
+image ids get their references back (`docker tag`), the copied folders replace the new ones (`putBack`: current folder
+aside, copy in, aside removed; a failed copy puts the current folder back) and the app starts again. `app.json`
+`last_update` records `{at, result: ok|rolled_back|failed|manual_rollback, rollback}`; with a copy the app menu offers
+"Roll back last update" (op `rollback`, same restore, data written since is lost).
+
+Automatic updates: per app `{on, from, to}` (HH:MM, server time, window may wrap midnight) in the web setting
+`app_auto_updates` (`GET /api/apps/auto-updates`, `POST /api/apps/{id}/auto-update`, audited `app.auto_update`). Every 5
+minutes the web process starts the normal update job for apps with an available update (from the last update check)
+inside their window, at most once per 20 hours; audited as user `auto`, result sent as the `app_update` notification.
+
 ## Catalog
 
 - `catalog/index.json`: `generated_at`, and per app the summary fields plus `file` and `sha256`.
