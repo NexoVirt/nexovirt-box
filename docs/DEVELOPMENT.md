@@ -148,7 +148,9 @@ embedded.
   (`op: permanent`); links are never trashed (deleted for good on request). Safety: `.nxbox-trash` and every `<id>` folder
   must be real directories owned by the helper with mode 0700, opened with O_NOFOLLOW; all moves and deletes inside run
   relative to those descriptors (`openat`, `renameat`, `unlinkat`, `removeAllAt`), so a user who can write to the place
-  cannot plant a symlink. The metadata JSON is untrusted: the name comes from the single entry in `<id>/`, ids must match
+  cannot plant a symlink. Both ends of a move open their folder with `openBeneath` (`safepath.go`: from the root's real path
+  one component at a time with `openat(O_NOFOLLOW|O_DIRECTORY)`, no `..`), the one primitive for root file moves below a
+  root, and moves use `renameNoReplace` (renameat2 RENAME_NOREPLACE), so nothing planted meanwhile is overwritten. The metadata JSON is untrusted: the name comes from the single entry in `<id>/`, ids must match
   the fixed pattern, and a restore target must be a clean path whose folder resolves inside the same place. The web process purges items older than `trash_days` (default 30, 1..365) daily. Audited
   `files.trash_restore|trash_delete|trash_empty|trash_days|trash_purge`.
 - Firewall (`firewall.go`): only Box's own rules; `firewall.pending.json` + 60 s timer roll back unless confirmed;

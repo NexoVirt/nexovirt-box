@@ -205,7 +205,14 @@ func moveToTrash(r rootInfo, target, shown string) (trashItem, error) {
 		return it, err
 	}
 	defer unix.Close(ifd)
-	if err := unix.Renameat(unix.AT_FDCWD, target, ifd, it.Name); err != nil {
+	pfd, base, err := openBeneath(r.real, target)
+	if err != nil {
+		unix.Unlinkat(tfd, it.ID, unix.AT_REMOVEDIR)
+		return it, err
+	}
+	err = renameNoReplace(pfd, base, ifd, it.Name)
+	unix.Close(pfd)
+	if err != nil {
 		unix.Unlinkat(tfd, it.ID, unix.AT_REMOVEDIR)
 		if errors.Is(err, unix.EXDEV) {
 			return it, errCrossDevice
@@ -337,9 +344,10 @@ func (h *helperServer) trashRestore(req helperRequest, _ func(string)) (any, err
 	if err != nil || pr.real != r.real {
 		return nil, uerr("The folder it came from is gone. Create %s again first.", filepath.Dir(it.Path))
 	}
-	pfd, err := unix.Open(parent, dirFlags, 0)
+	// Opened from the root one folder at a time, so a link swapped in after resolve cannot lead out.
+	pfd, _, err := openBeneath(r.real, filepath.Join(parent, "x"))
 	if err != nil {
-		return nil, uerr("The folder it came from cannot be opened.")
+		return nil, err
 	}
 	defer unix.Close(pfd)
 	dest := it.Name
@@ -366,8 +374,11 @@ func (h *helperServer) trashRestore(req helperRequest, _ func(string)) (any, err
 	if err != nil {
 		return nil, err
 	}
-	err = unix.Renameat(ifd, it.Name, pfd, dest)
+	err = renameNoReplace(ifd, it.Name, pfd, dest) // never overwrites a file planted meanwhile
 	unix.Close(ifd)
+	if errors.Is(err, unix.EEXIST) {
+		return nil, uerr("%s exists again in that folder. Move it away and restore again.", dest)
+	}
 	if err != nil {
 		return nil, uerr("It could not be restored.")
 	}
