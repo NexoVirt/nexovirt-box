@@ -121,6 +121,13 @@ stays untouched; `checkConfig` refuses a `limits.yaml` with any other key (it ca
 failed recreate puts the previous file back. `app.json` `limits` mirrors it. Every 2 minutes the web process warns
 (`app_resources` notification) about apps at 90 % or more of their memory limit.
 
+## Start and stop times (`appschedule.go`)
+
+App menu "Start and stop times": per weekday an optional start and stop time (server time), stored in the web setting
+`app_schedules` (`GET /api/apps/schedules`, `POST /api/apps/{id}/schedule`, audited `app.schedule`). Every 30 s the web
+process runs the normal start/stop job for times due within the last 10 minutes, once per app, kind and day; audited as
+user `schedule`. A scheduled stop sets the desired state, so it raises no "app down" alert.
+
 ## Clone (`appclone.go`)
 
 App menu "Clone" (`POST /api/apps/{id}/clone` {name, port}, job `clone`, helper `app_clone`): a new id (slug of the

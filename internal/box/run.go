@@ -78,6 +78,7 @@ func Run(v string) {
 	go app.sampler.run()
 	go app.watchUpdates()
 	go app.watchAutoUpdates()
+	go app.watchAppSchedules()
 	go app.watchAppResources()
 	go app.watchSystemHealth()
 	startNotifier(app)

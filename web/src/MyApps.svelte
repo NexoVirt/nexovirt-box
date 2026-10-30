@@ -34,6 +34,7 @@
   import Undo2 from '@lucide/svelte/icons/undo-2';
   import Gauge from '@lucide/svelte/icons/gauge';
   import Copy from '@lucide/svelte/icons/copy';
+  import Clock from '@lucide/svelte/icons/clock';
   import CalendarClock from '@lucide/svelte/icons/calendar-clock';
 
   let { onSessionLost, onNavigate } = $props();
@@ -70,6 +71,8 @@
   let catFor = $state(null), catOpen = $state(false);
   let socketFor = $state(null), socketOpen = $state(false), socketBusy = $state(false); // { app, op }
   let rollFor = $state(null), rollOpen = $state(false);
+  let schedules = $state({}), schedFor = $state(null), schedOpen = $state(false), sched = $state(null), schedBusy = $state(false);
+  const WEEK = [[1, 'Monday'], [2, 'Tuesday'], [3, 'Wednesday'], [4, 'Thursday'], [5, 'Friday'], [6, 'Saturday'], [0, 'Sunday']];
   let cloneFor = $state(null), cloneOpen = $state(false), cloneName = $state(''), clonePort = $state(''), cloneBusy = $state(false), cloneLines = $state([]), cloneError = $state(''), cloneExpose = $state(false);
   let limFor = $state(null), limOpen = $state(false), limCpu = $state(''), limMem = $state(''), limBusy = $state(false), limLines = $state([]), limError = $state('');
   let noCopyFor = $state(null), noCopyOpen = $state(false), noCopyMsg = $state('');
@@ -156,7 +159,8 @@
   }
 
   async function loadExtras() {
-    const [u, p, au] = await Promise.all([api('/api/updates'), api('/api/proxy'), api('/api/apps/auto-updates')]);
+    const [u, p, au, sc] = await Promise.all([api('/api/updates'), api('/api/proxy'), api('/api/apps/auto-updates'), api('/api/apps/schedules')]);
+    if (sc.ok) schedules = sc.data || {};
     if (u.ok) updates = u.data;
     if (p.ok) proxy = p.data;
     if (au.ok) auto = au.data || {};
@@ -201,6 +205,27 @@
     cloneOpen = false;
     toast(`${cloneName} is installed and running.`, 'success');
     load();
+  }
+
+  function openSchedule(e, app) {
+    menu = null;
+    origin = { x: e.clientX, y: e.clientY };
+    schedFor = app;
+    const cur = schedules[app.id];
+    sched = cur ? structuredClone($state.snapshot(cur)) : { on: false, days: Array.from({ length: 7 }, () => ({ start: '', stop: '' })) };
+    schedOpen = true;
+  }
+
+  async function saveSchedule(e) {
+    e.preventDefault();
+    schedBusy = true;
+    const res = await api(`/api/apps/${schedFor.id}/schedule`, { method: 'POST', body: sched });
+    schedBusy = false;
+    if (res.status === 401) return onSessionLost();
+    if (!res.ok) return toast(res.error, 'error');
+    schedules = { ...schedules, [schedFor.id]: res.data };
+    schedOpen = false;
+    toast(res.data.on ? `${schedFor.name} now starts and stops on its schedule.` : `The schedule for ${schedFor.name} is off.`, 'success');
   }
 
   function askRollback(e, app) {
@@ -428,6 +453,7 @@
                 <button class="pop-item" role="menuitem" onclick={(e) => openBackups(e, app)}><Archive size={16} />Backups</button>
                 <button class="pop-item" role="menuitem" onclick={(e) => openLimits(e, app)}><Gauge size={16} />Resource limits</button>
                 <button class="pop-item" role="menuitem" onclick={(e) => openClone(e, app)}><Copy size={16} />Clone</button>
+                <button class="pop-item" role="menuitem" onclick={(e) => openSchedule(e, app)}><Clock size={16} />Start and stop times</button>
                 <button class="pop-item" role="menuitem" onclick={(e) => showLogs(e, app)}><ScrollText size={16} />Logs</button>
                 <button class="pop-item" role="menuitem" onclick={(e) => editDomain(e, app)}><Globe size={16} />Domain and HTTPS</button>
                 <button class="pop-item danger" role="menuitem" onclick={(e) => askRemove(e, app)}><Trash2 size={16} />Uninstall</button>
@@ -454,6 +480,28 @@
       <button class="btn btn-primary" onclick={allowSocket} disabled={socketBusy}>{#if socketBusy}<Loader size={16} class="spinner" />Starting{:else}Allow and start{/if}</button>
     </div>
   </div>
+</Dialog>
+
+<Dialog bind:open={schedOpen} label="Start and stop times" {origin} locked={schedBusy}>
+  {#if sched}
+  <form class="dlg" onsubmit={saveSchedule}>
+    <h2 class="t-title">Start and stop times for {schedFor?.name}</h2>
+    <p class="t-sub">Box starts and stops the app at these times (server time). Leave a field empty to do nothing that day.</p>
+    <label class="row-field"><span class="field-label">Use this schedule</span><input class="switch" type="checkbox" bind:checked={sched.on} disabled={schedBusy} /></label>
+    <div class="week">
+      <span></span><span class="t-caption">Start</span><span class="t-caption">Stop</span>
+      {#each WEEK as [d, label] (d)}
+        <span>{label}</span>
+        <input class="input" type="time" bind:value={sched.days[d].start} aria-label="{label} start" disabled={schedBusy || !sched.on} />
+        <input class="input" type="time" bind:value={sched.days[d].stop} aria-label="{label} stop" disabled={schedBusy || !sched.on} />
+      {/each}
+    </div>
+    <div class="buttons">
+      <button type="button" class="btn btn-gray" data-close onclick={() => (schedOpen = false)} disabled={schedBusy}>Cancel</button>
+      <button class="btn btn-primary" disabled={schedBusy}>{#if schedBusy}<Loader size={16} class="spinner" />Saving{:else}Save{/if}</button>
+    </div>
+  </form>
+  {/if}
 </Dialog>
 
 <Dialog bind:open={cloneOpen} label="Clone" {origin} locked={cloneBusy}>
@@ -585,6 +633,7 @@
 <style>
   h2, p { margin: 0; }
   .times { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+  .week { display: grid; grid-template-columns: auto 1fr 1fr; gap: 0.5rem 0.75rem; align-items: center; }
   .skeleton.sq { width: 42px; height: 42px; border-radius: 10px; }
   .skeleton.line { display: block; width: 40%; height: 0.8rem; }
   /* A plain list on the window surface: rows split by hairlines, nothing behind them. */
