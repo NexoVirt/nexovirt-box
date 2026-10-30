@@ -257,3 +257,24 @@ func TestBackupWritesNeedProof(t *testing.T) {
 		}
 	}
 }
+
+// A backup stores links as links and never reads what they point to.
+func TestAddTreeKeepsLinks(t *testing.T) {
+	src, outside := t.TempDir(), t.TempDir()
+	os.WriteFile(filepath.Join(outside, "secret"), []byte("host-secret"), 0o600)
+	os.Symlink(filepath.Join(outside, "secret"), filepath.Join(src, "link"))
+	os.Symlink(outside, filepath.Join(src, "dirlink"))
+	os.WriteFile(filepath.Join(src, "own"), []byte("data"), 0o644)
+	var buf bytes.Buffer
+	tw := tar.NewWriter(&buf)
+	if err := addTree(tw, src, "app", nil); err != nil {
+		t.Fatal(err)
+	}
+	tw.Close()
+	if bytes.Contains(buf.Bytes(), []byte("host-secret")) {
+		t.Fatal("a link target was read into the backup")
+	}
+	if !bytes.Contains(buf.Bytes(), []byte("data")) {
+		t.Fatal("own file missing")
+	}
+}

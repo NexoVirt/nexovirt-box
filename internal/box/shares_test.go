@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"golang.org/x/sys/unix"
 )
 
 func TestShareNameAndUserValidation(t *testing.T) {
@@ -145,7 +147,7 @@ func TestHandoverPathRules(t *testing.T) {
 // The walk changes owners below the folder only and never follows a symlink: the link itself
 // changes owner (lchown), its target outside never does.
 func TestHandoverWalkSkipsSymlinkTargets(t *testing.T) {
-	root := t.TempDir()
+	root, _ := filepath.EvalSymlinks(t.TempDir())
 	outside := t.TempDir()
 	os.WriteFile(filepath.Join(outside, "secret"), []byte("x"), 0o600)
 	os.MkdirAll(filepath.Join(root, "a", "b"), 0o755)
@@ -153,12 +155,12 @@ func TestHandoverWalkSkipsSymlinkTargets(t *testing.T) {
 	os.Symlink(outside, filepath.Join(root, "a", "out"))
 	os.Symlink(filepath.Join(outside, "secret"), filepath.Join(root, "link-file"))
 	var seen []string
-	n, err := handoverWalk(root, func(p string) error { seen = append(seen, p); return nil })
+	n, err := handoverWalk(rootInfo{root, root}, root, func(_ int, name string, _ unix.Stat_t) error { seen = append(seen, name); return nil })
 	if err != nil || n != 6 { // root, a, a/b, a/f.txt, a/out, link-file
 		t.Fatalf("n=%d err=%v seen=%v", n, err, seen)
 	}
 	for _, p := range seen {
-		if strings.HasPrefix(p, outside) {
+		if p == "secret" {
 			t.Fatalf("walked outside: %s", p)
 		}
 	}
