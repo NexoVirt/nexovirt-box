@@ -593,6 +593,12 @@
   function reloadSoon() { clearTimeout(reloadTimer); reloadTimer = setTimeout(reload, 400); }
   function cancel(u) { u.status = 'cancelled'; u.ctrl?.abort(); if (!u.ctrl) pump(); }
   function retry(u, overwrite = false) { u.status = 'queued'; u.done = 0; u.error = ''; u.overwrite = overwrite || u.overwrite; pump(); }
+  // Hide the panel a few seconds after every upload finished cleanly; failed ones keep it open.
+  $effect(() => {
+    if (!uploads.length || activeUploads || uploads.some((u) => u.status === 'failed')) return;
+    const t = setTimeout(() => { clearDone(); panelOpen = false; }, 3000);
+    return () => clearTimeout(t);
+  });
   function clearDone() { uploads = uploads.filter((u) => u.status === 'queued' || u.status === 'uploading' || u.status === 'failed'); }
 
   function sortBy(key) { sort = { key, dir: sort.key === key ? -sort.dir : 1 }; }
