@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -477,20 +478,84 @@ func TestPasswordChangeVoidsPendingTwoStepSignIn(t *testing.T) {
 	}
 }
 
-// New pending sign-ins do not give new guesses: wrong codes count per account.
-func TestTwoFactorGuessesLimitedPerAccount(t *testing.T) {
+func postFrom(h http.Handler, ip, path, body string) *httptest.ResponseRecorder {
+	req := httptest.NewRequest(http.MethodPost, "http://box.test"+path, strings.NewReader(body))
+	req.Header.Set("Origin", "http://box.test")
+	req.RemoteAddr = ip + ":1234"
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	return rec
+}
+
+// totpBox signs in, turns TOTP on and returns a function that starts a pending sign-in from ip.
+func totpBox(t *testing.T) (h http.Handler, secret string, recovery []string, pending func(ip string) string) {
+	t.Helper()
 	_, h, token := newTestApp(t)
 	sess := setupAndLogin(t, h, token)
 	var begin map[string]string
 	json.Unmarshal(post(h, "/api/2fa/totp/begin", `{"password":"long-enough-pw"}`, sess).Body.Bytes(), &begin)
-	post(h, "/api/2fa/totp/enable", `{"code":"`+totpCode(begin["secret"], uint64(time.Now().Unix()/30))+`"}`, sess)
+	var en struct {
+		RecoveryCodes []string `json:"recovery_codes"`
+	}
+	json.Unmarshal(post(h, "/api/2fa/totp/enable", `{"code":"`+totpCode(begin["secret"], uint64(time.Now().Unix()/30))+`"}`, sess).Body.Bytes(), &en)
+	return h, begin["secret"], en.RecoveryCodes, func(ip string) string {
+		var lr map[string]any
+		json.Unmarshal(postFrom(h, ip, "/api/login", `{"username":"admin","password":"long-enough-pw"}`).Body.Bytes(), &lr)
+		p, _ := lr["pending"].(string)
+		return p
+	}
+}
+
+func code2FA(h http.Handler, ip, pending, code string) int {
+	return postFrom(h, ip, "/api/login/2fa", `{"pending":"`+pending+`","code":"`+code+`"}`).Code
+}
+
+// Guessing is capped per pending sign-in, per IP and per account, while the owner (another IP)
+// still signs in and a recovery code is never held back by the TOTP limit.
+func TestTwoFactorGuessLimits(t *testing.T) {
+	h, secret, recovery, pending := totpBox(t)
+
+	// Per pending sign-in: 5 tries, spread over IPs so the IP cap does not interfere.
+	p := pending("10.1.0.1")
+	for i := 0; i < 5; i++ {
+		code2FA(h, fmt.Sprintf("10.2.0.%d", i+1), p, "000000")
+	}
+	if c := code2FA(h, "10.2.0.99", p, totpCode(secret, uint64(time.Now().Unix()/30))); c != http.StatusUnauthorized {
+		t.Fatalf("6th try on one pending sign-in: %d", c)
+	}
+
+	// Per IP: fresh pending sign-ins give no new guesses.
 	last := 0
 	for i := 0; i < 6; i++ {
-		var lr map[string]any
-		json.Unmarshal(post(h, "/api/login", `{"username":"admin","password":"long-enough-pw"}`, "").Body.Bytes(), &lr)
-		last = post(h, "/api/login/2fa", `{"pending":"`+lr["pending"].(string)+`","code":"000000"}`, "").Code
+		last = code2FA(h, "10.3.0.1", pending("10.3.0.1"), "000000")
 	}
 	if last != http.StatusTooManyRequests {
-		t.Fatalf("6th wrong code over fresh sign-ins: %d", last)
+		t.Fatalf("6th wrong code from one IP: %d", last)
+	}
+
+	// The owner on another IP signs in while that IP is blocked.
+	if c := code2FA(h, "10.4.0.1", pending("10.4.0.1"), totpCode(secret, uint64(time.Now().Unix()/30))); c != http.StatusOK {
+		t.Fatalf("owner blocked by someone else's guesses: %d", c)
+	}
+
+	// A recovery code works from the IP whose TOTP guesses are used up.
+	if c := code2FA(h, "10.3.0.1", pending("10.3.0.1"), recovery[0]); c != http.StatusOK {
+		t.Fatalf("recovery code held back by the TOTP limit: %d", c)
+	}
+}
+
+// Many IPs together still hit the per-account backstop.
+func TestTwoFactorAccountBackstop(t *testing.T) {
+	old := tfaAccountMax
+	tfaAccountMax = 8
+	t.Cleanup(func() { tfaAccountMax = old })
+	h, _, _, pending := totpBox(t)
+	limited := false
+	for i := 0; i < tfaAccountMax+10 && !limited; i++ {
+		ip := fmt.Sprintf("10.5.%d.%d", i/250, i%250+1)
+		limited = code2FA(h, ip, pending(ip), "000000") == http.StatusTooManyRequests
+	}
+	if !limited {
+		t.Fatal("guesses from many IPs were never limited")
 	}
 }

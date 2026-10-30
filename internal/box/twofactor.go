@@ -557,6 +557,34 @@ func (a *App) finishLogin(w http.ResponseWriter, r *http.Request, p *pendingLogi
 
 var errPendingGone = userError{"The sign-in took too long or had too many wrong codes. Start again with your password."}
 
+// Wrong two-step codes are limited three ways, and a correct code gives its try back:
+//   - each pending sign-in has 5 tries (takeTry);
+//   - each IP has 5 wrong codes per minute (TOTP and recovery codes counted apart);
+//   - each account has a loose backstop for TOTP guesses from many IPs. It is far above what
+//     one person types, so someone with the password cannot easily lock the owner out, and
+//     recovery codes (50 bits each) are never held back by it.
+var (
+	tfaAccountMax    = 60 // a variable for tests only
+	tfaAccountWindow = 10 * time.Minute
+)
+
+func (a *App) reserveCodeTry(r *http.Request, uid int64, recovery bool) (release func(), ok bool) {
+	ip := a.clientIP(r)
+	if recovery {
+		return a.limiter.reserve("2fa-rc:" + ip)
+	}
+	relIP, ok := a.limiter.reserve("2fa:" + ip)
+	if !ok {
+		return nil, false
+	}
+	relAcct, ok := a.tfaLimit.reserve(fmt.Sprintf("2fa-acct:%d", uid))
+	if !ok {
+		relIP()
+		return nil, false
+	}
+	return func() { relIP(); relAcct() }, true
+}
+
 func (a *App) login2FA(w http.ResponseWriter, r *http.Request) {
 	var in struct{ Pending, Code string }
 	if err := readJSON(r, &in); err != nil {
@@ -568,14 +596,12 @@ func (a *App) login2FA(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnauthorized, errPendingGone.msg)
 		return
 	}
-	// Each pending sign-in has 5 tries, but someone who knows the password can start many: the
-	// wrong codes are also counted per account, so guessing the 6 digits stays out of reach.
-	release, ok := a.limiter.reserve(fmt.Sprintf("2fa:%d", p.uid))
+	code := strings.TrimSpace(in.Code)
+	release, ok := a.reserveCodeTry(r, p.uid, strings.Contains(code, "-"))
 	if !ok {
 		writeError(w, http.StatusTooManyRequests, "Too many wrong codes. Wait a minute and try again.")
 		return
 	}
-	code := strings.TrimSpace(in.Code)
 	switch {
 	case len(strings.ReplaceAll(code, " ", "")) == 6 && totpValid(a.store.totpSecret(p.uid), code, time.Now()):
 		release()
