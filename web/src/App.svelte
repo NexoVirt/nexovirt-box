@@ -40,6 +40,8 @@
   import CommandPalette from '$lib/CommandPalette.svelte';
   import MobileHome from './MobileHome.svelte';
   import SetupAssistant from './SetupAssistant.svelte';
+  import { activeRemote, setRemote } from '$lib/remote.js';
+  import Server from '@lucide/svelte/icons/server';
 
   const themeModes = [
     { value: 'light', label: 'Light' },
@@ -80,6 +82,13 @@
   let mode = $state(theme.mode);
   let bell = $state(null), diskWarn = $state([]);
   let paletteOpen = $state(false);
+  // Several boxes: the one shown now and the list for the switcher (Settings > Network > Other boxes).
+  const remote = activeRemote();
+  let boxesOpen = $state(false), remotes = $state([]);
+  async function openBoxes() {
+    boxesOpen = !boxesOpen;
+    if (boxesOpen) { const r = await api('/api/remotes'); if (r.ok) remotes = r.data; }
+  }
   // The phone view (/mobile, where the installed web app starts); Desktop leaves it.
   let mobile = $state(location.pathname === '/mobile');
   // First sign-in: the setup assistant, once (desktop pref "onboarded").
@@ -263,6 +272,18 @@
         </Popover>
       </div>
       <button class="bar-btn" onclick={(e) => openFromBar(e, '/settings')} aria-label="Settings" title="Settings"><SettingsIcon size={18} /></button>
+      <div class="anchor">
+        <button class="bar-btn box-switch" class:on={!!remote} onclick={openBoxes} aria-haspopup="menu" aria-expanded={boxesOpen} aria-label="Box: {remote ? remote.name : 'this box'}" title="Switch box">
+          <Server size={18} />{#if remote}<span class="box-name">{remote.name}</span>{/if}
+        </button>
+        <Popover bind:open={boxesOpen} label="Boxes" left>
+          <button class="pop-item" role="menuitem" onclick={() => setRemote(null)}>{#if !remote}<span class="dot ok"></span>{/if}This box</button>
+          {#each remotes as r (r.id)}
+            <button class="pop-item" role="menuitem" onclick={() => setRemote(r)}>{#if remote?.id === r.id}<span class="dot ok"></span>{/if}{r.name}</button>
+          {/each}
+          <button class="pop-item" role="menuitem" onclick={(e) => { boxesOpen = false; openFromBar(e, '/settings/network'); }}>Add a box</button>
+        </Popover>
+      </div>
       <button class="bar-btn" onclick={(e) => openFromBar(e, '/console')} aria-label="Terminal" title="Terminal"><SquareTerminal size={18} /></button>
       <button class="bar-btn" onclick={() => (paletteOpen = true)} aria-label="Search (Ctrl+K)" title="Search (Ctrl+K)"><SearchIcon size={18} /></button>
     </div>
@@ -346,6 +367,8 @@
   }
   .bar-btn:hover, .bar-btn[aria-expanded='true'] { background: var(--fill); }
   .bar-btn:active { transform: scale(0.92); }
+  .box-switch.on { width: auto; padding: 0 0.875rem; gap: 0.375rem; display: inline-flex; border-radius: 999px; color: var(--accent); }
+  .box-name { font-weight: 600; font-size: 0.8125rem; }
   .avatar {
     display: grid; place-items: center; width: 1.875rem; height: 1.875rem; border-radius: 50%;
     background: var(--accent); color: var(--on-accent); font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.03em;

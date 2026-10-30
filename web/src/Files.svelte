@@ -10,6 +10,7 @@
   import { kindOf, PREVIEW_IMAGE, PREVIEW_TEXT } from '$lib/fileKinds.js';
   import Dialog from '$lib/Dialog.svelte';
   import TrashDialog from './TrashDialog.svelte';
+  import { apiPath } from '$lib/remote.js';
   import StorageDialog from './StorageDialog.svelte';
   import VersionsDialog from './VersionsDialog.svelte';
   import HistoryIcon from '@lucide/svelte/icons/history';
@@ -89,7 +90,7 @@
   const join = (dir, name) => (dir.endsWith('/') ? dir : dir + '/') + name;
   const parentOf = (p) => p.slice(0, p.lastIndexOf('/')) || '/';
   const baseOf = (p) => p.slice(p.lastIndexOf('/') + 1);
-  const fileURL = (p, inline) => `/api/files/download?path=${encodeURIComponent(p)}${inline ? '&inline=1' : ''}`;
+  const fileURL = (p, inline) => apiPath(`/api/files/download?path=${encodeURIComponent(p)}${inline ? '&inline=1' : ''}`);
   const within = (p, r) => p === r || p.startsWith(r.endsWith('/') ? r : r + '/');
 
   const root = $derived(places.map((p) => p.path).filter((r) => path && within(path, r)).sort((a, b) => b.length - a.length)[0] || '');
@@ -262,7 +263,7 @@
     const a = document.createElement('a');
     a.href = list.length === 1 && !list[0].dir
       ? fileURL(join(path, list[0].name), false)
-      : '/api/files/zip?' + list.map((e) => 'path=' + encodeURIComponent(join(path, e.name))).join('&');
+      : apiPath('/api/files/zip?') + list.map((e) => 'path=' + encodeURIComponent(join(path, e.name))).join('&');
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -455,7 +456,7 @@
   // "Download this folder" zips the current folder itself.
   function downloadFolder() {
     const a = document.createElement('a');
-    a.href = '/api/files/zip?path=' + encodeURIComponent(path);
+    a.href = apiPath('/api/files/zip?path=' + encodeURIComponent(path));
     document.body.appendChild(a);
     a.click();
     a.remove();

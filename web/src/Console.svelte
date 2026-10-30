@@ -1,5 +1,6 @@
 <script>
   import { onMount, tick } from 'svelte';
+  import { activeRemote } from '$lib/remote.js';
   import { Terminal } from '@xterm/xterm';
   import { FitAddon } from '@xterm/addon-fit';
   import '@xterm/xterm/css/xterm.css';
@@ -93,7 +94,11 @@
     };
   }
 
+  // The terminal is always this box's own: while another box is chosen it is not offered.
+  const remote = activeRemote();
+
   onMount(() => {
+    if (remote) return;
     term = new Terminal({
       cursorBlink: true,
       fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace',
@@ -121,6 +126,11 @@
   });
 </script>
 
+{#if remote}
+<div class="page">
+  <div class="notice">The terminal opens only on the box itself. You are looking at {remote.name}; switch back to this box in the top bar to use its terminal.</div>
+</div>
+{:else}
 <div class="page fill console">
   <header class="page-head">
     <div>
@@ -166,6 +176,7 @@
     {/if}
   </div>
 </div>
+{/if}
 
 <style>
   h2, p { margin: 0; }

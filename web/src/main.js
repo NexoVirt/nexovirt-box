@@ -1,6 +1,9 @@
 import './app.css';
 import { mount } from 'svelte';
 import App from './App.svelte';
+import { installRemoteRouting } from './lib/remote.js';
+
+installRemoteRouting();
 
 mount(App, { target: document.getElementById('app') });
 

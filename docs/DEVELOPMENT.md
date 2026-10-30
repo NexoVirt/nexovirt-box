@@ -246,6 +246,20 @@ embedded.
   job, because jobs keep their results) and not stored. Turning the VPN on and adding a device need a password proof
   checked by the helper; peers are loaded with `wg syncconf` without dropping connections. Behind NAT (public address
   differs from the LAN address) Settings shows the port forward to set on the router. Audited `vpn.*`.
+- Several boxes (`remote.go`, `lib/remote.js`, Settings > Network > Other boxes, box switcher in the top bar): on the box
+  to add, "Create pairing token" (`POST /api/pairing` {name, scope full|read}, password proof, audited) shows a token
+  `nxbp_...` once (stored as sha256 in `pair_tokens`) and the box's certificate fingerprint. On the main box,
+  `POST /api/remotes` (password proof) takes address, token and fingerprint, checks that the other box presents exactly
+  that certificate and accepts the token, then stores the token sealed (AES-GCM, `<state>/remote.key`). The main box
+  proxies `/api/remote/<id>/<path>` (requireAuth, `httputil.ReverseProxy`, cookies/Origin dropped, `Set-Cookie`
+  removed, streaming for the stats stream, 64 MB bodies) to `https://<other>/api/<path>` with the token over TLS pinned
+  to the stored fingerprint; the browser only talks to its own box. On the other box `remoteAuth` (before `sameOrigin`;
+  a header token carries no cookie, so no CSRF) maps the token to its creator for allowed paths only: `remoteDenied`
+  refuses sign-in, account, 2FA, sessions, console, pairing, remotes and desktop, dot segments, and for `read` every
+  write plus app credentials, compose files and file contents; actions needing a password proof stay refused (a token
+  has none); wrong tokens count against the 5/min limiter. In the page, choosing a box (sessionStorage) routes every
+  `fetch`/`EventSource` to `/api/remote/<id>/...` (except the local-only paths); the terminal is not offered for
+  another box.
 - Network overview (`netoverview.go`, Settings > Network > Devices and ports, `GET /api/network/overview`; POST = scan,
   audited `network.sweep`): helper `network_overview` reads the neighbor table (`ip -j neigh`, Docker bridges and failed
   entries left out, names by reverse DNS), optionally after pinging every address of the box's own /24 once (32 at a
