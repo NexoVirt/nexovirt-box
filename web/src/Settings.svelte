@@ -2,6 +2,7 @@
   import DataTable from '$lib/DataTable.svelte';
   import { onMount } from 'svelte';
   import { api } from '$lib/api.js';
+  import { withProof } from '$lib/proof.svelte.js';
   import { toast } from '$lib/toast.svelte.js';
   import { createPasskey, friendly, passkeysSupported } from '$lib/webauthn.js';
   import { ago } from '$lib/format.js';
@@ -213,7 +214,8 @@
   async function saveRoots(e) {
     e.preventDefault();
     rootsBusy = true;
-    const res = await api('/api/files/roots', { method: 'POST', body: { roots } });
+    const res = await withProof(() => api('/api/files/roots', { method: 'POST', body: { roots } }));
+    if (res.cancelled) { rootsBusy = false; return; }
     rootsBusy = false;
     if (!res.ok) return toast(res.error, 'error', 8000);
     roots = res.data.roots.join('\n');

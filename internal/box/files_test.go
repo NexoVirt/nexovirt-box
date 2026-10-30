@@ -162,3 +162,37 @@ func TestFilesCopyZipSizeStayInside(t *testing.T) {
 		t.Fatal("created a folder through a link outside")
 	}
 }
+
+// Box's own app files and the folders root runs programs from are never shown, so the file
+// actions (which run as root) cannot change what Box or the system runs.
+func TestFilesHideBoxAndSystemFiles(t *testing.T) {
+	apps := "/var/lib/nexovirt-box/apps"
+	for p, hidden := range map[string]bool{
+		"/var/lib/nexovirt-box":              false,
+		apps:                                 false,
+		apps + "/web1":                       false,
+		apps + "/web1/data":                  false,
+		apps + "/web1/data/x/compose.yaml":   false,
+		apps + "/web1/compose.yaml":          true,
+		apps + "/web1/app.json":              true,
+		apps + "/web1/.env":                  true,
+		"/var/lib/nexovirt-box/web/box.db":   true,
+		"/var/lib/nexovirt-box/shared/media": false,
+		"/var/lib/nexovirt-box-other/x":      false,
+		"/home/me/file":                      false,
+	} {
+		if got := boxHidden(p, apps); got != hidden {
+			t.Errorf("boxHidden(%s) = %v", p, got)
+		}
+	}
+	roots := []rootInfo{{"/", "/"}}
+	for _, p := range []string{"/usr/local/bin/x", "/var/spool/cron/crontabs/root", "/lib/systemd/system/x.service", "/var/lib/docker/x", apps + "/web1/app.json"} {
+		if _, ok := visibleIn(p, p, roots, filesConfig{appsDir: apps}); ok {
+			t.Errorf("%s is visible", p)
+		}
+	}
+	h := &helperServer{appsDir: t.TempDir(), webState: t.TempDir(), proofs: newProofKeeper()}
+	if _, err := h.filesRootsSet(helperRequest{Path: "/home"}, func(string) {}); err == nil {
+		t.Fatal("shown folders changed without a password proof")
+	}
+}
