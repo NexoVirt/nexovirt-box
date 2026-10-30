@@ -35,6 +35,7 @@
   import FolderTree from '@lucide/svelte/icons/folder-tree';
   import NotifySettings from './NotifySettings.svelte';
   import LocalNames from './LocalNames.svelte';
+  import VpnSettings from './VpnSettings.svelte';
   import WallpaperSettings from './WallpaperSettings.svelte';
   import ThemeSettings from './ThemeSettings.svelte';
 
@@ -547,6 +548,7 @@
             </section>
           {/if}
           <LocalNames {onSessionLost} />
+          <VpnSettings {onSessionLost} />
 
         {:else if tab === 'updates'}
           <section class="group">

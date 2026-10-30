@@ -225,6 +225,17 @@ embedded.
   include the drop-ins, checked with `sshd -t` and reloaded, any failure restores the previous file; automatic updates
   use the existing action. Firewall, OS updates, exposed apps and 2FA are links (no automatic change). Audited
   `security.fix`.
+- VPN (`vpn.go`, Settings > Network > VPN, `GET|POST /api/vpn`, `POST /api/vpn/clients`, `.../clients/revoke`): WireGuard
+  interface `nxbox0` through `wg-quick@nxbox0` (wireguard-tools installed on the admin's switch, `pkg_install` op
+  `wireguard`). Box writes only `/etc/wireguard/nxbox0.conf` (0600, the server key never leaves it),
+  `/etc/nexovirt-box/vpn.json` (public keys, names, addresses), `/etc/nexovirt-box/vpn.nft` (table `inet nxbox_vpn`:
+  traffic from the VPN may go to the LAN only, masqueraded so LAN devices answer; Docker's FORWARD drop is passed with two
+  `DOCKER-USER` rules added and removed by the interface) and `net.ipv4.ip_forward` in /etc/sysctl.d. The VPN subnet is a
+  free /24 (10.88.N, then 172.30.N, then 192.168.200+). Clients get a split tunnel (`AllowedIPs` = VPN subnet + LAN, no
+  internet through the box); their private key is made in the helper, returned once with a QR code (direct call, never a
+  job, because jobs keep their results) and not stored. Turning the VPN on and adding a device need a password proof
+  checked by the helper; peers are loaded with `wg syncconf` without dropping connections. Behind NAT (public address
+  differs from the LAN address) Settings shows the port forward to set on the router. Audited `vpn.*`.
 - Local names (`localnames.go`, Settings > Network, `GET|POST /api/local-names`, audited `localnames.on|off`):
   mDNS through Avahi (installed on the admin's switch via `pkg_install` op `avahi` = avahi-daemon + avahi-utils).
   Helper actions `local_names_status`, `local_names_set`; Box writes only `/etc/nexovirt-box/localnames.{json,sh}` and
