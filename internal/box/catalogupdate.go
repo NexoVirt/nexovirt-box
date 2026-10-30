@@ -46,6 +46,21 @@ func socketGate(meta *installedApp, app *catalog.App, allow bool, proofOK func()
 	return true, nil
 }
 
+// installSocketCheck: an app marked docker_socket installs only after the admin agreed in the
+// install form AND entered the password (Docker access is control of the whole server).
+func installSocketCheck(app *catalog.App, allow bool, proofOK func() bool) error {
+	if !app.DockerSocket {
+		return nil
+	}
+	if !allow {
+		return uerr("%s needs access to Docker. Confirm that in the install form first.", app.Name)
+	}
+	if !proofOK() {
+		return uerr("Enter your password to allow Docker access.")
+	}
+	return nil
+}
+
 // Simplification: one cached catalog for status polls (60 s), the update itself loads it fresh.
 var catCache struct {
 	sync.Mutex
