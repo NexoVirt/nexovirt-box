@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/shirou/gopsutil/v4/disk"
+	"golang.org/x/sys/unix"
 )
 
 type filesConfig struct {
@@ -221,35 +222,31 @@ func checkName(p string) error {
 	return nil
 }
 
-// ownLikeParent gives new files the owner of their folder (Box runs as root).
-func ownLikeParent(p string) {
-	if st, err := os.Stat(filepath.Dir(p)); err == nil {
-		if s, ok := st.Sys().(*syscall.Stat_t); ok {
-			os.Lchown(p, int(s.Uid), int(s.Gid))
-		}
-	}
-}
-
 func (h *helperServer) filesMkdir(req helperRequest, logf func(string)) (any, error) {
 	if err := checkName(req.Path); err != nil {
 		return nil, err
 	}
-	real, _, err := h.resolve(req.Path, false)
+	real, r, err := h.resolve(req.Path, false)
 	if err != nil {
 		return nil, err
 	}
-	if err := os.Mkdir(real, 0o755); err != nil {
-		if errors.Is(err, fs.ErrExist) && req.Op == "exist_ok" {
-			if st, serr := os.Lstat(real); serr == nil && st.IsDir() {
+	fd, name, err := beneath(r, real)
+	if err != nil {
+		return nil, err
+	}
+	defer unix.Close(fd)
+	if err := unix.Mkdirat(fd, name, 0o755); err != nil {
+		if errors.Is(err, unix.EEXIST) && req.Op == "exist_ok" {
+			if st, serr := lstatAt(fd, name); serr == nil && isDirMode(uint32(st.Mode)) {
 				return map[string]bool{"ok": true}, nil
 			}
 		}
-		if errors.Is(err, fs.ErrExist) {
+		if errors.Is(err, unix.EEXIST) {
 			return nil, uerr("Something with this name already exists.")
 		}
 		return nil, uerr("The folder could not be created.")
 	}
-	ownLikeParent(real)
+	ownLikeParentAt(fd, name)
 	return map[string]bool{"ok": true}, nil
 }
 
@@ -264,18 +261,28 @@ func (h *helperServer) filesRename(req helperRequest, logf func(string)) (any, e
 	if from == r.real {
 		return nil, uerr("A top folder cannot be renamed or moved.")
 	}
-	to, _, err := h.resolve(req.Path2, false)
+	to, r2, err := h.resolve(req.Path2, false)
 	if err != nil {
 		return nil, err
-	}
-	if _, err := os.Lstat(to); err == nil {
-		return nil, uerr("Something with this name already exists there.")
 	}
 	if strings.HasPrefix(to, from+"/") {
 		return nil, uerr("A folder cannot be moved into itself.")
 	}
-	if err := os.Rename(from, to); err != nil {
-		return nil, uerr("It could not be moved: %v", errors.Unwrap(err))
+	ffd, fname, err := beneath(r, from)
+	if err != nil {
+		return nil, err
+	}
+	defer unix.Close(ffd)
+	tfd, tname, err := beneath(r2, to)
+	if err != nil {
+		return nil, err
+	}
+	defer unix.Close(tfd)
+	if err := renameNoReplace(ffd, fname, tfd, tname); err != nil {
+		if errors.Is(err, unix.EEXIST) {
+			return nil, uerr("Something with this name already exists there.")
+		}
+		return nil, uerr("It could not be moved: %v", err)
 	}
 	return map[string]bool{"ok": true}, nil
 }
@@ -293,7 +300,12 @@ func (h *helperServer) filesDelete(req helperRequest, logf func(string)) (any, e
 	if target == r.real || !strings.HasPrefix(target, strings.TrimSuffix(r.real, "/")+"/") {
 		return nil, uerr("A top folder cannot be deleted.")
 	}
-	if _, err := os.Lstat(target); err != nil {
+	fd, name, err := beneath(r, target)
+	if err != nil {
+		return nil, err
+	}
+	defer unix.Close(fd)
+	if _, err := lstatAt(fd, name); err != nil {
 		return nil, uerr("This file or folder does not exist.")
 	}
 	if req.Op != "permanent" {
@@ -303,7 +315,7 @@ func (h *helperServer) filesDelete(req helperRequest, logf func(string)) (any, e
 		}
 		return map[string]any{"ok": true, "trash": it.ID}, nil
 	}
-	if err := os.RemoveAll(target); err != nil {
+	if err := removeAllAt(fd, name); err != nil {
 		return nil, uerr("It could not be deleted completely.")
 	}
 	return map[string]bool{"ok": true}, nil
@@ -311,27 +323,30 @@ func (h *helperServer) filesDelete(req helperRequest, logf func(string)) (any, e
 
 // filesOpenRead opens a regular file (not following a final symlink) for the web process.
 func (h *helperServer) filesOpenRead(req helperRequest) (any, *os.File, error) {
-	real, _, err := h.resolve(req.Path, true)
+	real, r, err := h.resolve(req.Path, true)
 	if err != nil {
 		return nil, nil, err
 	}
-	f, err := os.OpenFile(real, os.O_RDONLY|syscall.O_NOFOLLOW, 0)
+	fd, name, err := beneath(r, real)
 	if err != nil {
-		return nil, nil, uerr("This file cannot be read.")
+		return nil, nil, err
+	}
+	defer unix.Close(fd)
+	f, err := openFileAt(fd, name)
+	if err != nil {
+		return nil, nil, uerr("Only files can be downloaded.")
 	}
 	st, err := f.Stat()
-	if err != nil || !st.Mode().IsRegular() {
+	if err != nil {
 		f.Close()
-		return nil, nil, uerr("Only files can be downloaded.")
+		return nil, nil, uerr("This file cannot be read.")
 	}
 	return map[string]any{"size": st.Size(), "name": filepath.Base(real), "mtime": st.ModTime().Unix()}, f, nil
 }
 
 var uploadIDRe = regexp.MustCompile(`^[a-f0-9]{16}$`)
 
-func uploadTemp(target, id string) string {
-	return filepath.Join(filepath.Dir(target), ".nxbox-upload-"+id)
-}
+func uploadTempName(id string) string { return ".nxbox-upload-" + id }
 
 // filesOpenWrite opens the temp file of an upload (created on the first chunk).
 func (h *helperServer) filesOpenWrite(req helperRequest) (any, *os.File, error) {
@@ -341,19 +356,30 @@ func (h *helperServer) filesOpenWrite(req helperRequest) (any, *os.File, error) 
 	if !uploadIDRe.MatchString(req.ID) {
 		return nil, nil, uerr("The upload is not valid.")
 	}
-	real, _, err := h.resolve(req.Path, false)
+	real, r, err := h.resolve(req.Path, false)
 	if err != nil {
 		return nil, nil, err
 	}
-	flags := os.O_WRONLY | os.O_CREATE | syscall.O_NOFOLLOW
-	if req.Offset == 0 {
-		flags |= os.O_TRUNC
+	dfd, _, err := beneath(r, real)
+	if err != nil {
+		return nil, nil, err
 	}
-	f, err := os.OpenFile(uploadTemp(real, req.ID), flags, 0o644)
+	defer unix.Close(dfd)
+	flags := unix.O_WRONLY | unix.O_CREAT | unix.O_NOFOLLOW | unix.O_NONBLOCK | unix.O_CLOEXEC
+	if req.Offset == 0 {
+		flags |= unix.O_TRUNC
+	}
+	fd, err := unix.Openat(dfd, uploadTempName(req.ID), flags, 0o644)
 	if err != nil {
 		return nil, nil, uerr("The file cannot be written here.")
 	}
-	return map[string]bool{"ok": true}, f, nil
+	var st unix.Stat_t
+	if unix.Fstat(fd, &st) != nil || st.Mode&unix.S_IFMT != unix.S_IFREG {
+		unix.Close(fd)
+		return nil, nil, uerr("The file cannot be written here.")
+	}
+	unix.SetNonblock(fd, false)
+	return map[string]bool{"ok": true}, os.NewFile(uintptr(fd), "upload"), nil
 }
 
 func (h *helperServer) filesUploadFinish(req helperRequest, logf func(string)) (any, error) {
@@ -363,31 +389,41 @@ func (h *helperServer) filesUploadFinish(req helperRequest, logf func(string)) (
 	if !uploadIDRe.MatchString(req.ID) {
 		return nil, uerr("The upload is not valid.")
 	}
-	real, _, err := h.resolve(req.Path, false)
+	real, r, err := h.resolve(req.Path, false)
 	if err != nil {
 		return nil, err
 	}
-	tmp := uploadTemp(real, req.ID)
+	fd, name, err := beneath(r, real)
+	if err != nil {
+		return nil, err
+	}
+	defer unix.Close(fd)
+	tmp := uploadTempName(req.ID)
 	if req.Op == "abort" {
-		os.Remove(tmp)
+		unix.Unlinkat(fd, tmp, 0)
 		return map[string]bool{"ok": true}, nil
 	}
-	if st, err := os.Lstat(real); err == nil {
-		if !req.Overwrite || st.IsDir() {
-			os.Remove(tmp)
-			return nil, uerr("%s already exists.", filepath.Base(real))
+	replace := false
+	if st, err := lstatAt(fd, name); err == nil {
+		if !req.Overwrite || st.Mode&unix.S_IFMT != unix.S_IFREG {
+			unix.Unlinkat(fd, tmp, 0)
+			return nil, uerr("%s already exists.", name)
 		}
-		if _, r, err := h.resolve(filepath.Dir(real), true); err == nil {
-			if err := keepVersion(r, real, ""); err != nil { // the replaced file stays as a version (versions.go)
-				log.Printf("files: keep version of %s: %v", real, err)
-			}
+		if err := keepVersion(r, real, ""); err != nil { // the replaced file stays as a version (versions.go)
+			log.Printf("files: keep version of %s: %v", real, err)
 		}
+		replace = true
 	}
-	if err := os.Rename(tmp, real); err != nil {
-		os.Remove(tmp)
+	if replace {
+		err = unix.Renameat(fd, tmp, fd, name)
+	} else {
+		err = renameNoReplace(fd, tmp, fd, name)
+	}
+	if err != nil {
+		unix.Unlinkat(fd, tmp, 0)
 		return nil, uerr("The upload could not be saved.")
 	}
-	ownLikeParent(real)
+	ownLikeParentAt(fd, name)
 	return map[string]bool{"ok": true}, nil
 }
 
@@ -432,47 +468,34 @@ func (h *helperServer) filesCopy(req helperRequest, logf func(string)) (any, err
 	if err := checkName(req.Path2); err != nil {
 		return nil, err
 	}
-	from, _, err := h.resolve(req.Path, true)
+	from, r, err := h.resolve(req.Path, true)
 	if err != nil {
 		return nil, err
 	}
-	to, _, err := h.resolve(req.Path2, false)
+	to, r2, err := h.resolve(req.Path2, false)
 	if err != nil {
 		return nil, err
-	}
-	if _, err := os.Lstat(to); err == nil {
-		return nil, uerr("Something with this name already exists there.")
 	}
 	if to == from || strings.HasPrefix(to, from+"/") {
 		return nil, uerr("A folder cannot be copied into itself.")
 	}
-	err = filepath.WalkDir(from, func(p string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		dst := filepath.Join(to, strings.TrimPrefix(p, from))
-		info, err := d.Info()
-		if err != nil {
-			return err
-		}
-		switch {
-		case d.Type()&fs.ModeSymlink != 0:
-			link, err := os.Readlink(p)
-			if err != nil {
-				return err
-			}
-			return os.Symlink(link, dst)
-		case d.IsDir():
-			return os.Mkdir(dst, info.Mode().Perm())
-		case info.Mode().IsRegular():
-			return copyTreeFile(p, dst, info.Mode().Perm())
-		}
-		return nil // sockets, devices and pipes are skipped
-	})
+	sfd, sname, err := beneath(r, from)
 	if err != nil {
-		return nil, uerr("It could not be copied completely: %v", errors.Unwrap(err))
+		return nil, err
 	}
-	ownLikeParent(to)
+	defer unix.Close(sfd)
+	dfd, dname, err := beneath(r2, to)
+	if err != nil {
+		return nil, err
+	}
+	defer unix.Close(dfd)
+	if _, err := lstatAt(dfd, dname); err == nil {
+		return nil, uerr("Something with this name already exists there.")
+	}
+	if err := copyAt(sfd, sname, dfd, dname); err != nil {
+		return nil, uerr("It could not be copied completely: %v", err)
+	}
+	ownLikeParentAt(dfd, dname)
 	return map[string]bool{"ok": true}, nil
 }
 
@@ -495,27 +518,28 @@ func copyTreeFile(src, dst string, perm fs.FileMode) error {
 
 // filesSize adds up a folder (for the info panel). It stops after 20 s or 2 million entries.
 func (h *helperServer) filesSize(req helperRequest, logf func(string)) (any, error) {
-	real, _, err := h.resolve(req.Path, true)
+	real, r, err := h.resolve(req.Path, true)
 	if err != nil {
 		return nil, err
 	}
 	var size, files, dirs int64
 	deadline := time.Now().Add(20 * time.Second)
 	partial := false
-	filepath.WalkDir(real, func(p string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return nil
-		}
+	start, name, err := openStart(r, real)
+	if err != nil {
+		return nil, err
+	}
+	defer unix.Close(start)
+	walkAt(start, name, "", func(_ int, _, _ string, st unix.Stat_t) error {
 		if files+dirs > 2_000_000 || time.Now().After(deadline) {
 			partial = true
-			return filepath.SkipAll
+			return errStopWalk
 		}
-		if d.IsDir() {
+		switch st.Mode & unix.S_IFMT {
+		case unix.S_IFDIR:
 			dirs++
-			return nil
-		}
-		if info, err := d.Info(); err == nil && info.Mode().IsRegular() {
-			size += info.Size()
+		case unix.S_IFREG:
+			size += st.Size
 			files++
 		}
 		return nil
@@ -526,58 +550,74 @@ func (h *helperServer) filesSize(req helperRequest, logf func(string)) (any, err
 // filesZip streams a zip of one or more paths (newline separated in Path) through a pipe.
 // Symlinks are left out of the archive, so it only ever contains files inside the allowed folders.
 func (h *helperServer) filesZip(req helperRequest) (any, *os.File, error) {
+	type zipItem struct {
+		fd         int
+		name, real string // real: the name shown in the zip
+	}
 	var paths []string
+	var items []zipItem
+	closeAll := func() {
+		for _, it := range items {
+			unix.Close(it.fd)
+		}
+	}
 	for _, p := range strings.Split(req.Path, "\n") {
 		if p = strings.TrimSpace(p); p == "" {
 			continue
 		}
-		real, _, err := h.resolve(p, true)
+		real, r, err := h.resolve(p, true)
+		var fd int
+		var name string
+		if err == nil {
+			fd, name, err = openStart(r, real)
+		}
 		if err != nil {
+			closeAll()
 			return nil, nil, err
 		}
+		items = append(items, zipItem{fd, name, filepath.Base(real)})
 		paths = append(paths, real)
 	}
 	if len(paths) == 0 || len(paths) > 1000 {
+		closeAll()
 		return nil, nil, uerr("Choose what to download.")
 	}
 	pr, pw, err := os.Pipe()
 	if err != nil {
+		closeAll()
 		return nil, nil, err
 	}
 	go func() {
 		defer pw.Close()
+		defer closeAll()
 		zw := zip.NewWriter(pw)
 		defer zw.Close()
-		for _, root := range paths {
-			base := filepath.Dir(root)
-			filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
-				if err != nil || d.Type()&fs.ModeSymlink != 0 {
-					return nil
+		for _, it := range items {
+			walkAt(it.fd, it.name, it.real, func(parent int, name, rel string, st unix.Stat_t) error {
+				switch st.Mode & unix.S_IFMT {
+				case unix.S_IFDIR:
+					_, err := zw.Create(rel + "/")
+					return err
+				case unix.S_IFREG:
+				default:
+					return nil // links, sockets, devices and pipes are left out
 				}
-				name := strings.TrimPrefix(p, base+"/")
-				info, err := d.Info()
+				f, err := openFileAt(parent, name)
 				if err != nil {
 					return nil
 				}
-				if d.IsDir() {
-					_, err = zw.Create(name + "/")
-					return err
-				}
-				if !info.Mode().IsRegular() {
+				defer f.Close()
+				info, err := f.Stat()
+				if err != nil {
 					return nil
 				}
 				hdr, _ := zip.FileInfoHeader(info)
-				hdr.Name, hdr.Method = name, zip.Deflate
+				hdr.Name, hdr.Method = rel, zip.Deflate
 				w, err := zw.CreateHeader(hdr)
 				if err != nil {
 					return err
 				}
-				f, err := os.OpenFile(p, os.O_RDONLY|syscall.O_NOFOLLOW, 0)
-				if err != nil {
-					return nil
-				}
 				_, err = io.Copy(w, f)
-				f.Close()
 				return err // a closed pipe (browser gone) stops the walk
 			})
 		}
