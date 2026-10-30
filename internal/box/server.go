@@ -109,6 +109,8 @@ func (a *App) routeTable() []route {
 		{"POST /api/proxy/remove", false, a.proxyRemove},
 		{"POST /api/apps/{id}/domain", false, a.appDomain},
 		{"GET /api/local-names", false, a.localNamesGet},
+		{"GET /api/security/check", false, a.securityCheck},
+		{"POST /api/security/fix", false, a.securityFix},
 		{"POST /api/local-names", false, a.localNamesSave},
 		{"GET /api/firewall", false, a.firewallStatus},
 		{"POST /api/firewall", false, a.firewallApply},
