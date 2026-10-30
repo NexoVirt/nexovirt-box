@@ -22,6 +22,8 @@ export const WIDGETS = {
   storage: 'Storage',
   network: 'Network',
   disks: 'Disk health (only when a disk needs attention)',
+  apps: 'App status',
+  weather: 'Weather (Open-Meteo, no account needed)',
 };
 
 // preview: a theme being edited in Settings, shown live until it is saved or left.

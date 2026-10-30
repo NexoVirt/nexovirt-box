@@ -44,7 +44,11 @@ embedded.
 - Shell (desktop, since 2026-10-29): NO sidebar. `App.svelte` = slim translucent top bar (`.glass.blur`, the only
   blurred desktop surface; left: account popover with appearance + sign out, Settings, Terminal; right: activity bell
   (solid popover: disk warnings + last 6 audit entries + "All activity"), theme toggle) over `Desktop.svelte`
-  (wallpaper layer, left widgets `desktop/Widgets.svelte` + `desktop/ClockWidget.svelte`, right search + "System"
+  (wallpaper layer, left widgets `desktop/Widgets.svelte` + `desktop/ClockWidget.svelte` (clock, system, storage, network, disk warning, app status,
+  weather; each can be dragged by its grip to any spot, saved as `x`/`y` in the widget prefs, ignored on phones; "Put all
+  widgets back in the column" in Edit widgets. Weather: Open-Meteo without an API key, fetched by the server only for the
+  place the user picked (`GET /api/widgets/weather`, cached 20 min; place search `GET /api/widgets/weather/places`),
+  attribution shown in the widget), right search + "System"
   dock (Apps, Files, Monitor, Terminal, Backups, Settings; Apps opens the Apps window with Installed and App Store tabs plus "Add your own app" and "Check for updates") + "Apps" grid of installed apps, each shown once). Tiles: click opens
   (apps in a new tab, Box tools as windows), right-click/long-press menu (open, start/stop/restart, logs, backups,
   settings, move, uninstall; system tiles: open, move, hide), drag to reorder inside its group (touch: long press, then

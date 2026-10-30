@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 // Desktop layout per user: wallpaper, widgets and the order of the tiles on the desktop.
@@ -19,6 +20,15 @@ import (
 type widgetPref struct {
 	ID string `json:"id"`
 	On bool   `json:"on"`
+	X  *int   `json:"x,omitempty"` // placed freely on the desktop (px from the left), nil = in the column
+	Y  *int   `json:"y,omitempty"`
+}
+
+// weatherPrefs is the place of the weather widget (Open-Meteo, no API key; widgets.go).
+type weatherPrefs struct {
+	Name string  `json:"name"`
+	Lat  float64 `json:"lat"`
+	Lon  float64 `json:"lon"`
 }
 
 type clockPrefs struct {
@@ -37,13 +47,14 @@ type desktopPrefs struct {
 	Order     []string     `json:"order"`  // tile ids: app ids and sys-* tiles
 	Hidden    []string     `json:"hidden"` // hidden system tiles
 	Clock     clockPrefs   `json:"clock"`
+	Weather   weatherPrefs `json:"weather"`
 	Theme     *themePrefs  `json:"theme,omitempty"`
 	CustomV   int64        `json:"custom_v"`
 }
 
 var (
 	wallpapers = map[string]bool{"auto": true, "graphite": true, "midnight": true, "mist": true, "sand": true, "forest": true, "dunes": true, "hills": true, "custom": true}
-	widgetIDs  = map[string]bool{"clock": true, "system": true, "storage": true, "network": true, "disks": true}
+	widgetIDs  = map[string]bool{"clock": true, "system": true, "storage": true, "network": true, "disks": true, "apps": true, "weather": true}
 	tileID     = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,62}$`)
 	tzName     = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9_+-]*(/[A-Za-z0-9_+-]+){0,2}$`)
 	clockEnums = map[string]map[string]bool{
@@ -57,8 +68,9 @@ const maxWallpaper = 8 << 20
 
 func defaultDesktop() desktopPrefs {
 	return desktopPrefs{Wallpaper: "auto", Dim: 0, Blur: 0, Order: []string{}, Hidden: []string{},
-		Clock:   clockPrefs{Style: "large", Hours: "auto", Date: "long", Greeting: true},
-		Widgets: []widgetPref{{"clock", true}, {"system", true}, {"storage", true}, {"network", true}, {"disks", true}}}
+		Clock: clockPrefs{Style: "large", Hours: "auto", Date: "long", Greeting: true},
+		Widgets: []widgetPref{{ID: "clock", On: true}, {ID: "system", On: true}, {ID: "storage", On: true}, {ID: "network", On: true},
+			{ID: "disks", On: true}, {ID: "apps", On: false}, {ID: "weather", On: false}}}
 }
 
 func (p *desktopPrefs) validate() error {
@@ -75,6 +87,9 @@ func (p *desktopPrefs) validate() error {
 	if c.TZ2 != "" && (len(c.TZ2) > 64 || !tzName.MatchString(c.TZ2)) {
 		return userError{"Pick a time zone from the list."}
 	}
+	if wt := p.Weather; wt.Lat < -90 || wt.Lat > 90 || wt.Lon < -180 || wt.Lon > 180 || utf8.RuneCountInString(wt.Name) > 80 || controlChar.MatchString(wt.Name) {
+		return userError{"Pick a place from the list."}
+	}
 	if p.Theme != nil {
 		if err := p.Theme.validate(); err != nil {
 			return err
@@ -84,6 +99,9 @@ func (p *desktopPrefs) validate() error {
 	for _, w := range p.Widgets {
 		if !widgetIDs[w.ID] || seen[w.ID] {
 			return userError{"Unknown widget: " + w.ID}
+		}
+		if (w.X == nil) != (w.Y == nil) || (w.X != nil && (*w.X < 0 || *w.X > 20000 || *w.Y < 0 || *w.Y > 20000)) {
+			return userError{"The widget position is not valid."}
 		}
 		seen[w.ID] = true
 	}

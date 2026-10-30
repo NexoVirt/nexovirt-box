@@ -99,6 +99,8 @@ func (a *App) routeTable() []route {
 		{"POST /api/desktop", false, a.desktopSave},
 		{"GET /api/desktop/wallpaper", false, a.wallpaperGet},
 		{"POST /api/desktop/wallpaper", false, a.wallpaperUpload},
+		{"GET /api/widgets/weather", false, a.weather},
+		{"GET /api/widgets/weather/places", false, a.weatherPlaces},
 		{"GET /api/updates", false, a.updatesGet},
 		{"POST /api/updates/check", false, a.updatesCheck},
 		{"POST /api/updates/box/apply", false, a.boxUpdateApply},

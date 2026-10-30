@@ -14,8 +14,66 @@
   import Thermometer from '@lucide/svelte/icons/thermometer';
   import ChevronRight from '@lucide/svelte/icons/chevron-right';
   import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
+  import GripVertical from '@lucide/svelte/icons/grip-vertical';
+  import Sun from '@lucide/svelte/icons/sun';
+  import MoonIcon from '@lucide/svelte/icons/moon';
+  import Cloud from '@lucide/svelte/icons/cloud';
+  import CloudSun from '@lucide/svelte/icons/cloud-sun';
+  import CloudFog from '@lucide/svelte/icons/cloud-fog';
+  import CloudDrizzle from '@lucide/svelte/icons/cloud-drizzle';
+  import CloudRain from '@lucide/svelte/icons/cloud-rain';
+  import Snowflake from '@lucide/svelte/icons/snowflake';
+  import CloudLightning from '@lucide/svelte/icons/cloud-lightning';
 
-  let { system, username = '', widgets = [], clock, paused = false, onNavigate, onEdit, onSessionLost } = $props();
+  let { system, username = '', widgets = [], clock, apps = null, weatherPlace = '', paused = false, free = true, onNavigate, onEdit, onSessionLost, onMove } = $props();
+
+  // ---- free placement: drag a widget by its grip; the spot is saved per user (desktop.go) ----
+  let dragging = $state(null); // { id, x, y, dx, dy }
+  function grab(e, id) {
+    const box = e.currentTarget.closest('.wbox').getBoundingClientRect();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    dragging = { id, x: box.left, y: box.top, dx: e.clientX - box.left, dy: e.clientY - box.top };
+  }
+  function drag(e) {
+    if (!dragging) return;
+    dragging = { ...dragging, x: e.clientX - dragging.dx, y: e.clientY - dragging.dy };
+  }
+  function drop() {
+    if (!dragging) return;
+    const { id, x, y } = dragging;
+    dragging = null;
+    onMove?.(id, Math.max(0, Math.round(x)), Math.max(0, Math.round(y)));
+  }
+  // Keep a freely placed widget on screen when the window got smaller.
+  const clampX = (x) => Math.max(0, Math.min(x, innerWidth - 300));
+  const clampY = (y) => Math.max(48, Math.min(y, innerHeight - 120));
+  function spot(w) {
+    if (dragging?.id === w.id) return { x: dragging.x, y: dragging.y };
+    return w.x != null && free ? { x: clampX(w.x), y: clampY(w.y) } : null;
+  }
+
+  // ---- app status and weather ----
+  const appCounts = $derived.by(() => {
+    if (!apps) return null;
+    const down = apps.filter((a) => !a.stopped && ['exited', 'restarting', 'partial'].includes(a.state));
+    return { total: apps.length, running: apps.filter((a) => a.state === 'running').length, down };
+  });
+  let weather = $state(null), weatherErr = $state('');
+  async function loadWeather() {
+    if (!weatherPlace || !widgets.some((w) => w.id === 'weather' && w.on)) return;
+    const res = await api('/api/widgets/weather');
+    if (res.ok) { weather = res.data; weatherErr = ''; } else weatherErr = res.error;
+  }
+  $effect(() => { weatherPlace; loadWeather(); });
+  const SKY = [
+    [[0], 'Clear', Sun], [[1, 2], 'Partly cloudy', CloudSun], [[3], 'Cloudy', Cloud], [[45, 48], 'Fog', CloudFog],
+    [[51, 53, 55, 56, 57], 'Drizzle', CloudDrizzle], [[61, 63, 65, 66, 67, 80, 81, 82], 'Rain', CloudRain],
+    [[71, 73, 75, 77, 85, 86], 'Snow', Snowflake], [[95, 96, 99], 'Thunderstorm', CloudLightning],
+  ];
+  const sky = (code, day) => {
+    const hit = SKY.find(([codes]) => codes.includes(code)) || [[], 'Weather', Cloud];
+    return code === 0 && !day ? ['Clear', MoonIcon] : [hit[1], hit[2]];
+  };
 
   let snap = $state(null);
   let cpuHist = $state([]);
@@ -96,6 +154,9 @@
 
 <div class="widgets">
   {#each shown as w (w.id)}
+    {@const at = spot(w)}
+    <div class="wbox" class:free={!!at} class:lifted={dragging?.id === w.id} style:left={at ? at.x + 'px' : null} style:top={at ? at.y + 'px' : null}>
+    {#if free}<button class="grip" onpointerdown={(e) => grab(e, w.id)} onpointermove={drag} onpointerup={drop} onpointercancel={drop} aria-label="Move this widget" title="Drag to place freely"><GripVertical size={14} /></button>{/if}
     {#if w.id === 'clock'}
       <ClockWidget {clock} {username} hostname={system?.hostname || ''} />
     {:else if w.id === 'system'}
@@ -165,13 +226,52 @@
         <div class="w-head"><span class="t-head dw"><span class="ico warn"><TriangleAlert /></span>{diskWarn.length === 1 ? 'A disk needs attention' : `${diskWarn.length} disks need attention`}</span><ChevronRight size={16} /></div>
         {#each diskWarn as d}<p class="t-caption"><span class="dot" class:warn={d.verdict === 'warning'} class:error={d.verdict === 'failing'}></span> {d.model || d.disk}: {d.warnings[0] || (d.verdict === 'failing' ? 'SMART says it is failing.' : 'Check its health.')}</p>{/each}
       </button>
+    {:else if w.id === 'apps'}
+      <button class="glass widget" onclick={(e) => open(e, '/apps/installed')} aria-label="App status, open Apps">
+        <div class="w-head"><span class="t-head">Apps</span>{#if appCounts}<span class="t-caption num">{appCounts.running} of {appCounts.total} running</span>{/if}</div>
+        {#if !appCounts}<span class="skeleton" style:height="2.5rem"></span>
+        {:else if appCounts.down.length}
+          {#each appCounts.down.slice(0, 4) as a (a.id)}<p class="t-caption"><span class="dot error"></span> {a.name} is down</p>{/each}
+        {:else if appCounts.total}<p class="t-caption"><span class="dot ok"></span> Everything runs as it should.</p>
+        {:else}<p class="t-caption">No apps yet.</p>{/if}
+      </button>
+    {:else if w.id === 'weather'}
+      <section class="glass widget" aria-label="Weather">
+        {#if !weatherPlace}
+          <div class="w-head"><span class="t-head">Weather</span></div>
+          <button class="btn btn-tinted btn-sm" onclick={onEdit}>Pick a place</button>
+        {:else if weather}
+          {@const [text, Sky] = sky(weather.now.code, weather.now.is_day)}
+          <div class="w-head"><span class="t-head truncate">{weather.place}</span><span class="t-caption">{text}</span></div>
+          <div class="wx"><span class="ico xl accent"><Sky /></span><span class="wx-temp num">{Math.round(weather.now.temp)}°</span>
+            <span class="t-caption num">H {Math.round(weather.now.max)}° · L {Math.round(weather.now.min)}°<br />Wind {Math.round(weather.now.wind)} km/h</span></div>
+          <p class="t-caption attrib">Weather data by Open-Meteo.com</p>
+        {:else}
+          <div class="w-head"><span class="t-head">Weather</span></div>
+          {#if weatherErr}<p class="t-caption">{weatherErr}</p>{:else}<span class="skeleton" style:height="3rem"></span>{/if}
+        {/if}
+      </section>
     {/if}
+    </div>
   {/each}
   <button class="glass edit" onclick={onEdit}><SlidersHorizontal size={15} />Edit widgets</button>
 </div>
 
 <style>
   .widgets { display: grid; gap: 0.875rem; align-content: start; }
+  .wbox { position: relative; display: grid; min-width: 0; }
+  .wbox.free { position: fixed; z-index: 2; width: 19rem; }
+  .wbox.lifted { z-index: 25; transform: scale(1.02); box-shadow: var(--shadow-float); border-radius: 1.375rem; }
+  .grip {
+    position: absolute; top: 0.375rem; right: 0.375rem; z-index: 1; display: grid; place-items: center; width: 1.75rem; height: 1.75rem;
+    border: 0; background: none; color: var(--text-3); cursor: grab; opacity: 0; transition: opacity 150ms ease; touch-action: none;
+  }
+  .wbox:hover .grip, .grip:focus-visible, .wbox.lifted .grip { opacity: 1; }
+  .grip:active { cursor: grabbing; }
+  @media (hover: none) { .grip { opacity: 0.7; } }
+  .wx { display: flex; align-items: center; gap: 0.875rem; }
+  .wx-temp { font-size: 2.25rem; font-weight: 650; letter-spacing: -0.03em; line-height: 1; }
+  .attrib { font-size: 0.6875rem; color: var(--text-3); }
   .widget {
     display: grid; gap: 0.75rem; padding: 1rem 1.125rem; border: 0; border-radius: 1.375rem; color: var(--text);
     font: inherit; text-align: left; min-width: 0;
