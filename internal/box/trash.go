@@ -12,6 +12,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -19,8 +21,9 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
+
+	"golang.org/x/sys/unix"
 )
 
 const trashDirName = ".nxbox-trash"
@@ -37,20 +40,148 @@ type trashItem struct {
 	Size    int64  `json:"size"`
 }
 
-func trashOf(r rootInfo) string { return filepath.Join(r.real, trashDirName) }
-
 func inTrash(p string) bool {
 	return strings.Contains(p+"/", "/"+trashDirName+"/")
 }
 
-// moveToTrash moves target (inside root r) into r's trash. errCrossDevice means the item lies on
-// another file system than the root (a mount inside it) and can only be deleted for good.
+// The trash is root's own: <root>/.nxbox-trash and each <id> folder must be real directories
+// (never symlinks) owned by the helper's user with mode 0700. They are opened with O_NOFOLLOW
+// and every operation inside runs relative to those descriptors (openat, renameat, unlinkat),
+// so a user who can write to the root folder cannot swap a symlink in between. The metadata
+// JSON is untrusted: names come from the directory entry, ids must match trashIDRe.
+
+const dirFlags = unix.O_RDONLY | unix.O_DIRECTORY | unix.O_NOFOLLOW | unix.O_CLOEXEC
+
+var errTrashUnsafe = userError{"The trash folder of this place is not Box's own (wrong owner, mode or a link). Box does not use it."}
+
+func checkOwnDir(fd int) error {
+	var st unix.Stat_t
+	if err := unix.Fstat(fd, &st); err != nil {
+		return err
+	}
+	if st.Mode&unix.S_IFMT != unix.S_IFDIR || int(st.Uid) != os.Geteuid() || st.Mode&0o777 != 0o700 {
+		return errTrashUnsafe
+	}
+	return nil
+}
+
+// openTrash opens (and with create, makes) the trash of root r. A missing trash without create
+// returns -1 and no error.
+func openTrash(r rootInfo, create bool) (int, error) {
+	rootFD, err := unix.Open(r.real, dirFlags, 0)
+	if err != nil {
+		return -1, err
+	}
+	defer unix.Close(rootFD)
+	if create {
+		if err := unix.Mkdirat(rootFD, trashDirName, 0o700); err != nil && !errors.Is(err, unix.EEXIST) {
+			return -1, err
+		}
+	}
+	fd, err := unix.Openat(rootFD, trashDirName, dirFlags, 0)
+	if err != nil {
+		if errors.Is(err, unix.ENOENT) && !create {
+			return -1, nil
+		}
+		if errors.Is(err, unix.ELOOP) || errors.Is(err, unix.ENOTDIR) {
+			return -1, errTrashUnsafe
+		}
+		return -1, err
+	}
+	if err := checkOwnDir(fd); err != nil {
+		unix.Close(fd)
+		return -1, err
+	}
+	return fd, nil
+}
+
+func openItemDir(trashFD int, id string) (int, error) {
+	if !trashIDRe.MatchString(id) {
+		return -1, uerr("This item is not in the trash.")
+	}
+	fd, err := unix.Openat(trashFD, id, dirFlags, 0)
+	if err != nil {
+		return -1, errTrashUnsafe
+	}
+	if err := checkOwnDir(fd); err != nil {
+		unix.Close(fd)
+		return -1, err
+	}
+	return fd, nil
+}
+
+// itemName is the single entry inside an item folder: a valid base name, not a symlink.
+func itemName(itemFD int) (string, bool, error) {
+	names, err := readDirNamesFD(itemFD) // the caller owns itemFD
+	if err != nil || len(names) != 1 {
+		return "", false, uerr("This trash item is damaged.")
+	}
+	name := names[0]
+	if name != filepath.Base(name) || checkName(name) != nil {
+		return "", false, uerr("This trash item is damaged.")
+	}
+	var st unix.Stat_t
+	if err := unix.Fstatat(itemFD, name, &st, unix.AT_SYMLINK_NOFOLLOW); err != nil || st.Mode&unix.S_IFMT == unix.S_IFLNK {
+		return "", false, uerr("This trash item is damaged.")
+	}
+	return name, st.Mode&unix.S_IFMT == unix.S_IFDIR, nil
+}
+
+// readDirNamesFD lists a directory through a duplicate of its descriptor (the original stays open
+// and is never wrapped in an *os.File, whose finalizer would close it).
+func readDirNamesFD(fd int) ([]string, error) {
+	dup, err := unix.Dup(fd)
+	if err != nil {
+		return nil, err
+	}
+	d := os.NewFile(uintptr(dup), "dir")
+	defer d.Close()
+	return d.Readdirnames(-1)
+}
+
+// removeAllAt deletes name inside dirFD and everything below it without following symlinks.
+func removeAllAt(dirFD int, name string) error {
+	var st unix.Stat_t
+	if err := unix.Fstatat(dirFD, name, &st, unix.AT_SYMLINK_NOFOLLOW); err != nil {
+		if errors.Is(err, unix.ENOENT) {
+			return nil
+		}
+		return err
+	}
+	if st.Mode&unix.S_IFMT != unix.S_IFDIR {
+		return unix.Unlinkat(dirFD, name, 0)
+	}
+	fd, err := unix.Openat(dirFD, name, dirFlags, 0)
+	if err != nil {
+		return err
+	}
+	f := os.NewFile(uintptr(fd), name)
+	names, err := f.Readdirnames(-1)
+	if err == nil {
+		for _, n := range names {
+			if err = removeAllAt(fd, n); err != nil {
+				break
+			}
+		}
+	}
+	f.Close()
+	if err != nil {
+		return err
+	}
+	return unix.Unlinkat(dirFD, name, unix.AT_REMOVEDIR)
+}
+
 var errCrossDevice = userError{"needs_permanent: This item is on another drive than its folder's trash, so it can only be deleted for good."}
 
+// moveToTrash moves target (inside root r) into r's trash. Symlinks are not trashed (deleted for
+// good instead), so the trash never holds a link.
 func moveToTrash(r rootInfo, target, shown string) (trashItem, error) {
 	info, err := os.Lstat(target)
 	if err != nil {
 		return trashItem{}, uerr("This file or folder does not exist.")
+	}
+	if info.Mode()&fs.ModeSymlink != 0 {
+		return trashItem{}, userError{"needs_permanent: A link is not moved to the trash. Delete the link for good (what it points to stays)."}
 	}
 	b := make([]byte, 6)
 	rand.Read(b)
@@ -61,66 +192,121 @@ func moveToTrash(r rootInfo, target, shown string) (trashItem, error) {
 	} else if info.IsDir() {
 		it.Size = treeSize(target)
 	}
-	dir := filepath.Join(trashOf(r), it.ID)
-	if err := os.MkdirAll(dir, 0o700); err != nil {
+	tfd, err := openTrash(r, true)
+	if err != nil {
+		return it, friendlyTrash(err)
+	}
+	defer unix.Close(tfd)
+	if err := unix.Mkdirat(tfd, it.ID, 0o700); err != nil {
 		return it, err
 	}
-	if err := os.Rename(target, filepath.Join(dir, it.Name)); err != nil {
-		os.Remove(dir)
-		if errors.Is(err, syscall.EXDEV) {
+	ifd, err := openItemDir(tfd, it.ID)
+	if err != nil {
+		return it, err
+	}
+	defer unix.Close(ifd)
+	if err := unix.Renameat(unix.AT_FDCWD, target, ifd, it.Name); err != nil {
+		unix.Unlinkat(tfd, it.ID, unix.AT_REMOVEDIR)
+		if errors.Is(err, unix.EXDEV) {
 			return it, errCrossDevice
 		}
 		return it, uerr("It could not be moved to the trash.")
 	}
 	mb, _ := json.Marshal(it)
-	if err := os.WriteFile(filepath.Join(trashOf(r), it.ID+".json"), mb, 0o600); err != nil {
+	jfd, err := unix.Openat(tfd, it.ID+".json", unix.O_WRONLY|unix.O_CREAT|unix.O_EXCL|unix.O_NOFOLLOW|unix.O_CLOEXEC, 0o600)
+	if err != nil {
 		return it, err
 	}
+	jf := os.NewFile(uintptr(jfd), it.ID+".json")
+	_, err = jf.Write(mb)
+	jf.Close()
+	return it, err
+}
+
+func friendlyTrash(err error) error {
+	var ue userError
+	if errors.As(err, &ue) {
+		return err
+	}
+	return uerr("The trash of this place could not be used.")
+}
+
+// readItem reads one item of an open trash: metadata from the JSON (path, time, size only), the
+// name and kind from the item folder itself.
+func readItem(tfd int, id string) (trashItem, error) {
+	if !trashIDRe.MatchString(id) {
+		return trashItem{}, uerr("This item is not in the trash.")
+	}
+	var it trashItem
+	jfd, err := unix.Openat(tfd, id+".json", unix.O_RDONLY|unix.O_NOFOLLOW|unix.O_CLOEXEC, 0)
+	if err != nil {
+		return it, uerr("This item is not in the trash.")
+	}
+	jf := os.NewFile(uintptr(jfd), id+".json")
+	b, err := io.ReadAll(io.LimitReader(jf, 64<<10))
+	jf.Close()
+	if err != nil || json.Unmarshal(b, &it) != nil {
+		return it, uerr("This trash item is damaged.")
+	}
+	ifd, err := openItemDir(tfd, id)
+	if err != nil {
+		return it, err
+	}
+	defer unix.Close(ifd)
+	name, dir, err := itemName(ifd)
+	if err != nil {
+		return it, err
+	}
+	it.ID, it.Name, it.Dir = id, name, dir
 	return it, nil
 }
 
 func listTrash(roots []rootInfo) []trashItem {
 	out := []trashItem{}
 	for _, r := range roots {
-		files, _ := filepath.Glob(filepath.Join(trashOf(r), "*.json"))
-		for _, f := range files {
-			var it trashItem
-			b, err := os.ReadFile(f)
-			if err != nil || json.Unmarshal(b, &it) != nil || !trashIDRe.MatchString(it.ID) || it.ID+".json" != filepath.Base(f) {
+		tfd, err := openTrash(r, false)
+		if err != nil || tfd < 0 {
+			continue
+		}
+		f := os.NewFile(uintptr(tfd), trashDirName)
+		names, _ := f.Readdirnames(-1)
+		for _, n := range names {
+			id, ok := strings.CutSuffix(n, ".json")
+			if !ok || !trashIDRe.MatchString(id) {
 				continue
 			}
-			it.Root = r.path
-			out = append(out, it)
+			if it, err := readItem(tfd, id); err == nil {
+				it.Root = r.path
+				out = append(out, it)
+			}
 		}
+		f.Close()
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Deleted > out[j].Deleted })
 	return out
 }
 
-// trashFind returns the root and the item for a root path and an id.
-func (h *helperServer) trashFind(root, id string) (rootInfo, trashItem, error) {
-	if !trashIDRe.MatchString(id) {
-		return rootInfo{}, trashItem{}, uerr("This item is not in the trash.")
-	}
+func (h *helperServer) trashRoot(root string) (rootInfo, error) {
 	roots, _ := h.roots()
 	for _, r := range roots {
-		if r.path != root {
-			continue
-		}
-		for _, it := range listTrash([]rootInfo{r}) {
-			if it.ID == id {
-				return r, it, nil
-			}
+		if r.path == root {
+			return r, nil
 		}
 	}
-	return rootInfo{}, trashItem{}, uerr("This item is not in the trash.")
+	return rootInfo{}, uerr("This item is not in the trash.")
 }
 
-func removeTrashItem(r rootInfo, id string) error {
-	if err := os.RemoveAll(filepath.Join(trashOf(r), id)); err != nil {
-		return err
+func removeTrashItem(tfd int, id string) error {
+	if !trashIDRe.MatchString(id) {
+		return uerr("This item is not in the trash.")
 	}
-	return os.Remove(filepath.Join(trashOf(r), id+".json"))
+	if ifd, err := openItemDir(tfd, id); err == nil { // only Box's own item folders
+		unix.Close(ifd)
+		if err := removeAllAt(tfd, id); err != nil {
+			return err
+		}
+	}
+	return removeAllAt(tfd, id+".json")
 }
 
 func (h *helperServer) trashList(req helperRequest, _ func(string)) (any, error) {
@@ -130,38 +316,79 @@ func (h *helperServer) trashList(req helperRequest, _ func(string)) (any, error)
 
 // trashRestore moves an item back to where it was (or next to it as "<name> (restored)").
 func (h *helperServer) trashRestore(req helperRequest, _ func(string)) (any, error) {
-	r, it, err := h.trashFind(req.Path, req.Name)
+	r, err := h.trashRoot(req.Path)
 	if err != nil {
 		return nil, err
+	}
+	tfd, err := openTrash(r, false)
+	if err != nil || tfd < 0 {
+		return nil, uerr("This item is not in the trash.")
+	}
+	defer unix.Close(tfd)
+	it, err := readItem(tfd, req.Name)
+	if err != nil {
+		return nil, err
+	}
+	// The folder it came from: an absolute path that passes the normal rules, in the same root.
+	if !filepath.IsAbs(it.Path) || filepath.Clean(it.Path) != it.Path {
+		return nil, uerr("This trash item is damaged.")
 	}
 	parent, pr, err := h.resolve(filepath.Dir(it.Path), true)
 	if err != nil || pr.real != r.real {
 		return nil, uerr("The folder it came from is gone. Create %s again first.", filepath.Dir(it.Path))
 	}
-	dest := filepath.Join(parent, it.Name)
-	for n := 1; exists(dest) || isLink(dest); n++ {
+	pfd, err := unix.Open(parent, dirFlags, 0)
+	if err != nil {
+		return nil, uerr("The folder it came from cannot be opened.")
+	}
+	defer unix.Close(pfd)
+	dest := it.Name
+	for n := 1; ; n++ {
+		var st unix.Stat_t
+		if unix.Fstatat(pfd, dest, &st, unix.AT_SYMLINK_NOFOLLOW) != nil {
+			break
+		}
 		ext := filepath.Ext(it.Name)
 		base := strings.TrimSuffix(it.Name, ext)
 		if it.Dir {
 			base, ext = it.Name, ""
 		}
-		dest = filepath.Join(parent, base+" (restored"+map[bool]string{true: "", false: " " + strconv.Itoa(n)}[n == 1]+")"+ext)
+		suffix := " (restored)"
+		if n > 1 {
+			suffix = " (restored " + strconv.Itoa(n) + ")"
+		}
+		dest = base + suffix + ext
 	}
-	if err := os.Rename(filepath.Join(trashOf(r), it.ID, it.Name), dest); err != nil {
-		return nil, uerr("It could not be restored.")
+	if dest != filepath.Base(dest) || checkName(dest) != nil {
+		return nil, uerr("This trash item is damaged.")
 	}
-	removeTrashItem(r, it.ID)
-	return map[string]string{"path": filepath.Join(filepath.Dir(it.Path), filepath.Base(dest))}, nil
-}
-
-func isLink(p string) bool { _, err := os.Lstat(p); return err == nil }
-
-func (h *helperServer) trashDelete(req helperRequest, _ func(string)) (any, error) {
-	r, it, err := h.trashFind(req.Path, req.Name)
+	ifd, err := openItemDir(tfd, it.ID)
 	if err != nil {
 		return nil, err
 	}
-	if err := removeTrashItem(r, it.ID); err != nil {
+	err = unix.Renameat(ifd, it.Name, pfd, dest)
+	unix.Close(ifd)
+	if err != nil {
+		return nil, uerr("It could not be restored.")
+	}
+	removeTrashItem(tfd, it.ID)
+	return map[string]string{"path": filepath.Join(filepath.Dir(it.Path), dest)}, nil
+}
+
+func (h *helperServer) trashDelete(req helperRequest, _ func(string)) (any, error) {
+	r, err := h.trashRoot(req.Path)
+	if err != nil {
+		return nil, err
+	}
+	tfd, err := openTrash(r, false)
+	if err != nil || tfd < 0 {
+		return nil, uerr("This item is not in the trash.")
+	}
+	defer unix.Close(tfd)
+	if _, err := readItem(tfd, req.Name); err != nil {
+		return nil, err
+	}
+	if err := removeTrashItem(tfd, req.Name); err != nil {
 		return nil, uerr("It could not be deleted completely.")
 	}
 	return map[string]bool{"ok": true}, nil
@@ -172,15 +399,20 @@ func (h *helperServer) trashPurge(req helperRequest, _ func(string)) (any, error
 	roots, _ := h.roots()
 	cut := time.Now().Add(-time.Duration(req.Offset) * 24 * time.Hour).Unix()
 	n := 0
-	for _, it := range listTrash(roots) {
-		if req.Offset > 0 && it.Deleted > cut {
+	for _, r := range roots {
+		tfd, err := openTrash(r, false)
+		if err != nil || tfd < 0 {
 			continue
 		}
-		for _, r := range roots {
-			if r.path == it.Root && removeTrashItem(r, it.ID) == nil {
+		for _, it := range listTrash([]rootInfo{r}) {
+			if req.Offset > 0 && it.Deleted > cut {
+				continue
+			}
+			if removeTrashItem(tfd, it.ID) == nil {
 				n++
 			}
 		}
+		unix.Close(tfd)
 	}
 	return map[string]int{"deleted": n}, nil
 }

@@ -46,8 +46,11 @@ func TestFilesStayInsideRoots(t *testing.T) {
 			t.Fatalf("downloaded %s", p)
 		}
 	}
-	// Deleting the symlink removes the link only, never the target.
-	if rec := fpost(h, "/api/files/delete", map[string]string{"path": filepath.Join(root, "escape")}, sess); rec.Code != 200 {
+	// A link is never moved to the trash; deleting it for good removes the link only, never the target.
+	if rec := fpost(h, "/api/files/delete", map[string]string{"path": filepath.Join(root, "escape")}, sess); rec.Code == 200 || !strings.Contains(rec.Body.String(), "needs_permanent") {
+		t.Fatalf("link moved to the trash: %d %s", rec.Code, rec.Body)
+	}
+	if rec := fpost(h, "/api/files/delete", map[string]string{"path": filepath.Join(root, "escape"), "op": "permanent"}, sess); rec.Code != 200 {
 		t.Fatalf("delete link: %d %s", rec.Code, rec.Body)
 	}
 	if _, err := os.Stat(filepath.Join(outside, "secret")); err != nil {
