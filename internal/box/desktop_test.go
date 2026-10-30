@@ -79,3 +79,22 @@ func TestDesktopClockAndTheme(t *testing.T) {
 		}
 	}
 }
+
+// A new user sees the setup assistant once; someone who used Box before never does.
+func TestDesktopOnboarded(t *testing.T) {
+	app, h, token := newTestApp(t)
+	sess := sessionFrom(post(h, "/api/setup", `{"token":"`+token+`","username":"admin","password":"long-enough-pw"}`, ""))
+	if p := app.loadDesktop(1); p.Onboarded != nil {
+		t.Fatal("a new user is already onboarded")
+	}
+	if rec := post(h, "/api/desktop", `{"onboarded":true}`, sess); rec.Code != 200 {
+		t.Fatalf("save: %d %s", rec.Code, rec.Body)
+	}
+	if p := app.loadDesktop(1); p.Onboarded == nil || !*p.Onboarded {
+		t.Fatal("not stored")
+	}
+	app.store.setDesktop(1, `{"wallpaper":"sand"}`) // saved by a version before the assistant
+	if p := app.loadDesktop(1); p.Onboarded == nil || !*p.Onboarded {
+		t.Fatal("an existing user would see the assistant")
+	}
+}

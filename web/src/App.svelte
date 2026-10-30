@@ -39,6 +39,7 @@
   import Smartphone from '@lucide/svelte/icons/smartphone';
   import CommandPalette from '$lib/CommandPalette.svelte';
   import MobileHome from './MobileHome.svelte';
+  import SetupAssistant from './SetupAssistant.svelte';
 
   const themeModes = [
     { value: 'light', label: 'Light' },
@@ -81,6 +82,11 @@
   let paletteOpen = $state(false);
   // The phone view (/mobile, where the installed web app starts); Desktop leaves it.
   let mobile = $state(location.pathname === '/mobile');
+  // First sign-in: the setup assistant, once (desktop pref "onboarded").
+  let assistantOpen = $state(false), assistantShown = false;
+  $effect(() => {
+    if (desktop.prefs && desktop.prefs.onboarded !== true && !mobile && !assistantShown) { assistantShown = true; assistantOpen = true; }
+  });
   // Ctrl+K / Cmd+K opens the command palette (not while the terminal has the keys).
   function paletteKey(e) {
     if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 'k' && state?.logged_in && !e.target.closest?.('.xterm')) {
@@ -297,6 +303,7 @@
   </header>
 
   <CommandPalette bind:open={paletteOpen} onNavigate={navigate} onSessionLost={sessionLost} />
+  <SetupAssistant bind:open={assistantOpen} onNavigate={navigate} onSessionLost={sessionLost} />
   <Desktop {system} username={state.username} onSessionLost={sessionLost} onNavigate={navigate} inert={covered} />
 
   {#each wm.list as w (w.key)}
