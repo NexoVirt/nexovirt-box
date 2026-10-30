@@ -139,6 +139,14 @@ embedded.
   pending sign-in also fails when the password hash changed since it started (`pendingLogin.pwHash`).
 - Files: copy keeps symlinks as links, zip downloads skip symlinks, every new endpoint (`files_copy`, `files_size`,
   `files_zip`, `mkdir` with `op: exist_ok`) resolves paths inside the roots (`TestFilesCopyZipSizeStayInside`).
+- Trash (`trash.go`, Files > Places > Trash): a delete moves the item into `<root>/.nxbox-trash/<id>/<name>` (a rename
+  inside the root, owners and modes kept) plus `<id>.json` (where it was, when, size). `.nxbox-trash` is hidden from
+  listings and refused by `visibleIn`, so browsing, search and every walker skip it; only `trash_list`,
+  `trash_restore` (back to its folder, "<name> (restored)" when the name is taken, the folder must still exist in the
+  same root), `trash_delete` and `trash_purge` reach it. An item on another drive than its root (a mount inside it)
+  cannot be renamed into the trash: the delete answers `needs_permanent:` and the dialog offers "Delete for good"
+  (`op: permanent`). The web process purges items older than `trash_days` (default 30, 1..365) daily. Audited
+  `files.trash_restore|trash_delete|trash_empty|trash_days|trash_purge`.
 - Firewall (`firewall.go`): only Box's own rules; `firewall.pending.json` + 60 s timer roll back unless confirmed;
   rules restored at helper start (nftables does not persist). Files (`files.go`): resolve + roots + blocked dirs,
   fd passing for read/upload. Proxy (`proxy.go`): Caddy container `nxbox-proxy` in /etc/nexovirt-box/caddy. Domains per app (`POST /api/apps/{id}/domain`

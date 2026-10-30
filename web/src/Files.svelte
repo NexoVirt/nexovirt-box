@@ -9,6 +9,7 @@
   import { bytes, pct } from '$lib/format.js';
   import { kindOf, PREVIEW_IMAGE, PREVIEW_TEXT } from '$lib/fileKinds.js';
   import Dialog from '$lib/Dialog.svelte';
+  import TrashDialog from './TrashDialog.svelte';
   import ContextMenu from '$lib/ContextMenu.svelte';
   import ShareLinkDialog from '$lib/ShareLinkDialog.svelte';
   import LinkIcon from '@lucide/svelte/icons/link';
@@ -51,6 +52,7 @@
   const DRAG_TYPE = 'application/x-nxbox-paths';
 
   let places = $state([]);
+  let trashOpen = $state(false), delForGood = $state(false);
   let path = $state(''); // '' = the server overview (all places)
   let entries = $state(null);
   let error = $state('');
@@ -357,17 +359,21 @@
     moveOpen = false;
   }
 
-  function askDelete(list) { delList = list; delOpen = true; }
+  function askDelete(list) { delList = list; delForGood = false; delOpen = true; }
   async function doDelete() {
     delBusy = true;
+    const forGood = [];
     for (const x of delList) {
-      const res = await api('/api/files/delete', { method: 'POST', body: { path: join(path, x.name) } });
+      const res = await api('/api/files/delete', { method: 'POST', body: { path: join(path, x.name), op: delForGood ? 'permanent' : '' } });
       if (lost(res)) return;
-      if (!res.ok) toast(`${x.name}: ${res.error}`, 'error', 8000);
+      if (!res.ok && res.error?.startsWith('needs_permanent:')) forGood.push(x);
+      else if (!res.ok) toast(`${x.name}: ${res.error}`, 'error', 8000);
     }
     delBusy = false;
+    if (forGood.length) { delList = forGood; delForGood = true; selected.clear(); reload(); return; } // ask again: for good
     delOpen = false;
-    toast(delList.length === 1 ? `${delList[0].name} was deleted.` : `${delList.length} items were deleted.`, 'success');
+    const what = delList.length === 1 ? delList[0].name : `${delList.length} items`;
+    toast(delForGood ? `${what} deleted for good.` : `${what} moved to the trash.`, 'success');
     selected.clear();
     reload();
   }
@@ -651,6 +657,9 @@
           <li>
             <button class="place" class:active={!path} onclick={() => open('')}><Server size={15} /><span class="truncate">This server</span></button>
           </li>
+          <li>
+            <button class="place" onclick={() => (trashOpen = true)}><Trash size={15} /><span class="truncate">Trash</span></button>
+          </li>
           {#each places as p (p.path)}
             <li>
               <button class="place" class:active={root === p.path && path === p.path} class:over={dropOn === p.path} onclick={() => open(p.path)}
@@ -867,13 +876,16 @@
   </form>
 </Dialog>
 
+<TrashDialog bind:open={trashOpen} onChanged={reload} {onSessionLost} />
+
 <Dialog bind:open={delOpen} label="Delete" locked={delBusy}>
   <div class="dlg">
-    <h2 class="t-title">Delete {delList.length === 1 ? delList[0]?.name : `${delList.length} items`}?</h2>
-    <p class="t-sub">{delList.some((x) => x.dir) ? 'Folders are deleted with everything in them.' : delList.length === 1 ? 'The file is deleted.' : 'The files are deleted.'} This cannot be undone.</p>
+    <h2 class="t-title">{delForGood ? 'Delete for good' : 'Move to the trash'}: {delList.length === 1 ? delList[0]?.name : `${delList.length} items`}?</h2>
+    <p class="t-sub">{#if delForGood}{delList.length === 1 ? 'It is' : 'They are'} on another drive than the trash of this place, or you chose to skip the trash. This cannot be undone.{:else}You can restore {delList.length === 1 ? 'it' : 'them'} from the trash (Places, Trash) until it is emptied.{/if}</p>
+    <label class="row-field"><span class="field-label">Delete for good, skip the trash</span><input class="switch" type="checkbox" bind:checked={delForGood} disabled={delBusy} /></label>
     <div class="buttons">
       <button class="btn btn-gray" data-close onclick={() => (delOpen = false)} disabled={delBusy}>Cancel</button>
-      <button class="btn btn-danger" onclick={doDelete} disabled={delBusy}>{#if delBusy}<Loader size={16} class="spinner" />{/if}Delete</button>
+      <button class="btn btn-danger" onclick={doDelete} disabled={delBusy}>{#if delBusy}<Loader size={16} class="spinner" />{/if}{delForGood ? 'Delete for good' : 'Move to the trash'}</button>
     </div>
   </div>
 </Dialog>
