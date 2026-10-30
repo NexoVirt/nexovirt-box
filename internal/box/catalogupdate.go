@@ -196,6 +196,15 @@ func (h *helperServer) appCatalogUpdate(ctx context.Context, req helperRequest, 
 	if err != nil {
 		return nil, err
 	}
+	if moved, err := h.ensureLayout(ctx, req.ID, &meta, logf); err != nil {
+		return nil, err
+	} else if moved && !meta.Stopped { // ensureLayout already wrote the catalog's definition
+		logf("Starting " + meta.Name)
+		if err := runStream(ctx, compose(h.appDir(req.ID), req.ID, "up", "-d", "--remove-orphans"), logf); err != nil {
+			return nil, err
+		}
+		return map[string]any{"added": []string{}, "version": app.Version}, nil
+	}
 	if _, err := socketGate(&meta, app, req.AllowDockerSocket, func() bool { return true }); err != nil {
 		return nil, err
 	}

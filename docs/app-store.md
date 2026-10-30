@@ -64,8 +64,10 @@ Host folders: before install, retry, start and update the helper renders `docker
 `/` and `/etc`, `/root`, `/proc`, `/sys`, `/boot` (or a folder containing them), secret files (`/etc/shadow`,
 `/etc/ssh`, ...) and the Docker socket (only for apps marked `docker_socket` after the admin agreed in the form).
 The app's own folder and the files in it (`compose.yaml`, `.env`, `app.json`, the override files) are never
-mounted, only its subfolders. Paths are resolved through symlinks (`appsafety.go`). Docker resolves bind sources
-again whenever it starts a container, see "Known limits" in `security-model.md`.
+mounted, only its subfolders. Paths are resolved through symlinks (`appsafety.go`). Binds never sit inside each
+other (within the app, or outside the shared folder against another app's binds, `layout.go`); a catalog app whose
+older version nested them carries `layout` steps that move an install's data (`from` -> `to`, or gather everything
+but `except` into `to`) before it starts again.
 
 Jobs: saved in SQLite (`jobs`, log tail). At web start unfinished jobs become `interrupted`; a helper restart marks
 the running job interrupted; a watchdog stops jobs with no output for 15 minutes; the helper cancels long app

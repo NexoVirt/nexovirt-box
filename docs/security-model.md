@@ -15,6 +15,13 @@
 - Docker is only used through the helper, and it only runs app definitions from the catalog
   signed by NexoVirt. Generated passwords and your answers are in a private `.env` per app; the
   compose file is never rewritten.
+- No nested mounts: an app never mounts a folder inside another folder it mounts (an app may mount
+  the media folder or a subfolder of it, never both), and outside the shared folder never one
+  inside another app's folders. Otherwise a container that can write the outer folder could put a
+  symlink where the inner one is, and Docker would follow it on its next start. Apps installed
+  with an older nested catalog layout are moved to the side-by-side layout before they start
+  (data moved without following links, previous files kept as `*.layout-prev`); apps that cannot
+  be moved, and own apps with nested mounts, stay stopped and show why.
 - Firewall: Box only changes its own rules (its own nftables table, ufw rules tagged
   `nexovirt-box:`, or the firewalld rich rules it added) and shows the others read only. Each
   change must be confirmed within 60 seconds with a new request, else the helper restores the
@@ -39,11 +46,8 @@
 
 ## Known limits
 
-- An app with nested writable bind mounts (one service mounts a folder, another a folder inside
-  it, as about a dozen catalog apps and the shared media folder do) gives a compromised container
-  a way out: it can replace the inner folder with a symlink, and Docker follows that symlink the
-  next time it starts the other container (also through a restart policy after a reboot, before
-  Box can check it). Box checks every bind when it starts an app, but not Docker's own restarts.
+- Apps that share Box's media folder can change each other's files there; that is what the
+  shared folder is for. Outside it, apps never mount folders inside each other.
 - A paired box with full access can do everything the app and system API allows, except the
   actions listed above that need the password.
 

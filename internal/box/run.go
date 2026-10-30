@@ -135,6 +135,7 @@ func runHelper(args []string) {
 	}
 	go restoreFirewall()
 	h.migrateShared()
+	go h.checkLayouts() // apps on an older nested folder layout (layout.go)
 	log.Printf("NexoVirt Box helper %s listening on %s (allowed user %s)", version, *socket, *webUser)
 	h.serve(ln)
 }

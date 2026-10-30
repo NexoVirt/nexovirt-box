@@ -21,15 +21,16 @@ import (
 func sharedDir(base string) string { return filepath.Join(base, "shared") }
 
 type mountPolicy struct {
-	base        string   // Box's state dir (/var/lib/nexovirt-box)
-	allow       []string // folders inside base the app may use: its own dir, its data dir, the shared dir
-	appDir      string   // the app's own folder: never mounted itself, nor its compose, .env and settings
-	allowSocket bool     // the catalog marks the app as needing Docker and the admin agreed
-	custom      bool     // an own app: raw compose and privilege checks too (customapp.go)
-	roots       []string // own apps: the file roots, binds inside them need no confirmation
-	confirmed   []string // own apps: risk findings the admin confirmed (riskFinding keys)
-	reviewed    bool     // own apps saved with the per-item review; older ones keep legacyOK
-	protectPort int      // Box sign-in in front: this port on 127.0.0.1 only; -1 = protected without a port (refused)
+	base        string              // Box's state dir (/var/lib/nexovirt-box)
+	allow       []string            // folders inside base the app may use: its own dir, its data dir, the shared dir
+	appDir      string              // the app's own folder: never mounted itself, nor its compose, .env and settings
+	allowSocket bool                // the catalog marks the app as needing Docker and the admin agreed
+	custom      bool                // an own app: raw compose and privilege checks too (customapp.go)
+	roots       []string            // own apps: the file roots, binds inside them need no confirmation
+	confirmed   []string            // own apps: risk findings the admin confirmed (riskFinding keys)
+	reviewed    bool                // own apps saved with the per-item review; older ones keep legacyOK
+	protectPort int                 // Box sign-in in front: this port on 127.0.0.1 only; -1 = protected without a port (refused)
+	others      map[string][]string // the other installed apps' bind sources (layout.go, no nesting across apps)
 }
 
 // Folders that are never mounted, nor any folder that contains them.
@@ -77,7 +78,7 @@ func checkMounts(configJSON []byte, p mountPolicy) error {
 			return err
 		}
 	}
-	return nil
+	return checkNested(sources, p)
 }
 
 func (p mountPolicy) check(src string) error {

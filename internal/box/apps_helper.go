@@ -52,6 +52,8 @@ type installedApp struct {
 	DomainPort  int           `json:"domain_port,omitempty"`      // proxy: app port behind the domain (0 = main port)
 	Protect     bool          `json:"protect,omitempty"`          // proxy: Box sign-in in front of the domain (proxyauth.go)
 	CloneOf     string        `json:"clone_of,omitempty"`         // appclone.go: the app this one was cloned from
+	LayoutOK    bool          `json:"layout_ok,omitempty"`        // layout.go: the data is in the catalog's current folder layout
+	LayoutIssue string        `json:"layout_issue,omitempty"`     // layout.go: why the app is stopped (folders inside each other)
 }
 
 type appStatus struct {
@@ -141,7 +143,7 @@ func (h *helperServer) policy(m installedApp) mountPolicy {
 	if m.DataDir != "" {
 		allow = append(allow, m.DataDir)
 	}
-	p := mountPolicy{base: h.base(), allow: allow, appDir: dir, allowSocket: m.SocketOK, custom: m.Custom, confirmed: m.Allowed, reviewed: m.Reviewed}
+	p := mountPolicy{base: h.base(), allow: allow, appDir: dir, others: h.otherBinds(m.ID), allowSocket: m.SocketOK, custom: m.Custom, confirmed: m.Allowed, reviewed: m.Reviewed}
 	if m.Protect && m.Domain != "" {
 		p.protectPort = protectedPort(m)
 	}
@@ -378,7 +380,7 @@ func (h *helperServer) appInstall(ctx context.Context, req helperRequest, logf f
 	}
 	meta := installedApp{ID: app.ID, Name: app.Name, Version: app.Version, MainPort: port, Scheme: app.Scheme,
 		Store: app.Attribution.Store, InstalledAt: time.Now().Unix(), DataDir: dataDir, DataCreated: dataCreated,
-		SocketOK: app.DockerSocket && req.AllowDockerSocket, ComposeSHA: composeSHA([]byte(app.Compose))}
+		SocketOK: app.DockerSocket && req.AllowDockerSocket, ComposeSHA: composeSHA([]byte(app.Compose)), LayoutOK: true}
 	metaJSON, _ := json.MarshalIndent(meta, "", "  ")
 	for name, body := range map[string][]byte{installMarker: nil, "compose.yaml": []byte(app.Compose), ".env": env, "app.json": metaJSON} {
 		if err := os.WriteFile(filepath.Join(dir, name), body, 0o600); err != nil {
@@ -900,6 +902,9 @@ func (h *helperServer) appAction(ctx context.Context, req helperRequest, logf fu
 	}
 	up := func() error {
 		if err := fixLegacyEnv(dir, h.base()); err != nil {
+			return err
+		}
+		if _, err := h.ensureLayout(ctx, req.ID, &meta, logf); err != nil {
 			return err
 		}
 		if err := checkConfig(ctx, dir, req.ID, h.policy(meta), false); err != nil {

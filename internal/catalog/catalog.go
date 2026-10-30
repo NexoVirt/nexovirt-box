@@ -61,6 +61,8 @@ type App struct {
 	Compose     string      `json:"compose"`
 	FirstLogin  *FirstLogin `json:"first_login,omitempty"`
 	Notes       string      `json:"notes,omitempty"` // "Getting started" text, plain text
+	// Layout moves the data of an install from an older nested folder layout (layout.go).
+	Layout []LayoutStep `json:"layout,omitempty"`
 }
 
 // FirstLogin says how to sign in to an app the first time, when the app makes its own admin
