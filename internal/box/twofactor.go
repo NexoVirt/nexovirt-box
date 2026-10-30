@@ -568,11 +568,20 @@ func (a *App) login2FA(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnauthorized, errPendingGone.msg)
 		return
 	}
+	// Each pending sign-in has 5 tries, but someone who knows the password can start many: the
+	// wrong codes are also counted per account, so guessing the 6 digits stays out of reach.
+	release, ok := a.limiter.reserve(fmt.Sprintf("2fa:%d", p.uid))
+	if !ok {
+		writeError(w, http.StatusTooManyRequests, "Too many wrong codes. Wait a minute and try again.")
+		return
+	}
 	code := strings.TrimSpace(in.Code)
 	switch {
 	case len(strings.ReplaceAll(code, " ", "")) == 6 && totpValid(a.store.totpSecret(p.uid), code, time.Now()):
+		release()
 		a.finishLogin(w, r, p, in.Pending, "totp")
 	case strings.Contains(code, "-") && a.store.useRecoveryCode(p.uid, code):
+		release()
 		a.finishLogin(w, r, p, in.Pending, "recovery code")
 	default:
 		a.store.audit(p.username, a.clientIP(r), "login.failed", "wrong 2FA code")

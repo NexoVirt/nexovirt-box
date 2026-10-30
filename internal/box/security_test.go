@@ -476,3 +476,21 @@ func TestPasswordChangeVoidsPendingTwoStepSignIn(t *testing.T) {
 		t.Fatal("a pending sign-in finished after the password hash changed")
 	}
 }
+
+// New pending sign-ins do not give new guesses: wrong codes count per account.
+func TestTwoFactorGuessesLimitedPerAccount(t *testing.T) {
+	_, h, token := newTestApp(t)
+	sess := setupAndLogin(t, h, token)
+	var begin map[string]string
+	json.Unmarshal(post(h, "/api/2fa/totp/begin", `{"password":"long-enough-pw"}`, sess).Body.Bytes(), &begin)
+	post(h, "/api/2fa/totp/enable", `{"code":"`+totpCode(begin["secret"], uint64(time.Now().Unix()/30))+`"}`, sess)
+	last := 0
+	for i := 0; i < 6; i++ {
+		var lr map[string]any
+		json.Unmarshal(post(h, "/api/login", `{"username":"admin","password":"long-enough-pw"}`, "").Body.Bytes(), &lr)
+		last = post(h, "/api/login/2fa", `{"pending":"`+lr["pending"].(string)+`","code":"000000"}`, "").Code
+	}
+	if last != http.StatusTooManyRequests {
+		t.Fatalf("6th wrong code over fresh sign-ins: %d", last)
+	}
+}
