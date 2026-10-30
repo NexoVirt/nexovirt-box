@@ -22,7 +22,7 @@
 
   const WINDOWS = [
     ['Apps', '/apps/installed'], ['App Store', '/apps'], ['Files', '/files'], ['Monitor', '/monitor'],
-    ['Terminal', '/console'], ['Backups', '/backups'], ['Settings', '/settings'],
+    ['Terminal', '/console'], ['Backups', '/backups'], ['Log search', '/logs'], ['Settings', '/settings'],
   ];
   const SECTIONS = [
     ['General', 'general'], ['Account and security', 'security'], ['Security check', 'security-check'], ['Apps and catalog', 'apps'],

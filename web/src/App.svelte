@@ -53,8 +53,9 @@
     backups: { title: 'Backups', fill: true, size: [1080, 720], load: () => import('./Backups.svelte') },
     settings: { title: 'Settings', fill: true, flush: true, size: [1080, 720], load: () => import('./SettingsView.svelte') },
     logs: { title: 'Logs', fill: true, size: [1000, 660], load: () => import('./AppLogs.svelte') },
+    logsearch: { title: 'Log search', fill: true, size: [1100, 700], load: () => import('./LogSearch.svelte') },
   };
-  const SIMPLE = { '/files': 'files', '/monitor': 'monitor', '/console': 'console', '/backups': 'backups' };
+  const SIMPLE = { '/files': 'files', '/monitor': 'monitor', '/console': 'console', '/backups': 'backups', '/logs': 'logsearch' };
   // Which window a path belongs to, and the props its page gets from the path.
   function resolve(p) {
     if (p === '/apps' || p === '/apps/installed') return { key: 'apps', kind: KINDS.apps, props: { tab: p === '/apps' ? 'store' : 'installed' } };

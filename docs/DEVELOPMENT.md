@@ -49,13 +49,18 @@ embedded.
   widgets back in the column" in Edit widgets. Weather: Open-Meteo without an API key, fetched by the server only for the
   place the user picked (`GET /api/widgets/weather`, cached 20 min; place search `GET /api/widgets/weather/places`),
   attribution shown in the widget), right search + "System"
-  dock (Apps, Files, Monitor, Terminal, Backups, Settings; Apps opens the Apps window with Installed and App Store tabs plus "Add your own app" and "Check for updates") + "Apps" grid of installed apps, each shown once). Tiles: click opens
+  dock (Apps, Files, Monitor, Terminal, Backups, Logs, Settings; Apps opens the Apps window with Installed and App Store tabs plus "Add your own app" and "Check for updates") + "Apps" grid of installed apps, each shown once). Tiles: click opens
   (apps in a new tab, Box tools as windows), right-click/long-press menu (open, start/stop/restart, logs, backups,
   settings, move, uninstall; system tiles: open, move, hide), drag to reorder inside its group (touch: long press, then
   move). Layout per user on the server: `GET/POST /api/desktop` (`desktop.go`, `users.desktop` JSON: wallpaper, dim,
   blur, widgets order/on, tile order, hidden system tiles, clock options, theme; POST merges, unknown fields refused),
   wallpaper upload `POST/GET /api/desktop/wallpaper` (JPEG/PNG/WebP only, 8 MB). Built-in wallpapers are flat colours
   and two flat-shape SVGs made for Box (`public/wallpapers/`), never gradients or third-party photos.
+- Log search (`logsearch.go`, `LogSearch.svelte`, window `/logs`, `GET /api/logs?app=&level=&q=&since=`): helper
+  `logs_all` reads the newest 300 lines per app (the per-app log reader) and of Box itself (`journalctl -u nexovirt-box -u
+  nexovirt-box-helper -o json`), merged by time, at most 2000; a level is guessed from the text (`levelOf`); the web side
+  filters by text (message or `app/service`) and minimum level. The window polls with `since` (live tail, paused when
+  scrolled up or switched off).
 - Command palette (`lib/CommandPalette.svelte`, Ctrl+K / Cmd+K or the search button in the top bar; not while the
   terminal has the keys): windows, Settings sections, installed apps (open, start, stop, restart, logs) and files by
   name (`GET /api/files/find?q=`, helper `files_find`: names containing the query in the allowed roots, 30 results,
@@ -70,7 +75,7 @@ embedded.
   localStorage `nxbox-win-<key>`; under 700 px full screen. Esc closes only the window in front (unless a dialog, menu,
   input or the terminal has the key). Dialogs (`Dialog`, `Sheet`, z 50+) are modal above all windows (z 30 + rank), the
   dock row is z 49. Routes: `/apps/installed` and `/apps` (one Apps window, tabs), `?app=<id>&do=backups|uninstall`,
-  `/apps/<id>/logs`, `/files`, `/monitor`, `/console`, `/backups`. Inside a window the page's own `.page-head h1` is
+  `/apps/<id>/logs`, `/logs` (Log search), `/files`, `/monitor`, `/console`, `/backups`. Inside a window the page's own `.page-head h1` is
   hidden (the title bar names it); pages put no background, border or max-width of their own on the window surface.
   Apps, Files, Terminal and Settings are `flush` (edge to edge); the terminal refits with a ResizeObserver.
 - Settings window (`SettingsView.svelte`, macOS System Settings style, list left, section right; phones drill down):
