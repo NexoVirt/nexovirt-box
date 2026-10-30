@@ -68,6 +68,11 @@ embedded.
   duplicates, trash, versions) starts from `walkRoots()` and checks each path with `visibleIn`, the same rule `resolve()`
   uses for browsing (blocked folders unless allow_system, inside an allowed root), so a root under a blocked folder
   is never searched. Arrows move, Enter runs, Escape closes.
+- Phone view and installable web app: `/mobile` (`MobileHome.svelte`, also "Phone view" in the account menu) shows
+  status rings, apps with start/stop/open and the latest notifications, with "Desktop" to leave it. `public/manifest.webmanifest`
+  (start_url `/mobile`, icons 192/512, served as `application/manifest+json`) and `public/sw.js` (registered on HTTPS
+  only; no fetch handler and no cache, so nothing private stays on the phone) make Box installable. Notifications reach a
+  phone through the existing channels (ntfy, email, ...); Web Push would need an outside push service and is not built.
 - Windows (`lib/AppWindow.svelte`, `lib/windows.svelte.js`, geometry in `lib/winmath.js`): every Box window floats:
   drag the title bar, resize from any edge or corner (min 420 x 300, never under the top bar; the window body is its own
   stacking context so page toolbars never cover the handles; a smaller browser window shrinks it), maximise (button or double-click the title), minimise to the dock row at the bottom,
