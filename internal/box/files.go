@@ -84,15 +84,39 @@ func (h *helperServer) resolve(p string, mustExist bool) (string, rootInfo, erro
 		real = filepath.Join(parent, filepath.Base(p))
 	}
 	roots, cfg := h.roots()
+	if r, ok := visibleIn(p, real, roots, cfg); ok {
+		return real, r, nil
+	}
+	return "", rootInfo{}, errOutside
+}
+
+// visibleIn is THE path rule of the file features: a path (as given and resolved) may be shown
+// when it is not under a blocked folder (unless allow_system) and lies inside an allowed root.
+// Browsing, search and every other walker over the roots use it, so they cannot drift apart.
+func visibleIn(p, real string, roots []rootInfo, cfg filesConfig) (rootInfo, bool) {
 	if !cfg.AllowSystem && (underAny(real, blockedDirs) || underAny(p, blockedDirs)) {
-		return "", rootInfo{}, errOutside
+		return rootInfo{}, false
 	}
 	for _, r := range roots {
 		if real == r.real || strings.HasPrefix(real, strings.TrimSuffix(r.real, "/")+"/") {
-			return real, r, nil
+			return r, true
 		}
 	}
-	return "", rootInfo{}, errOutside
+	return rootInfo{}, false
+}
+
+// walkRoots returns the roots a walker may start from (each root itself must be visible) and
+// the predicate for every path it reports. Walkers never follow symlinks.
+func (h *helperServer) walkRoots() ([]string, func(string) bool) {
+	roots, cfg := h.roots()
+	ok := func(p string) bool { _, v := visibleIn(p, p, roots, cfg); return v }
+	var out []string
+	for _, r := range roots {
+		if _, v := visibleIn(r.path, r.real, roots, cfg); v {
+			out = append(out, r.real)
+		}
+	}
+	return out, ok
 }
 
 type fileEntry struct {
