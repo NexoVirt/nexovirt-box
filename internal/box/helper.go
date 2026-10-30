@@ -47,6 +47,7 @@ type helperRequest struct {
 	Session    string            `json:"session,omitempty"` // sha256 of the session cookie
 	Proof      string            `json:"proof,omitempty"`
 	HTTPPort   int               `json:"http_port,omitempty"`
+	Port       int               `json:"port,omitempty"` // app domain: the app port behind it
 	HTTPSPort  int               `json:"https_port,omitempty"`
 	Email      string            `json:"email,omitempty"`
 	Domain     string            `json:"domain,omitempty"`

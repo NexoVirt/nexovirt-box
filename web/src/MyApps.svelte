@@ -72,6 +72,7 @@
   let limFor = $state(null), limOpen = $state(false), limCpu = $state(''), limMem = $state(''), limBusy = $state(false), limLines = $state([]), limError = $state('');
   let noCopyFor = $state(null), noCopyOpen = $state(false), noCopyMsg = $state('');
   let auto = $state({}), autoFor = $state(null), autoOpen = $state(false), autoForm = $state({ on: false, from: '03:00', to: '05:00' }), autoBusy = $state(false);
+  let domainPort = $state(''), domainProtect = $state(false);
   let domainFor = $state(null), domainOpen = $state(false), domain = $state(''), domainBusy = $state(false), domainError = $state('');
 
   const followJobs = jobFollower((job, id) => {
@@ -233,6 +234,8 @@
     origin = { x: e.clientX, y: e.clientY };
     domainFor = app;
     domain = app.domain || '';
+    domainPort = app.domain_port || app.main_port || '';
+    domainProtect = !!app.protect;
     domainError = '';
     domainOpen = true;
   }
@@ -241,7 +244,7 @@
     e.preventDefault();
     domainBusy = true;
     domainError = '';
-    const res = await api(`/api/apps/${domainFor.id}/domain`, { method: 'POST', body: { domain } });
+    const res = await api(`/api/apps/${domainFor.id}/domain`, { method: 'POST', body: { domain, port: Number(domainPort) || 0, protect: domainProtect } });
     domainBusy = false;
     if (res.status === 401) return onSessionLost();
     if (!res.ok) {
@@ -509,6 +512,8 @@
       <p class="t-sub">Point a DNS record of the domain to this server, then save. Box gets a free Let's Encrypt certificate when it can, otherwise a local one.</p>
       {#if domainError}<div class="notice" role="alert">{domainError}</div>{/if}
       <input class="input" bind:value={domain} placeholder="app.example.com" aria-label="Domain" spellcheck="false" autocapitalize="none" />
+      <label class="field"><span class="field-label">App port behind the domain</span><input class="input" type="number" min="1" max="65535" bind:value={domainPort} disabled={domainBusy} /><span class="t-caption">The app's main port is {domainFor?.main_port || 'not known'}. Pick another one the app publishes if its web page is there.</span></label>
+      <label class="row-field"><span class="field-text"><span class="field-label">Box sign-in in front</span><span class="t-caption">Only people signed in to Box can open the app under this domain.</span></span><input class="switch" type="checkbox" bind:checked={domainProtect} disabled={domainBusy} /></label>
       {#if domainFor?.domain}<p class="t-caption">Leave empty and save to remove the domain.</p>{/if}
       <div class="buttons">
         <button type="button" class="btn btn-gray" data-close onclick={() => (domainOpen = false)} disabled={domainBusy}>Cancel</button>

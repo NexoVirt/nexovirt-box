@@ -30,6 +30,9 @@ func TestEveryPrivateRouteNeedsAuth(t *testing.T) {
 		"POST /api/login/passkey/finish": true,
 		"GET /s/{token}":                 true, // public share links
 		"POST /s/{token}":                true,
+		"GET /api/proxy-auth/check":      true, // Caddy's forward_auth, checks its own domain cookie
+		"GET /api/proxy-auth/start":      true, // checks the session itself, redirects to sign-in
+		"GET /api/proxy-auth/finish":     true, // one-time token on the app's domain
 	}
 	placeholder := regexp.MustCompile(`\{[^}]+\}`)
 	n := 0

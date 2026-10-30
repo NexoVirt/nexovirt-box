@@ -537,7 +537,7 @@
               {#each proxy.routes || [] as rt (rt.domain)}
                 <div class="row">
                   <span class="ico"><Globe size={16} /></span>
-                  <div class="grow"><span class="mono">{rt.domain}</span><span class="t-caption">{rt.tls === 'letsencrypt' ? "Let's Encrypt certificate" : 'Local certificate'}</span></div>
+                  <div class="grow"><span class="mono">{rt.domain}</span><span class="t-caption">{rt.tls === 'letsencrypt' ? "Let's Encrypt" : 'Local certificate'}{rt.cert ? `, ${rt.cert.issuer}, valid until ${new Date(rt.cert.expires * 1000).toLocaleDateString()}` : ', no certificate yet'}{rt.protect ? ', Box sign-in in front' : ''}{rt.port ? `, port ${rt.port}` : ''}</span></div>
                   <a class="btn btn-gray btn-sm" href="https://{rt.domain}" target="_blank" rel="noopener noreferrer">Open</a>
                 </div>
               {:else}
