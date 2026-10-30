@@ -36,6 +36,7 @@
   import NotifySettings from './NotifySettings.svelte';
   import LocalNames from './LocalNames.svelte';
   import VpnSettings from './VpnSettings.svelte';
+  import NetworkOverview from './NetworkOverview.svelte';
   import WallpaperSettings from './WallpaperSettings.svelte';
   import ThemeSettings from './ThemeSettings.svelte';
 
@@ -549,6 +550,7 @@
           {/if}
           <LocalNames {onSessionLost} />
           <VpnSettings {onSessionLost} />
+          <NetworkOverview {onSessionLost} />
 
         {:else if tab === 'updates'}
           <section class="group">
