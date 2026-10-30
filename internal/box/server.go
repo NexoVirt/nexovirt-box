@@ -42,6 +42,7 @@ type App struct {
 	geo        geoDB     // sign-in places (geoip.go)
 	disks      diskCache
 	shareLimit *limiter // public share link hits per IP
+	tfaLimit   *limiter // wrong two-step codes per account (backstop, twofactor.go)
 }
 
 type route struct {
@@ -231,6 +232,9 @@ func (a *App) routes(ui fs.FS) http.Handler {
 	}
 	if a.shareLimit == nil {
 		a.shareLimit = newLimiter(a.store, 60, time.Minute)
+	}
+	if a.tfaLimit == nil {
+		a.tfaLimit = newLimiter(a.store, tfaAccountMax, tfaAccountWindow)
 	}
 	mux := http.NewServeMux()
 	for _, rt := range a.routeTable() {
