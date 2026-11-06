@@ -157,3 +157,14 @@ func TestReplaceVolumes(t *testing.T) {
 		t.Fatalf("n=%d\n%s", n, out)
 	}
 }
+
+func TestWgEasyAllowsHTTPSignInByDefault(t *testing.T) {
+	a := &catalog.App{Summary: catalog.Summary{ID: "wireguard"}, Questions: []catalog.Question{{Key: "WIREGUARD_INSECURE", Type: "boolean", Default: "false"}}}
+	applyFirstLogin(a)
+	if a.Questions[0].Default != "true" || a.Questions[0].Hint == "" {
+		t.Fatalf("question %+v", a.Questions[0])
+	}
+	if a.FirstLogin == nil || a.FirstLogin.Note == "" {
+		t.Fatal("no first-login note")
+	}
+}

@@ -22,6 +22,7 @@ var knownFirstLogin = map[string]catalog.FirstLogin{
 	"jellyfin":    {Note: "The first time you open Jellyfin a setup wizard asks you to create the admin account and add media libraries. Your media goes into the shared folder media/data on this server, which Jellyfin sees as /media/data."},
 	"vaultwarden": {Note: "Create your own account on the start page with Create account. The admin page is at /admin; sign in there with the admin token, which is the Vaultwarden admin password shown here."},
 	"uptime-kuma": {Note: "Uptime Kuma asks you to create the admin account the first time you open it."},
+	"wireguard":   {Note: "wg-easy asks you to create the admin account the first time you open it. Signing in over http://address:port needs \"Allow non-secured HTTP access\" on (the default). If you open it only through a domain with HTTPS (My Apps, Domain), you can turn that off."},
 
 	// Generated on the first start and written to a file in the app's data folder.
 	"crafty": {Username: "admin", PasswordFromFile: "data/config/default-creds.txt", PasswordFromFileRegex: `"password"\s*:\s*"([^"]+)"`,
@@ -71,9 +72,21 @@ var knownFirstLogin = map[string]catalog.FirstLogin{
 // their store says http.
 var knownHTTPS = map[string]bool{"crafty": true}
 
+// knownQuestionDefaults replace a store's default where it breaks the app on Box. wg-easy 15
+// marks its session cookie Secure unless INSECURE=true, and Box opens apps on http://address:port,
+// so with the store's "false" the sign-in fails. Keyed by catalog id, then question key.
+var knownQuestionDefaults = map[string]map[string]struct{ value, hint string }{
+	"wireguard": {"WIREGUARD_INSECURE": {"true", "Needed to sign in over http://address:port (the sign-in cookie is then not limited to HTTPS). Turn it off only if you open the app only through a domain with HTTPS."}},
+}
+
 func applyFirstLogin(a *catalog.App) {
 	if knownHTTPS[a.ID] {
 		a.Scheme = "https"
+	}
+	for i, q := range a.Questions {
+		if d, ok := knownQuestionDefaults[a.ID][q.Key]; ok {
+			a.Questions[i].Default, a.Questions[i].Hint = d.value, d.hint
+		}
 	}
 	if fl, ok := knownFirstLogin[a.ID]; ok {
 		fl := fl
@@ -122,12 +135,12 @@ func enrichCatalog(out, keyPath, casaos, bigbear string) error {
 		if err != nil {
 			return fmt.Errorf("%s: %w", e.ID, err)
 		}
-		before := fmt.Sprint(a.FirstLogin, a.Notes, a.Scheme)
+		before := fmt.Sprint(a.FirstLogin, a.Notes, a.Scheme, a.Questions)
 		applyFirstLogin(a)
 		if casaos != "" || bigbear != "" {
 			a.Notes = notes[a.Attribution.Store+"\x00"+a.Name]
 		}
-		if fmt.Sprint(a.FirstLogin, a.Notes, a.Scheme) != before {
+		if fmt.Sprint(a.FirstLogin, a.Notes, a.Scheme, a.Questions) != before {
 			changed++
 		}
 		apps = append(apps, a)
